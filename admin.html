@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RDS Live Dashboard</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    button { margin: 2px; }
+    .card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>🚀 RDS Live Dashboard</h2>
+
+<!-- BUSINESS -->
+<h3>Add Business</h3>
+<input id="businessName" placeholder="Business name">
+<button onclick="addBusiness()">Add</button>
+
+<h3>Businesses</h3>
+<div id="businessList"></div>
+
+<hr>
+
+<!-- PRODUCT -->
+<h3>Add Product</h3>
+<select id="businessSelect"></select><br><br>
+<input id="productName" placeholder="Product">
+<input id="productPrice" placeholder="Price">
+<button onclick="addProduct()">Add</button>
+
+<h3>Products</h3>
+<div id="productList"></div>
+
+<hr>
+
+<!-- ORDERS -->
+<h3>Orders (Live)</h3>
+<div id="orderList"></div>
+
+<hr>
+
+<!-- WALLETS -->
+<h3>Wallets</h3>
+<pre id="wallets"></pre>
+
+<script>
+const API = "http://localhost:3000";
+
+/* =========================
+   STATUS FORMAT
+========================= */
+function formatStatus(status) {
+  switch(status) {
+    case "PAID_HOLD": return "🟡 Paid (Waiting)";
+    case "ASSIGNED_DRIVER": return "🚚 Driver Assigned";
+    case "DISPATCHED": return "📦 On the way";
+    case "ARRIVED": return "📍 Arrived";
+    case "COMPLETED": return "✅ Delivered";
+    case "REFUNDED": return "↩️ Refunded";
+    default: return status;
+  }
+}
+
+/* =========================
+   LOAD DATA
+========================= */
+async function loadAll() {
+  loadBusinesses();
+  loadProducts();
+  loadOrders();
+  loadWallets();
+}
+
+async function loadBusinesses() {
+  const res = await fetch(API + "/businesses");
+  const data = await res.json();
+
+  const list = document.getElementById("businessList");
+  const select = document.getElementById("businessSelect");
+
+  list.innerHTML = "";
+  select.innerHTML = "";
+
+  data.businesses.forEach(b => {
+    list.innerHTML += `<div class="card">${b.name} (${b.id})</div>`;
+    select.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+  });
+}
+
+async function loadProducts() {
+  const res = await fetch(API + "/products");
+  const data = await res.json();
+
+  const list = document.getElementById("productList");
+  list.innerHTML = "";
+
+  data.products.forEach(p => {
+    list.innerHTML += `
+      <div class="card">
+        ${p.name} - KES ${p.price}
+        <button onclick="buy('${p.id}')">Buy</button>
+      </div>`;
+  });
+}
+
+async function loadOrders() {
+  const res = await fetch(API + "/orders");
+  const data = await res.json();
+
+  const list = document.getElementById("orderList");
+  list.innerHTML = "";
+
+  data.orders.forEach(o => {
+    list.innerHTML += `
+      <div class="card">
+        <b>${o.name}</b> | KES ${o.price} <br>
+        Status: ${formatStatus(o.status)} <br>
+
+        ${o.tax ? `Tax: ${o.tax} | Commission: ${o.commission} | Merchant: ${o.merchant}<br>` : ""}
+
+        <button onclick="assignDriver('${o.id}')">Assign</button>
+        <button onclick="dispatch('${o.id}')">Dispatch</button>
+        <button onclick="arrived('${o.id}')">Arrived</button>
+        <button onclick="confirmOrder('${o.id}')">Confirm</button>
+      </div>
+    `;
+  });
+}
+
+async function loadWallets() {
+  const res = await fetch(API + "/wallets");
+  const data = await res.json();
+
+  document.getElementById("wallets").innerText =
+    JSON.stringify(data.wallets, null, 2);
+}
+
+/* =========================
+   ACTIONS
+========================= */
+
+async function addBusiness() {
+  const name = document.getElementById("businessName").value;
+
+  await fetch(API + "/addBusiness", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ name })
+  });
+
+  loadAll();
+}
+
+async function addProduct() {
+  const name = document.getElementById("productName").value;
+  const price = document.getElementById("productPrice").value;
+  const businessId = document.getElementById("businessSelect").value;
+
+  await fetch(API + "/addProduct", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ name, price, businessId })
+  });
+
+  loadAll();
+}
+
+async function buy(id) {
+  await fetch(API + "/buy", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ productId: id })
+  });
+
+  loadAll();
+}
+
+async function assignDriver(id) {
+  await fetch(API + "/assignDriver", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ orderId: id })
+  });
+  loadAll();
+}
+
+async function dispatch(id) {
+  await fetch(API + "/dispatch", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ orderId: id })
+  });
+  loadAll();
+}
+
+async function arrived(id) {
+  await fetch(API + "/arrived", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ orderId: id })
+  });
+  loadAll();
+}
+
+async function confirmOrder(id) {
+  await fetch(API + "/confirm", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ orderId: id })
+  });
+  loadAll();
+}
+
+/* =========================
+   AUTO REFRESH (REAL-TIME)
+========================= */
+setInterval(loadAll, 3000);
+
+/* INITIAL LOAD */
+loadAll();
+
+</script>
+
+</body>
+</html>
