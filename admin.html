@@ -1,166 +1,244 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>RDS MARKET</title>
+  <title>RDS ADMIN</title>
   <style>
     body { font-family: monospace; background:#111; color:#0f0; padding:20px; }
-    .card { border:1px solid #0f0; margin:10px; padding:10px; }
-    button { background:#0f0; border:none; padding:5px 10px; cursor:pointer; font-weight:bold; }
-    button:hover { background:#0c0; }
-    pre { background:#000; padding:10px; border:1px solid #333; }
+    h2, h3 { color:#00ff66; }
+    button { background:#0f0; border:none; padding:5px 10px; margin:3px; cursor:pointer; }
+    .box { border:1px solid #0f0; padding:10px; margin-bottom:10px; }
+    pre { background:#000; padding:10px; border:1px solid #333; color:#0f0; }
   </style>
 </head>
 <body>
 
-<h2>🛒 RDS MARKET</h2>
+<h2>⚙️ RDS ADMIN PANEL</h2>
 
-<div id="catalog">Loading products...</div>
+<!-- ===================== -->
+<!-- BUSINESSES -->
+<!-- ===================== -->
+<h3>🏪 Businesses</h3>
 
-<h3>🛒 Cart</h3>
-<div id="cart">Empty</div>
-Total: $<span id="total">0</span><br><br>
+<input id="bname" placeholder="Business name">
+<button onclick="addBusiness()">Add</button>
 
-<button onclick="checkout()">Checkout</button>
+<div id="biz"></div>
+
+<hr>
+
+<!-- ===================== -->
+<!-- PRODUCTS -->
+<!-- ===================== -->
+<h3>📦 Products</h3>
+
+<select id="bizSelect"></select>
+<input id="pname" placeholder="Product name">
+<input id="price" placeholder="Price">
+<button onclick="addProduct()">Add Product</button>
+
+<div id="products"></div>
+
+<hr>
+
+<!-- ===================== -->
+<!-- ORDERS -->
+<!-- ===================== -->
+<h3>🧾 Orders</h3>
+<div id="orders"></div>
+
+<hr>
+
+<!-- ===================== -->
+<!-- LEDGER -->
+<!-- ===================== -->
+<h3>📊 Ledger</h3>
+<div id="ledger"></div>
+
+<hr>
+
+<!-- ===================== -->
+<!-- WALLETS -->
+<!-- ===================== -->
+<h3>💼 Wallets</h3>
+<div id="wallets"></div>
 
 <pre id="out"></pre>
 
 <script>
 const API = "https://rds-lab.onrender.com";
 
-let products = [];
-let cart = {};
-
 /* ===================== */
-/* LOAD PRODUCTS         */
+/* LOAD ALL              */
 /* ===================== */
-async function init(){
+async function load(){
   try {
-    document.getElementById("catalog").innerText = "⏳ Loading from server...";
-
-    const r = await fetch(API + "/products");
-    const d = await r.json();
-
-    if (!d.success || !d.products) throw "API error";
-
-    products = d.products;
-    renderProducts();
-
+    await loadBusinesses();
+    await loadProducts();
+    await loadOrders();
+    await loadLedger();
+    await loadWallets();
   } catch(e){
-    document.getElementById("catalog").innerText =
-      "❌ Cannot reach server (wait 5s then refresh)";
+    console.error(e);
+    document.getElementById("out").innerText = "❌ Server not reachable";
   }
 }
 
 /* ===================== */
-/* RENDER PRODUCTS       */
+/* BUSINESSES            */
 /* ===================== */
-function renderProducts(){
-  if (products.length === 0) {
-    document.getElementById("catalog").innerText =
-      "No products available. Add from admin panel.";
-    return;
-  }
+async function loadBusinesses(){
+  const r = await fetch(API + "/businesses");
+  const d = await r.json();
 
-  let html = "";
+  let h = "";
+  let opt = "";
 
-  products.forEach(p=>{
-    html += `
-      <div class="card">
-        ${p.name} - $${p.price}
-        <button onclick="add('${p.id}')">Add</button>
+  (d.businesses || []).forEach(b=>{
+    h += `${b.name} <button onclick="delBiz('${b.id}')">Delete</button><br>`;
+    opt += `<option value="${b.id}">${b.name}</option>`;
+  });
+
+  document.getElementById("biz").innerHTML = h || "No businesses";
+  document.getElementById("bizSelect").innerHTML = opt;
+}
+
+async function addBusiness(){
+  const name = document.getElementById("bname").value;
+
+  await fetch(API + "/addBusiness",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({name})
+  });
+
+  document.getElementById("bname").value = "";
+  load();
+}
+
+async function delBiz(id){
+  await fetch(API + "/deleteBusiness",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({id})
+  });
+
+  load();
+}
+
+/* ===================== */
+/* PRODUCTS              */
+/* ===================== */
+async function loadProducts(){
+  const r = await fetch(API + "/products");
+  const d = await r.json();
+
+  let h = "";
+
+  (d.products || []).forEach(p=>{
+    h += `${p.name} ($${p.price}) <button onclick="delProduct('${p.id}')">Delete</button><br>`;
+  });
+
+  document.getElementById("products").innerHTML = h || "No products";
+}
+
+async function addProduct(){
+  const name = document.getElementById("pname").value;
+  const price = document.getElementById("price").value;
+  const businessId = document.getElementById("bizSelect").value;
+
+  await fetch(API + "/addProduct",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({name,price,businessId})
+  });
+
+  document.getElementById("pname").value = "";
+  document.getElementById("price").value = "";
+
+  load();
+}
+
+async function delProduct(id){
+  await fetch(API + "/deleteProduct",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({id})
+  });
+
+  load();
+}
+
+/* ===================== */
+/* ORDERS                */
+/* ===================== */
+async function loadOrders(){
+  const r = await fetch(API + "/ledger"); // using ledger to infer orders
+  const d = await r.json();
+
+  let h = "";
+
+  (d.ledger || []).forEach(l=>{
+    h += `
+      <div class="box">
+        ID: ${l.id}<br>
+        Time: ${new Date(l.createdAt).toLocaleString()}
       </div>
     `;
   });
 
-  document.getElementById("catalog").innerHTML = html;
+  document.getElementById("orders").innerHTML = h || "No orders yet";
 }
 
 /* ===================== */
-/* CART                  */
+/* LEDGER                */
 /* ===================== */
-function add(id){
-  cart[id] = (cart[id] || 0) + 1;
-  renderCart();
+async function loadLedger(){
+  const r = await fetch(API + "/ledger");
+  const d = await r.json();
+
+  let h = "";
+
+  (d.ledger || []).forEach(l=>{
+    h += `<div class="box">`;
+
+    l.entries.forEach(e=>{
+      h += `
+        ${e.account}
+        ${e.debit ? "DR: " + e.debit : ""}
+        ${e.credit ? "CR: " + e.credit : ""}
+        <br>
+      `;
+    });
+
+    h += `</div>`;
+  });
+
+  document.getElementById("ledger").innerHTML = h || "No ledger data";
 }
 
-function remove(id){
-  if (!cart[id]) return;
+/* ===================== */
+/* WALLETS               */
+/* ===================== */
+async function loadWallets(){
+  const r = await fetch(API + "/wallets");
+  const d = await r.json();
 
-  cart[id]--;
-  if (cart[id] <= 0) delete cart[id];
+  let h = "";
 
-  renderCart();
-}
-
-function renderCart(){
-  let html = "";
-  let total = 0;
-
-  Object.keys(cart).forEach(id=>{
-    const p = products.find(x => x.id === id);
-    if (!p) return;
-
-    const qty = cart[id];
-    const t = p.price * qty;
-    total += t;
-
-    html += `
-      ${p.name} x${qty} = $${t}
-      <button onclick="add('${id}')">+</button>
-      <button onclick="remove('${id}')">-</button>
-      <br>
+  (d.wallets || []).forEach(w=>{
+    h += `
+      <div class="box">
+        Business: ${w.businessId}<br>
+        Balance: $${w.balance}
+      </div>
     `;
   });
 
-  document.getElementById("cart").innerHTML = html || "Empty";
-  document.getElementById("total").innerText = total;
-}
-
-/* ===================== */
-/* CHECKOUT              */
-/* ===================== */
-async function checkout(){
-  const out = document.getElementById("out");
-
-  if (Object.keys(cart).length === 0) {
-    out.innerText = "❌ Cart is empty";
-    return;
-  }
-
-  out.innerText = "⏳ Processing order...";
-
-  try {
-    for (let id of Object.keys(cart)) {
-
-      const res = await fetch(API + "/order", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({
-          productId: id,
-          qty: cart[id]
-        })
-      });
-
-      const d = await res.json();
-
-      if (!d.success) {
-        throw "Order failed for product " + id;
-      }
-    }
-
-    out.innerText = "✅ SUCCESS\nLedger + Wallet updated";
-
-    cart = {};
-    renderCart();
-
-  } catch(e){
-    console.error(e);
-    out.innerText = "❌ Failed: server may be sleeping (retry)";
-  }
+  document.getElementById("wallets").innerHTML = h || "No wallets";
 }
 
 /* INIT */
-init();
+load();
 </script>
 
 </body>
