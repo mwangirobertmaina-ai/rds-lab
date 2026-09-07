@@ -1,0 +1,69 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>ADMIN PANEL</title>
+<style>
+body{font-family:Arial;padding:20px}
+.card{border:1px solid #ccc;padding:10px;margin:5px}
+</style>
+</head>
+
+<body>
+
+<h2>🛠 ADMIN PANEL</h2>
+
+<h3>Add Shop</h3>
+<input id="shopName" placeholder="Shop name">
+<button onclick="addShop()">Add</button>
+
+<h3>Shops</h3>
+<div id="shops"></div>
+
+<script>
+const API="http://localhost:3000";
+
+async function load(){
+  const r=await fetch(API+"/businesses");
+  const d=await r.json();
+
+  let h="";
+  d.businesses.forEach(b=>{
+    h+=`
+      <div class="card">
+        ${b.name}<br>
+        <button onclick="del('${b.id}')">Delete</button>
+      </div>
+    `;
+  });
+
+  shops.innerHTML=h;
+}
+
+async function addShop(){
+  const name=document.getElementById("shopName").value;
+
+  await fetch(API+"/addBusiness",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name})
+  });
+
+  load();
+}
+
+async function del(id){
+  await fetch(API+"/deleteBusiness",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({id})
+  });
+
+  load();
+}
+
+load();
+</script>
+
+</body>
+</html>

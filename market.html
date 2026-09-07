@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>🛒 RDS MARKET (REAL)</h2>
+
+<button onclick="loadShops()">Load Shops</button>
+
+<h3>Shops</h3>
+<div id="shops"></div>
+
+<h3>Products</h3>
+<div id="products"></div>
+
+<h3>Cart</h3>
+<div id="cart"></div>
+
+<button onclick="checkout()">Checkout</button>
+
+<pre id="out"></pre>
+
+<script>
+const API = "http://localhost:3000";
+
+let SHOP = null;
+let PRODUCTS = [];
+let CART = [];
+
+/* LOAD SHOPS */
+async function loadShops(){
+  const r = await fetch(API + "/businesses");
+  const d = await r.json();
+
+  let h = "";
+
+  d.businesses.forEach(b=>{
+    h += `
+      ${b.name}
+      <button onclick="openShop('${b.id}')">Open</button>
+      <br>
+    `;
+  });
+
+  document.getElementById("shops").innerHTML = h;
+}
+
+/* OPEN SHOP */
+async function openShop(id){
+  SHOP = id;
+  CART = [];
+
+  const r = await fetch(API + "/products");
+  const d = await r.json();
+
+  PRODUCTS = d.products.filter(p => p.businessId === id);
+
+  let h = "";
+
+  PRODUCTS.forEach(p=>{
+    h += `
+      ${p.name} (${p.price})
+      <button onclick="add('${p.id}')">Add</button>
+      <br>
+    `;
+  });
+
+  document.getElementById("products").innerHTML = h;
+}
+
+/* ADD TO CART */
+function add(id){
+  const p = PRODUCTS.find(x=>x.id===id);
+  CART.push(p);
+
+  render();
+}
+
+/* RENDER CART */
+function render(){
+  let h = "";
+
+  CART.forEach(c=>{
+    h += c.name + "<br>";
+  });
+
+  document.getElementById("cart").innerHTML = h;
+}
+
+/* CHECKOUT */
+async function checkout(){
+  const items = CART.map(c=>({
+    productId: c.id,
+    qty: 1
+  }));
+
+  const r = await fetch(API + "/multiOrder",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({items})
+  });
+
+  const d = await r.json();
+
+  document.getElementById("out").innerText =
+    JSON.stringify(d,null,2);
+}
+</script>
+
+</body>
+</html>
