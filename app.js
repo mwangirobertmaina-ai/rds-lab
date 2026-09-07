@@ -3,10 +3,22 @@ const cors = require("cors");
 const fs = require("fs");
 
 const app = express();
-app.use(cors());
+
+/* ===================== */
+/* 🌍 CORS FIX (IMPORTANT) */
+/* ===================== */
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
+}));
+
 app.use(express.json());
 
-const PORT = 3000;
+/* ===================== */
+/* 🚀 PORT FIX (RENDER)   */
+/* ===================== */
+const PORT = process.env.PORT || 3000;
 
 /* ===================== */
 /* 📁 FILE STORAGE       */
@@ -23,7 +35,11 @@ let data = {
 };
 
 if (fs.existsSync(DB_FILE)) {
-  data = JSON.parse(fs.readFileSync(DB_FILE));
+  try {
+    data = JSON.parse(fs.readFileSync(DB_FILE));
+  } catch (e) {
+    console.log("⚠️ DB corrupted, resetting...");
+  }
 }
 
 /* SAVE FUNCTION */
@@ -34,23 +50,26 @@ const saveDB = () => {
 /* ===================== */
 /* 🔧 HELPERS            */
 /* ===================== */
-const uid = (p) => p + Date.now() + "_" + Math.floor(Math.random() * 1000);
+const uid = (p) =>
+  p + Date.now() + "_" + Math.floor(Math.random() * 1000);
 
 /* ===================== */
-/* ROOT                  */
+/* ROOT HEALTH CHECK     */
 /* ===================== */
 app.get("/", (req, res) => {
-  res.json({ status: "OK DATABASE SYSTEM" });
+  res.json({ status: "RDS ENGINE LIVE" });
 });
 
 /* ===================== */
 /* 🏪 BUSINESSES         */
 /* ===================== */
+
+/* ADD BUSINESS */
 app.post("/addBusiness", (req, res) => {
   const { name } = req.body;
 
   if (!name) {
-    return res.json({ success: false });
+    return res.json({ success: false, message: "Name required" });
   }
 
   const business = { id: uid("B_"), name };
@@ -70,15 +89,38 @@ app.post("/addBusiness", (req, res) => {
   res.json({ success: true, business });
 });
 
+/* GET BUSINESSES */
 app.get("/businesses", (req, res) => {
   res.json({ success: true, businesses: data.businesses });
+});
+
+/* DELETE BUSINESS */
+app.post("/deleteBusiness", (req, res) => {
+  const { id } = req.body;
+
+  if (!id) return res.json({ success: false });
+
+  data.businesses = data.businesses.filter(b => b.id !== id);
+  data.products = data.products.filter(p => p.businessId !== id);
+
+  delete data.wallets[id];
+
+  saveDB();
+
+  res.json({ success: true });
 });
 
 /* ===================== */
 /* 📦 PRODUCTS           */
 /* ===================== */
+
+/* ADD PRODUCT */
 app.post("/addProduct", (req, res) => {
   const { name, price, businessId } = req.body;
+
+  if (!name || !price || !businessId) {
+    return res.json({ success: false, message: "Missing fields" });
+  }
 
   const product = {
     id: uid("P_"),
@@ -94,15 +136,34 @@ app.post("/addProduct", (req, res) => {
   res.json({ success: true, product });
 });
 
+/* GET PRODUCTS */
 app.get("/products", (req, res) => {
   res.json({ success: true, products: data.products });
+});
+
+/* DELETE PRODUCT */
+app.post("/deleteProduct", (req, res) => {
+  const { id } = req.body;
+
+  if (!id) return res.json({ success: false });
+
+  data.products = data.products.filter(p => p.id !== id);
+
+  saveDB();
+
+  res.json({ success: true });
 });
 
 /* ===================== */
 /* 🛒 ORDER + LEDGER     */
 /* ===================== */
+
 app.post("/multiOrder", (req, res) => {
   const { items } = req.body;
+
+  if (!items || !items.length) {
+    return res.json({ success: false });
+  }
 
   let total = 0;
   let businessMap = {};
@@ -161,7 +222,7 @@ app.post("/multiOrder", (req, res) => {
       credit: payable
     });
 
-    /* WALLET */
+    /* WALLET UPDATE */
     if (!data.wallets[bId]) {
       data.wallets[bId] = {
         businessId: bId,
@@ -195,6 +256,7 @@ app.post("/multiOrder", (req, res) => {
 /* ===================== */
 /* 💼 WALLETS            */
 /* ===================== */
+
 app.get("/wallets", (req, res) => {
   res.json({
     success: true,
@@ -205,6 +267,7 @@ app.get("/wallets", (req, res) => {
 /* ===================== */
 /* 💸 WITHDRAW           */
 /* ===================== */
+
 app.post("/withdraw", (req, res) => {
   const { businessId, amount } = req.body;
 
@@ -240,8 +303,9 @@ app.post("/withdraw", (req, res) => {
 });
 
 /* ===================== */
-/* 🚀 START              */
+/* 🚀 START SERVER       */
 /* ===================== */
+
 app.listen(PORT, () => {
-  console.log("🚀 DATABASE SYSTEM RUNNING ON PORT " + PORT);
+  console.log("🚀 RDS ENGINE RUNNING ON PORT " + PORT);
 });

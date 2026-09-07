@@ -1,72 +1,25 @@
-<!DOCTYPE html>
-<html>
-<body>
-
-<h2>⚙️ ADMIN PANEL</h2>
-
-<!-- ===================== -->
-<!-- 🏪 BUSINESSES -->
-<!-- ===================== -->
-<h3>Add Business</h3>
-<input id="bname" placeholder="Business name">
-<button onclick="addBusiness()">Add</button>
-
-<h3>Businesses</h3>
-<div id="biz"></div>
-
-<hr>
-
-<!-- ===================== -->
-<!-- 📦 PRODUCTS -->
-<!-- ===================== -->
-<h3>Add Product</h3>
-
-<select id="bizSelect"></select>
-<input id="pname" placeholder="Product name">
-<input id="price" placeholder="Price">
-<button onclick="addProduct()">Add Product</button>
-
-<h3>Products</h3>
-<div id="products"></div>
-
-<pre id="out"></pre>
-
 <script>
-
-/* ✅ FIXED: LIVE BACKEND URL */
 const API = "https://rds-lab.onrender.com";
-
-/* ===================== */
-/* SAFE FETCH (handles slow backend) */
-/* ===================== */
-async function safeFetch(url, options){
-  try{
-    const r = await fetch(url, options);
-    return await r.json();
-  }catch(e){
-    console.log("⚠️ Server waking up...");
-    return {};
-  }
-}
 
 /* ===================== */
 /* LOAD ALL              */
 /* ===================== */
 async function load(){
-  await loadBusinesses();
-  await loadProducts();
+  try {
+    await loadBusinesses();
+    await loadProducts();
+  } catch(e){
+    console.error(e);
+    document.getElementById("out").innerText = "❌ Cannot connect to server";
+  }
 }
 
 /* ===================== */
 /* BUSINESSES            */
 /* ===================== */
 async function loadBusinesses(){
-  const d = await safeFetch(API + "/businesses");
-
-  if(!d.businesses){
-    document.getElementById("biz").innerHTML = "⏳ Loading...";
-    return;
-  }
+  const r = await fetch(API + "/businesses");
+  const d = await r.json();
 
   let h = "";
   let options = "";
@@ -77,29 +30,30 @@ async function loadBusinesses(){
       <button onclick="delBiz('${b.id}')">Delete</button>
       <br>
     `;
-
     options += `<option value="${b.id}">${b.name}</option>`;
   });
 
-  document.getElementById("biz").innerHTML = h;
+  document.getElementById("biz").innerHTML = h || "No businesses";
   document.getElementById("bizSelect").innerHTML = options;
 }
 
 async function addBusiness(){
   const name = document.getElementById("bname").value;
 
-  const d = await safeFetch(API + "/addBusiness",{
+  const r = await fetch(API + "/addBusiness",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({name})
   });
 
+  const d = await r.json();
   document.getElementById("out").innerText = JSON.stringify(d,null,2);
+
   load();
 }
 
 async function delBiz(id){
-  await safeFetch(API + "/deleteBusiness",{
+  await fetch(API + "/deleteBusiness",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({id})
@@ -112,12 +66,8 @@ async function delBiz(id){
 /* PRODUCTS              */
 /* ===================== */
 async function loadProducts(){
-  const d = await safeFetch(API + "/products");
-
-  if(!d.products){
-    document.getElementById("products").innerHTML = "⏳ Loading...";
-    return;
-  }
+  const r = await fetch(API + "/products");
+  const d = await r.json();
 
   let h = "";
 
@@ -129,7 +79,7 @@ async function loadProducts(){
     `;
   });
 
-  document.getElementById("products").innerHTML = h;
+  document.getElementById("products").innerHTML = h || "No products";
 }
 
 async function addProduct(){
@@ -137,18 +87,20 @@ async function addProduct(){
   const price = document.getElementById("price").value;
   const businessId = document.getElementById("bizSelect").value;
 
-  const d = await safeFetch(API + "/addProduct",{
+  const r = await fetch(API + "/addProduct",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({name,price,businessId})
   });
 
+  const d = await r.json();
   document.getElementById("out").innerText = JSON.stringify(d,null,2);
+
   load();
 }
 
 async function delProduct(id){
-  await safeFetch(API + "/deleteProduct",{
+  await fetch(API + "/deleteProduct",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({id})
@@ -159,8 +111,4 @@ async function delProduct(id){
 
 /* INIT */
 load();
-
 </script>
-
-</body>
-</html>
