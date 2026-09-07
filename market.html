@@ -1,26 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>RDS Market</title>
+<meta charset="UTF-8">
+<title>RDS MARKET</title>
+
+<style>
+body {
+  font-family: monospace;
+  background:#111;
+  color:#0f0;
+  padding:20px;
+}
+
+h2,h3 {
+  color:#00ff66;
+}
+
+button {
+  background:#0f0;
+  color:#000;
+  font-weight:bold;
+  border:none;
+  padding:6px 12px;
+  margin:3px;
+  cursor:pointer;
+}
+
+button:hover {
+  background:#0c0;
+}
+
+.section {
+  border:1px solid #0f0;
+  padding:10px;
+  margin-bottom:15px;
+}
+
+pre {
+  background:#000;
+  padding:10px;
+  border:1px solid #333;
+}
+</style>
+
 </head>
 <body>
 
-<h2>🛒 RDS MARKET</h2>
+<h2>🛒 RDS MARKET (LIVE)</h2>
 
-<button onclick="load()">🔄 Load Shops & Products</button>
+<button onclick="load()">🔄 Refresh System</button>
 
+<div class="section">
 <h3>🏪 Shops</h3>
-<div id="shops"></div>
+<div id="shops">Loading...</div>
+</div>
 
+<div class="section">
 <h3>📦 Products</h3>
 <div id="products"></div>
+</div>
 
+<div class="section">
 <h3>🛒 Cart</h3>
 <div id="cart"></div>
+</div>
 
 <button onclick="checkout()">💳 Checkout</button>
 
+<div class="section">
+<h3>📦 Orders</h3>
+<div id="orders"></div>
+</div>
+
+<div class="section">
+<h3>📊 Ledger</h3>
+<div id="ledger"></div>
+</div>
+
+<div class="section">
+<h3>💰 Wallets</h3>
+<div id="wallets"></div>
+</div>
+
+<h3>📡 System Output</h3>
 <pre id="out"></pre>
 
 <script>
@@ -30,11 +92,11 @@ let PRODUCTS = [];
 let CART = [];
 
 /* ===================== */
-/* LOAD DATA             */
+/* LOAD ALL DATA         */
 /* ===================== */
 async function load(){
   try {
-    out("Loading...");
+    out("Loading system...");
 
     const b = await fetch(API + "/businesses").then(r=>r.json());
     const p = await fetch(API + "/products").then(r=>r.json());
@@ -44,11 +106,15 @@ async function load(){
     showShops(b.businesses || []);
     showProducts(PRODUCTS);
 
-    out("");
+    await loadOrders();
+    await loadLedger();
+    await loadWallets();
+
+    out("✅ System loaded");
 
   } catch(e){
     console.error(e);
-    out("❌ Cannot load data (server sleeping or offline)");
+    out("❌ Cannot connect (server may be sleeping)");
   }
 }
 
@@ -57,18 +123,20 @@ function out(msg){
 }
 
 /* ===================== */
-/* SHOW SHOPS            */
+/* SHOPS                 */
 /* ===================== */
 function showShops(list){
   let h = "";
+
   list.forEach(b=>{
     h += `${b.name}<br>`;
   });
+
   document.getElementById("shops").innerHTML = h || "No shops";
 }
 
 /* ===================== */
-/* SHOW PRODUCTS         */
+/* PRODUCTS              */
 /* ===================== */
 function showProducts(list){
   let h = "";
@@ -96,7 +164,7 @@ function addToCart(id){
   if(found){
     found.qty++;
   } else {
-    CART.push({...p, qty:1});
+    CART.push({ id:p.id, name:p.name, price:p.price, qty:1 });
   }
 
   renderCart();
@@ -130,7 +198,7 @@ function removeItem(id){
 }
 
 /* ===================== */
-/* CHECKOUT (FIXED)      */
+/* CHECKOUT              */
 /* ===================== */
 async function checkout(){
   if(CART.length === 0){
@@ -138,11 +206,10 @@ async function checkout(){
     return;
   }
 
-  out("Processing...");
+  out("Processing transaction...");
 
   try {
     for (let item of CART) {
-
       const res = await fetch(API + "/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -155,19 +222,82 @@ async function checkout(){
       const d = await res.json();
 
       if (!d.success) {
-        throw new Error(d.error || "Order failed");
+        throw new Error("Order failed");
       }
     }
 
-    out("✅ SUCCESS\nLedger updated + Wallet credited");
+    out("✅ SUCCESS → Ledger updated + Wallet credited");
 
     CART = [];
     renderCart();
+
+    await load(); // reload everything
 
   } catch(e){
     console.error(e);
     out("❌ Checkout failed (server sleeping or error)");
   }
+}
+
+/* ===================== */
+/* ORDERS                */
+/* ===================== */
+async function loadOrders(){
+  const r = await fetch(API + "/orders").then(r=>r.json());
+
+  let h = "";
+
+  (r.orders || []).forEach(o=>{
+    h += `Order ${o.id} → $${o.total}<br>`;
+  });
+
+  document.getElementById("orders").innerHTML = h || "No orders";
+}
+
+/* ===================== */
+/* LEDGER                */
+/* ===================== */
+async function loadLedger(){
+  const r = await fetch(API + "/ledger").then(r=>r.json());
+
+  let h = "";
+
+  (r.ledger || []).forEach(l=>{
+    h += `<b>${l.id}</b><br>`;
+
+    l.entries.forEach(e=>{
+      h += `
+        ${e.account}
+        D:${e.debit || 0}
+        C:${e.credit || 0}
+        ${e.businessId ? " | B:" + e.businessId : ""}
+        <br>
+      `;
+    });
+
+    h += "<hr>";
+  });
+
+  document.getElementById("ledger").innerHTML = h || "No ledger entries";
+}
+
+/* ===================== */
+/* WALLETS               */
+/* ===================== */
+async function loadWallets(){
+  const r = await fetch(API + "/wallets").then(r=>r.json());
+
+  let h = "";
+
+  (r.wallets || []).forEach(w=>{
+    h += `
+      Business ${w.businessId}
+      → Balance: $${w.balance}
+      <br>
+    `;
+  });
+
+  document.getElementById("wallets").innerHTML = h || "No wallets";
 }
 
 /* INIT */

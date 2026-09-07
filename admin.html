@@ -2,85 +2,129 @@
 <html>
 <head>
   <title>RDS ADMIN</title>
+
   <style>
-    body { font-family: monospace; background:#111; color:#0f0; padding:20px; }
-    h2, h3 { color:#00ff66; }
-    button { background:#0f0; border:none; padding:5px 10px; margin:3px; cursor:pointer; }
-    .box { border:1px solid #0f0; padding:10px; margin-bottom:10px; }
-    pre { background:#000; padding:10px; border:1px solid #333; color:#0f0; }
+    body {
+      font-family: monospace;
+      background:#111;
+      color:#0f0;
+      padding:20px;
+    }
+
+    h2,h3 {
+      color:#00ff66;
+    }
+
+    input, select {
+      padding:5px;
+      margin:5px;
+      background:#000;
+      color:#0f0;
+      border:1px solid #0f0;
+    }
+
+    button {
+      background:#0f0;
+      color:#000;
+      border:none;
+      padding:6px 12px;
+      margin:3px;
+      cursor:pointer;
+      font-weight:bold;
+    }
+
+    button:hover {
+      background:#0c0;
+    }
+
+    .box {
+      border:1px solid #0f0;
+      padding:10px;
+      margin-bottom:15px;
+    }
+
+    pre {
+      background:#000;
+      padding:10px;
+      border:1px solid #333;
+    }
   </style>
 </head>
+
 <body>
 
-<h2>⚙️ RDS ADMIN PANEL</h2>
+<h2>🛠 RDS ADMIN PANEL</h2>
 
-<!-- ===================== -->
-<!-- BUSINESSES -->
-<!-- ===================== -->
-<h3>🏪 Businesses</h3>
+<button onclick="loadAll()">🔄 Refresh</button>
 
+<div class="box">
+<h3>➕ Add Business</h3>
 <input id="bname" placeholder="Business name">
 <button onclick="addBusiness()">Add</button>
+</div>
 
+<div class="box">
+<h3>🏪 Businesses</h3>
 <div id="biz"></div>
+</div>
 
-<hr>
-
-<!-- ===================== -->
-<!-- PRODUCTS -->
-<!-- ===================== -->
-<h3>📦 Products</h3>
-
+<div class="box">
+<h3>➕ Add Product</h3>
 <select id="bizSelect"></select>
 <input id="pname" placeholder="Product name">
 <input id="price" placeholder="Price">
 <button onclick="addProduct()">Add Product</button>
+</div>
 
+<div class="box">
+<h3>📦 Products</h3>
 <div id="products"></div>
+</div>
 
-<hr>
-
-<!-- ===================== -->
-<!-- ORDERS -->
-<!-- ===================== -->
-<h3>🧾 Orders</h3>
+<div class="box">
+<h3>📦 Orders</h3>
 <div id="orders"></div>
+</div>
 
-<hr>
-
-<!-- ===================== -->
-<!-- LEDGER -->
-<!-- ===================== -->
+<div class="box">
 <h3>📊 Ledger</h3>
 <div id="ledger"></div>
+</div>
 
-<hr>
-
-<!-- ===================== -->
-<!-- WALLETS -->
-<!-- ===================== -->
-<h3>💼 Wallets</h3>
+<div class="box">
+<h3>💰 Wallets</h3>
 <div id="wallets"></div>
+</div>
 
+<h3>📡 Output</h3>
 <pre id="out"></pre>
 
 <script>
 const API = "https://rds-lab.onrender.com";
 
 /* ===================== */
-/* LOAD ALL              */
+/* MAIN LOAD             */
 /* ===================== */
-async function load(){
+async function loadAll(){
   try {
+    out("Loading system...");
+
     await loadBusinesses();
     await loadProducts();
     await loadOrders();
     await loadLedger();
     await loadWallets();
+
+    out("✅ System ready");
+
   } catch(e){
     console.error(e);
-    document.getElementById("out").innerText = "❌ Server not reachable";
+    out("❌ Cannot connect (server sleeping)");
   }
+}
+
+function out(msg){
+  document.getElementById("out").innerText = msg;
 }
 
 /* ===================== */
@@ -91,28 +135,38 @@ async function loadBusinesses(){
   const d = await r.json();
 
   let h = "";
-  let opt = "";
+  let options = "";
 
   (d.businesses || []).forEach(b=>{
-    h += `${b.name} <button onclick="delBiz('${b.id}')">Delete</button><br>`;
-    opt += `<option value="${b.id}">${b.name}</option>`;
+    h += `
+      ${b.name}
+      <button onclick="delBiz('${b.id}')">Delete</button>
+      <br>
+    `;
+
+    options += `<option value="${b.id}">${b.name}</option>`;
   });
 
   document.getElementById("biz").innerHTML = h || "No businesses";
-  document.getElementById("bizSelect").innerHTML = opt;
+  document.getElementById("bizSelect").innerHTML = options;
 }
 
 async function addBusiness(){
   const name = document.getElementById("bname").value;
 
-  await fetch(API + "/addBusiness",{
+  if(!name) return out("Enter business name");
+
+  const r = await fetch(API + "/addBusiness",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({name})
   });
 
+  const d = await r.json();
+  out(JSON.stringify(d,null,2));
+
   document.getElementById("bname").value = "";
-  load();
+  loadAll();
 }
 
 async function delBiz(id){
@@ -122,7 +176,7 @@ async function delBiz(id){
     body: JSON.stringify({id})
   });
 
-  load();
+  loadAll();
 }
 
 /* ===================== */
@@ -135,7 +189,11 @@ async function loadProducts(){
   let h = "";
 
   (d.products || []).forEach(p=>{
-    h += `${p.name} ($${p.price}) <button onclick="delProduct('${p.id}')">Delete</button><br>`;
+    h += `
+      ${p.name} ($${p.price})
+      <button onclick="delProduct('${p.id}')">Delete</button>
+      <br>
+    `;
   });
 
   document.getElementById("products").innerHTML = h || "No products";
@@ -146,16 +204,23 @@ async function addProduct(){
   const price = document.getElementById("price").value;
   const businessId = document.getElementById("bizSelect").value;
 
-  await fetch(API + "/addProduct",{
+  if(!name || !price || !businessId){
+    return out("Fill all fields");
+  }
+
+  const r = await fetch(API + "/addProduct",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({name,price,businessId})
   });
 
+  const d = await r.json();
+  out(JSON.stringify(d,null,2));
+
   document.getElementById("pname").value = "";
   document.getElementById("price").value = "";
 
-  load();
+  loadAll();
 }
 
 async function delProduct(id){
@@ -165,28 +230,23 @@ async function delProduct(id){
     body: JSON.stringify({id})
   });
 
-  load();
+  loadAll();
 }
 
 /* ===================== */
 /* ORDERS                */
 /* ===================== */
 async function loadOrders(){
-  const r = await fetch(API + "/ledger"); // using ledger to infer orders
+  const r = await fetch(API + "/orders");
   const d = await r.json();
 
   let h = "";
 
-  (d.ledger || []).forEach(l=>{
-    h += `
-      <div class="box">
-        ID: ${l.id}<br>
-        Time: ${new Date(l.createdAt).toLocaleString()}
-      </div>
-    `;
+  (d.orders || []).forEach(o=>{
+    h += `Order ${o.id} → $${o.total}<br>`;
   });
 
-  document.getElementById("orders").innerHTML = h || "No orders yet";
+  document.getElementById("orders").innerHTML = h || "No orders";
 }
 
 /* ===================== */
@@ -199,21 +259,22 @@ async function loadLedger(){
   let h = "";
 
   (d.ledger || []).forEach(l=>{
-    h += `<div class="box">`;
+    h += `<b>${l.id}</b><br>`;
 
     l.entries.forEach(e=>{
       h += `
         ${e.account}
-        ${e.debit ? "DR: " + e.debit : ""}
-        ${e.credit ? "CR: " + e.credit : ""}
+        D:${e.debit || 0}
+        C:${e.credit || 0}
+        ${e.businessId ? " | B:" + e.businessId : ""}
         <br>
       `;
     });
 
-    h += `</div>`;
+    h += "<hr>";
   });
 
-  document.getElementById("ledger").innerHTML = h || "No ledger data";
+  document.getElementById("ledger").innerHTML = h || "No ledger";
 }
 
 /* ===================== */
@@ -227,10 +288,9 @@ async function loadWallets(){
 
   (d.wallets || []).forEach(w=>{
     h += `
-      <div class="box">
-        Business: ${w.businessId}<br>
-        Balance: $${w.balance}
-      </div>
+      Business ${w.businessId}
+      → Balance: $${w.balance}
+      <br>
     `;
   });
 
@@ -238,7 +298,7 @@ async function loadWallets(){
 }
 
 /* INIT */
-load();
+loadAll();
 </script>
 
 </body>
