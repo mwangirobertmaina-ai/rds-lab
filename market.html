@@ -2,88 +2,227 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>RDS MARKET</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RDS DIGITAL MARKETPLACE</title>
 
 <style>
-body {
-  font-family: monospace;
-  background:#111;
-  color:#0f0;
-  padding:20px;
-}
+  :root {
+    --neon-green: #00ff66;
+    --dark-bg: #0a0a0a;
+    --panel-bg: #121212;
+    --card-bg: #181818;
+    --border-color: #00ff66;
+    --dim-text: #888888;
+    --alert-red: #ff3366;
+    --gold: #ffd700;
+  }
 
-h2,h3 {
-  color:#00ff66;
-}
+  * { box-sizing: border-box; }
 
-button {
-  background:#0f0;
-  color:#000;
-  font-weight:bold;
-  border:none;
-  padding:6px 12px;
-  margin:3px;
-  cursor:pointer;
-}
+  body { 
+    font-family: 'Courier New', Courier, monospace; 
+    background: var(--dark-bg); 
+    color: var(--neon-green); 
+    padding: 20px; 
+    margin: 0;
+  }
 
-button:hover {
-  background:#0c0;
-}
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--neon-green);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+  }
 
-.section {
-  border:1px solid #0f0;
-  padding:10px;
-  margin-bottom:15px;
-}
+  h2, h3 { color: var(--neon-green); text-transform: uppercase; margin: 0 0 10px 0; }
 
-pre {
-  background:#000;
-  padding:10px;
-  border:1px solid #333;
-}
+  button { 
+    background: var(--neon-green); 
+    color: #000; 
+    font-weight: bold; 
+    border: none; 
+    padding: 8px 14px; 
+    cursor: pointer; 
+    font-family: monospace;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+  }
+
+  button:hover:not(:disabled) { 
+    background: #00cc52;
+    box-shadow: 0 0 10px rgba(0, 255, 102, 0.5);
+  }
+
+  button:disabled { 
+    background: #333; 
+    color: #666; 
+    cursor: not-allowed; 
+  }
+
+  .btn-danger {
+    background: var(--alert-red);
+    color: #fff;
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: #cc0033;
+    box-shadow: 0 0 10px rgba(255, 51, 102, 0.5);
+  }
+
+  .grid-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .grid-layout { grid-template-columns: 1fr; }
+  }
+
+  .section { 
+    border: 1px solid var(--border-color); 
+    padding: 16px; 
+    background: var(--panel-bg); 
+    margin-bottom: 20px;
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .product-card {
+    border: 1px solid #2a2a2a;
+    background: var(--card-bg);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: border-color 0.2s;
+  }
+
+  .product-card:hover {
+    border-color: var(--neon-green);
+  }
+
+  .product-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .product-price {
+    font-size: 16px;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .cart-item {
+    border-bottom: 1px dashed #333;
+    padding: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cart-controls button {
+    padding: 2px 8px;
+    margin-left: 4px;
+  }
+
+  .cart-summary {
+    border-top: 2px solid var(--neon-green);
+    margin-top: 15px;
+    padding-top: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  pre { 
+    background: #000; 
+    padding: 12px; 
+    border: 1px solid #333; 
+    color: var(--neon-green);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+
+  .loader { 
+    color: #ffff00; 
+    font-style: italic; 
+    animation: pulse 1s infinite alternate; 
+    display: block;
+    padding: 10px 0;
+  }
+
+  .badge {
+    background: #003311;
+    border: 1px solid var(--neon-green);
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 3px;
+  }
+
+  @keyframes pulse {
+    from { opacity: 0.3; }
+    to { opacity: 1; }
+  }
 </style>
-
 </head>
 <body>
 
-<h2>🛒 RDS MARKET (LIVE)</h2>
+<header>
+  <div>
+    <h2>🛒 RDS DIGITAL MARKETPLACE</h2>
+    <span class="small">HIGH-SPEED ATOMIC TRANSACTION ENGINE</span>
+  </div>
+  <div>
+    <button id="refreshBtn" onclick="init()">🔄 SYNC STORE</button>
+    <span id="storeStatus" class="badge">INITIALIZING</span>
+  </div>
+</header>
 
-<button onclick="load()">🔄 Refresh System</button>
+<div class="grid-layout">
+  
+  <!-- LEFT: CATALOG -->
+  <div>
+    <div class="section">
+      <h3>📦 Catalog Items</h3>
+      <div id="catalog"><span class="loader">⚡ Synchronizing catalog with backend...</span></div>
+    </div>
+  </div>
 
-<div class="section">
-<h3>🏪 Shops</h3>
-<div id="shops">Loading...</div>
+  <!-- RIGHT: CART & CHECKOUT -->
+  <div>
+    <div class="section">
+      <h3>🛒 Shopping Cart</h3>
+      <div id="cart"><span class="loader">⚡ Loading cart state...</span></div>
+      
+      <div class="cart-summary">
+        <span>TOTAL:</span>
+        <span>$<span id="cartTotal">0</span></span>
+      </div>
+      
+      <br>
+      <button id="checkoutBtn" onclick="checkout()" style="width: 100%; padding: 12px; font-size: 16px;" disabled>
+        💳 PAY & PLACE ORDER
+      </button>
+    </div>
+
+    <div class="section">
+      <h3>📡 System Status Log</h3>
+      <pre id="out">Marketplace system initialized.</pre>
+    </div>
+  </div>
+
 </div>
-
-<div class="section">
-<h3>📦 Products</h3>
-<div id="products"></div>
-</div>
-
-<div class="section">
-<h3>🛒 Cart</h3>
-<div id="cart"></div>
-</div>
-
-<button onclick="checkout()">💳 Checkout</button>
-
-<div class="section">
-<h3>📦 Orders</h3>
-<div id="orders"></div>
-</div>
-
-<div class="section">
-<h3>📊 Ledger</h3>
-<div id="ledger"></div>
-</div>
-
-<div class="section">
-<h3>💰 Wallets</h3>
-<div id="wallets"></div>
-</div>
-
-<h3>📡 System Output</h3>
-<pre id="out"></pre>
 
 <script>
 const API = "https://rds-lab.onrender.com";
@@ -91,217 +230,268 @@ const API = "https://rds-lab.onrender.com";
 let PRODUCTS = [];
 let CART = [];
 
-/* ===================== */
-/* LOAD ALL DATA         */
-/* ===================== */
-async function load(){
+/* ========================================== */
+/* ADVANCED SMART FETCH (WAKE-UP & RETRY)     */
+/* ========================================== */
+async function safeFetch(url, options = {}, retries = 5, backoff = 2000) {
   try {
-    out("Loading system...");
-
-    const b = await fetch(API + "/businesses").then(r=>r.json());
-    const p = await fetch(API + "/products").then(r=>r.json());
-
-    PRODUCTS = p.products || [];
-
-    showShops(b.businesses || []);
-    showProducts(PRODUCTS);
-
-    await loadOrders();
-    await loadLedger();
-    await loadWallets();
-
-    out("✅ System loaded");
-
-  } catch(e){
-    console.error(e);
-    out("❌ Cannot connect (server may be sleeping)");
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+    return await res.json();
+  } catch (e) {
+    if (retries > 0) {
+      out(`⏳ Server sleeping or warming up... Retrying in ${backoff / 1000}s (${retries} attempts remaining)`);
+      updateStatus("WAKING UP...", "#ffff00");
+      await new Promise(r => setTimeout(r, backoff));
+      return safeFetch(url, options, retries - 1, backoff * 1.5);
+    }
+    throw e;
   }
 }
 
-function out(msg){
-  document.getElementById("out").innerText = msg;
+function out(msg) {
+  const el = document.getElementById("out");
+  el.innerText = typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
 }
 
-/* ===================== */
-/* SHOPS                 */
-/* ===================== */
-function showShops(list){
-  let h = "";
-
-  list.forEach(b=>{
-    h += `${b.name}<br>`;
-  });
-
-  document.getElementById("shops").innerHTML = h || "No shops";
+function updateStatus(text, color = "var(--neon-green)") {
+  const el = document.getElementById("storeStatus");
+  el.innerText = text;
+  el.style.borderColor = color;
+  el.style.color = color;
 }
 
-/* ===================== */
-/* PRODUCTS              */
-/* ===================== */
-function showProducts(list){
-  let h = "";
+/* ========================================== */
+/* INITIALIZATION                             */
+/* ========================================== */
+async function init() {
+  const btn = document.getElementById("refreshBtn");
+  btn.disabled = true;
+  updateStatus("SYNCING...", "#ffff00");
 
-  list.forEach(p=>{
-    h += `
-      ${p.name} - $${p.price}
-      <button onclick="addToCart('${p.id}')">Add</button>
-      <br>
-    `;
-  });
+  document.getElementById("catalog").innerHTML = `<span class="loader">⚡ Loading catalog...</span>`;
+  out("Connecting to storefront server...");
 
-  document.getElementById("products").innerHTML = h || "No products";
-}
+  try {
+    const data = await safeFetch(API + "/products");
 
-/* ===================== */
-/* CART                  */
-/* ===================== */
-function addToCart(id){
-  const p = PRODUCTS.find(x=>x.id === id);
-  if (!p) return;
+    if (!data.success) throw new Error(data.error || "Failed to load store catalog");
 
-  const found = CART.find(x=>x.id === id);
+    // Clean marketplace view: map product data safely without leaking admin details
+    PRODUCTS = (data.products || []).map(p => ({
+      id: p.id,
+      name: p.name,
+      price: parseInt(p.price, 10) || 0
+    }));
 
-  if(found){
-    found.qty++;
-  } else {
-    CART.push({ id:p.id, name:p.name, price:p.price, qty:1 });
+    renderCatalog();
+    renderCart();
+
+    updateStatus("ONLINE", "var(--neon-green)");
+    out("✅ Storefront synchronized. Ready for purchases.");
+
+  } catch (e) {
+    console.error("Init failure:", e);
+    document.getElementById("catalog").innerHTML = `<span style="color: var(--alert-red)">❌ Storefront unavailable. Server offline or sleeping.</span>`;
+    updateStatus("OFFLINE", "var(--alert-red)");
+    out(`❌ Network error: ${e.message}`);
+  } finally {
+    btn.disabled = false;
   }
-
-  renderCart();
 }
 
-function renderCart(){
-  let h = "";
-  let total = 0;
+/* ========================================== */
+/* CATALOG RENDERING                          */
+/* ========================================== */
+function renderCatalog() {
+  const el = document.getElementById("catalog");
 
-  CART.forEach(i=>{
-    const t = i.price * i.qty;
-    total += t;
-
-    h += `
-      ${i.name} x ${i.qty} = $${t}
-      <button onclick="removeItem('${i.id}')">X</button>
-      <br>
-    `;
-  });
-
-  if (CART.length > 0) {
-    h += `<br><b>Total: $${total}</b>`;
-  }
-
-  document.getElementById("cart").innerHTML = h || "Cart empty";
-}
-
-function removeItem(id){
-  CART = CART.filter(x=>x.id !== id);
-  renderCart();
-}
-
-/* ===================== */
-/* CHECKOUT              */
-/* ===================== */
-async function checkout(){
-  if(CART.length === 0){
-    out("Cart empty");
+  if (PRODUCTS.length === 0) {
+    el.innerHTML = `<em>No products available in the storefront at this time.</em>`;
     return;
   }
 
-  out("Processing transaction...");
+  let html = `<div class="product-grid">`;
 
-  try {
-    for (let item of CART) {
-      const res = await fetch(API + "/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: item.id,
-          qty: item.qty
-        })
-      });
-
-      const d = await res.json();
-
-      if (!d.success) {
-        throw new Error("Order failed");
-      }
-    }
-
-    out("✅ SUCCESS → Ledger updated + Wallet credited");
-
-    CART = [];
-    renderCart();
-
-    await load(); // reload everything
-
-  } catch(e){
-    console.error(e);
-    out("❌ Checkout failed (server sleeping or error)");
-  }
-}
-
-/* ===================== */
-/* ORDERS                */
-/* ===================== */
-async function loadOrders(){
-  const r = await fetch(API + "/orders").then(r=>r.json());
-
-  let h = "";
-
-  (r.orders || []).forEach(o=>{
-    h += `Order ${o.id} → $${o.total}<br>`;
-  });
-
-  document.getElementById("orders").innerHTML = h || "No orders";
-}
-
-/* ===================== */
-/* LEDGER                */
-/* ===================== */
-async function loadLedger(){
-  const r = await fetch(API + "/ledger").then(r=>r.json());
-
-  let h = "";
-
-  (r.ledger || []).forEach(l=>{
-    h += `<b>${l.id}</b><br>`;
-
-    l.entries.forEach(e=>{
-      h += `
-        ${e.account}
-        D:${e.debit || 0}
-        C:${e.credit || 0}
-        ${e.businessId ? " | B:" + e.businessId : ""}
-        <br>
-      `;
-    });
-
-    h += "<hr>";
-  });
-
-  document.getElementById("ledger").innerHTML = h || "No ledger entries";
-}
-
-/* ===================== */
-/* WALLETS               */
-/* ===================== */
-async function loadWallets(){
-  const r = await fetch(API + "/wallets").then(r=>r.json());
-
-  let h = "";
-
-  (r.wallets || []).forEach(w=>{
-    h += `
-      Business ${w.businessId}
-      → Balance: $${w.balance}
-      <br>
+  PRODUCTS.forEach(p => {
+    html += `
+      <div class="product-card">
+        <div>
+          <div class="product-title">${p.name}</div>
+          <div class="product-price">$${p.price}</div>
+        </div>
+        <button onclick="addToCart('${p.id}')">➕ Add To Cart</button>
+      </div>
     `;
   });
 
-  document.getElementById("wallets").innerHTML = h || "No wallets";
+  html += `</div>`;
+  el.innerHTML = html;
 }
 
-/* INIT */
-load();
+/* ========================================== */
+/* CART ENGINE                                */
+/* ========================================== */
+function addToCart(id) {
+  const product = PRODUCTS.find(x => x.id === id);
+  if (!product) return;
+
+  const item = CART.find(x => x.id === id);
+
+  if (item) {
+    item.qty++;
+  } else {
+    CART.push({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      qty: 1
+    });
+  }
+
+  renderCart();
+  out(`🛒 Added "${product.name}" to cart.`);
+}
+
+function updateQty(id, delta) {
+  const item = CART.find(x => x.id === id);
+  if (!item) return;
+
+  item.qty += delta;
+  if (item.qty <= 0) {
+    CART = CART.filter(x => x.id !== id);
+  }
+
+  renderCart();
+}
+
+function removeFromCart(id) {
+  const item = CART.find(x => x.id === id);
+  if (item) {
+    CART = CART.filter(x => x.id !== id);
+    out(`🗑️ Removed "${item.name}" from cart.`);
+  }
+  renderCart();
+}
+
+function renderCart() {
+  const cartEl = document.getElementById("cart");
+  const totalEl = document.getElementById("cartTotal");
+  const checkoutBtn = document.getElementById("checkoutBtn");
+
+  if (CART.length === 0) {
+    cartEl.innerHTML = `<em>Cart is currently empty.</em>`;
+    totalEl.innerText = "0";
+    checkoutBtn.disabled = true;
+    return;
+  }
+
+  let html = "";
+  let grandTotal = 0;
+
+  CART.forEach(item => {
+    const itemTotal = item.price * item.qty;
+    grandTotal += itemTotal;
+
+    html += `
+      <div class="cart-item">
+        <div>
+          <b>${item.name}</b><br>
+          <small>$${item.price} × ${item.qty} = $${itemTotal}</small>
+        </div>
+        <div class="cart-controls">
+          <button onclick="updateQty('${item.id}', 1)">+</button>
+          <button onclick="updateQty('${item.id}', -1)">-</button>
+          <button class="btn-danger" onclick="removeFromCart('${item.id}')">✕</button>
+        </div>
+      </div>
+    `;
+  });
+
+  cartEl.innerHTML = html;
+  totalEl.innerText = grandTotal;
+  checkoutBtn.disabled = false;
+}
+
+/* ========================================== */
+/* ATOMIC BATCH CHECKOUT                     */
+/* ========================================== */
+async function checkout() {
+  if (CART.length === 0) return;
+
+  const checkoutBtn = document.getElementById("checkoutBtn");
+  checkoutBtn.disabled = true;
+  updateStatus("PROCESSING...", "#ffff00");
+
+  out("💳 Submitting order batch to backend...");
+
+  const itemsPayload = CART.map(i => ({
+    productId: i.id,
+    qty: i.qty
+  }));
+
+  try {
+    let orderResult;
+
+    // Primary: Batch Checkout Endpoint
+    try {
+      const res = await safeFetch(API + "/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: itemsPayload })
+      });
+
+      if (!res.success) throw new Error(res.error || "Batch checkout rejected");
+      orderResult = res.order;
+
+    } catch (batchErr) {
+      // Fallback Engine: If server only supports single /order endpoint
+      out("⚠️ Batch /checkout endpoint not found. Executing fallback sequential route...");
+      
+      const completedOrders = [];
+      for (const item of itemsPayload) {
+        const singleRes = await safeFetch(API + "/order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(item)
+        });
+
+        if (!singleRes.success) throw new Error(singleRes.error || `Order failed for product ${item.productId}`);
+        completedOrders.push(singleRes.order);
+      }
+
+      orderResult = {
+        type: "MULTI_ORDER_FALLBACK",
+        orders: completedOrders,
+        itemCount: completedOrders.length
+      };
+    }
+
+    out({
+      status: "✅ PURCHASE SUCCESSFUL",
+      timestamp: new Date().toISOString(),
+      orderReceipt: orderResult
+    });
+
+    updateStatus("ONLINE", "var(--neon-green)");
+    
+    // Clear cart on successful transaction
+    CART = [];
+    renderCart();
+
+  } catch (e) {
+    console.error("Checkout transaction error:", e);
+    out(`❌ Checkout Failed: ${e.message}`);
+    updateStatus("ERROR", "var(--alert-red)");
+    checkoutBtn.disabled = false;
+  }
+}
+
+/* STARTUP */
+init();
 </script>
 
 </body>
