@@ -1,109 +1,162 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <title>RDS Market</title>
+</head>
 <body>
 
-<h2>🛒 RDS MARKET (REAL)</h2>
+<h2>🛒 RDS MARKET</h2>
 
-<button onclick="loadShops()">Load Shops</button>
+<button onclick="load()">🔄 Load Shops & Products</button>
 
-<h3>Shops</h3>
+<h3>🏪 Shops</h3>
 <div id="shops"></div>
 
-<h3>Products</h3>
+<h3>📦 Products</h3>
 <div id="products"></div>
 
-<h3>Cart</h3>
+<h3>🛒 Cart</h3>
 <div id="cart"></div>
 
-<button onclick="checkout()">Checkout</button>
+<button onclick="checkout()">💳 Checkout</button>
 
 <pre id="out"></pre>
 
 <script>
-const API = "http://localhost:3000";
+const API = "https://rds-lab.onrender.com";
 
-let SHOP = null;
 let PRODUCTS = [];
 let CART = [];
 
-/* LOAD SHOPS */
-async function loadShops(){
-  const r = await fetch(API + "/businesses");
-  const d = await r.json();
+/* ===================== */
+/* LOAD                  */
+/* ===================== */
+async function load(){
+  try {
+    const b = await fetch(API + "/businesses").then(r=>r.json());
+    const p = await fetch(API + "/products").then(r=>r.json());
 
+    PRODUCTS = p.products || [];
+
+    showShops(b.businesses || []);
+    showProducts(PRODUCTS);
+
+  } catch(e){
+    console.error(e);
+    out("❌ Cannot load data");
+  }
+}
+
+function out(msg){
+  document.getElementById("out").innerText = msg;
+}
+
+/* ===================== */
+/* SHOPS                 */
+/* ===================== */
+function showShops(list){
   let h = "";
 
-  d.businesses.forEach(b=>{
+  list.forEach(b=>{
+    h += `${b.name}<br>`;
+  });
+
+  document.getElementById("shops").innerHTML = h || "No shops";
+}
+
+/* ===================== */
+/* PRODUCTS              */
+/* ===================== */
+function showProducts(list){
+  let h = "";
+
+  list.forEach(p=>{
     h += `
-      ${b.name}
-      <button onclick="openShop('${b.id}')">Open</button>
+      ${p.name} - ${p.price}
+      <button onclick="addToCart('${p.id}')">Add</button>
       <br>
     `;
   });
 
-  document.getElementById("shops").innerHTML = h;
+  document.getElementById("products").innerHTML = h || "No products";
 }
 
-/* OPEN SHOP */
-async function openShop(id){
-  SHOP = id;
-  CART = [];
+/* ===================== */
+/* CART                  */
+/* ===================== */
+function addToCart(id){
+  const p = PRODUCTS.find(x=>x.id === id);
 
-  const r = await fetch(API + "/products");
-  const d = await r.json();
+  const found = CART.find(x=>x.id === id);
 
-  PRODUCTS = d.products.filter(p => p.businessId === id);
+  if(found){
+    found.qty++;
+  } else {
+    CART.push({...p, qty:1});
+  }
 
+  renderCart();
+}
+
+function renderCart(){
   let h = "";
+  let total = 0;
 
-  PRODUCTS.forEach(p=>{
+  CART.forEach(i=>{
+    const t = i.price * i.qty;
+    total += t;
+
     h += `
-      ${p.name} (${p.price})
-      <button onclick="add('${p.id}')">Add</button>
+      ${i.name} x ${i.qty} = ${t}
+      <button onclick="removeItem('${i.id}')">X</button>
       <br>
     `;
   });
 
-  document.getElementById("products").innerHTML = h;
+  h += `<b>Total: ${total}</b>`;
+
+  document.getElementById("cart").innerHTML = h || "Cart empty";
 }
 
-/* ADD TO CART */
-function add(id){
-  const p = PRODUCTS.find(x=>x.id===id);
-  CART.push(p);
-
-  render();
+function removeItem(id){
+  CART = CART.filter(x=>x.id !== id);
+  renderCart();
 }
 
-/* RENDER CART */
-function render(){
-  let h = "";
-
-  CART.forEach(c=>{
-    h += c.name + "<br>";
-  });
-
-  document.getElementById("cart").innerHTML = h;
-}
-
-/* CHECKOUT */
+/* ===================== */
+/* CHECKOUT              */
+/* ===================== */
 async function checkout(){
-  const items = CART.map(c=>({
-    productId: c.id,
-    qty: 1
-  }));
+  if(CART.length === 0){
+    out("Cart empty");
+    return;
+  }
 
-  const r = await fetch(API + "/multiOrder",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({items})
-  });
+  try {
+    for(let item of CART){
+      await fetch(API + "/order",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          productId: item.id,
+          qty: item.qty
+        })
+      });
+    }
 
-  const d = await r.json();
+    out("✅ Order placed!");
 
-  document.getElementById("out").innerText =
-    JSON.stringify(d,null,2);
+    CART = [];
+    renderCart();
+
+  } catch(e){
+    console.error(e);
+    out("❌ Checkout failed");
+  }
 }
+
+/* INIT */
+load();
 </script>
 
 </body>

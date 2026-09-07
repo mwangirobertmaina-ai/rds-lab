@@ -1,17 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RDS Admin</title>
+</head>
+<body>
+
+<h2>⚙️ ADMIN PANEL</h2>
+
+<!-- ===================== -->
+<!-- 🏪 BUSINESSES -->
+<!-- ===================== -->
+<h3>Add Business</h3>
+<input id="bname" placeholder="Business name">
+<button onclick="addBusiness()">Add</button>
+
+<h3>Businesses</h3>
+<div id="biz"></div>
+
+<hr>
+
+<!-- ===================== -->
+<!-- 📦 PRODUCTS -->
+<!-- ===================== -->
+<h3>Add Product</h3>
+
+<select id="bizSelect"></select>
+<input id="pname" placeholder="Product name">
+<input id="price" placeholder="Price">
+<button onclick="addProduct()">Add Product</button>
+
+<h3>Products</h3>
+<div id="products"></div>
+
+<pre id="out"></pre>
+
 <script>
 const API = "https://rds-lab.onrender.com";
 
 /* ===================== */
-/* LOAD ALL              */
+/* INIT                  */
 /* ===================== */
+window.onload = load;
+
 async function load(){
   try {
     await loadBusinesses();
     await loadProducts();
   } catch(e){
     console.error(e);
-    document.getElementById("out").innerText = "❌ Cannot connect to server";
+    safeOut("❌ Cannot connect to server");
   }
+}
+
+function safeOut(msg){
+  const el = document.getElementById("out");
+  if(el) el.innerText = msg;
 }
 
 /* ===================== */
@@ -19,17 +62,17 @@ async function load(){
 /* ===================== */
 async function loadBusinesses(){
   const r = await fetch(API + "/businesses");
+  if(!r.ok) throw new Error("Failed businesses");
+
   const d = await r.json();
 
   let h = "";
   let options = "";
 
-  d.businesses.forEach(b=>{
-    h += `
-      ${b.name}
-      <button onclick="delBiz('${b.id}')">Delete</button>
-      <br>
-    `;
+  (d.businesses || []).forEach(b=>{
+    h += `${b.name} 
+      <button onclick="delBiz('${b.id}')">Delete</button><br>`;
+
     options += `<option value="${b.id}">${b.name}</option>`;
   });
 
@@ -47,8 +90,9 @@ async function addBusiness(){
   });
 
   const d = await r.json();
-  document.getElementById("out").innerText = JSON.stringify(d,null,2);
+  safeOut(JSON.stringify(d,null,2));
 
+  document.getElementById("bname").value = "";
   load();
 }
 
@@ -67,16 +111,15 @@ async function delBiz(id){
 /* ===================== */
 async function loadProducts(){
   const r = await fetch(API + "/products");
+  if(!r.ok) throw new Error("Failed products");
+
   const d = await r.json();
 
   let h = "";
 
-  d.products.forEach(p=>{
-    h += `
-      ${p.name} (${p.price})
-      <button onclick="delProduct('${p.id}')">Delete</button>
-      <br>
-    `;
+  (d.products || []).forEach(p=>{
+    h += `${p.name} (${p.price}) 
+      <button onclick="delProduct('${p.id}')">Delete</button><br>`;
   });
 
   document.getElementById("products").innerHTML = h || "No products";
@@ -94,7 +137,10 @@ async function addProduct(){
   });
 
   const d = await r.json();
-  document.getElementById("out").innerText = JSON.stringify(d,null,2);
+  safeOut(JSON.stringify(d,null,2));
+
+  document.getElementById("pname").value = "";
+  document.getElementById("price").value = "";
 
   load();
 }
@@ -108,7 +154,7 @@ async function delProduct(id){
 
   load();
 }
-
-/* INIT */
-load();
 </script>
+
+</body>
+</html>
