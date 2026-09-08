@@ -1,32 +1,35 @@
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
+const fsPromises = require("fs").promises;
 const path = require("path");
 
 const app = express();
 
-/* ===================== */
-/* MIDDLEWARE & CORS     */
-/* ===================== */
-app.use(cors({ origin: "*", methods: ["GET", "POST", "DELETE", "OPTIONS"] }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+/* ========================================== */
+/* EXPRESS MIDDLEWARE & CORS PROTOCOLS        */
+/* ========================================== */
+app.use(cors({ origin: "*", methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"] }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 
-/* ===================== */
-/* DATABASE INITIALIZATION */
-/* ===================== */
+/* ========================================== */
+/* IN-MEMORY SCHEMA HYDRATION                 */
+/* ========================================== */
 let data = {
   businesses: [],
   products: [],
   orders: [],
   ledger: [],
-  wallets: {}
+  wallets: {},
+  drivers: [],
+  deliveries: []
 };
 
-// Safe Schema Hydration
+// Synchronous initial load on boot
 if (fs.existsSync(DB_FILE)) {
   try {
     const rawData = fs.readFileSync(DB_FILE, "utf-8");
@@ -36,66 +39,73 @@ if (fs.existsSync(DB_FILE)) {
       products: Array.isArray(parsed.products) ? parsed.products : [],
       orders: Array.isArray(parsed.orders) ? parsed.orders : [],
       ledger: Array.isArray(parsed.ledger) ? parsed.ledger : [],
-      wallets: (parsed.wallets && typeof parsed.wallets === "object") ? parsed.wallets : {}
+      wallets: (parsed.wallets && typeof parsed.wallets === "object") ? parsed.wallets : {},
+      drivers: Array.isArray(parsed.drivers) ? parsed.drivers : [],
+      deliveries: Array.isArray(parsed.deliveries) ? parsed.deliveries : []
     };
   } catch (e) {
-    console.error("❌ DB READ/PARSE ERROR:", e.message);
+    console.error("❌ CRITICAL: DB READ/PARSE FAILURE:", e.message);
   }
 }
 
-/* ===================== */
-/* ATOMIC FILE STORAGE   */
-/* ===================== */
-let isSaving = false;
-let savePending = false;
+/* ========================================== */
+/* NON-BLOCKING ASYNC ATOMIC PERSISTENCE     */
+/* ========================================== */
+let isWriting = false;
+let pendingWrite = false;
 
-const saveDB = () => {
-  if (isSaving) {
-    savePending = true;
+const saveDB = async () => {
+  if (isWriting) {
+    pendingWrite = true;
     return;
   }
 
-  isSaving = true;
-  const tempFile = `${DB_FILE}.tmp`;
+  isWriting = true;
+  const tempFile = `${DB_FILE}.${Date.now()}_${Math.floor(Math.random() * 1000)}.tmp`;
 
-  fs.writeFile(tempFile, JSON.stringify(data, null, 2), "utf-8", (err) => {
-    if (err) {
-      console.error("❌ DB WRITE TEMP ERROR:", err.message);
-      isSaving = false;
-      return;
+  try {
+    const serialized = JSON.stringify(data, null, 2);
+    await fsPromises.writeFile(tempFile, serialized, "utf-8");
+    await fsPromises.rename(tempFile, DB_FILE);
+  } catch (err) {
+    console.error("❌ DB ASYNC PERSISTENCE ERROR:", err.message);
+    try {
+      if (fs.existsSync(tempFile)) await fsPromises.unlink(tempFile);
+    } catch (_) {}
+  } finally {
+    isWriting = false;
+    if (pendingWrite) {
+      pendingWrite = false;
+      saveDB();
     }
-
-    fs.rename(tempFile, DB_FILE, (renameErr) => {
-      isSaving = false;
-      if (renameErr) {
-        console.error("❌ DB ATOMIC RENAME ERROR:", renameErr.message);
-      }
-      if (savePending) {
-        savePending = false;
-        saveDB();
-      }
-    });
-  });
+  }
 };
 
-const uid = (prefix) => `${prefix}${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+const uid = (prefix) => `${prefix}${Date.now()}_${Math.floor(Math.random() * 100000)}`;
 
-/* ===================== */
-/* HEALTH & DIAGNOSTICS  */
-/* ===================== */
+/* ========================================== */
+/* HEALTH & TELEMETRY API                     */
+/* ========================================== */
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    engine: "RDS PRO CORE ULTRA",
-    status: "ACTIVE",
+    engine: "RDS STAGE 10 ENTERPRISE CORE",
+    status: "HEALTHY",
     uptime: `${Math.floor(process.uptime())}s`,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    stats: {
+      businesses: data.businesses.length,
+      products: data.products.length,
+      orders: data.orders.length,
+      drivers: data.drivers.length,
+      deliveries: data.deliveries.length
+    }
   });
 });
 
-/* ===================== */
-/* BUSINESSES ROUTER     */
-/* ===================== */
+/* ========================================== */
+/* BUSINESS & MERCHANT ROUTER                 */
+/* ========================================== */
 app.post("/addBusiness", (req, res) => {
   const name = (req.body.name || req.query.name || "").trim();
   if (!name) {
@@ -103,7 +113,6 @@ app.post("/addBusiness", (req, res) => {
   }
 
   const business = { id: uid("B_"), name, createdAt: Date.now() };
-
   data.businesses.push(business);
 
   if (!data.wallets) data.wallets = {};
@@ -129,30 +138,27 @@ app.post("/deleteBusiness", (req, res) => {
 
   data.businesses = data.businesses.filter(b => b.id !== id);
   data.products = data.products.filter(p => p.businessId !== id);
-
-  if (data.wallets) {
-    delete data.wallets[id];
-  }
+  if (data.wallets) delete data.wallets[id];
 
   saveDB();
   res.json({ success: true, deletedId: id });
 });
 
-/* ===================== */
-/* PRODUCTS ROUTER       */
-/* ===================== */
+/* ========================================== */
+/* PRODUCT CATALOG ROUTER                     */
+/* ========================================== */
 app.post("/addProduct", (req, res) => {
   const name = (req.body.name || req.query.name || "").trim();
   const price = parseInt(req.body.price || req.query.price, 10);
   const businessId = req.body.businessId || req.query.businessId;
 
   if (!name || isNaN(price) || price < 0 || !businessId) {
-    return res.status(400).json({ success: false, error: "Invalid product fields or missing parameters" });
+    return res.status(400).json({ success: false, error: "Invalid product parameters" });
   }
 
   const bizExists = data.businesses.some(b => b.id === businessId);
   if (!bizExists) {
-    return res.status(404).json({ success: false, error: "Associated business not found" });
+    return res.status(404).json({ success: false, error: "Merchant business not found" });
   }
 
   const product = {
@@ -181,13 +187,61 @@ app.post("/deleteProduct", (req, res) => {
 
   data.products = data.products.filter(p => p.id !== id);
   saveDB();
-
   res.json({ success: true, deletedId: id });
 });
 
-/* ===================== */
-/* ORDER PROCESSING LOGIC*/
-/* ===================== */
+/* ========================================== */
+/* FLEET & DRIVER ROUTER                      */
+/* ========================================== */
+app.post("/addDriver", (req, res) => {
+  const name = (req.body.name || req.query.name || "").trim();
+  const phone = (req.body.phone || req.query.phone || "").trim();
+
+  if (!name) {
+    return res.status(400).json({ success: false, error: "Driver name required" });
+  }
+
+  const driver = {
+    id: uid("D_"),
+    name,
+    phone,
+    status: "AVAILABLE", // AVAILABLE | BUSY | OFFLINE
+    earnings: 0,
+    createdAt: Date.now()
+  };
+
+  data.drivers.push(driver);
+  saveDB();
+
+  res.status(201).json({ success: true, driver });
+});
+
+app.get("/drivers", (req, res) => {
+  res.json({ success: true, drivers: data.drivers || [] });
+});
+
+app.post("/updateDriverStatus", (req, res) => {
+  const driverId = req.body.driverId || req.query.driverId;
+  const status = (req.body.status || req.query.status || "").toUpperCase();
+
+  if (!driverId || !["AVAILABLE", "BUSY", "OFFLINE"].includes(status)) {
+    return res.status(400).json({ success: false, error: "Valid driverId and status required" });
+  }
+
+  const driver = data.drivers.find(d => d.id === driverId);
+  if (!driver) {
+    return res.status(404).json({ success: false, error: "Driver not found" });
+  }
+
+  driver.status = status;
+  saveDB();
+
+  res.json({ success: true, driver });
+});
+
+/* ========================================== */
+/* FINANCIAL & TRANSACTION PROCESSING ENGINE  */
+/* ========================================== */
 function processOrderItems(items) {
   let total = 0;
   let commission = 0;
@@ -203,7 +257,7 @@ function processOrderItems(items) {
 
     const qty = parseInt(item.qty, 10) || 1;
     const subtotal = p.price * qty;
-    const itemCommission = Math.floor(subtotal * 0.05);
+    const itemCommission = Math.floor(subtotal * 0.05); // 5% platform fee
     const itemPayable = subtotal - itemCommission;
 
     total += subtotal;
@@ -236,68 +290,24 @@ function processOrderItems(items) {
   return { total, commission, walletMap, entries, enrichedItems };
 }
 
-/* ===================== */
-/* CHECKOUT & SINGLE ORDER*/
-/* ===================== */
-
-// Single Item Legacy Endpoint
+/* ========================================== */
+/* CHECKOUT & AUTOMATED DISPATCH ROUTER       */
+/* ========================================== */
 app.post("/order", (req, res) => {
-  try {
-    const productId = req.body.productId || req.query.productId;
-    const qty = parseInt(req.body.qty || req.query.qty, 10) || 1;
+  const productId = req.body.productId || req.query.productId;
+  const qty = parseInt(req.body.qty || req.query.qty, 10) || 1;
 
-    if (!productId) {
-      return res.status(400).json({ success: false, error: "Product ID required" });
-    }
-
-    const { total, commission, walletMap, entries, enrichedItems } = processOrderItems([{ productId, qty }]);
-
-    const order = {
-      id: uid("O_"),
-      productId,
-      qty,
-      items: enrichedItems,
-      total,
-      commission,
-      createdAt: Date.now()
-    };
-
-    data.orders.push(order);
-
-    data.ledger.push({
-      id: uid("L_"),
-      orderId: order.id,
-      entries,
-      createdAt: Date.now()
-    });
-
-    if (!data.wallets) data.wallets = {};
-
-    Object.keys(walletMap).forEach(bizId => {
-      if (!data.wallets[bizId]) {
-        data.wallets[bizId] = { businessId: bizId, balance: 0, transactions: [] };
-      }
-
-      data.wallets[bizId].balance += walletMap[bizId];
-      data.wallets[bizId].transactions.push({
-        id: uid("WT_"),
-        type: "CREDIT",
-        amount: walletMap[bizId],
-        orderId: order.id,
-        createdAt: Date.now()
-      });
-    });
-
-    saveDB();
-    res.status(201).json({ success: true, order });
-
-  } catch (e) {
-    res.status(400).json({ success: false, error: e.message });
+  if (!productId) {
+    return res.status(400).json({ success: false, error: "Product ID required" });
   }
+
+  req.body.items = [{ productId, qty }];
+  return checkoutHandler(req, res);
 });
 
-// Atomic Batch Checkout
-app.post("/checkout", (req, res) => {
+app.post("/checkout", checkoutHandler);
+
+function checkoutHandler(req, res) {
   try {
     const items = req.body.items;
     if (!Array.isArray(items) || items.length === 0) {
@@ -316,6 +326,7 @@ app.post("/checkout", (req, res) => {
 
     data.orders.push(order);
 
+    /* JOURNAL LEDGER ENTRY */
     data.ledger.push({
       id: uid("L_"),
       orderId: order.id,
@@ -323,6 +334,7 @@ app.post("/checkout", (req, res) => {
       createdAt: Date.now()
     });
 
+    /* WALLET ACCOUNTING */
     if (!data.wallets) data.wallets = {};
 
     Object.keys(walletMap).forEach(bizId => {
@@ -340,17 +352,77 @@ app.post("/checkout", (req, res) => {
       });
     });
 
+    /* AUTO DISPATCH DRIVER FLEET */
+    const availableDriver = data.drivers.find(d => d.status === "AVAILABLE");
+    let delivery = null;
+
+    if (availableDriver) {
+      availableDriver.status = "BUSY";
+
+      delivery = {
+        id: uid("DEL_"),
+        orderId: order.id,
+        driverId: availableDriver.id,
+        status: "ASSIGNED", // ASSIGNED | PICKED_UP | IN_TRANSIT | DELIVERED | CANCELLED
+        createdAt: Date.now()
+      };
+
+      data.deliveries.push(delivery);
+    }
+
     saveDB();
-    res.status(201).json({ success: true, order });
+
+    res.status(201).json({
+      success: true,
+      order,
+      delivery: delivery || { status: "UNASSIGNED", note: "No drivers available" }
+    });
 
   } catch (e) {
     res.status(400).json({ success: false, error: e.message });
   }
+}
+
+/* ========================================== */
+/* DISPATCH & DELIVERY LIFECYCLE MANAGEMENT   */
+/* ========================================== */
+app.get("/deliveries", (req, res) => {
+  res.json({ success: true, deliveries: data.deliveries || [] });
 });
 
-/* ===================== */
-/* PAYOUT ENGINE         */
-/* ===================== */
+app.post("/updateDelivery", (req, res) => {
+  const deliveryId = req.body.deliveryId || req.query.deliveryId;
+  const status = (req.body.status || req.query.status || "").toUpperCase();
+
+  if (!deliveryId || !["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "DELIVERED", "CANCELLED"].includes(status)) {
+    return res.status(400).json({ success: false, error: "Valid deliveryId and status required" });
+  }
+
+  const delivery = data.deliveries.find(d => d.id === deliveryId);
+  if (!delivery) {
+    return res.status(404).json({ success: false, error: "Delivery task not found" });
+  }
+
+  delivery.status = status;
+  delivery.updatedAt = Date.now();
+
+  if (status === "DELIVERED" || status === "CANCELLED") {
+    const driver = data.drivers.find(dr => dr.id === delivery.driverId);
+    if (driver) {
+      driver.status = "AVAILABLE";
+      if (status === "DELIVERED") {
+        driver.earnings = (driver.earnings || 0) + 5; // Standard flat delivery bonus
+      }
+    }
+  }
+
+  saveDB();
+  res.json({ success: true, delivery });
+});
+
+/* ========================================== */
+/* MERCHANT & DRIVER PAYOUT ROUTER            */
+/* ========================================== */
 app.post("/payout", (req, res) => {
   const businessId = req.body.businessId || req.query.businessId;
   const amount = parseInt(req.body.amount || req.query.amount, 10);
@@ -368,7 +440,7 @@ app.post("/payout", (req, res) => {
   if (wallet.balance < amount) {
     return res.status(400).json({
       success: false,
-      error: "Insufficient wallet funds",
+      error: "Insufficient funds",
       currentBalance: wallet.balance
     });
   }
@@ -404,9 +476,9 @@ app.post("/payout", (req, res) => {
   });
 });
 
-/* ===================== */
-/* READ-ONLY API ENDPOINTS */
-/* ===================== */
+/* ========================================== */
+/* TRANSPARENCY READ APIs                     */
+/* ========================================== */
 app.get("/orders", (req, res) => {
   res.json({ success: true, orders: data.orders || [] });
 });
@@ -419,9 +491,9 @@ app.get("/wallets", (req, res) => {
   res.json({ success: true, wallets: Object.values(data.wallets || {}) });
 });
 
-/* ===================== */
-/* SERVER LISTENER       */
-/* ===================== */
+/* ========================================== */
+/* SERVER INITIALIZATION                     */
+/* ========================================== */
 app.listen(PORT, () => {
-  console.log(`🚀 RDS PRO ENGINE RUNNING ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 10 ENTERPRISE ENGINE ONLINE AT PORT ${PORT}`);
 });
