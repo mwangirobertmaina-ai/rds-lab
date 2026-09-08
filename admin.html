@@ -3,49 +3,117 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDS ADMIN PANEL</title>
+<title>RDS ADMIN PANEL | ENTERPRISE DASHBOARD</title>
 
 <style>
   :root {
     --neon-green: #00ff66;
     --dark-bg: #0a0a0a;
-    --panel-bg: #181818;
+    --panel-bg: #121212;
     --border-color: #00ff66;
     --dim-text: #888888;
     --warn-red: #ff3366;
     --warn-yellow: #ffff00;
   }
 
-  body { font-family: monospace; background:#111; color:#0f0; padding:20px; margin: 0; }
-  h2, h3, h4 { color:#00ff66; margin-top: 5px; }
+  body { 
+    font-family: 'Courier New', Courier, monospace; 
+    background: var(--dark-bg); 
+    color: var(--neon-green); 
+    padding: 20px; 
+    margin: 0;
+  }
+
+  h2, h3, h4 { color: var(--neon-green); text-transform: uppercase; margin-top: 5px; }
 
   button { 
-    background:#0f0; color:#000; font-weight:bold; border:none; 
-    padding:6px 12px; margin:3px; cursor:pointer; font-family: monospace;
+    background: var(--neon-green); 
+    color: #000; 
+    font-weight: bold; 
+    border: none; 
+    padding: 6px 12px; 
+    margin: 3px; 
+    cursor: pointer; 
+    font-family: monospace;
     transition: opacity 0.2s, box-shadow 0.2s;
   }
-  button:hover:not(:disabled) { opacity:0.85; box-shadow: 0 0 8px rgba(0, 255, 102, 0.4); }
-  button:disabled { background:#333; color:#666; cursor:not-allowed; }
+  button:hover:not(:disabled) { 
+    opacity: 0.85; 
+    box-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+  }
+  button:disabled { background: #333; color: #666; cursor: not-allowed; }
 
-  .btn-mode { background:#000; color:#0f0; border:1px solid #0f0; }
-  .btn-mode.active { background:#0f0; color:#000; }
+  .btn-mode {
+    background: #000;
+    color: var(--neon-green);
+    border: 1px solid var(--neon-green);
+  }
+  .btn-mode.active {
+    background: var(--neon-green);
+    color: #000;
+  }
 
-  input, select { background:#000; color:#0f0; border:1px solid #0f0; padding:6px; margin:3px; font-family: monospace; }
-  .box { border:1px solid #0f0; padding:12px; margin-bottom:15px; background:#181818; }
-  .summary { border:2px double #00ff66; padding:12px; background:#051a08; margin-bottom: 10px; }
-  pre { background:#000; padding:10px; border:1px solid #333; color:#0f0; white-space:pre-wrap; word-break:break-all; max-height:250px; overflow-y:auto; }
+  input, select { 
+    background: #000; 
+    color: var(--neon-green); 
+    border: 1px solid var(--neon-green); 
+    padding: 6px; 
+    margin: 3px; 
+    font-family: monospace; 
+  }
 
-  .small { font-size:11px; color:var(--dim-text); }
-  .loader { display:inline-block; color:var(--warn-yellow); font-style:italic; animation: pulse 1s infinite alternate; }
-  .badge { background:#003311; border:1px solid #0f0; padding:3px 8px; font-size:11px; border-radius:3px; }
+  .box { 
+    border: 1px solid var(--border-color); 
+    padding: 14px; 
+    margin-bottom: 15px; 
+    background: var(--panel-bg); 
+  }
 
-  @keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
+  .summary-box { 
+    border: 2px double var(--neon-green); 
+    padding: 12px; 
+    margin-bottom: 15px; 
+    background: #051a08; 
+  }
+
+  pre { 
+    background: #000; 
+    padding: 10px; 
+    border: 1px solid #333; 
+    color: var(--neon-green); 
+    white-space: pre-wrap; 
+    word-break: break-all; 
+    max-height: 250px;
+    overflow-y: auto;
+  }
+
+  .small { font-size: 11px; color: var(--dim-text); }
+  
+  .loader { 
+    display: inline-block; 
+    color: var(--warn-yellow); 
+    font-style: italic; 
+    animation: pulse 1s infinite alternate; 
+  }
+
+  .badge {
+    background: #003311;
+    border: 1px solid var(--neon-green);
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 3px;
+  }
+
+  @keyframes pulse {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+  }
 </style>
 
 </head>
 <body>
 
-<h2>🛠 RDS ADMIN PANEL</h2>
+<h2>🛠 RDS ADMIN PANEL (STAGE 11 ENTERPRISE)</h2>
 
 <div style="margin-bottom: 15px;">
   <button id="refreshBtn" onclick="load()">🔄 Refresh System</button>
@@ -58,7 +126,7 @@
 <div class="box">
   <h3>➕ Add Business</h3>
   <input id="bname" placeholder="Business Name">
-  <button onclick="addBusiness()">Add</button>
+  <button onclick="addBusiness()">Add Business</button>
 </div>
 
 <div class="box">
@@ -82,79 +150,96 @@
 
 <!-- ORDERS -->
 <div class="box">
-  <h3>📄 Orders (Real /orders)</h3>
+  <h3>📄 Orders (Latest First)</h3>
   <div id="orders"><span class="loader">⚡ Syncing orders...</span></div>
 </div>
 
 <!-- LEDGER -->
 <div class="box">
-  <h3>📊 Ledger</h3>
-  <div id="summary" class="summary">Calculating balances...</div>
+  <h3>📊 Ledger & Double-Entry Accounting</h3>
+  <div id="ledgerSummary" class="summary-box">Calculating balances...</div>
   <div id="ledger"><span class="loader">⚡ Syncing ledger...</span></div>
 </div>
 
 <!-- WALLETS -->
 <div class="box">
-  <h3>💰 Wallets</h3>
+  <h3>💰 Merchant Wallets & Payouts</h3>
   <div id="wallets"><span class="loader">⚡ Syncing wallets...</span></div>
 
   <hr style="border-color: #333; margin: 15px 0;">
 
   <h4>💸 Execute Merchant Payout</h4>
   <select id="payoutBiz"></select>
-  <input id="amt" type="number" placeholder="Amount">
-  <button onclick="payout()">Send Payout</button>
+  <input id="payoutAmt" type="number" placeholder="Amount">
+  <button onclick="payout()">Execute Payout</button>
+</div>
+
+<!-- DRIVERS -->
+<div class="box">
+  <h3>🚚 Fleet Drivers</h3>
+  <input id="driverName" placeholder="Driver Name">
+  <input id="driverPhone" placeholder="Phone Number">
+  <button onclick="addDriver()">Add Driver</button>
+
+  <div id="drivers" style="margin-top:10px;"><span class="loader">⚡ Syncing drivers...</span></div>
+</div>
+
+<!-- DELIVERIES -->
+<div class="box">
+  <h3>📦 Active Deliveries</h3>
+  <div id="deliveries"><span class="loader">⚡ Syncing deliveries...</span></div>
 </div>
 
 <!-- CONSOLE LOG -->
 <div class="box">
-  <h3>🧾 Output Console</h3>
+  <h3>🧾 System Console Output</h3>
   <pre id="out">System ready.</pre>
 </div>
 
 <script>
-const LOCAL = "http://localhost:3000";
-const CLOUD = "https://rds-lab.onrender.com";
+/* ========================================== */
+/* API SWITCH & SMART DETECTION ENGINE        */
+/* ========================================== */
+const LOCAL_API = "http://localhost:3000";
+const CLOUD_API = "https://rds-lab.onrender.com";
 
-let API = LOCAL;
+let API = LOCAL_API;
 let MANUAL_MODE = false;
 let BUSINESS_MAP = {};
+let DRIVER_MAP = {};
 
-/* ========================================== */
-/* SMART AUTO DETECT SERVER ENGINE            */
-/* ========================================== */
 async function detectAPI() {
   if (MANUAL_MODE) return;
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 1200);
+    const timeout = setTimeout(() => controller.abort(), 1000);
 
-    const r = await fetch(LOCAL + "/", { signal: controller.signal });
+    const r = await fetch(LOCAL_API + "/", { signal: controller.signal });
     clearTimeout(timeout);
 
     if (!r.ok) throw new Error("Local offline");
-    API = LOCAL;
+    API = LOCAL_API;
     updateModeUI("LOCAL");
   } catch {
-    API = CLOUD;
+    API = CLOUD_API;
     updateModeUI("CLOUD");
   }
 }
 
 function forceLocal() {
-  API = LOCAL;
+  API = LOCAL_API;
   MANUAL_MODE = true;
   updateModeUI("LOCAL");
-  out("🖥 FORCED LOCAL MODE: " + LOCAL);
+  out("🖥 FORCED LOCAL MODE: " + LOCAL_API);
   load();
 }
 
 function forceCloud() {
-  API = CLOUD;
+  API = CLOUD_API;
   MANUAL_MODE = true;
   updateModeUI("CLOUD");
-  out("☁ FORCED CLOUD MODE: " + CLOUD);
+  out("☁ FORCED CLOUD MODE: " + CLOUD_API);
   load();
 }
 
@@ -171,28 +256,29 @@ function updateModeUI(mode) {
 }
 
 /* ========================================== */
-/* SMART RETRY FETCH FOR SERVER WAKE-UP       */
+/* COLD-START EXPONENTIAL RETRY ENGINE        */
 /* ========================================== */
-async function safeFetch(url, options = {}, retries = 5, backoff = 2000) {
+async function safeFetch(url, options = {}, retries = 5, backoff = 1500) {
   try {
     const res = await fetch(url, options);
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || `HTTP ${res.status}`);
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || `HTTP ${res.status}`);
     }
     return await res.json();
-  } catch (e) {
+  } catch (err) {
     if (retries > 0) {
-      out(`⏳ Server waking up... Retrying in ${backoff / 1000}s (${retries} attempts left)`);
+      out(`⚠️ Connection retry in ${backoff / 1000}s (${retries} attempts left)...`);
       await new Promise(r => setTimeout(r, backoff));
       return safeFetch(url, options, retries - 1, backoff * 1.5);
     }
-    throw e;
+    throw err;
   }
 }
 
-function out(m) {
-  document.getElementById("out").innerText = typeof m === "object" ? JSON.stringify(m, null, 2) : m;
+function out(msg) {
+  document.getElementById("out").innerText =
+    typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
 }
 
 function setSectionLoading(id, label) {
@@ -207,7 +293,7 @@ function updateStatus(status, color = "var(--neon-green)") {
 }
 
 /* ========================================== */
-/* MASTER LOAD                                */
+/* MASTER SYNC ROUTINE                        */
 /* ========================================== */
 async function load() {
   const refreshBtn = document.getElementById("refreshBtn");
@@ -215,26 +301,30 @@ async function load() {
   updateStatus("SYNCING...", "var(--warn-yellow)");
 
   await detectAPI();
-  out(`Initiating system sync with endpoint [${API}]...`);
+  out(`Synchronizing system with endpoint [${API}]...`);
 
   try {
-    // 1. Must load businesses first to populate human-readable BUSINESS_MAP
-    await loadBusinesses();
+    // 1. Fetch Merchants & Drivers First to Build Name Resolution Maps
+    await Promise.all([
+      loadBusinesses(),
+      loadDrivers()
+    ]);
 
-    // 2. Load remaining dependent modules in parallel
+    // 2. Fetch Dependent Data Modules in Parallel
     await Promise.all([
       loadProducts(),
       loadOrders(),
       loadLedger(),
-      loadWallets()
+      loadWallets(),
+      loadDeliveries()
     ]);
 
-    updateStatus("ONLINE (" + (API === LOCAL ? "LOCAL" : "CLOUD") + ")", "var(--neon-green)");
+    updateStatus("ONLINE (" + (API === LOCAL_API ? "LOCAL" : "CLOUD") + ")", "var(--neon-green)");
     out(`✅ System state fully synchronized (${API}).`);
   } catch (e) {
     console.error("Master Sync Failure:", e);
     updateStatus("OFFLINE", "var(--warn-red)");
-    out(`❌ Sync failed: ${e.message}. Server may be sleeping or unreachable.`);
+    out(`❌ Sync failed: ${e.message}. Server offline or sleeping.`);
   } finally {
     refreshBtn.disabled = false;
   }
@@ -266,8 +356,8 @@ async function loadBusinesses() {
 }
 
 async function addBusiness() {
-  const nameInput = document.getElementById("bname");
-  const name = nameInput.value.trim();
+  const input = document.getElementById("bname");
+  const name = input.value.trim();
   if (!name) return alert("Enter business name");
 
   out("Adding business...");
@@ -278,7 +368,7 @@ async function addBusiness() {
   });
 
   out(d);
-  nameInput.value = "";
+  input.value = "";
   load();
 }
 
@@ -353,7 +443,7 @@ async function delProduct(id) {
 }
 
 /* ========================================== */
-/* ORDERS (REAL /orders, NEWEST FIRST)        */
+/* ORDERS                                     */
 /* ========================================== */
 async function loadOrders() {
   setSectionLoading("orders", "Loading orders");
@@ -368,7 +458,7 @@ async function loadOrders() {
 
     if (Array.isArray(o.items) && o.items.length > 0) {
       o.items.forEach(i => {
-        h += `&nbsp;&nbsp;• <b>${i.name}</b> x${i.qty} = $${i.subtotal}<br>`;
+        h += `&nbsp;&nbsp;• <b>${i.name || i.productId}</b> x${i.qty} = $${i.subtotal || (i.price * i.qty) || 0}<br>`;
       });
     } else if (o.productId) {
       h += `&nbsp;&nbsp;• Product ID: ${o.productId} (x${o.qty || 1})<br>`;
@@ -412,11 +502,11 @@ async function loadLedger() {
     h += `<span class="small">${new Date(l.createdAt || Date.now()).toLocaleString()}</span><br><hr style="border-color:#222;">`;
   });
 
-  document.getElementById("summary").innerHTML = `
+  document.getElementById("ledgerSummary").innerHTML = `
     <b>💰 DOUBLE-ENTRY TRIAL BALANCE</b><br>
     💵 Vault Cash (Asset): $${cash}<br>
     📈 Platform Revenue (Commission): $${revenue}<br>
-    🤝 Merchant Payable (Liability): $${payable}
+    🤝 Business Payable (Liability): $${payable}
   `;
 
   document.getElementById("ledger").innerHTML = h || "No journal entries found.";
@@ -445,7 +535,7 @@ async function loadWallets() {
 /* ========================================== */
 async function payout() {
   const bizSelect = document.getElementById("payoutBiz");
-  const amtInput = document.getElementById("amt");
+  const amtInput = document.getElementById("payoutAmt");
 
   const businessId = bizSelect.value;
   const amount = amtInput.value.trim();
@@ -466,6 +556,99 @@ async function payout() {
   } catch (err) {
     out(`❌ Payout execution failed: ${err.message}`);
   }
+}
+
+/* ========================================== */
+/* FLEET & DRIVER MANAGEMENT                  */
+/* ========================================== */
+async function addDriver() {
+  const nameInput = document.getElementById("driverName");
+  const phoneInput = document.getElementById("driverPhone");
+
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+
+  if (!name) return alert("Enter driver name");
+
+  out("Registering new driver...");
+  const d = await safeFetch(API + "/addDriver", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, phone })
+  });
+
+  out(d);
+  nameInput.value = "";
+  phoneInput.value = "";
+  load();
+}
+
+async function loadDrivers() {
+  setSectionLoading("drivers", "Loading fleet drivers");
+  const d = await safeFetch(API + "/drivers");
+
+  let h = "";
+  DRIVER_MAP = {};
+
+  const list = d.drivers || [];
+  list.forEach(dr => {
+    DRIVER_MAP[dr.id] = dr.name;
+
+    h += `<b>${dr.name}</b> <span class="small">(${dr.id})</span> | Status: <span class="badge">${dr.status}</span> 
+          <button onclick="setDriverStatus('${dr.id}','AVAILABLE')">🟢</button>
+          <button onclick="setDriverStatus('${dr.id}','BUSY')">🟡</button>
+          <button onclick="setDriverStatus('${dr.id}','OFFLINE')">🔴</button><br>`;
+  });
+
+  document.getElementById("drivers").innerHTML = h || "No drivers registered in fleet.";
+}
+
+async function setDriverStatus(id, status) {
+  out(`Updating status for driver ${DRIVER_MAP[id] || id} to ${status}...`);
+  const d = await safeFetch(API + "/updateDriverStatus", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ driverId: id, status })
+  });
+
+  out(d);
+  load();
+}
+
+/* ========================================== */
+/* DELIVERIES & LOGISTICS                     */
+/* ========================================== */
+async function loadDeliveries() {
+  setSectionLoading("deliveries", "Loading delivery task feed");
+  const d = await safeFetch(API + "/deliveries");
+
+  let h = "";
+  const list = (d.deliveries || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  list.forEach(dl => {
+    const driverName = DRIVER_MAP[dl.driverId] || dl.driverId || "UNASSIGNED";
+
+    h += `<div style="border-bottom: 1px dashed #333; padding-bottom: 8px; margin-bottom: 8px;">`;
+    h += `📦 <b>Order ID:</b> ${dl.orderId} | 🚚 <b>Driver:</b> ${driverName} | Status: <span class="badge">${dl.status}</span><br>`;
+    h += `<button onclick="updateDelivery('${dl.id}','PICKED_UP')">Picked Up</button> 
+          <button onclick="updateDelivery('${dl.id}','IN_TRANSIT')">In Transit</button> 
+          <button onclick="updateDelivery('${dl.id}','DELIVERED')">Delivered</button><br>`;
+    h += `</div>`;
+  });
+
+  document.getElementById("deliveries").innerHTML = h || "No active delivery tasks.";
+}
+
+async function updateDelivery(deliveryId, status) {
+  out(`Updating delivery ${deliveryId} status to ${status}...`);
+  const d = await safeFetch(API + "/updateDelivery", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deliveryId, status })
+  });
+
+  out(d);
+  load();
 }
 
 /* INITIAL STARTUP */
