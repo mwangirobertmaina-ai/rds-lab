@@ -202,7 +202,7 @@ const addDriverHandler = (req, res) => {
     id: uid("D_"),
     name,
     phone,
-    status: "IDLE", // IDLE | BUSY | OFFLINE
+    status: "AVAILABLE", // AVAILABLE | BUSY | OFFLINE | IDLE
     available: true,
     location: { lat: 0.0, lng: 0.0, heading: 0, speed: 0, lastPing: null },
     earnings: 0,
@@ -222,13 +222,13 @@ app.get("/drivers", (req, res) => {
   res.json({ success: true, drivers: data.drivers || [] });
 });
 
-app.post("/updateDriverStatus", (req, res) => {
+const updateDriverStatusHandler = (req, res) => {
   const driverId = req.body.driverId || req.query.driverId;
   let status = (req.body.status || req.query.status || "").toUpperCase();
 
-  if (status === "AVAILABLE") status = "IDLE";
+  if (status === "IDLE") status = "AVAILABLE";
 
-  if (!driverId || !["IDLE", "BUSY", "OFFLINE"].includes(status)) {
+  if (!driverId || !["AVAILABLE", "BUSY", "OFFLINE"].includes(status)) {
     return res.status(400).json({ success: false, error: "Invalid driver ID or status parameter" });
   }
 
@@ -236,11 +236,14 @@ app.post("/updateDriverStatus", (req, res) => {
   if (!driver) return res.status(404).json({ success: false, error: "Driver not found" });
 
   driver.status = status;
-  driver.available = (status === "IDLE");
+  driver.available = (status === "AVAILABLE");
 
   saveDB();
   res.json({ success: true, driver });
-});
+};
+
+app.post("/updateDriverStatus", updateDriverStatusHandler);
+app.post("/driverStatus", updateDriverStatusHandler);
 
 /* GPS Location Telemetry Endpoint */
 app.post("/driver/location", (req, res) => {
@@ -342,6 +345,8 @@ const checkoutHandler = (req, res) => {
       id: uid("L_"),
       orderId: order.id,
       entries,
+      total,
+      commission,
       createdAt: Date.now()
     });
 
@@ -368,7 +373,7 @@ const checkoutHandler = (req, res) => {
     });
 
     /* AUTO DRIVER DISPATCH ENGINE */
-    const driver = data.drivers.find(d => d.status === "IDLE" || d.available === true);
+    const driver = data.drivers.find(d => d.status === "AVAILABLE" || d.status === "IDLE" || d.available === true);
     let delivery = null;
 
     if (driver) {
@@ -448,9 +453,9 @@ app.post("/dispatch", (req, res) => {
 
   let driver;
   if (targetDriverId) {
-    driver = data.drivers.find(d => d.id === targetDriverId && (d.status === "IDLE" || d.available));
+    driver = data.drivers.find(d => d.id === targetDriverId && (d.status === "AVAILABLE" || d.status === "IDLE" || d.available));
   } else {
-    driver = data.drivers.find(d => d.status === "IDLE" || d.available);
+    driver = data.drivers.find(d => d.status === "AVAILABLE" || d.status === "IDLE" || d.available);
   }
 
   if (!driver) {
@@ -476,12 +481,15 @@ app.post("/dispatch", (req, res) => {
   res.json({ success: true, delivery, order });
 });
 
-app.post("/updateDelivery", (req, res) => {
-  const deliveryId = req.body.deliveryId || req.query.deliveryId;
+const updateDeliveryHandler = (req, res) => {
+  req.body.deliveryId = req.body.deliveryId || req.body.id;
+  const deliveryId = req.body.deliveryId;
   let status = (req.body.status || req.query.status || "").toUpperCase();
 
+  if (status === "ACCEPTED") status = "ASSIGNED";
+
   const d = data.deliveries.find(x => x.id === deliveryId);
-  if (!d) return res.status(404).json({ success: false, error: "Delivery not found" });
+  if (!d) return res.status(404).json({ success: false, error: "Delivery task not found" });
 
   if (!DELIVERY_LIFECYCLE.includes(status)) {
     return res.status(400).json({ success: false, error: `Invalid status state: ${status}` });
@@ -494,25 +502,47 @@ app.post("/updateDelivery", (req, res) => {
   const driver = data.drivers.find(x => x.id === d.driverId);
 
   if (status === "COMPLETED" || status === "DELIVERED") {
+    d.status = "COMPLETED";
     if (driver) {
-      driver.status = "IDLE";
+      driver.status = "AVAILABLE";
       driver.available = true;
-      driver.earnings = (driver.earnings || 0) + 5; // $5 Flat delivery payout
+      driver.earnings = (driver.earnings || 0) + 50; // $50 flat payout credit
     }
     if (order) order.status = "COMPLETED";
   } else if (status === "FAILED") {
     if (driver) {
-      driver.status = "IDLE";
+      driver.status = "AVAILABLE";
       driver.available = true;
     }
   }
 
   saveDB();
   res.json({ success: true, delivery: d, orderStatus: order ? order.status : null });
+};
+
+app.post("/updateDelivery", updateDeliveryHandler);
+app.post("/delivery/updateStatus", updateDeliveryHandler);
+app.post("/completeDelivery", (req, res) => {
+  req.body.status = "COMPLETED";
+  return updateDeliveryHandler(req, res);
 });
 
 app.get("/deliveries", (req, res) => {
   res.json({ success: true, deliveries: data.deliveries || [] });
+});
+
+app.get("/driverJobs", (req, res) => {
+  const driverId = req.query.driverId || req.body.driverId;
+  if (!driverId) return res.status(400).json({ success: false, error: "driverId query param required" });
+
+  const jobs = (data.deliveries || []).filter(d => d.driverId === driverId);
+  res.json({ success: true, jobs, deliveries: jobs });
+});
+
+app.get("/driver/:driverId/deliveries", (req, res) => {
+  const driverId = req.params.driverId;
+  const deliveries = (data.deliveries || []).filter(d => d.driverId === driverId);
+  res.json({ success: true, deliveries, jobs: deliveries });
 });
 
 app.get("/delivery/track/:orderId", (req, res) => {
@@ -595,46 +625,6 @@ app.post("/payout", (req, res) => {
 app.get("/orders", (req, res) => res.json({ success: true, orders: data.orders || [] }));
 app.get("/ledger", (req, res) => res.json({ success: true, ledger: data.ledger || [] }));
 app.get("/wallets", (req, res) => res.json({ success: true, wallets: Object.values(data.wallets || {}) }));
-
-/* Driver-specific active deliveries lookup */
-app.get("/driver/:driverId/deliveries", (req, res) => {
-  const driverId = req.params.driverId;
-  const deliveries = (data.deliveries || []).filter(d => d.driverId === driverId);
-  res.json({ success: true, deliveries });
-});
-
-/* Driver delivery status update endpoint */
-app.post("/delivery/updateStatus", (req, res) => {
-  req.body.deliveryId = req.body.deliveryId || req.body.id;
-  const deliveryId = req.body.deliveryId;
-  let status = (req.body.status || "").toUpperCase();
-
-  if (status === "ACCEPTED") status = "ASSIGNED";
-  if (status === "DELIVERED") status = "COMPLETED";
-
-  req.body.status = status;
-  
-  const d = data.deliveries.find(x => x.id === deliveryId);
-  if (!d) return res.status(404).json({ success: false, error: "Delivery task not found" });
-
-  d.status = status;
-  d.updatedAt = Date.now();
-
-  const driver = data.drivers.find(x => x.id === d.driverId);
-  const order = data.orders.find(o => o.id === d.orderId);
-
-  if (status === "COMPLETED") {
-    if (driver) {
-      driver.status = "IDLE";
-      driver.available = true;
-      driver.earnings = (driver.earnings || 0) + 5;
-    }
-    if (order) order.status = "COMPLETED";
-  }
-
-  saveDB();
-  res.json({ success: true, delivery: d });
-});
 
 /* ========================================== */
 /* SERVER INITIALIZATION                      */
