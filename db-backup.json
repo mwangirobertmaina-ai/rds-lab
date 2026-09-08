@@ -1,0 +1,514 @@
+{
+  "businesses": [
+    {
+      "id": "B_1788665897607",
+      "name": "naivas"
+    },
+    {
+      "id": "B_1788668737202",
+      "name": "tembo shop"
+    },
+    {
+      "id": "B_1788668808988",
+      "name": "kavoo mall"
+    },
+    {
+      "id": "B_1788779298610_708",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779299845_386",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779301201_406",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779310028_493",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779319095_78",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779320135_436",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779321432_209",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779321494_765",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779321757_360",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779321819_54",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779322080_273",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779322141_624",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779322435_582",
+      "name": "ruiru"
+    },
+    {
+      "id": "B_1788779322496_319",
+      "name": "ruiru"
+    }
+  ],
+  "products": [
+    {
+      "id": "P_1788666047070",
+      "name": "rice",
+      "price": 150,
+      "businessId": "B_1788665897607"
+    },
+    {
+      "id": "P_1788668771851",
+      "name": "beans",
+      "price": 250,
+      "businessId": "B_1788668737202"
+    },
+    {
+      "id": "P_1788668827010",
+      "name": "orange",
+      "price": 250,
+      "businessId": "B_1788668808988"
+    },
+    {
+      "id": "P_1788779331606_517",
+      "name": "maize",
+      "price": 200,
+      "businessId": "B_1788668737202"
+    }
+  ],
+  "orders": [
+    {
+      "id": "O_1788666222906",
+      "productId": "P_1788666047070",
+      "name": "rice",
+      "price": 150,
+      "tax": 24,
+      "commission": 5,
+      "merchant": 121,
+      "businessId": "B_1788665897607"
+    },
+    {
+      "id": "O_1788668843295",
+      "productId": "P_1788666047070",
+      "name": "rice",
+      "price": 150,
+      "tax": 24,
+      "commission": 5,
+      "merchant": 121,
+      "businessId": "B_1788665897607"
+    },
+    {
+      "id": "O_1788668845643",
+      "productId": "P_1788668771851",
+      "name": "beans",
+      "price": 250,
+      "tax": 40,
+      "commission": 8,
+      "merchant": 202,
+      "businessId": "B_1788668737202"
+    },
+    {
+      "id": "O_1788668847436",
+      "productId": "P_1788668827010",
+      "name": "orange",
+      "price": 250,
+      "tax": 40,
+      "commission": 8,
+      "merchant": 202,
+      "businessId": "B_1788668808988"
+    },
+    {
+      "id": "O_1788668848988",
+      "productId": "P_1788668827010",
+      "name": "orange",
+      "price": 250,
+      "tax": 40,
+      "commission": 8,
+      "merchant": 202,
+      "businessId": "B_1788668808988"
+    },
+    {
+      "id": "O_1788669095866",
+      "productId": "P_1788666047070",
+      "name": "rice",
+      "price": 150,
+      "tax": 24,
+      "commission": 5,
+      "merchant": 121,
+      "businessId": "B_1788665897607"
+    },
+    {
+      "id": "O_1788669096715",
+      "productId": "P_1788666047070",
+      "name": "rice",
+      "price": 150,
+      "tax": 24,
+      "commission": 5,
+      "merchant": 121,
+      "businessId": "B_1788665897607"
+    },
+    {
+      "id": "O_1788669098984",
+      "productId": "P_1788668771851",
+      "name": "beans",
+      "price": 250,
+      "tax": 40,
+      "commission": 8,
+      "merchant": 202,
+      "businessId": "B_1788668737202"
+    },
+    {
+      "id": "O_1788669099805",
+      "productId": "P_1788668771851",
+      "name": "beans",
+      "price": 250,
+      "tax": 40,
+      "commission": 8,
+      "merchant": 202,
+      "businessId": "B_1788668737202"
+    },
+    {
+      "id": "O_1788669102298",
+      "productId": "P_1788668771851",
+      "name": "beans",
+      "price": 250,
+      "tax": 40,
+      "commission": 8,
+      "merchant": 202,
+      "businessId": "B_1788668737202"
+    },
+    {
+      "id": "O_1788669109988",
+      "productId": "P_1788668827010",
+      "name": "orange",
+      "price": 250,
+      "tax": 40,
+      "commission": 8,
+      "merchant": 202,
+      "businessId": "B_1788668808988"
+    }
+  ],
+  "ledger": [
+    {
+      "sequence": 0,
+      "previousHash": "GENESIS",
+      "data": {
+        "type": "GENESIS_BLOCK"
+      },
+      "timestamp": 1788665536752,
+      "hash": "23215c218fdb59836bb5d3292abf2cf49daca4f96d0f3c3fab698fe9a75bf6aa"
+    },
+    {
+      "sequence": 1,
+      "previousHash": "23215c218fdb59836bb5d3292abf2cf49daca4f96d0f3c3fab698fe9a75bf6aa",
+      "data": {
+        "type": "BUSINESS_CREATED",
+        "business": {
+          "id": "B_1788665897607",
+          "name": "naivas"
+        }
+      },
+      "timestamp": 1788665897607,
+      "hash": "8541e8e7dfe20fa631591409968c1818d73faaea7e9412e937638271d2bf21f7"
+    },
+    {
+      "sequence": 2,
+      "previousHash": "8541e8e7dfe20fa631591409968c1818d73faaea7e9412e937638271d2bf21f7",
+      "data": {
+        "type": "PRODUCT_ADDED",
+        "product": {
+          "id": "P_1788666047070",
+          "name": "rice",
+          "price": 150,
+          "businessId": "B_1788665897607"
+        }
+      },
+      "timestamp": 1788666047070,
+      "hash": "10212a1b218c9f4869d210233e892fbf10f1be93d305d3c08af575f39865af20"
+    },
+    {
+      "sequence": 3,
+      "previousHash": "10212a1b218c9f4869d210233e892fbf10f1be93d305d3c08af575f39865af20",
+      "data": {
+        "type": "ORDER_SETTLED",
+        "breakdown": {
+          "id": "O_1788666222906",
+          "productId": "P_1788666047070",
+          "name": "rice",
+          "price": 150,
+          "tax": 24,
+          "commission": 5,
+          "merchant": 121,
+          "businessId": "B_1788665897607"
+        }
+      },
+      "timestamp": 1788666222906,
+      "hash": "c472039732b91e820a9b6790ea5392e965a824dd1f42783cb8ee0f507453fe7b"
+    },
+    {
+      "sequence": 4,
+      "previousHash": "c472039732b91e820a9b6790ea5392e965a824dd1f42783cb8ee0f507453fe7b",
+      "data": {
+        "type": "BUSINESS_CREATED",
+        "business": {
+          "id": "B_1788668737202",
+          "name": "tembo shop"
+        }
+      },
+      "timestamp": 1788668737202,
+      "hash": "cb33ee100b356b07b7c1d8094ab1c1b9cc5fee48ee138bfe430a112cb011699c"
+    },
+    {
+      "sequence": 5,
+      "previousHash": "cb33ee100b356b07b7c1d8094ab1c1b9cc5fee48ee138bfe430a112cb011699c",
+      "data": {
+        "type": "PRODUCT_ADDED",
+        "product": {
+          "id": "P_1788668771851",
+          "name": "beans",
+          "price": 250,
+          "businessId": "B_1788668737202"
+        }
+      },
+      "timestamp": 1788668771851,
+      "hash": "4907aa7393805b109e924f38159162193e3baf96e4cd960e36dc7080adb91f04"
+    },
+    {
+      "sequence": 6,
+      "previousHash": "4907aa7393805b109e924f38159162193e3baf96e4cd960e36dc7080adb91f04",
+      "data": {
+        "type": "BUSINESS_CREATED",
+        "business": {
+          "id": "B_1788668808988",
+          "name": "kavoo mall"
+        }
+      },
+      "timestamp": 1788668808988,
+      "hash": "0aeafecc465d20502955f9e2633e58beb3fcb12bc51e68b2a708b0ef1ca703e6"
+    },
+    {
+      "sequence": 7,
+      "previousHash": "0aeafecc465d20502955f9e2633e58beb3fcb12bc51e68b2a708b0ef1ca703e6",
+      "data": {
+        "type": "PRODUCT_ADDED",
+        "product": {
+          "id": "P_1788668827010",
+          "name": "orange",
+          "price": 250,
+          "businessId": "B_1788668808988"
+        }
+      },
+      "timestamp": 1788668827010,
+      "hash": "d8aa8573c2189b17bd39a5d768f3c863dbf038ba87be24b0a099d631781453f9"
+    },
+    {
+      "sequence": 8,
+      "previousHash": "d8aa8573c2189b17bd39a5d768f3c863dbf038ba87be24b0a099d631781453f9",
+      "data": {
+        "type": "ORDER_SETTLED",
+        "breakdown": {
+          "id": "O_1788668843295",
+          "productId": "P_1788666047070",
+          "name": "rice",
+          "price": 150,
+          "tax": 24,
+          "commission": 5,
+          "merchant": 121,
+          "businessId": "B_1788665897607"
+        }
+      },
+      "timestamp": 1788668843295,
+      "hash": "b911ea00e991bd2b9df52e9d3a568820c02db7a9511ea2780c702db76433b6ae"
+    },
+    {
+      "sequence": 9,
+      "previousHash": "b911ea00e991bd2b9df52e9d3a568820c02db7a9511ea2780c702db76433b6ae",
+      "data": {
+        "type": "ORDER_SETTLED",
+        "breakdown": {
+          "id": "O_1788668845643",
+          "productId": "P_1788668771851",
+          "name": "beans",
+          "price": 250,
+          "tax": 40,
+          "commission": 8,
+          "merchant": 202,
+          "businessId": "B_1788668737202"
+        }
+      },
+      "timestamp": 1788668845643,
+      "hash": "eb6ad8f30f751fa64b548c23d3488e0730d9a4d3d3702481119777be01ac091b"
+    },
+    {
+      "sequence": 10,
+      "previousHash": "eb6ad8f30f751fa64b548c23d3488e0730d9a4d3d3702481119777be01ac091b",
+      "data": {
+        "type": "ORDER_SETTLED",
+        "breakdown": {
+          "id": "O_1788668847436",
+          "productId": "P_1788668827010",
+          "name": "orange",
+          "price": 250,
+          "tax": 40,
+          "commission": 8,
+          "merchant": 202,
+          "businessId": "B_1788668808988"
+        }
+      },
+      "timestamp": 1788668847436,
+      "hash": "90b6894a5e0f59560b0c350a041a93c8c0b7ca863783ab06030cd457e35991fa"
+    },
+    {
+      "sequence": 11,
+      "previousHash": "90b6894a5e0f59560b0c350a041a93c8c0b7ca863783ab06030cd457e35991fa",
+      "data": {
+        "type": "ORDER_SETTLED",
+        "breakdown": {
+          "id": "O_1788668848988",
+          "productId": "P_1788668827010",
+          "name": "orange",
+          "price": 250,
+          "tax": 40,
+          "commission": 8,
+          "merchant": 202,
+          "businessId": "B_1788668808988"
+        }
+      },
+      "timestamp": 1788668848988,
+      "hash": "e0dfea465d46c796299f381d7164feb40748e993e6c87f1bb2a546961826f9e9"
+    },
+    {
+      "sequence": 12,
+      "previousHash": "e0dfea465d46c796299f381d7164feb40748e993e6c87f1bb2a546961826f9e9",
+      "data": {
+        "type": "ORDER_SETTLED",
+        "breakdown": {
+          "id": "O_1788669095866",
+          "productId": "P_1788666047070",
+          "name": "rice",
+          "price": 150,
+          "tax": 24,
+          "commission": 5,
+          "merchant": 121,
+          "businessId": "B_1788665897607"
+        }
+      },
+      "timestamp": 1788669095866,
+      "hash": "10955783a2690b0ec24f1fa9f981df70c930199439f752df8cd959c4abb4ee99"
+    },
+    {
+      "sequence": 13,
+      "previousHash": "10955783a2690b0ec24f1fa9f981df70c930199439f752df8cd959c4abb4ee99",
+      "data": {
+        "type": "ORDER_SETTLED",
+        "breakdown": {
+          "id": "O_1788669096715",
+          "productId": "P_1788666047070",
+          "name": "rice",
+          "price": 150,
+          "tax": 24,
+          "commission": 5,
+          "merchant": 121,
+          "businessId": "B_1788665897607"
+        }
+      },
+      "timestamp": 1788669096715,
+      "hash": "4f2b17a780c2a0264fb6772673c65e86ce1863f6daa2267b0e3da02378ced9b3"
+    },
+    {
+      "sequence": 14,
+      "previousHash": "4f2b17a780c2a0264fb6772673c65e86ce1863f6daa2267b0e3da02378ced9b3",
+      "data": {
+        "type": "ORDER_SETTLED",
+        "breakdown": {
+          "id": "O_1788669098984",
+          "productId": "P_1788668771851",
+          "name": "beans",
+          "price": 250,
+          "tax": 40,
+          "commission": 8,
+          "merchant": 202,
+          "businessId": "B_1788668737202"
+        }
+      },
+      "timestamp": 1788669098984,
+      "hash": "798bef2a9f58e64a9162263cb1edbb4904ad715c160ef2504ed4ffc0ed6decc4"
+    },
+    {
+      "sequence": 15,
+      "previousHash": "798bef2a9f58e64a9162263cb1edbb4904ad715c160ef2504ed4ffc0ed6decc4",
+      "data": {
+        "type": "ORDER_SETTLED",
+        "breakdown": {
+          "id": "O_1788669099805",
+          "productId": "P_1788668771851",
+          "name": "beans",
+          "price": 250,
+          "tax": 40,
+          "commission": 8,
+          "merchant": 202,
+          "businessId": "B_1788668737202"
+        }
+      },
+      "timestamp": 1788669099805,
+      "hash": "022ebc223bdf9f9021d224740c8d0b80e8f02f045905a8167051676bdf0fbd53"
+    },
+    {
+      "sequence": 16,
+      "previousHash": "022ebc223bdf9f9021d224740c8d0b80e8f02f045905a8167051676bdf0fbd53",
+      "data": {
+        "type": "ORDER_SETTLED",
+        "breakdown": {
+          "id": "O_1788669102298",
+          "productId": "P_1788668771851",
+          "name": "beans",
+          "price": 250,
+          "tax": 40,
+          "commission": 8,
+          "merchant": 202,
+          "businessId": "B_1788668737202"
+        }
+      },
+      "timestamp": 1788669102298,
+      "hash": "409afc88e08f97e00e05bffbceae1addb846fb8a6aa05b3c71bf340900858c3f"
+    },
+    {
+      "sequence": 17,
+      "previousHash": "409afc88e08f97e00e05bffbceae1addb846fb8a6aa05b3c71bf340900858c3f",
+      "data": {
+        "type": "ORDER_SETTLED",
+        "breakdown": {
+          "id": "O_1788669109988",
+          "productId": "P_1788668827010",
+          "name": "orange",
+          "price": 250,
+          "tax": 40,
+          "commission": 8,
+          "merchant": 202,
+          "businessId": "B_1788668808988"
+        }
+      },
+      "timestamp": 1788669109988,
+      "hash": "bc3acc618477a20c6d407b3601580ae4e95d446556827e7e04cc58180e8eb134"
+    }
+  ]
+}

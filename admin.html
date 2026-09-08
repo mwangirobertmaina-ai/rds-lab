@@ -3,105 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDS ADMIN PANEL | HIGH TECH DASHBOARD</title>
+<title>RDS ADMIN PANEL</title>
 
 <style>
   :root {
     --neon-green: #00ff66;
     --dark-bg: #0a0a0a;
-    --panel-bg: #121212;
+    --panel-bg: #181818;
     --border-color: #00ff66;
     --dim-text: #888888;
     --warn-red: #ff3366;
+    --warn-yellow: #ffff00;
   }
 
-  body { 
-    font-family: 'Courier New', Courier, monospace; 
-    background: var(--dark-bg); 
-    color: var(--neon-green); 
-    padding: 20px; 
-    margin: 0;
-  }
-
-  h2, h3, h4 { color: var(--neon-green); text-transform: uppercase; margin-top: 5px; }
+  body { font-family: monospace; background:#111; color:#0f0; padding:20px; margin: 0; }
+  h2, h3, h4 { color:#00ff66; margin-top: 5px; }
 
   button { 
-    background: var(--neon-green); 
-    color: #000; 
-    font-weight: bold; 
-    border: none; 
-    padding: 6px 12px; 
-    margin: 3px; 
-    cursor: pointer; 
-    font-family: monospace;
-    transition: opacity 0.2s;
+    background:#0f0; color:#000; font-weight:bold; border:none; 
+    padding:6px 12px; margin:3px; cursor:pointer; font-family: monospace;
+    transition: opacity 0.2s, box-shadow 0.2s;
   }
-  button:hover { opacity: 0.8; }
-  button:disabled { background: #333; color: #666; cursor: not-allowed; }
+  button:hover:not(:disabled) { opacity:0.85; box-shadow: 0 0 8px rgba(0, 255, 102, 0.4); }
+  button:disabled { background:#333; color:#666; cursor:not-allowed; }
 
-  input, select { 
-    background: #000; 
-    color: var(--neon-green); 
-    border: 1px solid var(--neon-green); 
-    padding: 6px; 
-    margin: 3px; 
-    font-family: monospace; 
-  }
+  .btn-mode { background:#000; color:#0f0; border:1px solid #0f0; }
+  .btn-mode.active { background:#0f0; color:#000; }
 
-  .box { 
-    border: 1px solid var(--border-color); 
-    padding: 14px; 
-    margin-bottom: 15px; 
-    background: var(--panel-bg); 
-  }
+  input, select { background:#000; color:#0f0; border:1px solid #0f0; padding:6px; margin:3px; font-family: monospace; }
+  .box { border:1px solid #0f0; padding:12px; margin-bottom:15px; background:#181818; }
+  .summary { border:2px double #00ff66; padding:12px; background:#051a08; margin-bottom: 10px; }
+  pre { background:#000; padding:10px; border:1px solid #333; color:#0f0; white-space:pre-wrap; word-break:break-all; max-height:250px; overflow-y:auto; }
 
-  .summary-box { 
-    border: 2px double var(--neon-green); 
-    padding: 12px; 
-    margin-bottom: 15px; 
-    background: #051a08; 
-  }
+  .small { font-size:11px; color:var(--dim-text); }
+  .loader { display:inline-block; color:var(--warn-yellow); font-style:italic; animation: pulse 1s infinite alternate; }
+  .badge { background:#003311; border:1px solid #0f0; padding:3px 8px; font-size:11px; border-radius:3px; }
 
-  pre { 
-    background: #000; 
-    padding: 10px; 
-    border: 1px solid #333; 
-    color: var(--neon-green); 
-    white-space: pre-wrap; 
-    word-break: break-all; 
-  }
-
-  .small { font-size: 11px; color: var(--dim-text); }
-  
-  .loader { 
-    display: inline-block; 
-    color: #ffff00; 
-    font-style: italic; 
-    animation: pulse 1s infinite alternate; 
-  }
-
-  .badge {
-    background: #003311;
-    border: 1px solid var(--neon-green);
-    padding: 2px 6px;
-    font-size: 10px;
-    border-radius: 3px;
-  }
-
-  @keyframes pulse {
-    from { opacity: 0.4; }
-    to { opacity: 1; }
-  }
+  @keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
 </style>
 
 </head>
 <body>
 
 <h2>🛠 RDS ADMIN PANEL</h2>
-<button id="refreshBtn" onclick="load()">🔄 Refresh System</button>
-<span id="systemStatus" class="badge">INITIALIZING</span>
 
-<p></p>
+<div style="margin-bottom: 15px;">
+  <button id="refreshBtn" onclick="load()">🔄 Refresh System</button>
+  <button id="btnLocal" class="btn-mode" onclick="forceLocal()">🖥 Force Local</button>
+  <button id="btnCloud" class="btn-mode" onclick="forceCloud()">☁ Force Cloud</button>
+  <span id="systemStatus" class="badge">INITIALIZING</span>
+</div>
 
 <!-- BUSINESSES -->
 <div class="box">
@@ -131,64 +82,117 @@
 
 <!-- ORDERS -->
 <div class="box">
-  <h3>📄 Orders (Latest First)</h3>
+  <h3>📄 Orders (Real /orders)</h3>
   <div id="orders"><span class="loader">⚡ Syncing orders...</span></div>
 </div>
 
 <!-- LEDGER -->
 <div class="box">
-  <h3>📊 Ledger & Double-Entry Accounting</h3>
-  <div id="ledgerSummary" class="summary-box">Calculating balances...</div>
+  <h3>📊 Ledger</h3>
+  <div id="summary" class="summary">Calculating balances...</div>
   <div id="ledger"><span class="loader">⚡ Syncing ledger...</span></div>
 </div>
 
 <!-- WALLETS -->
 <div class="box">
-  <h3>💰 Merchant Wallets & Payouts</h3>
+  <h3>💰 Wallets</h3>
   <div id="wallets"><span class="loader">⚡ Syncing wallets...</span></div>
 
   <hr style="border-color: #333; margin: 15px 0;">
 
-  <h4>💸 Execute Payout</h4>
+  <h4>💸 Execute Merchant Payout</h4>
   <select id="payoutBiz"></select>
-  <input id="payoutAmt" type="number" placeholder="Amount">
-  <button onclick="payout()">Execute</button>
+  <input id="amt" type="number" placeholder="Amount">
+  <button onclick="payout()">Send Payout</button>
 </div>
 
 <!-- CONSOLE LOG -->
 <div class="box">
-  <h3>🧾 System Console Output</h3>
+  <h3>🧾 Output Console</h3>
   <pre id="out">System ready.</pre>
 </div>
 
 <script>
-const API = "https://rds-lab.onrender.com";
+const LOCAL = "http://localhost:3000";
+const CLOUD = "https://rds-lab.onrender.com";
+
+let API = LOCAL;
+let MANUAL_MODE = false;
 let BUSINESS_MAP = {};
 
 /* ========================================== */
-/* ADVANCED FETCH WITH WAKE-UP RETRY ENGINE   */
+/* SMART AUTO DETECT SERVER ENGINE            */
 /* ========================================== */
-async function apiFetch(url, options = {}, retries = 5, backoff = 2000) {
+async function detectAPI() {
+  if (MANUAL_MODE) return;
+
   try {
-    const res = await fetch(url, options);
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.error || `HTTP ${res.status}`);
-    }
-    return await res.json();
-  } catch (err) {
-    if (retries > 0) {
-      out(`⚠️ Connection attempt failed. Server waking up... Retrying in ${backoff / 1000}s (${retries} retries left)`);
-      await new Promise(r => setTimeout(r, backoff));
-      return apiFetch(url, options, retries - 1, backoff * 1.5);
-    }
-    throw err;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1200);
+
+    const r = await fetch(LOCAL + "/", { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (!r.ok) throw new Error("Local offline");
+    API = LOCAL;
+    updateModeUI("LOCAL");
+  } catch {
+    API = CLOUD;
+    updateModeUI("CLOUD");
   }
 }
 
-function out(msg) {
-  document.getElementById("out").innerText =
-    typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
+function forceLocal() {
+  API = LOCAL;
+  MANUAL_MODE = true;
+  updateModeUI("LOCAL");
+  out("🖥 FORCED LOCAL MODE: " + LOCAL);
+  load();
+}
+
+function forceCloud() {
+  API = CLOUD;
+  MANUAL_MODE = true;
+  updateModeUI("CLOUD");
+  out("☁ FORCED CLOUD MODE: " + CLOUD);
+  load();
+}
+
+function updateModeUI(mode) {
+  const btnLocal = document.getElementById("btnLocal");
+  const btnCloud = document.getElementById("btnCloud");
+  if (mode === "LOCAL") {
+    btnLocal.classList.add("active");
+    btnCloud.classList.remove("active");
+  } else {
+    btnCloud.classList.add("active");
+    btnLocal.classList.remove("active");
+  }
+}
+
+/* ========================================== */
+/* SMART RETRY FETCH FOR SERVER WAKE-UP       */
+/* ========================================== */
+async function safeFetch(url, options = {}, retries = 5, backoff = 2000) {
+  try {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+    return await res.json();
+  } catch (e) {
+    if (retries > 0) {
+      out(`⏳ Server waking up... Retrying in ${backoff / 1000}s (${retries} attempts left)`);
+      await new Promise(r => setTimeout(r, backoff));
+      return safeFetch(url, options, retries - 1, backoff * 1.5);
+    }
+    throw e;
+  }
+}
+
+function out(m) {
+  document.getElementById("out").innerText = typeof m === "object" ? JSON.stringify(m, null, 2) : m;
 }
 
 function setSectionLoading(id, label) {
@@ -203,14 +207,15 @@ function updateStatus(status, color = "var(--neon-green)") {
 }
 
 /* ========================================== */
-/* MASTER SYNC                                */
+/* MASTER LOAD                                */
 /* ========================================== */
 async function load() {
   const refreshBtn = document.getElementById("refreshBtn");
   refreshBtn.disabled = true;
-  updateStatus("SYNCING...", "#ffff00");
+  updateStatus("SYNCING...", "var(--warn-yellow)");
 
-  out("Initiating global system sync...");
+  await detectAPI();
+  out(`Initiating system sync with endpoint [${API}]...`);
 
   try {
     // 1. Must load businesses first to populate human-readable BUSINESS_MAP
@@ -224,8 +229,8 @@ async function load() {
       loadWallets()
     ]);
 
-    updateStatus("ONLINE", "var(--neon-green)");
-    out("✅ System state fully synchronized.");
+    updateStatus("ONLINE (" + (API === LOCAL ? "LOCAL" : "CLOUD") + ")", "var(--neon-green)");
+    out(`✅ System state fully synchronized (${API}).`);
   } catch (e) {
     console.error("Master Sync Failure:", e);
     updateStatus("OFFLINE", "var(--warn-red)");
@@ -240,7 +245,7 @@ async function load() {
 /* ========================================== */
 async function loadBusinesses() {
   setSectionLoading("biz", "Loading businesses");
-  const d = await apiFetch(API + "/businesses");
+  const d = await safeFetch(API + "/businesses");
 
   let h = "", opt = "";
   BUSINESS_MAP = {};
@@ -261,27 +266,27 @@ async function loadBusinesses() {
 }
 
 async function addBusiness() {
-  const input = document.getElementById("bname");
-  const name = input.value.trim();
+  const nameInput = document.getElementById("bname");
+  const name = nameInput.value.trim();
   if (!name) return alert("Enter business name");
 
   out("Adding business...");
-  const d = await apiFetch(API + "/addBusiness", {
+  const d = await safeFetch(API + "/addBusiness", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name })
   });
 
   out(d);
-  input.value = "";
+  nameInput.value = "";
   load();
 }
 
 async function delBiz(id) {
   if (!confirm(`Delete business ${BUSINESS_MAP[id] || id}?`)) return;
-  
+
   out("Deleting business...");
-  const d = await apiFetch(API + "/deleteBusiness", {
+  const d = await safeFetch(API + "/deleteBusiness", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id })
@@ -296,7 +301,7 @@ async function delBiz(id) {
 /* ========================================== */
 async function loadProducts() {
   setSectionLoading("products", "Loading products");
-  const d = await apiFetch(API + "/products");
+  const d = await safeFetch(API + "/products");
 
   let h = "";
   const list = d.products || [];
@@ -323,7 +328,7 @@ async function addProduct() {
   if (!name || !price || !businessId) return alert("Fill in all product parameters");
 
   out("Adding product...");
-  const d = await apiFetch(API + "/addProduct", {
+  const d = await safeFetch(API + "/addProduct", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, price, businessId })
@@ -337,7 +342,7 @@ async function addProduct() {
 
 async function delProduct(id) {
   out("Deleting product...");
-  const d = await apiFetch(API + "/deleteProduct", {
+  const d = await safeFetch(API + "/deleteProduct", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id })
@@ -348,11 +353,11 @@ async function delProduct(id) {
 }
 
 /* ========================================== */
-/* ORDERS (LATEST FIRST SORTING)              */
+/* ORDERS (REAL /orders, NEWEST FIRST)        */
 /* ========================================== */
 async function loadOrders() {
   setSectionLoading("orders", "Loading orders");
-  const d = await apiFetch(API + "/orders");
+  const d = await safeFetch(API + "/orders");
 
   let h = "";
   const list = (d.orders || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -377,11 +382,11 @@ async function loadOrders() {
 }
 
 /* ========================================== */
-/* LEDGER (LINKED TO ORDERS & HUMAN NAMES)    */
+/* LEDGER & TRIAL BALANCE                     */
 /* ========================================== */
 async function loadLedger() {
   setSectionLoading("ledger", "Calculating ledger balance");
-  const d = await apiFetch(API + "/ledger");
+  const d = await safeFetch(API + "/ledger");
 
   let h = "", cash = 0, revenue = 0, payable = 0;
   const list = (d.ledger || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -404,10 +409,10 @@ async function loadLedger() {
         h += `&nbsp;&nbsp;→ <b>${e.account}</b> ${merchantName} | ${dr ? 'DR: $' + dr : ''} ${cr ? 'CR: $' + cr : ''}<br>`;
       });
     }
-    h += `<span class="small">${new Date(l.createdAt || Date.now()).toLocaleString()}</span><br><br>`;
+    h += `<span class="small">${new Date(l.createdAt || Date.now()).toLocaleString()}</span><br><hr style="border-color:#222;">`;
   });
 
-  document.getElementById("ledgerSummary").innerHTML = `
+  document.getElementById("summary").innerHTML = `
     <b>💰 DOUBLE-ENTRY TRIAL BALANCE</b><br>
     💵 Vault Cash (Asset): $${cash}<br>
     📈 Platform Revenue (Commission): $${revenue}<br>
@@ -418,11 +423,11 @@ async function loadLedger() {
 }
 
 /* ========================================== */
-/* WALLETS (HUMAN-READABLE)                   */
+/* WALLETS                                    */
 /* ========================================== */
 async function loadWallets() {
   setSectionLoading("wallets", "Loading wallets");
-  const d = await apiFetch(API + "/wallets");
+  const d = await safeFetch(API + "/wallets");
 
   let h = "";
   const list = d.wallets || [];
@@ -440,7 +445,7 @@ async function loadWallets() {
 /* ========================================== */
 async function payout() {
   const bizSelect = document.getElementById("payoutBiz");
-  const amtInput = document.getElementById("payoutAmt");
+  const amtInput = document.getElementById("amt");
 
   const businessId = bizSelect.value;
   const amount = amtInput.value.trim();
@@ -449,7 +454,7 @@ async function payout() {
 
   out("Processing payout transaction...");
   try {
-    const d = await apiFetch(API + "/payout", {
+    const d = await safeFetch(API + "/payout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ businessId, amount })
