@@ -49,6 +49,27 @@
       "status": "PAID",
       "createdAt": 1788924400968,
       "updatedAt": 1788924400968
+    },
+    {
+      "id": "ORD_1788932182240_30065",
+      "customerName": "Guest Customer",
+      "customerPhone": "0700000000",
+      "deliveryAddress": "Nairobi CBD, Kenya",
+      "targetLocation": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "items": [
+        {
+          "productId": "P_1788923930157_83294",
+          "name": "rice",
+          "price": 800,
+          "quantity": 1
+        }
+      ],
+      "total": 800,
+      "status": "PLACED",
+      "createdAt": 1788932182240
     }
   ],
   "ledger": [
@@ -101,6 +122,13 @@
       "total": 800,
       "commission": 40,
       "createdAt": 1788924400968
+    },
+    {
+      "id": "TX_1788932182240_87312",
+      "orderId": "ORD_1788932182240_30065",
+      "type": "ORDER_PAYMENT",
+      "amount": 800,
+      "timestamp": 1788932182240
     }
   ],
   "wallets": {
@@ -123,6 +151,10 @@
           "createdAt": 1788924400968
         }
       ]
+    },
+    "SYSTEM_PLATFORM": {
+      "balance": 0,
+      "escrow": 0
     }
   },
   "drivers": [

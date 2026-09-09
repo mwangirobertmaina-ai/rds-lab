@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDS DIGITAL MARKETPLACE | ULTRA-ENTERPRISE CORE</title>
+<title>RDS ADMIN FLEET CONTROL CENTER | ENTERPRISE CORE</title>
+
+<!-- LEAFLET MAP ASSETS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <style>
   :root {
@@ -16,6 +20,7 @@
     --alert-red: #ff3366;
     --gold: #ffd700;
     --warn-yellow: #ffff00;
+    --cyan: #00e5ff;
   }
 
   * { box-sizing: border-box; }
@@ -63,7 +68,8 @@
   }
 
   .btn-danger { background: var(--alert-red); color: #fff; }
-  .btn-danger:hover:not(:disabled) { background: #cc0033; box-shadow: 0 0 10px rgba(255, 51, 102, 0.4); }
+  .btn-warn { background: var(--warn-yellow); color: #000; }
+  .btn-gold { background: var(--gold); color: #000; }
 
   .btn-mode {
     background: #000;
@@ -75,13 +81,34 @@
     color: #000;
   }
 
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .kpi-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    padding: 14px;
+    text-align: center;
+  }
+
+  .kpi-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--gold);
+    margin-top: 5px;
+  }
+
   .grid-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 1024px) {
     .grid-layout { grid-template-columns: 1fr; }
   }
 
@@ -92,19 +119,17 @@
     background: var(--panel-bg);
   }
 
+  #adminMap {
+    height: 380px;
+    border: 1px solid var(--border-color);
+    background: #050505;
+  }
+
   .item-card {
     border: 1px solid #222;
     background: var(--card-bg);
     padding: 10px;
     margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .controls button {
-    padding: 3px 8px;
-    margin-left: 4px;
   }
 
   input, select {
@@ -113,9 +138,9 @@
     border: 1px solid var(--neon-green);
     padding: 8px;
     font-family: monospace;
-    font-size: 14px;
-    margin-bottom: 8px;
-    width: 100%;
+    font-size: 13px;
+    margin-right: 6px;
+    margin-bottom: 6px;
   }
 
   pre {
@@ -125,7 +150,7 @@
     color: var(--neon-green);
     white-space: pre-wrap;
     word-break: break-all;
-    max-height: 250px;
+    max-height: 200px;
     overflow-y: auto;
   }
 
@@ -139,15 +164,12 @@
 
   .small { font-size: 11px; color: var(--dim-text); }
 
-  .loader {
-    color: var(--warn-yellow);
-    font-style: italic;
-    animation: pulse 1s infinite alternate;
-  }
-
-  @keyframes pulse {
-    from { opacity: 0.3; }
-    to { opacity: 1; }
+  /* Custom marker dark mode popups */
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background: #111 !important;
+    color: #00ff66 !important;
+    border: 1px solid #00ff66 !important;
+    font-family: monospace;
   }
 </style>
 </head>
@@ -156,68 +178,91 @@
 
 <header>
   <div>
-    <h2>🛒 RDS MARKETPLACE (STAGE 12 ULTRA-CORE)</h2>
-    <span class="small">ATOMIC TRANSACTION & TRANSPARENT LEDGER ENGINE</span>
+    <h2>👑 RDS ADMIN FLEET CONTROL CENTER</h2>
+    <span class="small">REAL-TIME TELEMETRY, GLOBAL DISPATCH & FINANCIAL AUDIT</span>
   </div>
   <div>
     <button id="btnLocal" class="btn-mode" onclick="forceServer('LOCAL')">🖥 LOCAL</button>
     <button id="btnCloud" class="btn-mode" onclick="forceServer('CLOUD')">☁ CLOUD</button>
-    <button id="refreshBtn" onclick="init()">🔄 SYNC SYSTEM</button>
+    <button id="refreshBtn" onclick="init()">🔄 SYNC TELEMETRY</button>
     <span id="status" class="badge">INITIALIZING</span>
   </div>
 </header>
 
+<!-- TOP KPI METRICS ROW -->
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="small">TOTAL SYSTEM VOLUME</div>
+    <div id="kpiVolume" class="kpi-value">$0.00</div>
+  </div>
+  <div class="kpi-card">
+    <div class="small">ACTIVE DRIVERS</div>
+    <div id="kpiDrivers" class="kpi-value">0 / 0</div>
+  </div>
+  <div class="kpi-card">
+    <div class="small">REGISTERED MERCHANTS</div>
+    <div id="kpiMerchants" class="kpi-value">0</div>
+  </div>
+  <div class="kpi-card">
+    <div class="small">ACTIVE DELIVERIES</div>
+    <div id="kpiDeliveries" class="kpi-value">0</div>
+  </div>
+</div>
+
+<!-- MAIN GRID LAYOUT -->
 <div class="grid-layout">
-  
-  <!-- LEFT COLUMN: STOREFRONT & CART -->
+
+  <!-- LEFT COLUMN: MAP & FLEET OPERATIONS -->
   <div>
+    <!-- LIVE DRIVER TRACKING MAP -->
     <div class="section">
-      <h3>🏪 Registered Merchants</h3>
-      <div id="shops"><span class="loader">⚡ Syncing merchant list...</span></div>
+      <h3>🗺 Live Fleet Telemetry Map</h3>
+      <div id="adminMap"></div>
     </div>
 
+    <!-- QUICK DISPATCH SIMULATION & DRIVER REGISTER -->
     <div class="section">
-      <h3>📦 Catalog Products</h3>
-      <div id="catalog"><span class="loader">⚡ Syncing store catalog...</span></div>
-    </div>
-
-    <div class="section">
-      <h3>🛒 Shopping Cart & Checkout</h3>
-      <div id="cart">Cart empty</div>
-      <br>
+      <h3>⚡ Fleet Command & Driver Onboarding</h3>
       <div style="margin-bottom: 12px;">
-        <label class="small">CUSTOMER NAME:</label>
-        <input type="text" id="custName" value="Robert (Valued Customer)" placeholder="Customer Name..." />
-        
-        <label class="small">DELIVERY ADDRESS / DESTINATION:</label>
-        <input type="text" id="custAddress" value="Nairobi CBD, Kenya" placeholder="Delivery Location..." />
+        <input type="text" id="driverNameInput" placeholder="Driver Full Name..." />
+        <input type="text" id="driverPhoneInput" placeholder="Phone (0700000000)" value="0700000000" />
+        <button onclick="registerDriver()">➕ Register Driver</button>
       </div>
+      <div>
+        <button onclick="triggerDispatchSimulation()" class="btn-gold">🚀 Simulate Market Order & Auto-Dispatch</button>
+      </div>
+    </div>
 
-      <div style="font-size: 18px; font-weight: bold; margin-bottom: 12px;">
-        TOTAL: $<span id="total">0</span>
-      </div>
-      
-      <button id="payBtn" onclick="checkout()" style="width: 100%; padding: 12px; font-size: 16px;" disabled>
-        💳 PAY & DISPATCH ORDER
-      </button>
+    <!-- LIVE DRIVERS ROSTER -->
+    <div class="section">
+      <h3>🚚 Fleet Driver Roster</h3>
+      <div id="driverList"><em>Syncing fleet roster...</em></div>
     </div>
   </div>
 
-  <!-- RIGHT COLUMN: TRANSPARENCY AUDIT PANELS -->
+  <!-- RIGHT COLUMN: BUSINESSES, ORDERS & LEDGER -->
   <div>
+    <!-- MERCHANT MANAGEMENT -->
     <div class="section">
-      <h3>📄 Live Order Feed (Latest First)</h3>
-      <div id="orders"><span class="loader">⚡ Syncing order feed...</span></div>
+      <h3>🏬 Merchants & Product Portfolios</h3>
+      <div style="margin-bottom: 10px;">
+        <input type="text" id="bizNameInput" placeholder="Merchant Name..." />
+        <input type="text" id="bizCatInput" placeholder="Category (e.g. Retail)" value="Retail" />
+        <button onclick="addMerchant()">➕ Add Merchant</button>
+      </div>
+      <div id="businessList"><em>Syncing merchants...</em></div>
     </div>
 
+    <!-- RECENT DISPATCHED ORDERS -->
     <div class="section">
-      <h3>📊 Financial Ledger Activity</h3>
-      <div id="ledger"><span class="loader">⚡ Syncing journal ledger...</span></div>
+      <h3>📦 Global Order Feed</h3>
+      <div id="orderList"><em>Syncing global orders...</em></div>
     </div>
 
+    <!-- FINANCIAL LEDGER AUDIT -->
     <div class="section">
-      <h3>💰 Merchant Wallets</h3>
-      <div id="wallets"><span class="loader">⚡ Syncing wallet balances...</span></div>
+      <h3>📜 Financial Ledger & Platform Revenue</h3>
+      <div id="ledgerList"><em>Syncing double-entry ledger...</em></div>
     </div>
   </div>
 
@@ -225,20 +270,20 @@
 
 <!-- CONSOLE FEEDBACK -->
 <div class="section">
-  <h3>📡 System Feedback Console</h3>
-  <pre id="out">Marketplace system online.</pre>
+  <h3>📡 Control Center System Log</h3>
+  <pre id="consoleOut">Admin Control Center online.</pre>
 </div>
 
 <script>
 const LOCAL = "http://localhost:3000";
 const CLOUD = "https://rds-lab.onrender.com";
-const CART_STORAGE_KEY = "RDS_MARKET_CART_PERSIST_V3";
 
-let API = window.location.origin.includes("localhost") ? LOCAL : CLOUD;
+let API = LOCAL;
 let MANUAL_OVERRIDE = false;
-let PRODUCTS = [];
-let CART = [];
-let BUSINESS_MAP = {};
+
+let adminMap = null;
+let activeTileLayer = null;
+let driverMarkersMap = new Map();
 
 /* ========================================== */
 /* DUAL-RACER HYBRID ROUTE DETECTOR           */
@@ -251,7 +296,7 @@ async function detectAPI() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 700);
 
-    await fetch(LOCAL + "/", { method: "GET", signal: controller.signal });
+    await fetch(LOCAL + "/health", { method: "GET", signal: controller.signal });
     clearTimeout(timeout);
 
     API = LOCAL;
@@ -271,8 +316,8 @@ function forceServer(mode) {
     API = CLOUD;
     updateUIBadge("FORCED CLOUD ☁", "var(--gold)");
   }
-  out(`Switched marketplace endpoint route to: ${API}`);
-  load();
+  logOut(`Switched route context to: ${API}`);
+  loadAdminOverview();
 }
 
 function updateStatus(text, color = "var(--neon-green)") {
@@ -296,42 +341,16 @@ function updateUIBadge(text, color) {
   }
 }
 
-function out(msg) {
-  document.getElementById("out").innerText =
-    typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
-}
-
-function setSectionLoading(id, label) {
-  const el = document.getElementById(id);
-  if (el && !el.children.length) {
-    el.innerHTML = `<span class="loader">⚡ ${label}...</span>`;
-  }
-}
-
-/* ========================================== */
-/* CART PERSISTENCE LAYER                     */
-/* ========================================== */
-function saveCartToStorage() {
-  try {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(CART));
-  } catch (e) {
-    console.warn("Cart serialization error", e);
-  }
-}
-
-function loadCartFromStorage() {
-  try {
-    const data = localStorage.getItem(CART_STORAGE_KEY);
-    if (data) CART = JSON.parse(data) || [];
-  } catch (e) {
-    CART = [];
-  }
+function logOut(msg) {
+  const time = new Date().toLocaleTimeString();
+  const text = typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
+  document.getElementById("consoleOut").innerText = `[${time}] ${text}\n` + document.getElementById("consoleOut").innerText;
 }
 
 /* ========================================== */
 /* EXPONENTIAL BACKOFF FETCH ENGINE           */
 /* ========================================== */
-async function safeFetch(url, opt = {}, retries = 3, backoff = 800) {
+async function safeFetch(url, opt = {}, retries = 2, backoff = 600) {
   try {
     const res = await fetch(url, opt);
     if (!res.ok) {
@@ -341,7 +360,7 @@ async function safeFetch(url, opt = {}, retries = 3, backoff = 800) {
     return await res.json();
   } catch (e) {
     if (retries > 0) {
-      out(`⏳ Target server waking up... Retrying in ${backoff / 1000}s (${retries} attempts left)`);
+      logOut(`⏳ Re-trying endpoint (${retries} attempts left)...`);
       await new Promise(r => setTimeout(r, backoff));
       return safeFetch(url, opt, retries - 1, backoff * 1.5);
     }
@@ -349,355 +368,313 @@ async function safeFetch(url, opt = {}, retries = 3, backoff = 800) {
   }
 }
 
-async function safeFetchWithFallback(endpoints, options = {}) {
-  let lastError;
-  for (const ep of endpoints) {
-    try {
-      return await safeFetch(API + ep, options, 1, 500);
-    } catch (err) {
-      lastError = err;
-    }
+async function apiFetch(endpoint, options = {}) {
+  try {
+    return await safeFetch(`${API}${endpoint}`, options);
+  } catch (err) {
+    logOut(`API Error (${endpoint}): ${err.message}`);
+    return null;
   }
-  throw lastError || new Error("All endpoint fallbacks failed");
 }
 
 /* ========================================== */
-/* MASTER INITIALIZATION                      */
+/* 403-PROOF MULTI-PROVIDER TILE MAP ENGINE   */
+/* ========================================== */
+function initAdminMap() {
+  if (adminMap) return;
+
+  adminMap = L.map('adminMap', {
+    zoomControl: true,
+    attributionControl: false
+  }).setView([-1.286389, 36.817223], 12); // Center Nairobi CBD
+
+  const tileProviders = [
+    {
+      url: "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+      subdomains: ["a", "b", "c"],
+      maxZoom: 19
+    },
+    {
+      url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+      subdomains: ["a", "b", "c", "d"],
+      maxZoom: 19
+    },
+    {
+      url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      subdomains: ["a", "b", "c", "d"],
+      maxZoom: 19
+    }
+  ];
+
+  let providerIndex = 0;
+
+  function loadTileLayer() {
+    if (activeTileLayer && adminMap.hasLayer(activeTileLayer)) {
+      adminMap.removeLayer(activeTileLayer);
+    }
+
+    const provider = tileProviders[providerIndex];
+    activeTileLayer = L.tileLayer(provider.url, {
+      subdomains: provider.subdomains,
+      maxZoom: provider.maxZoom,
+      crossOrigin: true
+    });
+
+    activeTileLayer.on("tileerror", () => {
+      logOut(`Tile error on provider #${providerIndex}. Failover switching tile provider...`);
+      providerIndex = (providerIndex + 1) % tileProviders.length;
+      loadTileLayer();
+    });
+
+    activeTileLayer.addTo(adminMap);
+  }
+
+  loadTileLayer();
+}
+
+/* ========================================== */
+/* MASTER INITIALIZATION & SYNC               */
 /* ========================================== */
 async function init() {
   const refreshBtn = document.getElementById("refreshBtn");
   refreshBtn.disabled = true;
 
-  out("Checking server environment routes...");
-  loadCartFromStorage();
+  initAdminMap();
   await detectAPI();
+  await loadAdminOverview();
 
-  await load();
-  renderCart();
   refreshBtn.disabled = false;
 }
 
 /* ========================================== */
-/* GLOBAL STATE LOAD                          */
+/* LOAD ADMIN OVERVIEW TELEMETRY              */
 /* ========================================== */
-async function load() {
-  try {
-    await loadShops();
+async function loadAdminOverview() {
+  const data = await apiFetch("/admin/overview");
 
-    await Promise.all([
-      loadProducts(),
-      loadOrders(),
-      loadLedger(),
-      loadWallets()
-    ]);
-
-  } catch (e) {
-    console.error("Master Sync Error:", e);
-  }
-}
-
-/* ========================================== */
-/* SHOPS                                      */
-/* ========================================== */
-async function loadShops() {
-  setSectionLoading("shops", "Loading shops");
-  try {
-    const data = await safeFetchWithFallback(["/businesses", "/shops"]);
-
-    BUSINESS_MAP = {};
-    let h = "";
-
-    const rawList = data.businesses || data.shops || [];
-    const list = Array.from(new Map(rawList.map(b => [b.id, b])).values());
-
-    list.forEach(b => {
-      BUSINESS_MAP[b.id] = b.name;
-      h += `<div class="item-card"><div><b>${b.name}</b><br><span class="small">${b.category || 'Retail'} | ID: ${b.id}</span></div><span class="badge">ACTIVE</span></div>`;
-    });
-
-    document.getElementById("shops").innerHTML = h || "<em>No merchant shops registered yet.</em>";
-  } catch (e) {
-    document.getElementById("shops").innerHTML = "<em>Merchant shop directory empty or starting up...</em>";
-  }
-}
-
-/* ========================================== */
-/* PRODUCTS                                   */
-/* ========================================== */
-async function loadProducts() {
-  setSectionLoading("catalog", "Loading store catalog");
-  try {
-    const data = await safeFetch(API + "/products");
-
-    const rawProducts = data.products || [];
-    PRODUCTS = Array.from(new Map(rawProducts.map(p => [p.id, p])).values());
-    let h = "";
-
-    PRODUCTS.forEach(p => {
-      const merchantName = BUSINESS_MAP[p.businessId] || p.businessId || "General Store";
-      h += `
-        <div class="item-card">
-          <div>
-            <b>${p.name}</b> - <span style="color:var(--gold)">$${p.price}</span><br>
-            <span class="small">Merchant: ${merchantName} | Stock: ${p.stock !== undefined ? p.stock : 'In Stock'}</span>
-          </div>
-          <button onclick="add('${p.id}')">➕ Add</button>
-        </div>
-      `;
-    });
-
-    document.getElementById("catalog").innerHTML = h || "<em>No products listed in marketplace.</em>";
-  } catch (e) {
-    document.getElementById("catalog").innerHTML = "<em>Catalog empty or awaiting inventory...</em>";
-  }
-}
-
-/* ========================================== */
-/* CART CONTROLS                              */
-/* ========================================== */
-function add(id) {
-  const p = PRODUCTS.find(x => x.id === id);
-  if (!p) return;
-
-  let item = CART.find(x => x.id === id);
-
-  if (item) {
-    item.qty++;
-  } else {
-    CART.push({ id: p.id, name: p.name, price: p.price, qty: 1, businessId: p.businessId });
-  }
-
-  saveCartToStorage();
-  renderCart();
-  out(`🛒 Added "${p.name}" to cart.`);
-}
-
-function changeQty(id, delta) {
-  let item = CART.find(x => x.id === id);
-  if (!item) return;
-
-  item.qty += delta;
-  if (item.qty <= 0) {
-    CART = CART.filter(x => x.id !== id);
-  }
-
-  saveCartToStorage();
-  renderCart();
-}
-
-function removeItem(id) {
-  const item = CART.find(x => x.id === id);
-  if (item) {
-    CART = CART.filter(x => x.id !== id);
-    out(`🗑️ Removed "${item.name}" from cart.`);
-  }
-  saveCartToStorage();
-  renderCart();
-}
-
-function renderCart() {
-  const cartEl = document.getElementById("cart");
-  const totalEl = document.getElementById("total");
-  const payBtn = document.getElementById("payBtn");
-
-  if (CART.length === 0) {
-    cartEl.innerHTML = "<em>Cart is empty</em>";
-    totalEl.innerText = "0";
-    payBtn.disabled = true;
+  if (!data || !data.stats) {
+    logOut("⚠️ Admin telemetry load failed. Retrying...");
     return;
   }
 
-  let h = "", total = 0;
+  // 1. Update KPI Cards
+  document.getElementById("kpiVolume").innerText = `$${(data.stats.totalVolume || 0).toFixed(2)}`;
+  document.getElementById("kpiDrivers").innerText = `${data.stats.availableDrivers || 0} / ${data.stats.driversCount || 0}`;
+  document.getElementById("kpiMerchants").innerText = data.stats.businessesCount || 0;
+  document.getElementById("kpiDeliveries").innerText = data.stats.pendingDeliveries || 0;
 
-  CART.forEach(i => {
-    let t = i.price * i.qty;
-    total += t;
+  // 2. Update Map Markers for Drivers
+  updateMapMarkers(data.drivers || []);
 
+  // 3. Render Fleet Roster
+  renderDriverList(data.drivers || []);
+
+  // 4. Render Merchant List
+  const bizData = await apiFetch("/businesses");
+  renderBusinessList((bizData && bizData.businesses) || []);
+
+  // 5. Render Orders & Ledger
+  renderOrderList(data.recentOrders || []);
+  renderLedgerList(data.recentLedger || []);
+}
+
+/* ========================================== */
+/* RENDER MAP MARKERS WITH AUTO-PAN           */
+/* ========================================== */
+function updateMapMarkers(drivers) {
+  if (!adminMap) return;
+
+  const activeIds = new Set();
+
+  drivers.forEach(d => {
+    const lat = d.location?.lat || 0;
+    const lng = d.location?.lng || 0;
+
+    if (lat !== 0 && lng !== 0) {
+      activeIds.add(d.id);
+      const popupText = `<b>${d.name}</b><br>Status: ${d.status}<br>Earnings: $${d.earnings || 0}`;
+
+      if (driverMarkersMap.has(d.id)) {
+        const marker = driverMarkersMap.get(d.id);
+        marker.setLatLng([lat, lng]);
+        marker.getPopup().setContent(popupText);
+      } else {
+        const marker = L.marker([lat, lng]).addTo(adminMap).bindPopup(popupText);
+        driverMarkersMap.set(d.id, marker);
+      }
+    }
+  });
+
+  // Cleanup offline or removed driver markers
+  driverMarkersMap.forEach((marker, id) => {
+    if (!activeIds.has(id)) {
+      adminMap.removeLayer(marker);
+      driverMarkersMap.delete(id);
+    }
+  });
+}
+
+/* ========================================== */
+/* RENDER PANELS                              */
+/* ========================================== */
+function renderDriverList(drivers) {
+  const container = document.getElementById("driverList");
+  if (drivers.length === 0) {
+    container.innerHTML = "<em>No drivers registered in fleet.</em>";
+    return;
+  }
+
+  let h = "";
+  drivers.forEach(d => {
+    const isAvail = d.status === "AVAILABLE";
     h += `
       <div class="item-card">
         <div>
-          <b>${i.name}</b><br>
-          <small>$${i.price} × ${i.qty} = $${t}</small>
+          <b>${d.name}</b> (${d.phone})<br>
+          <span class="small">Status: <span style="color:${isAvail ? 'var(--neon-green)' : 'var(--gold)'}">${d.status}</span> | Earnings: $${d.earnings || 0}</span>
         </div>
-        <div class="controls">
-          <button onclick="changeQty('${i.id}', 1)">+</button>
-          <button onclick="changeQty('${i.id}', -1)">-</button>
-          <button class="btn-danger" onclick="removeItem('${i.id}')">✕</button>
+        <div>
+          <span class="badge">${d.id}</span>
         </div>
       </div>
     `;
   });
+  container.innerHTML = h;
+}
 
-  cartEl.innerHTML = h;
-  totalEl.innerText = total;
-  payBtn.disabled = false;
+function renderBusinessList(businesses) {
+  const container = document.getElementById("businessList");
+  if (businesses.length === 0) {
+    container.innerHTML = "<em>No merchants onboarded yet.</em>";
+    return;
+  }
+
+  let h = "";
+  businesses.forEach(b => {
+    h += `
+      <div class="item-card">
+        <div>
+          <b>${b.name}</b> <span class="small">(${b.category})</span><br>
+          <span class="small">Address: ${b.address}</span>
+        </div>
+        <span class="badge">$${b.balance || 0}</span>
+      </div>
+    `;
+  });
+  container.innerHTML = h;
+}
+
+function renderOrderList(orders) {
+  const container = document.getElementById("orderList");
+  if (orders.length === 0) {
+    container.innerHTML = "<em>No orders placed in market.</em>";
+    return;
+  }
+
+  let h = "";
+  orders.slice(0, 10).forEach(o => {
+    h += `
+      <div class="item-card">
+        <div>
+          <b>Order ID: ${o.id}</b> | <span style="color:var(--gold)">$${o.total}</span><br>
+          <span class="small">Customer: ${o.customerName} | Status: ${o.status}</span>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = h;
+}
+
+function renderLedgerList(ledger) {
+  const container = document.getElementById("ledgerList");
+  if (ledger.length === 0) {
+    container.innerHTML = "<em>No financial journal entries.</em>";
+    return;
+  }
+
+  let h = "";
+  ledger.slice(0, 10).forEach(l => {
+    h += `
+      <div style="border-bottom: 1px dashed #333; padding-bottom: 4px; margin-bottom: 4px;">
+        <span class="small">TX ${l.id}</span> | <b>${l.type}</b>: <span style="color:var(--neon-green)">$${l.amount}</span>
+      </div>
+    `;
+  });
+  container.innerHTML = h;
 }
 
 /* ========================================== */
-/* CHECKOUT PIPELINE                          */
+/* COMMAND ACTIONS                            */
 /* ========================================== */
-async function checkout() {
-  if (CART.length === 0) return;
+async function registerDriver() {
+  const nameInput = document.getElementById("driverNameInput");
+  const phoneInput = document.getElementById("driverPhoneInput");
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
 
-  const payBtn = document.getElementById("payBtn");
-  payBtn.disabled = true;
-  updateStatus("PROCESSING...", "var(--warn-yellow)");
+  if (!name) return alert("Please enter driver name.");
 
-  out("💳 Initiating enterprise dispatch checkout sequence...");
+  const res = await apiFetch("/addDriver", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, phone })
+  });
 
-  const customerName = document.getElementById("custName").value.trim() || "Guest Customer";
-  const deliveryAddress = document.getElementById("custAddress").value.trim() || "Nairobi CBD";
-
-  const orderItemsPayload = CART.map(i => ({
-    productId: i.id,
-    quantity: i.qty,
-    price: i.price,
-    name: i.name
-  }));
-
-  try {
-    let receipt;
-
-    // 1. Primary Attempt: Unified End-to-End Order Creation & Auto-Dispatch
-    try {
-      out("⏳ Submitting order & triggering nearest-driver dispatch...");
-      const res = await safeFetch(API + "/order/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerName,
-          customerPhone: "0700000000",
-          deliveryAddress,
-          targetLat: -1.286389,
-          targetLng: 36.817223,
-          items: orderItemsPayload
-        })
-      });
-
-      if (!res.success) throw new Error(res.error || "Order creation refused");
-      receipt = {
-        orderId: res.order.id,
-        total: res.order.total,
-        assignedDriver: res.assignedDriver,
-        deliveryId: res.delivery ? res.delivery.id : "QUEUED"
-      };
-
-    } catch (primaryError) {
-      // 2. Fallback Attempt: Batch or Legacy Checkout Endpoint
-      out("⚠️ Primary order dispatch endpoint failed. Executing fallback batch checkout...");
-
-      const res = await safeFetchWithFallback(["/checkout", "/order"], {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: orderItemsPayload })
-      });
-
-      if (!res.success) throw new Error(res.error || "Batch fallback checkout failed");
-      receipt = res.order || res;
-    }
-
-    out({
-      status: "✅ TRANSACTION & DISPATCH COMPLETED",
-      receipt: receipt
-    });
-
-    updateStatus("SUCCESS ✅", "var(--neon-green)");
-
-    CART = [];
-    saveCartToStorage();
-    renderCart();
-
-    await load();
-
-  } catch (e) {
-    console.error("Checkout Failure:", e);
-    out(`❌ CHECKOUT FAILED: ${e.message}`);
-    updateStatus("ERROR ❌", "var(--alert-red)");
-    payBtn.disabled = false;
+  if (res && res.success) {
+    logOut(`✅ Driver registered: ${res.driver.name}`);
+    nameInput.value = "";
+    loadAdminOverview();
   }
 }
 
-/* ========================================== */
-/* ORDERS                                     */
-/* ========================================== */
-async function loadOrders() {
-  setSectionLoading("orders", "Loading orders");
-  try {
-    const data = await safeFetch(API + "/orders");
+async function addMerchant() {
+  const nameInput = document.getElementById("bizNameInput");
+  const catInput = document.getElementById("bizCatInput");
+  const name = nameInput.value.trim();
+  const category = catInput.value.trim();
 
-    let h = "";
-    const rawList = data.orders || [];
-    const list = Array.from(new Map(rawList.map(o => [o.id, o])).values())
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  if (!name) return alert("Please enter merchant name.");
 
-    list.forEach(o => {
-      h += `<div style="border-bottom: 1px dashed #333; padding-bottom: 6px; margin-bottom: 6px;">`;
-      h += `📦 <b>Order:</b> ${o.id} | <b>Total:</b> $${o.total || 0}<br>`;
+  const res = await apiFetch("/business/add", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, category })
+  });
 
-      if (Array.isArray(o.items) && o.items.length > 0) {
-        o.items.forEach(i => {
-          h += `&nbsp;&nbsp;• ${i.name || 'Item'} x${i.quantity || i.qty || 1} = $${(i.price || 0) * (i.quantity || i.qty || 1)}<br>`;
-        });
-      }
-
-      h += `<span class="small">Customer: ${o.customerName || 'Guest'} | Status: ${o.status || 'PLACED'}</span>`;
-      h += `</div>`;
-    });
-
-    document.getElementById("orders").innerHTML = h || "<em>No orders placed yet.</em>";
-  } catch (e) {
-    document.getElementById("orders").innerHTML = "<em>No active orders in system feed.</em>";
+  if (res && res.success) {
+    logOut(`✅ Merchant onboarded: ${res.business.name}`);
+    nameInput.value = "";
+    loadAdminOverview();
   }
 }
 
-/* ========================================== */
-/* DOUBLE-ENTRY JOURNAL LEDGER                */
-/* ========================================== */
-async function loadLedger() {
-  setSectionLoading("ledger", "Loading ledger");
-  try {
-    const data = await safeFetch(API + "/admin/overview");
+async function triggerDispatchSimulation() {
+  logOut("🚀 Triggering market order & auto-dispatch simulation...");
+  const res = await apiFetch("/order/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      customerName: "Admin Dispatch Simulation",
+      customerPhone: "0722000111",
+      deliveryAddress: "Nairobi CBD",
+      targetLat: -1.286389,
+      targetLng: 36.817223,
+      items: [
+        { productId: "PROD_DISPATCH_TEST", name: "Simulated Market Item", price: 40, quantity: 1 }
+      ]
+    })
+  });
 
-    let h = "";
-    const rawList = data.recentLedger || [];
-
-    rawList.forEach(l => {
-      h += `📜 <b>TX:</b> ${l.id} | <span class="badge">${l.type}</span><br>`;
-      h += `&nbsp;&nbsp;→ Amount: <b>$${l.amount}</b> | Order: ${l.orderId || 'N/A'}<br>`;
-      h += `<span class="small">Timestamp: ${new Date(l.timestamp || Date.now()).toLocaleString()}</span><br><hr style="border-color:#222;">`;
-    });
-
-    document.getElementById("ledger").innerHTML = h || "<em>No ledger entries logged yet.</em>";
-  } catch (e) {
-    document.getElementById("ledger").innerHTML = "<em>Ledger feed waiting for initial transactions...</em>";
+  if (res && res.success) {
+    logOut(`✅ Order ${res.order.id} generated! Auto-assigned to: ${res.assignedDriver}`);
+    loadAdminOverview();
   }
 }
 
-/* ========================================== */
-/* MERCHANT WALLETS                           */
-/* ========================================== */
-async function loadWallets() {
-  setSectionLoading("wallets", "Loading wallets");
-  try {
-    const data = await safeFetchWithFallback(["/businesses", "/shops"]);
+/* AUTO-POLL TELEMETRY DAEMON */
+setInterval(loadAdminOverview, 4000);
 
-    let h = "";
-    const list = data.businesses || data.shops || [];
-
-    list.forEach(b => {
-      h += `<div class="item-card">💼 <b>${b.name}</b> <span class="small">(${b.id})</span> <b>$${b.balance || 0}</b></div>`;
-    });
-
-    document.getElementById("wallets").innerHTML = h || "<em>No active merchant wallets.</em>";
-  } catch (e) {
-    document.getElementById("wallets").innerHTML = "<em>Merchant wallet directory standby.</em>";
-  }
-}
-
-/* AUTO REFRESH LOOP */
-setInterval(load, 4000);
-
-/* START APPLICATION */
+/* INITIALIZE APP */
 init();
 </script>
 
