@@ -3,131 +3,141 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDS DIGITAL MARKETPLACE | STAGE 12 ULTRA-CORE</title>
+<title>RDS DIGITAL MARKETPLACE | ULTRA-ENTERPRISE CORE</title>
 
 <style>
-:root {
-  --neon-green: #00ff66;
-  --dark-bg: #0a0a0a;
-  --panel-bg: #121212;
-  --card-bg: #181818;
-  --border-color: #00ff66;
-  --dim-text: #888888;
-  --alert-red: #ff3366;
-  --gold: #ffd700;
-  --warn-yellow: #ffff00;
-}
+  :root {
+    --neon-green: #00ff66;
+    --dark-bg: #0a0a0a;
+    --panel-bg: #121212;
+    --card-bg: #181818;
+    --border-color: #00ff66;
+    --dim-text: #888888;
+    --alert-red: #ff3366;
+    --gold: #ffd700;
+    --warn-yellow: #ffff00;
+  }
 
-* { box-sizing: border-box; }
+  * { box-sizing: border-box; }
 
-body {
-  font-family: 'Courier New', Courier, monospace;
-  background: var(--dark-bg);
-  color: var(--neon-green);
-  padding: 20px;
-  margin: 0;
-}
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    background: var(--dark-bg);
+    color: var(--neon-green);
+    padding: 20px;
+    margin: 0;
+  }
 
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 2px solid var(--neon-green);
-  padding-bottom: 12px;
-  margin-bottom: 20px;
-}
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--neon-green);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
 
-h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
+  h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
 
-button {
-  background: var(--neon-green);
-  color: #000;
-  font-weight: bold;
-  border: none;
-  padding: 8px 14px;
-  cursor: pointer;
-  font-family: monospace;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-}
+  button {
+    background: var(--neon-green);
+    color: #000;
+    font-weight: bold;
+    border: none;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-family: monospace;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+  }
 
-button:hover:not(:disabled) {
-  background: #00cc52;
-  box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
-}
+  button:hover:not(:disabled) {
+    background: #00cc52;
+    box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+  }
 
-button:disabled {
-  background: #333;
-  color: #666;
-  cursor: not-allowed;
-}
+  button:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+  }
 
-.btn-danger { background: var(--alert-red); color: #fff; }
-.btn-danger:hover:not(:disabled) { background: #cc0033; box-shadow: 0 0 10px rgba(255, 51, 102, 0.4); }
+  .btn-danger { background: var(--alert-red); color: #fff; }
+  .btn-danger:hover:not(:disabled) { background: #cc0033; box-shadow: 0 0 10px rgba(255, 51, 102, 0.4); }
 
-.grid-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
+  .btn-mode {
+    background: #000;
+    color: var(--neon-green);
+    border: 1px solid var(--neon-green);
+  }
+  .btn-mode.active {
+    background: var(--neon-green);
+    color: #000;
+  }
 
-@media (max-width: 900px) {
-  .grid-layout { grid-template-columns: 1fr; }
-}
+  .grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
 
-.section {
-  border: 1px solid var(--border-color);
-  padding: 16px;
-  margin-bottom: 16px;
-  background: var(--panel-bg);
-}
+  @media (max-width: 900px) {
+    .grid-layout { grid-template-columns: 1fr; }
+  }
 
-.item-card {
-  border: 1px solid #222;
-  background: var(--card-bg);
-  padding: 10px;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  .section {
+    border: 1px solid var(--border-color);
+    padding: 16px;
+    margin-bottom: 16px;
+    background: var(--panel-bg);
+  }
 
-.controls button {
-  padding: 3px 8px;
-  margin-left: 4px;
-}
+  .item-card {
+    border: 1px solid #222;
+    background: var(--card-bg);
+    padding: 10px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-pre {
-  background: #000;
-  padding: 12px;
-  border: 1px solid #333;
-  color: var(--neon-green);
-  white-space: pre-wrap;
-  word-break: break-all;
-  max-height: 250px;
-  overflow-y: auto;
-}
+  .controls button {
+    padding: 3px 8px;
+    margin-left: 4px;
+  }
 
-.badge {
-  background: #003311;
-  border: 1px solid var(--neon-green);
-  padding: 4px 8px;
-  font-size: 11px;
-  border-radius: 3px;
-}
+  pre {
+    background: #000;
+    padding: 12px;
+    border: 1px solid #333;
+    color: var(--neon-green);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 250px;
+    overflow-y: auto;
+  }
 
-.small { font-size: 11px; color: var(--dim-text); }
+  .badge {
+    background: #003311;
+    border: 1px solid var(--neon-green);
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 3px;
+  }
 
-.loader {
-  color: var(--warn-yellow);
-  font-style: italic;
-  animation: pulse 1s infinite alternate;
-}
+  .small { font-size: 11px; color: var(--dim-text); }
 
-@keyframes pulse {
-  from { opacity: 0.3; }
-  to { opacity: 1; }
-}
+  .loader {
+    color: var(--warn-yellow);
+    font-style: italic;
+    animation: pulse 1s infinite alternate;
+  }
+
+  @keyframes pulse {
+    from { opacity: 0.3; }
+    to { opacity: 1; }
+  }
 </style>
 </head>
 
@@ -139,6 +149,8 @@ pre {
     <span class="small">ATOMIC TRANSACTION & TRANSPARENT LEDGER ENGINE</span>
   </div>
   <div>
+    <button id="btnLocal" class="btn-mode" onclick="forceServer('LOCAL')">🖥 LOCAL</button>
+    <button id="btnCloud" class="btn-mode" onclick="forceServer('CLOUD')">☁ CLOUD</button>
     <button id="refreshBtn" onclick="init()">🔄 SYNC SYSTEM</button>
     <span id="status" class="badge">INITIALIZING</span>
   </div>
@@ -203,15 +215,18 @@ const CLOUD = "https://rds-lab.onrender.com";
 const CART_STORAGE_KEY = "RDS_MARKET_CART_PERSIST_V2";
 
 let API = LOCAL;
+let MANUAL_OVERRIDE = false;
 let PRODUCTS = [];
 let CART = [];
 let BUSINESS_MAP = {};
 
 /* ========================================== */
-/* ULTRA-FAST SMART SERVER DETECT (700ms HARD)*/
+/* DUAL-RACER HYBRID ROUTE DETECTOR          */
 /* ========================================== */
 async function detectAPI() {
+  if (MANUAL_OVERRIDE) return;
   updateStatus("DETECTING ROUTE...", "var(--warn-yellow)");
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 700);
@@ -220,18 +235,45 @@ async function detectAPI() {
     clearTimeout(timeout);
 
     API = LOCAL;
-    updateStatus("LOCAL SERVER 🖥", "var(--neon-green)");
+    updateUIBadge("LOCAL SERVER 🖥", "var(--neon-green)");
   } catch {
     API = CLOUD;
-    updateStatus("CLOUD SERVER ☁", "var(--gold)");
+    updateUIBadge("CLOUD SERVER ☁", "var(--gold)");
   }
 }
 
+function forceServer(mode) {
+  MANUAL_OVERRIDE = true;
+  if (mode === "LOCAL") {
+    API = LOCAL;
+    updateUIBadge("FORCED LOCAL 🖥", "var(--neon-green)");
+  } else {
+    API = CLOUD;
+    updateUIBadge("FORCED CLOUD ☁", "var(--gold)");
+  }
+  out(`Switched marketplace endpoint route to: ${API}`);
+  load();
+}
+
 function updateStatus(text, color = "var(--neon-green)") {
+  updateUIBadge(text, color);
+}
+
+function updateUIBadge(text, color) {
   const el = document.getElementById("status");
   el.innerText = text;
   el.style.borderColor = color;
   el.style.color = color;
+
+  const btnLocal = document.getElementById("btnLocal");
+  const btnCloud = document.getElementById("btnCloud");
+  if (API === LOCAL) {
+    btnLocal.classList.add("active");
+    btnCloud.classList.remove("active");
+  } else {
+    btnCloud.classList.add("active");
+    btnLocal.classList.remove("active");
+  }
 }
 
 function out(msg) {
@@ -240,7 +282,10 @@ function out(msg) {
 }
 
 function setSectionLoading(id, label) {
-  document.getElementById(id).innerHTML = `<span class="loader">⚡ ${label}...</span>`;
+  const el = document.getElementById(id);
+  if (el && !el.children.length) {
+    el.innerHTML = `<span class="loader">⚡ ${label}...</span>`;
+  }
 }
 
 /* ========================================== */
@@ -264,9 +309,9 @@ function loadCartFromStorage() {
 }
 
 /* ========================================== */
-/* EXPONENTIAL BACKOFF COLD-START FETCH ENGINE*/
+/* EXPONENTIAL BACKOFF FETCH ENGINE           */
 /* ========================================== */
-async function safeFetch(url, opt = {}, retries = 5, backoff = 1000) {
+async function safeFetch(url, opt = {}, retries = 3, backoff = 800) {
   try {
     const res = await fetch(url, opt);
     if (!res.ok) {
@@ -282,6 +327,18 @@ async function safeFetch(url, opt = {}, retries = 5, backoff = 1000) {
     }
     throw e;
   }
+}
+
+async function safeFetchWithFallback(endpoints, options = {}) {
+  let lastError;
+  for (const ep of endpoints) {
+    try {
+      return await safeFetch(API + ep, options, 1, 500);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error("All endpoint fallbacks failed");
 }
 
 /* ========================================== */
@@ -305,8 +362,6 @@ async function init() {
 /* ========================================== */
 async function load() {
   try {
-    out(`Synchronizing system state via [${API}]...`);
-
     // 1. Fetch Shops First to Populate BUSINESS_MAP
     await loadShops();
 
@@ -318,11 +373,8 @@ async function load() {
       loadWallets()
     ]);
 
-    out(`✅ All system modules synchronized successfully via ${API}`);
-
   } catch (e) {
     console.error("Master Sync Error:", e);
-    out(`❌ Network error: ${e.message}. Server offline or unconfigured.`);
   }
 }
 
@@ -331,13 +383,12 @@ async function load() {
 /* ========================================== */
 async function loadShops() {
   setSectionLoading("shops", "Loading shops");
-  const data = await safeFetch(API + "/businesses");
+  const data = await safeFetchWithFallback(["/businesses", "/shops"]);
 
   BUSINESS_MAP = {};
   let h = "";
 
-  const rawList = data.businesses || [];
-  // Self-Healing In-Memory Deduplication
+  const rawList = data.businesses || data.shops || [];
   const list = Array.from(new Map(rawList.map(b => [b.id, b])).values());
 
   list.forEach(b => {
@@ -356,7 +407,6 @@ async function loadProducts() {
   const data = await safeFetch(API + "/products");
 
   const rawProducts = data.products || [];
-  // In-Memory Product Deduplication
   PRODUCTS = Array.from(new Map(rawProducts.map(p => [p.id, p])).values());
   let h = "";
 
@@ -537,7 +587,7 @@ async function checkout() {
 }
 
 /* ========================================== */
-/* ORDERS (SORTED LATEST FIRST)              */
+/* ORDERS (SORTED LATEST FIRST)               */
 /* ========================================== */
 async function loadOrders() {
   setSectionLoading("orders", "Loading orders");
@@ -545,7 +595,6 @@ async function loadOrders() {
 
   let h = "";
   const rawList = data.orders || [];
-  // Deduplicate and Sort Orders
   const list = Array.from(new Map(rawList.map(o => [o.id, o])).values())
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
@@ -561,7 +610,7 @@ async function loadOrders() {
       h += `&nbsp;&nbsp;• Product ID: ${o.productId} (x${o.qty || 1})<br>`;
     }
 
-    h += `<span class="small">Timestamp: ${new Date(o.createdAt || Date.now()).toLocaleString()}</span>`;
+    h += `<span class="small">Status: ${o.status || 'PAID'} | Timestamp: ${new Date(o.createdAt || Date.now()).toLocaleString()}</span>`;
     h += `</div>`;
   });
 
@@ -577,7 +626,6 @@ async function loadLedger() {
 
   let h = "";
   const rawList = data.ledger || [];
-  // Deduplicate and Sort Ledger Entries
   const list = Array.from(new Map(rawList.map(l => [l.id, l])).values())
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
@@ -615,6 +663,9 @@ async function loadWallets() {
 
   document.getElementById("wallets").innerHTML = h || "<em>No active wallets.</em>";
 }
+
+/* AUTO REFRESH LOOP */
+setInterval(load, 4000);
 
 /* START APPLICATION */
 init();

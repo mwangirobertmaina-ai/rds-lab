@@ -1,9 +1,81 @@
 {
-  "businesses": [],
-  "products": [],
-  "orders": [],
-  "ledger": [],
-  "wallets": {},
+  "businesses": [
+    {
+      "id": "B_1788923915150_88524",
+      "name": "caro",
+      "createdAt": 1788923915150
+    }
+  ],
+  "products": [
+    {
+      "id": "P_1788923930157_83294",
+      "name": "rice",
+      "price": 800,
+      "businessId": "B_1788923915150_88524",
+      "createdAt": 1788923930157
+    }
+  ],
+  "orders": [
+    {
+      "id": "O_1788924010236_75810",
+      "items": [
+        {
+          "productId": "P_1788923930157_83294",
+          "name": "rice",
+          "price": 800,
+          "qty": 1,
+          "subtotal": 800
+        }
+      ],
+      "total": 800,
+      "commission": 40,
+      "status": "DISPATCHED",
+      "createdAt": 1788924010237,
+      "updatedAt": 1788924010238
+    }
+  ],
+  "ledger": [
+    {
+      "id": "L_1788924010237_89404",
+      "orderId": "O_1788924010236_75810",
+      "entries": [
+        {
+          "account": "CASH",
+          "debit": 800,
+          "credit": 0
+        },
+        {
+          "account": "BUSINESS_PAYABLE",
+          "businessId": "B_1788923915150_88524",
+          "debit": 0,
+          "credit": 760
+        },
+        {
+          "account": "PLATFORM_REVENUE",
+          "debit": 0,
+          "credit": 40
+        }
+      ],
+      "total": 800,
+      "commission": 40,
+      "createdAt": 1788924010237
+    }
+  ],
+  "wallets": {
+    "B_1788923915150_88524": {
+      "businessId": "B_1788923915150_88524",
+      "balance": 760,
+      "transactions": [
+        {
+          "id": "WT_1788924010237_59000",
+          "type": "CREDIT",
+          "amount": 760,
+          "orderId": "O_1788924010236_75810",
+          "createdAt": 1788924010237
+        }
+      ]
+    }
+  },
   "drivers": [
     {
       "id": "D_1788917494728_60043",
@@ -22,5 +94,14 @@
       "createdAt": 1788917494729
     }
   ],
-  "deliveries": []
+  "deliveries": [
+    {
+      "id": "DL_1788924010238_6174",
+      "orderId": "O_1788924010236_75810",
+      "driverId": "D_1788917494728_60043",
+      "status": "ASSIGNED",
+      "createdAt": 1788924010238,
+      "updatedAt": 1788924010238
+    }
+  ]
 }
