@@ -4,6 +4,23 @@
   "orders": [],
   "ledger": [],
   "wallets": {},
-  "drivers": [],
+  "drivers": [
+    {
+      "id": "D_1788917494728_60043",
+      "name": "kamau",
+      "phone": "0700000000",
+      "status": "BUSY",
+      "available": false,
+      "earnings": 0,
+      "location": {
+        "lat": 0,
+        "lng": 0,
+        "heading": 0,
+        "speed": 0,
+        "lastPing": null
+      },
+      "createdAt": 1788917494729
+    }
+  ],
   "deliveries": []
 }
