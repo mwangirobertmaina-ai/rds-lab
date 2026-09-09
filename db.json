@@ -1,35 +1,9 @@
 {
-  "businesses": [
-    { "id": "B_1788827693586_4374", "name": "caro" },
-    { "id": "B_1788827711123_9850", "name": "mwiki" },
-    { "id": "B_1788830296154_7275", "name": "naivas" },
-    { "id": "B_1788892169785_7787", "name": "Quik" }
-  ],
-  "products": [
-    {
-      "id": "P_1788899517011_17507",
-      "name": "rice",
-      "price": 190,
-      "businessId": "B_1788827693586_4374"
-    },
-    {
-      "id": "P_1788827748571_9199",
-      "name": "sugar",
-      "price": 200,
-      "businessId": "B_1788827711123_9850"
-    }
-  ],
+  "businesses": [],
+  "products": [],
   "orders": [],
   "ledger": [],
   "wallets": {},
-  "drivers": [
-    {
-      "id": "D_1788899657127_265",
-      "name": "kamau",
-      "phone": "254721862397",
-      "status": "AVAILABLE",
-      "earnings": 0
-    }
-  ],
+  "drivers": [],
   "deliveries": []
 }

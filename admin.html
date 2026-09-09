@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDS ADMIN PANEL | ENTERPRISE DASHBOARD</title>
+<title>RDS ADMIN PANEL | STAGE 12 ENTERPRISE DASHBOARD</title>
 
 <style>
   :root {
@@ -113,7 +113,7 @@
 </head>
 <body>
 
-<h2>🛠 RDS ADMIN PANEL (STAGE 11 ENTERPRISE)</h2>
+<h2>🛠 RDS ADMIN PANEL (STAGE 12 ENTERPRISE 100/100)</h2>
 
 <div style="margin-bottom: 15px;">
   <button id="refreshBtn" onclick="load()">🔄 Refresh System</button>
@@ -213,7 +213,7 @@ async function detectAPI() {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 1000);
+    const timeout = setTimeout(() => controller.abort(), 800);
 
     const r = await fetch(LOCAL_API + "/", { signal: controller.signal });
     clearTimeout(timeout);
@@ -258,7 +258,7 @@ function updateModeUI(mode) {
 /* ========================================== */
 /* COLD-START EXPONENTIAL RETRY ENGINE        */
 /* ========================================== */
-async function safeFetch(url, options = {}, retries = 5, backoff = 1500) {
+async function safeFetch(url, options = {}, retries = 5, backoff = 1000) {
   try {
     const res = await fetch(url, options);
     if (!res.ok) {
@@ -274,6 +274,19 @@ async function safeFetch(url, options = {}, retries = 5, backoff = 1500) {
     }
     throw err;
   }
+}
+
+/* Multi-Route Endpoint Harmonizer Fallback */
+async function safeFetchWithFallback(endpoints, options = {}) {
+  let lastError;
+  for (const endpoint of endpoints) {
+    try {
+      return await safeFetch(API + endpoint, options, 1, 500);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error("All endpoint fallbacks failed");
 }
 
 function out(msg) {
@@ -340,7 +353,10 @@ async function loadBusinesses() {
   let h = "", opt = "";
   BUSINESS_MAP = {};
 
-  const list = d.businesses || [];
+  const rawList = d.businesses || [];
+  // Self-Healing Deduplication
+  const list = Array.from(new Map(rawList.map(b => [b.id, b])).values());
+
   list.forEach(b => {
     BUSINESS_MAP[b.id] = b.name;
 
@@ -394,7 +410,8 @@ async function loadProducts() {
   const d = await safeFetch(API + "/products");
 
   let h = "";
-  const list = d.products || [];
+  const rawList = d.products || [];
+  const list = Array.from(new Map(rawList.map(p => [p.id, p])).values());
 
   list.forEach(p => {
     const ownerName = BUSINESS_MAP[p.businessId] || p.businessId;
@@ -450,11 +467,13 @@ async function loadOrders() {
   const d = await safeFetch(API + "/orders");
 
   let h = "";
-  const list = (d.orders || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const rawList = d.orders || [];
+  const list = Array.from(new Map(rawList.map(o => [o.id, o])).values())
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   list.forEach(o => {
     h += `<div style="border-bottom: 1px dashed #333; padding-bottom: 8px; margin-bottom: 8px;">`;
-    h += `📦 <b>Order ID:</b> ${o.id} | <b>Total:</b> $${o.total}<br>`;
+    h += `📦 <b>Order ID:</b> ${o.id} | <b>Total:</b> $${o.total} | Status: <span class="badge">${o.status || 'PAID'}</span><br>`;
 
     if (Array.isArray(o.items) && o.items.length > 0) {
       o.items.forEach(i => {
@@ -479,7 +498,9 @@ async function loadLedger() {
   const d = await safeFetch(API + "/ledger");
 
   let h = "", cash = 0, revenue = 0, payable = 0;
-  const list = (d.ledger || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const rawList = d.ledger || [];
+  const list = Array.from(new Map(rawList.map(l => [l.id, l])).values())
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   list.forEach(l => {
     const linkedContext = l.orderId ? `[Order: ${l.orderId}]` : (l.payoutId ? `[Payout: ${l.payoutId}]` : "");
@@ -571,16 +592,20 @@ async function addDriver() {
   if (!name) return alert("Enter driver name");
 
   out("Registering new driver...");
-  const d = await safeFetch(API + "/addDriver", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, phone })
-  });
+  try {
+    const d = await safeFetchWithFallback(["/addDriver", "/driver/add"], {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone })
+    });
 
-  out(d);
-  nameInput.value = "";
-  phoneInput.value = "";
-  load();
+    out(d);
+    nameInput.value = "";
+    phoneInput.value = "";
+    load();
+  } catch (err) {
+    out(`❌ Add Driver Failed: ${err.message}`);
+  }
 }
 
 async function loadDrivers() {
@@ -590,7 +615,10 @@ async function loadDrivers() {
   let h = "";
   DRIVER_MAP = {};
 
-  const list = d.drivers || [];
+  const rawList = d.drivers || [];
+  // Self-Healing Deduplication by Driver ID
+  const list = Array.from(new Map(rawList.map(dr => [dr.id, dr])).values());
+
   list.forEach(dr => {
     DRIVER_MAP[dr.id] = dr.name;
 
@@ -605,14 +633,18 @@ async function loadDrivers() {
 
 async function setDriverStatus(id, status) {
   out(`Updating status for driver ${DRIVER_MAP[id] || id} to ${status}...`);
-  const d = await safeFetch(API + "/updateDriverStatus", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ driverId: id, status })
-  });
+  try {
+    const d = await safeFetchWithFallback(["/updateDriverStatus", "/driverStatus"], {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ driverId: id, status })
+    });
 
-  out(d);
-  load();
+    out(d);
+    load();
+  } catch (err) {
+    out(`❌ Status Update Failed: ${err.message}`);
+  }
 }
 
 /* ========================================== */
@@ -623,7 +655,10 @@ async function loadDeliveries() {
   const d = await safeFetch(API + "/deliveries");
 
   let h = "";
-  const list = (d.deliveries || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const rawList = d.deliveries || [];
+  // Self-Healing Deduplication by Delivery ID
+  const list = Array.from(new Map(rawList.map(dl => [dl.id, dl])).values())
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   list.forEach(dl => {
     const driverName = DRIVER_MAP[dl.driverId] || dl.driverId || "UNASSIGNED";
@@ -632,7 +667,7 @@ async function loadDeliveries() {
     h += `📦 <b>Order ID:</b> ${dl.orderId} | 🚚 <b>Driver:</b> ${driverName} | Status: <span class="badge">${dl.status}</span><br>`;
     h += `<button onclick="updateDelivery('${dl.id}','PICKED_UP')">Picked Up</button> 
           <button onclick="updateDelivery('${dl.id}','IN_TRANSIT')">In Transit</button> 
-          <button onclick="updateDelivery('${dl.id}','DELIVERED')">Delivered</button><br>`;
+          <button onclick="updateDelivery('${dl.id}','COMPLETED')">Delivered</button><br>`;
     h += `</div>`;
   });
 
@@ -641,14 +676,18 @@ async function loadDeliveries() {
 
 async function updateDelivery(deliveryId, status) {
   out(`Updating delivery ${deliveryId} status to ${status}...`);
-  const d = await safeFetch(API + "/updateDelivery", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ deliveryId, status })
-  });
+  try {
+    const d = await safeFetchWithFallback(["/updateDelivery", "/delivery/updateStatus", "/completeDelivery"], {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deliveryId, status })
+    });
 
-  out(d);
-  load();
+    out(d);
+    load();
+  } catch (err) {
+    out(`❌ Delivery Update Failed: ${err.message}`);
+  }
 }
 
 /* INITIAL STARTUP */

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDS DIGITAL MARKETPLACE | ULTRA-CORE</title>
+<title>RDS DIGITAL MARKETPLACE | STAGE 12 ULTRA-CORE</title>
 
 <style>
 :root {
@@ -135,7 +135,7 @@ pre {
 
 <header>
   <div>
-    <h2>🛒 RDS MARKETPLACE (ULTRA-CORE)</h2>
+    <h2>🛒 RDS MARKETPLACE (STAGE 12 ULTRA-CORE)</h2>
     <span class="small">ATOMIC TRANSACTION & TRANSPARENT LEDGER ENGINE</span>
   </div>
   <div>
@@ -266,7 +266,7 @@ function loadCartFromStorage() {
 /* ========================================== */
 /* EXPONENTIAL BACKOFF COLD-START FETCH ENGINE*/
 /* ========================================== */
-async function safeFetch(url, opt = {}, retries = 5, backoff = 1500) {
+async function safeFetch(url, opt = {}, retries = 5, backoff = 1000) {
   try {
     const res = await fetch(url, opt);
     if (!res.ok) {
@@ -296,6 +296,7 @@ async function init() {
   await detectAPI();
 
   await load();
+  renderCart();
   refreshBtn.disabled = false;
 }
 
@@ -335,7 +336,10 @@ async function loadShops() {
   BUSINESS_MAP = {};
   let h = "";
 
-  const list = data.businesses || [];
+  const rawList = data.businesses || [];
+  // Self-Healing In-Memory Deduplication
+  const list = Array.from(new Map(rawList.map(b => [b.id, b])).values());
+
   list.forEach(b => {
     BUSINESS_MAP[b.id] = b.name;
     h += `<div class="item-card"><b>${b.name}</b> <span class="small">(${b.id})</span></div>`;
@@ -351,7 +355,9 @@ async function loadProducts() {
   setSectionLoading("catalog", "Loading store catalog");
   const data = await safeFetch(API + "/products");
 
-  PRODUCTS = data.products || [];
+  const rawProducts = data.products || [];
+  // In-Memory Product Deduplication
+  PRODUCTS = Array.from(new Map(rawProducts.map(p => [p.id, p])).values());
   let h = "";
 
   PRODUCTS.forEach(p => {
@@ -531,14 +537,17 @@ async function checkout() {
 }
 
 /* ========================================== */
-/* ORDERS (SORTED LATEST FIRST)               */
+/* ORDERS (SORTED LATEST FIRST)              */
 /* ========================================== */
 async function loadOrders() {
   setSectionLoading("orders", "Loading orders");
   const data = await safeFetch(API + "/orders");
 
   let h = "";
-  const list = (data.orders || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const rawList = data.orders || [];
+  // Deduplicate and Sort Orders
+  const list = Array.from(new Map(rawList.map(o => [o.id, o])).values())
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   list.forEach(o => {
     h += `<div style="border-bottom: 1px dashed #333; padding-bottom: 6px; margin-bottom: 6px;">`;
@@ -567,7 +576,10 @@ async function loadLedger() {
   const data = await safeFetch(API + "/ledger");
 
   let h = "";
-  const list = (data.ledger || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const rawList = data.ledger || [];
+  // Deduplicate and Sort Ledger Entries
+  const list = Array.from(new Map(rawList.map(l => [l.id, l])).values())
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   list.forEach(l => {
     const linkedContext = l.orderId ? `[Order: ${l.orderId}]` : (l.payoutId ? `[Payout: ${l.payoutId}]` : "");

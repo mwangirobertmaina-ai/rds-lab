@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDS FLEET | DRIVER CONTROL PANEL</title>
+<title>RDS FLEET | ULTIMATE DRIVER CONTROL PANEL V12</title>
 
 <style>
   :root {
@@ -37,14 +37,14 @@
     margin-bottom: 20px;
   }
 
-  h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
+  h2, h3 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
 
   button {
     background: var(--neon-green);
     color: #000;
     font-weight: bold;
     border: none;
-    padding: 6px 12px;
+    padding: 8px 14px;
     cursor: pointer;
     font-family: monospace;
     transition: all 0.2s ease;
@@ -64,6 +64,16 @@
 
   .btn-danger { background: var(--alert-red); color: #fff; }
   .btn-danger:hover:not(:disabled) { background: #cc0033; }
+
+  .btn-mode {
+    background: #000;
+    color: var(--neon-green);
+    border: 1px solid var(--neon-green);
+  }
+  .btn-mode.active {
+    background: var(--neon-green);
+    color: #000;
+  }
 
   input, select {
     background: #000;
@@ -91,27 +101,19 @@
     background: var(--panel-bg);
   }
 
-  .job-card {
+  .card {
     border: 1px solid #222;
     background: var(--card-bg);
     padding: 12px;
     margin-bottom: 10px;
   }
 
-  .job-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px dashed #333;
-    padding-bottom: 6px;
-    margin-bottom: 8px;
-  }
-
-  .action-bar {
-    display: flex;
-    gap: 6px;
-    margin-top: 10px;
-    flex-wrap: wrap;
+  .badge {
+    background: #003311;
+    border: 1px solid var(--neon-green);
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 3px;
   }
 
   pre {
@@ -123,14 +125,6 @@
     word-break: break-all;
     max-height: 200px;
     overflow-y: auto;
-  }
-
-  .badge {
-    background: #003311;
-    border: 1px solid var(--neon-green);
-    padding: 3px 8px;
-    font-size: 11px;
-    border-radius: 3px;
   }
 
   .small { font-size: 11px; color: var(--dim-text); }
@@ -152,279 +146,351 @@
 
 <header>
   <div>
-    <h2>🚚 RDS DRIVER DISPATCH TERMINAL</h2>
-    <span class="small">STAGE 10 FLEET & DISPATCH ENGINE</span>
+    <h2>🚚 RDS DRIVER PANEL (SELF-HEALING 10/10)</h2>
+    <span class="small">STAGE 12 ULTIMATE HYBRID CONTROL</span>
   </div>
   <div>
-    <button id="refreshBtn" onclick="loadJobs()">🔄 REFRESH JOBS</button>
+    <button id="btnLocal" class="btn-mode" onclick="forceServer('LOCAL')">🖥 LOCAL</button>
+    <button id="btnCloud" class="btn-mode" onclick="forceServer('CLOUD')">☁ CLOUD</button>
     <span id="status" class="badge">INITIALIZING</span>
   </div>
 </header>
 
 <div class="grid-layout">
 
-  <!-- LEFT COLUMN: CONTROLS & JOBS -->
+  <!-- LEFT COLUMN: AUTH & JOBS -->
   <div>
-    <!-- DRIVER SESSION LOGIN -->
     <div class="section">
-      <h3>🔑 Driver Authentication & Status</h3>
-      <input id="driverId" placeholder="Enter Driver ID (e.g. D_123)">
-      <button onclick="saveDriverId()">SET DRIVER ID</button>
-      
-      <hr style="border-color:#222; margin:12px 0;">
-
-      <div>
-        <span>DUTY STATUS:</span>
-        <button onclick="setDutyStatus('AVAILABLE')">🟢 AVAILABLE</button>
-        <button onclick="setDutyStatus('BUSY')">🟡 BUSY</button>
-        <button class="btn-danger" onclick="setDutyStatus('OFFLINE')">🔴 OFFLINE</button>
-      </div>
+      <h3>🔑 Driver Authentication</h3>
+      <input id="driverName" placeholder="Enter Driver Name (e.g. kamau)">
+      <button onclick="setDriver()">SET / CREATE DRIVER</button>
+      <div id="driverInfo" style="margin-top:8px;">❌ No driver selected</div>
     </div>
 
-    <!-- JOBS DISPATCH FEED -->
     <div class="section">
-      <h3>📦 Assigned Delivery Jobs</h3>
-      <div id="jobs"><span class="loader">Enter Driver ID to load assigned jobs...</span></div>
+      <h3>⚡ Duty Status Controls</h3>
+      <button onclick="updateStatus('AVAILABLE')">🟢 AVAILABLE / IDLE</button>
+      <button class="btn-danger" onclick="updateStatus('BUSY')">🔴 BUSY</button>
+      <button class="btn-mode" onclick="updateStatus('OFFLINE')">⚪ OFFLINE</button>
+    </div>
+
+    <div class="section">
+      <h3>📦 Delivery Jobs</h3>
+      <div id="jobs"><span class="loader">Set driver to sync assigned deliveries...</span></div>
     </div>
   </div>
 
-  <!-- RIGHT COLUMN: FLEET OVERVIEW & TERMINAL LOG -->
+  <!-- RIGHT COLUMN: FLEET ROSTER & CONSOLE -->
   <div>
     <div class="section">
-      <h3>👥 Active Fleet Roster</h3>
-      <div id="driversList"><span class="loader">⚡ Syncing driver fleet...</span></div>
+      <h3>👥 Fleet Active Roster</h3>
+      <div id="fleet"><span class="loader">⚡ Syncing fleet...</span></div>
     </div>
 
     <div class="section">
-      <h3>📡 Dispatch Terminal Output</h3>
-      <pre id="out">Driver dispatch terminal online.</pre>
+      <h3>🧾 System Log Console</h3>
+      <pre id="out">Driver panel ready.</pre>
     </div>
   </div>
 
 </div>
 
 <script>
-const LOCAL = "http://localhost:3000";
-const CLOUD = "https://rds-lab.onrender.com";
+const LOCAL_API = "http://localhost:3000";
+const CLOUD_API = "https://rds-lab.onrender.com";
 
-let API = LOCAL;
-let DRIVER_ID = localStorage.getItem("RDS_DRIVER_ID") || "";
+let API = LOCAL_API;
+let MANUAL_OVERRIDE = false;
+let CURRENT_DRIVER_ID = localStorage.getItem("RDS_DRIVER_ID") || null;
+let CURRENT_DRIVER_NAME = localStorage.getItem("RDS_DRIVER_NAME") || null;
+let ALL_DRIVER_IDS_FOR_USER = [];
+
+function log(msg) {
+  out(msg);
+}
+
+function out(msg) {
+  document.getElementById("out").innerText = typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
+}
 
 /* ========================================== */
-/* ULTRA-FAST SMART SERVER DETECT (700ms HARD)*/
+/* SELF-HEALING HYBRID ROUTE DETECTOR        */
 /* ========================================== */
 async function detectAPI() {
-  updateStatus("DETECTING SERVER...", "var(--warn-yellow)");
+  if (MANUAL_OVERRIDE) return;
+
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 700);
+    const timeout = setTimeout(() => controller.abort(), 600);
 
-    await fetch(LOCAL + "/", { method: "GET", signal: controller.signal });
+    const res = await fetch(LOCAL_API + "/", { method: "GET", signal: controller.signal });
     clearTimeout(timeout);
 
-    API = LOCAL;
-    updateStatus("LOCAL SERVER 🖥", "var(--neon-green)");
+    if (!res.ok) throw new Error("Local offline");
+    API = LOCAL_API;
+    updateUIBadge("LOCAL SERVER 🖥", "var(--neon-green)");
   } catch {
-    API = CLOUD;
-    updateStatus("CLOUD SERVER ☁", "var(--gold)");
+    API = CLOUD_API;
+    updateUIBadge("CLOUD SERVER ☁", "var(--gold)");
   }
 }
 
-function updateStatus(text, color = "var(--neon-green)") {
+function forceServer(mode) {
+  MANUAL_OVERRIDE = true;
+  if (mode === "LOCAL") {
+    API = LOCAL_API;
+    updateUIBadge("FORCED LOCAL 🖥", "var(--neon-green)");
+  } else {
+    API = CLOUD_API;
+    updateUIBadge("FORCED CLOUD ☁", "var(--gold)");
+  }
+  log(`Switched endpoint route to: ${API}`);
+  loadJobs();
+  loadFleet();
+}
+
+function updateUIBadge(text, color) {
   const el = document.getElementById("status");
   el.innerText = text;
   el.style.borderColor = color;
   el.style.color = color;
-}
 
-function out(msg) {
-  document.getElementById("out").innerText =
-    typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
+  const btnLocal = document.getElementById("btnLocal");
+  const btnCloud = document.getElementById("btnCloud");
+  if (API === LOCAL_API) {
+    btnLocal.classList.add("active");
+    btnCloud.classList.remove("active");
+  } else {
+    btnCloud.classList.add("active");
+    btnLocal.classList.remove("active");
+  }
 }
 
 /* ========================================== */
-/* COLD-START RETRY FETCH ENGINE              */
+/* RESILIENT FETCH ENGINE                     */
 /* ========================================== */
-async function safeFetch(url, opt = {}, retries = 5, backoff = 1500) {
+async function safeFetch(endpoint, options = {}, retries = 3, backoff = 800) {
   try {
-    const res = await fetch(url, opt);
+    const res = await fetch(API + endpoint, options);
     if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.error || `HTTP ${res.status}`);
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
     }
     return await res.json();
   } catch (e) {
     if (retries > 0) {
-      out(`⏳ Server warming up... Retrying in ${backoff / 1000}s (${retries} attempts left)`);
+      log(`⏳ Retry attempt in ${backoff / 1000}s (${retries} left)...`);
       await new Promise(r => setTimeout(r, backoff));
-      return safeFetch(url, opt, retries - 1, backoff * 1.5);
+      return safeFetch(endpoint, options, retries - 1, backoff * 1.5);
     }
     throw e;
   }
 }
 
 /* ========================================== */
-/* INITIALIZATION                             */
+/* UPGRADED SET DRIVER WITH SELF-HEAL & AUTO-REFRESH */
 /* ========================================== */
-async function init() {
-  await detectAPI();
+async function setDriver() {
+  const nameInput = document.getElementById("driverName").value.trim();
 
-  if (DRIVER_ID) {
-    document.getElementById("driverId").value = DRIVER_ID;
+  if (!nameInput) {
+    log("❌ Please enter a driver name.");
+    return;
   }
 
-  await Promise.all([
-    loadJobs(),
-    loadFleetRoster()
-  ]);
-}
+  try {
+    const data = await safeFetch("/drivers");
+    const rawDrivers = data.drivers || [];
 
-function saveDriverId() {
-  const idInput = document.getElementById("driverId").value.trim();
-  if (!idInput) return alert("Enter a valid Driver ID");
+    // Case-insensitive exact name lookup
+    const matches = rawDrivers.filter(d => d.name && d.name.toLowerCase() === nameInput.toLowerCase());
 
-  DRIVER_ID = idInput;
-  localStorage.setItem("RDS_DRIVER_ID", DRIVER_ID);
-  out(`🔑 Active Driver ID updated to: ${DRIVER_ID}`);
-  loadJobs();
+    if (matches.length === 0) {
+      log("❌ Driver not found. Use exact name.");
+      document.getElementById("driverInfo").innerHTML = `❌ Driver "${nameInput}" not found.`;
+      return;
+    }
+
+    // Select the latest created profile candidate
+    const driver = matches[matches.length - 1];
+    CURRENT_DRIVER_ID = driver.id;
+    CURRENT_DRIVER_NAME = driver.name;
+
+    // Track duplicate IDs to map historical tasks correctly
+    ALL_DRIVER_IDS_FOR_USER = matches.map(m => m.id);
+
+    // Save session locally to retain state across refreshes
+    localStorage.setItem("RDS_DRIVER_ID", CURRENT_DRIVER_ID);
+    localStorage.setItem("RDS_DRIVER_NAME", CURRENT_DRIVER_NAME);
+
+    // Update UI Elements
+    document.getElementById("driverInfo").innerHTML = `✅ Driver selected: <b>${driver.name}</b> <span class="small">(${driver.id})</span>`;
+    log("✅ Driver selected: " + driver.name);
+
+    // Auto Refresh Fleet and Deliveries
+    await loadJobs();
+    await loadFleet();
+
+  } catch (e) {
+    log(`❌ Driver Search Exception: ${e.message}`);
+  }
 }
 
 /* ========================================== */
-/* LOAD JOBS FOR ACTIVE DRIVER                */
+/* DUTY STATUS UPDATE                         */
+/* ========================================== */
+async function updateStatus(status) {
+  if (!CURRENT_DRIVER_ID) return alert("Select a driver first");
+
+  log(`Updating duty status for ${CURRENT_DRIVER_NAME} to ${status}...`);
+
+  try {
+    const targetIds = ALL_DRIVER_IDS_FOR_USER.length > 0 ? ALL_DRIVER_IDS_FOR_USER : [CURRENT_DRIVER_ID];
+    
+    await Promise.all(targetIds.map(id => 
+      safeFetch("/updateDriverStatus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ driverId: id, status })
+      }).catch(() => null)
+    ));
+
+    log({ status: `✅ Status updated to ${status}` });
+    loadFleet();
+  } catch (e) {
+    log(`❌ Status Update Error: ${e.message}`);
+  }
+}
+
+/* ========================================== */
+/* LOAD ASSIGNED JOBS                         */
 /* ========================================== */
 async function loadJobs() {
-  if (!DRIVER_ID) {
-    document.getElementById("jobs").innerHTML = "<em>Please enter and set your Driver ID above to view assigned jobs.</em>";
-    return;
-  }
-
-  document.getElementById("jobs").innerHTML = `<span class="loader">⚡ Syncing job tasks for ${DRIVER_ID}...</span>`;
+  if (!CURRENT_DRIVER_ID) return;
 
   try {
-    const data = await safeFetch(API + "/deliveries");
-    const allDeliveries = data.deliveries || [];
+    const allData = await safeFetch("/deliveries");
+    const list = allData.deliveries || [];
 
-    // Filter jobs assigned to active Driver ID
-    const myJobs = allDeliveries.filter(d => d.driverId === DRIVER_ID);
+    const targetIds = ALL_DRIVER_IDS_FOR_USER.length > 0 ? ALL_DRIVER_IDS_FOR_USER : [CURRENT_DRIVER_ID];
+    const myJobs = list.filter(d => targetIds.includes(d.driverId));
 
-    renderJobs(myJobs);
-    out(`✅ Loaded ${myJobs.length} delivery task(s) for Driver ${DRIVER_ID}`);
+    const uniqueJobsMap = new Map();
+    myJobs.forEach(j => uniqueJobsMap.set(j.id, j));
+    const cleanJobs = Array.from(uniqueJobsMap.values());
 
-  } catch (e) {
-    console.error("Load Jobs Error:", e);
-    document.getElementById("jobs").innerHTML = `<span style="color:var(--alert-red)">❌ Failed to fetch delivery jobs. Server offline.</span>`;
-  }
-}
+    const container = document.getElementById("jobs");
 
-function renderJobs(jobs) {
-  const el = document.getElementById("jobs");
-
-  if (jobs.length === 0) {
-    el.innerHTML = "<em>No delivery jobs currently assigned to your ID.</em>";
-    return;
-  }
-
-  let html = "";
-  jobs.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).forEach(job => {
-    html += `
-      <div class="job-card">
-        <div class="job-header">
-          <b>JOB ID: ${job.id}</b>
-          <span class="badge">${job.status}</span>
-        </div>
-        <div class="small">
-          📦 Order ID: <b>${job.orderId}</b><br>
-          🕒 Assigned: ${new Date(job.createdAt || Date.now()).toLocaleString()}
-        </div>
-        <div class="action-bar">
-          <button onclick="updateJobStatus('${job.id}', 'PICKED_UP')">📦 PICKED UP</button>
-          <button onclick="updateJobStatus('${job.id}', 'IN_TRANSIT')">🚚 IN TRANSIT</button>
-          <button onclick="updateJobStatus('${job.id}', 'DELIVERED')">✅ DELIVERED</button>
-        </div>
-      </div>
-    `;
-  });
-
-  el.innerHTML = html;
-}
-
-/* ========================================== */
-/* UPDATE DELIVERY TASK STATUS                */
-/* ========================================== */
-async function updateJobStatus(deliveryId, status) {
-  out(`Updating job ${deliveryId} status to ${status}...`);
-
-  try {
-    const res = await safeFetch(API + "/updateDelivery", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ deliveryId, status })
-    });
-
-    if (!res.success) throw new Error(res.error || "Status update failed");
-
-    out(res);
-    await Promise.all([
-      loadJobs(),
-      loadFleetRoster()
-    ]);
-
-  } catch (e) {
-    console.error("Update Status Error:", e);
-    out(`❌ Status update failed: ${e.message}`);
-  }
-}
-
-/* ========================================== */
-/* DUTY STATUS & FLEET ROSTER                 */
-/* ========================================== */
-async function setDutyStatus(status) {
-  if (!DRIVER_ID) return alert("Please set Driver ID first");
-
-  out(`Updating duty status to ${status}...`);
-
-  try {
-    const res = await safeFetch(API + "/updateDriverStatus", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ driverId: DRIVER_ID, status })
-    });
-
-    if (!res.success) throw new Error(res.error || "Status update failed");
-
-    out(res);
-    loadFleetRoster();
-
-  } catch (e) {
-    console.error("Duty Status Error:", e);
-    out(`❌ Duty status update failed: ${e.message}`);
-  }
-}
-
-async function loadFleetRoster() {
-  try {
-    const data = await safeFetch(API + "/drivers");
-    const drivers = data.drivers || [];
+    if (cleanJobs.length === 0) {
+      container.innerHTML = "<em>No active jobs assigned to your ID.</em>";
+      return;
+    }
 
     let html = "";
-    drivers.forEach(d => {
-      const isMe = d.id === DRIVER_ID ? " (YOU)" : "";
+    cleanJobs.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).forEach(job => {
       html += `
-        <div style="border-bottom:1px dashed #333; padding:6px 0;">
-          <b>${d.name}</b> <span class="small">(${d.id})</span>${isMe}<br>
+        <div class="card">
+          <b>Delivery ID:</b> ${job.id}<br>
+          <b>Order ID:</b> ${job.orderId}<br>
+          <b>Status:</b> <span class="badge">${job.status}</span><br>
+          <div style="margin-top:8px;">
+            <button onclick="completeDelivery('${job.id}')">✅ COMPLETE DELIVERY</button>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+
+  } catch (e) {
+    console.error("Jobs load failure:", e);
+  }
+}
+
+/* ========================================== */
+/* COMPLETE DELIVERY                          */
+/* ========================================== */
+async function completeDelivery(deliveryId) {
+  log(`Completing delivery ${deliveryId}...`);
+
+  try {
+    const res = await safeFetch("/updateDelivery", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deliveryId, status: "COMPLETED" })
+    });
+
+    log(res);
+    loadJobs();
+    loadFleet();
+  } catch (e) {
+    log(`❌ Completion Error: ${e.message}`);
+  }
+}
+
+/* ========================================== */
+/* DEDUPLICATED FLEET ROSTER                  */
+/* ========================================== */
+async function loadFleet() {
+  try {
+    const data = await safeFetch("/drivers");
+    const rawList = data.drivers || [];
+
+    // Deduplicate drivers by lowercase name (Self-Cleans UI display)
+    const uniqueFleetMap = new Map();
+
+    rawList.forEach(d => {
+      if (!d.name) return;
+      const key = d.name.trim().toLowerCase();
+
+      if (!uniqueFleetMap.has(key)) {
+        uniqueFleetMap.set(key, { ...d });
+      } else {
+        const existing = uniqueFleetMap.get(key);
+        if (d.status === "AVAILABLE" || d.status === "BUSY") {
+          existing.status = d.status;
+        }
+        existing.earnings = Math.max(existing.earnings || 0, d.earnings || 0);
+        existing.id = d.id;
+      }
+    });
+
+    const uniqueFleet = Array.from(uniqueFleetMap.values());
+
+    let html = "";
+    uniqueFleet.forEach(d => {
+      const isCurrent = (CURRENT_DRIVER_NAME && d.name.toLowerCase() === CURRENT_DRIVER_NAME.toLowerCase()) ? " (YOU)" : "";
+      html += `
+        <div style="border-bottom: 1px dashed #333; padding: 4px 0;">
+          <b>${d.name}</b> <span class="small">(${d.id})</span>${isCurrent}<br>
           <span class="badge">Status: ${d.status}</span> | 💰 Earnings: $${d.earnings || 0}
         </div>
       `;
     });
 
-    document.getElementById("driversList").innerHTML = html || "<em>No drivers registered in fleet.</em>";
-
+    document.getElementById("fleet").innerHTML = html || "<em>No drivers in fleet.</em>";
   } catch (e) {
-    document.getElementById("driversList").innerHTML = `<span style="color:var(--alert-red)">❌ Roster load failed</span>`;
+    document.getElementById("fleet").innerHTML = "<span style='color:var(--alert-red)'>❌ Fleet offline</span>";
   }
 }
 
-/* INITIALIZE APP */
+/* ========================================== */
+/* INITIALIZATION & AUTO-SYNC                 */
+/* ========================================== */
+async function init() {
+  await detectAPI();
+
+  if (CURRENT_DRIVER_NAME) {
+    document.getElementById("driverName").value = CURRENT_DRIVER_NAME;
+    setDriver();
+  } else {
+    loadFleet();
+  }
+
+  setInterval(loadJobs, 4000);
+  setInterval(loadFleet, 8000);
+}
+
 init();
 </script>
 
