@@ -4,6 +4,15 @@
       "id": "B_1788923915150_88524",
       "name": "caro",
       "createdAt": 1788923915150
+    },
+    {
+      "id": "BIZ_1788934394576_9413",
+      "name": "quick",
+      "category": "supermarket",
+      "address": "Nairobi, Kenya",
+      "phone": "0700000000",
+      "balance": 0,
+      "createdAt": 1788934394576
     }
   ],
   "products": [
@@ -12,7 +21,26 @@
       "name": "rice",
       "price": 800,
       "businessId": "B_1788923915150_88524",
-      "createdAt": 1788923930157
+      "createdAt": 1788923930157,
+      "stock": 0
+    },
+    {
+      "id": "PROD_1788937039819_28273",
+      "businessId": "B_1788923915150_88524",
+      "name": "sugur",
+      "price": 180,
+      "stock": 50,
+      "category": "General",
+      "createdAt": 1788937039819
+    },
+    {
+      "id": "PROD_1788938016535_28405",
+      "businessId": "B_1788923915150_88524",
+      "name": "sugure",
+      "price": 170,
+      "stock": 50,
+      "category": "General",
+      "createdAt": 1788938016535
     }
   ],
   "orders": [
@@ -70,6 +98,48 @@
       "total": 800,
       "status": "PLACED",
       "createdAt": 1788932182240
+    },
+    {
+      "id": "ORD_1788933857516_27173",
+      "customerName": "Robert (Valued Customer)",
+      "customerPhone": "0700000000",
+      "deliveryAddress": "Nairobi CBD, Kenya",
+      "targetLocation": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "items": [
+        {
+          "productId": "P_1788923930157_83294",
+          "name": "rice",
+          "price": 800,
+          "quantity": 8
+        }
+      ],
+      "total": 6400,
+      "status": "PLACED",
+      "createdAt": 1788933857517
+    },
+    {
+      "id": "ORD_1788933961695_78001",
+      "customerName": "Admin Dispatch Simulation",
+      "customerPhone": "0722000111",
+      "deliveryAddress": "Nairobi CBD",
+      "targetLocation": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "items": [
+        {
+          "productId": "PROD_DISPATCH_TEST",
+          "name": "Simulated Market Item",
+          "price": 40,
+          "quantity": 1
+        }
+      ],
+      "total": 40,
+      "status": "DISPATCHED",
+      "createdAt": 1788933961695
     }
   ],
   "ledger": [
@@ -129,6 +199,20 @@
       "type": "ORDER_PAYMENT",
       "amount": 800,
       "timestamp": 1788932182240
+    },
+    {
+      "id": "TX_1788933857517_96205",
+      "orderId": "ORD_1788933857516_27173",
+      "type": "ORDER_PAYMENT",
+      "amount": 6400,
+      "timestamp": 1788933857517
+    },
+    {
+      "id": "TX_1788933961695_20137",
+      "orderId": "ORD_1788933961695_78001",
+      "type": "ORDER_PAYMENT",
+      "amount": 40,
+      "timestamp": 1788933961695
     }
   ],
   "wallets": {
@@ -155,6 +239,10 @@
     "SYSTEM_PLATFORM": {
       "balance": 0,
       "escrow": 0
+    },
+    "BIZ_1788934394576_9413": {
+      "balance": 0,
+      "escrow": 0
     }
   },
   "drivers": [
@@ -162,8 +250,8 @@
       "id": "D_1788917494728_60043",
       "name": "kamau",
       "phone": "0700000000",
-      "status": "BUSY",
-      "available": false,
+      "status": "AVAILABLE",
+      "available": true,
       "earnings": 0,
       "location": {
         "lat": 0,
@@ -173,6 +261,22 @@
         "lastPing": null
       },
       "createdAt": 1788917494729
+    },
+    {
+      "id": "D_1788934424495_92753",
+      "name": "robert",
+      "phone": "254722123456",
+      "status": "AVAILABLE",
+      "available": true,
+      "earnings": 0,
+      "location": {
+        "lat": -1.286389,
+        "lng": 36.817223,
+        "heading": 0,
+        "speed": 0,
+        "lastPing": 1788934424495
+      },
+      "createdAt": 1788934424495
     }
   ],
   "deliveries": [
@@ -183,6 +287,14 @@
       "status": "ASSIGNED",
       "createdAt": 1788924010238,
       "updatedAt": 1788924010238
+    },
+    {
+      "id": "DEL_1788933961695_94310",
+      "orderId": "ORD_1788933961695_78001",
+      "driverId": "D_1788917494728_60043",
+      "status": "ASSIGNED",
+      "createdAt": 1788933961695,
+      "updatedAt": 1788933961695
     }
   ]
 }

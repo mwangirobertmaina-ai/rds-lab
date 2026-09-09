@@ -1,704 +1,500 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDS DIGITAL MARKETPLACE | ULTRA-ENTERPRISE CORE</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDS MERCHANT PORTAL | ENTERPRISE CORE</title>
 
-<style>
-  :root {
-    --neon-green: #00ff66;
-    --dark-bg: #0a0a0a;
-    --panel-bg: #121212;
-    --card-bg: #181818;
-    --border-color: #00ff66;
-    --dim-text: #888888;
-    --alert-red: #ff3366;
-    --gold: #ffd700;
-    --warn-yellow: #ffff00;
-  }
+  <style>
+    :root {
+      --neon-green: #00ff88;
+      --dark-bg: #000000;
+      --panel-bg: #111111;
+      --card-bg: #181818;
+      --text-dim: #888888;
+      --alert-red: #ff3366;
+      --warn-yellow: #ffff00;
+      --gold: #ffd700;
+      --cyan: #00e5ff;
+    }
 
-  * { box-sizing: border-box; }
+    * { box-sizing: border-box; }
 
-  body {
-    font-family: 'Courier New', Courier, monospace;
-    background: var(--dark-bg);
-    color: var(--neon-green);
-    padding: 20px;
-    margin: 0;
-  }
+    body {
+      background: var(--dark-bg);
+      color: var(--neon-green);
+      font-family: monospace;
+      padding: 15px;
+      margin: 0;
+    }
 
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid var(--neon-green);
-    padding-bottom: 12px;
-    margin-bottom: 20px;
-  }
+    h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
 
-  h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
+    button {
+      margin: 4px;
+      padding: 9px 14px;
+      background: var(--neon-green);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-family: monospace;
+      transition: opacity 0.2s;
+    }
 
-  button {
-    background: var(--neon-green);
-    color: #000;
-    font-weight: bold;
-    border: none;
-    padding: 8px 14px;
-    cursor: pointer;
-    font-family: monospace;
-    transition: all 0.2s ease;
-    text-transform: uppercase;
-  }
+    button:hover { opacity: 0.85; }
 
-  button:hover:not(:disabled) {
-    background: #00cc52;
-    box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
-  }
+    .btn-danger { background: var(--alert-red); color: #fff; }
+    .btn-warn { background: var(--warn-yellow); color: #000; }
+    .btn-gold { background: var(--gold); color: #000; }
 
-  button:disabled {
-    background: #333;
-    color: #666;
-    cursor: not-allowed;
-  }
+    select, input {
+      padding: 8px;
+      background: #111;
+      color: var(--neon-green);
+      border: 1px solid var(--neon-green);
+      font-family: monospace;
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
 
-  .btn-danger { background: var(--alert-red); color: #fff; }
-  .btn-danger:hover:not(:disabled) { background: #cc0033; box-shadow: 0 0 10px rgba(255, 51, 102, 0.4); }
+    .box {
+      border: 1px solid var(--neon-green);
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--panel-bg);
+    }
 
-  .btn-mode {
-    background: #000;
-    color: var(--neon-green);
-    border: 1px solid var(--neon-green);
-  }
-  .btn-mode.active {
-    background: var(--neon-green);
-    color: #000;
-  }
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
 
-  .grid-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid #333;
+      padding: 12px;
+      text-align: center;
+    }
 
-  @media (max-width: 900px) {
-    .grid-layout { grid-template-columns: 1fr; }
-  }
+    .kpi-val {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--gold);
+      margin-top: 4px;
+    }
 
-  .section {
-    border: 1px solid var(--border-color);
-    padding: 16px;
-    margin-bottom: 16px;
-    background: var(--panel-bg);
-  }
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
 
-  .item-card {
-    border: 1px solid #222;
-    background: var(--card-bg);
-    padding: 10px;
-    margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
+    @media (max-width: 900px) {
+      .grid-layout { grid-template-columns: 1fr; }
+    }
 
-  .controls button {
-    padding: 3px 8px;
-    margin-left: 4px;
-  }
+    .status-badge {
+      font-size: 0.85em;
+      padding: 2px 6px;
+      border: 1px solid var(--neon-green);
+      display: inline-block;
+      margin-top: 5px;
+    }
 
-  input, select {
-    background: #000;
-    color: var(--neon-green);
-    border: 1px solid var(--neon-green);
-    padding: 8px;
-    font-family: monospace;
-    font-size: 14px;
-    margin-bottom: 8px;
-    width: 100%;
-  }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 140px;
+      overflow-y: auto;
+      background: #050505;
+      padding: 8px;
+      border: 1px solid #222;
+      color: #00ff88;
+    }
 
-  pre {
-    background: #000;
-    padding: 12px;
-    border: 1px solid #333;
-    color: var(--neon-green);
-    white-space: pre-wrap;
-    word-break: break-all;
-    max-height: 250px;
-    overflow-y: auto;
-  }
+    .card {
+      padding: 10px;
+      border: 1px solid #333;
+      margin-bottom: 8px;
+      background: #181818;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-  .badge {
-    background: #003311;
-    border: 1px solid var(--neon-green);
-    padding: 4px 8px;
-    font-size: 11px;
-    border-radius: 3px;
-  }
-
-  .small { font-size: 11px; color: var(--dim-text); }
-
-  .loader {
-    color: var(--warn-yellow);
-    font-style: italic;
-    animation: pulse 1s infinite alternate;
-  }
-
-  @keyframes pulse {
-    from { opacity: 0.3; }
-    to { opacity: 1; }
-  }
-</style>
+    .small { font-size: 11px; color: var(--text-dim); }
+  </style>
 </head>
 
 <body>
 
-<header>
+<h2>🏬 RDS MERCHANT & BUSINESS PORTAL</h2>
+
+<!-- ACCOUNT SWITCHER & ONBOARDING -->
+<div class="box">
+  <h3 style="margin-top: 0;">1. Merchant Account & Profile</h3>
   <div>
-    <h2>🛒 RDS MARKETPLACE (STAGE 12 ULTRA-CORE)</h2>
-    <span class="small">ATOMIC TRANSACTION & TRANSPARENT LEDGER ENGINE</span>
+    <label for="businessSelect"><strong>Active Merchant:</strong></label>
+    <select id="businessSelect" onchange="onBusinessSelected()"></select>
+    <button onclick="loadBusinesses()">🔄 Refresh List</button>
+    <span id="routeBadge" class="status-badge">Detecting Endpoint...</span>
   </div>
-  <div>
-    <button id="btnLocal" class="btn-mode" onclick="forceServer('LOCAL')">🖥 LOCAL</button>
-    <button id="btnCloud" class="btn-mode" onclick="forceServer('CLOUD')">☁ CLOUD</button>
-    <button id="refreshBtn" onclick="init()">🔄 SYNC SYSTEM</button>
-    <span id="status" class="badge">INITIALIZING</span>
+  <div style="margin-top: 10px;">
+    <input type="text" id="newBizName" placeholder="New Merchant Name..." />
+    <input type="text" id="newBizCategory" placeholder="Category (Retail)" value="Retail" />
+    <button onclick="registerBusiness()">➕ Register Merchant</button>
   </div>
-</header>
+</div>
+
+<!-- FINANCIAL KPIS OVERVIEW -->
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="small">WALLET BALANCE</div>
+    <div id="kpiBalance" class="kpi-val">$0.00</div>
+  </div>
+  <div class="kpi-card">
+    <div class="small">GROSS SALES VOLUME</div>
+    <div id="kpiSales" class="kpi-val">$0.00</div>
+  </div>
+  <div class="kpi-card">
+    <div class="small">ACTIVE CATALOG ITEMS</div>
+    <div id="kpiCatalogCount" class="kpi-val">0</div>
+  </div>
+  <div class="kpi-card">
+    <div class="small">TOTAL ORDERS PROCESSED</div>
+    <div id="kpiOrdersCount" class="kpi-val">0</div>
+  </div>
+</div>
 
 <div class="grid-layout">
-  
-  <!-- LEFT COLUMN: STOREFRONT & CART -->
+
+  <!-- LEFT COLUMN: PRODUCT MANAGEMENT & INVENTORY -->
   <div>
-    <div class="section">
-      <h3>🏪 Registered Merchants</h3>
-      <div id="shops"><span class="loader">⚡ Syncing merchant list...</span></div>
-    </div>
-
-    <div class="section">
-      <h3>📦 Catalog Products</h3>
-      <div id="catalog"><span class="loader">⚡ Syncing store catalog...</span></div>
-    </div>
-
-    <div class="section">
-      <h3>🛒 Shopping Cart & Checkout</h3>
-      <div id="cart">Cart empty</div>
-      <br>
-      <div style="margin-bottom: 12px;">
-        <label class="small">CUSTOMER NAME:</label>
-        <input type="text" id="custName" value="Robert (Valued Customer)" placeholder="Customer Name..." />
-        
-        <label class="small">DELIVERY ADDRESS / DESTINATION:</label>
-        <input type="text" id="custAddress" value="Nairobi CBD, Kenya" placeholder="Delivery Location..." />
+    <div class="box">
+      <h3>📦 Catalog & Stock Management</h3>
+      <div style="margin-bottom: 10px;">
+        <input type="text" id="prodName" placeholder="Product Name..." />
+        <input type="number" id="prodPrice" placeholder="Price ($)" step="0.01" style="width: 100px;" />
+        <input type="number" id="prodStock" placeholder="Stock Qty" value="50" style="width: 100px;" />
+        <button onclick="addProduct()">➕ Add Product</button>
       </div>
-
-      <div style="font-size: 18px; font-weight: bold; margin-bottom: 12px;">
-        TOTAL: $<span id="total">0</span>
-      </div>
-      
-      <button id="payBtn" onclick="checkout()" style="width: 100%; padding: 12px; font-size: 16px;" disabled>
-        💳 PAY & DISPATCH ORDER
-      </button>
+      <div id="productList"><em>Loading product inventory...</em></div>
     </div>
   </div>
 
-  <!-- RIGHT COLUMN: TRANSPARENCY AUDIT PANELS -->
+  <!-- RIGHT COLUMN: INCOMING ORDERS & JOURNAL LEDGER -->
   <div>
-    <div class="section">
-      <h3>📄 Live Order Feed (Latest First)</h3>
-      <div id="orders"><span class="loader">⚡ Syncing order feed...</span></div>
+    <div class="box">
+      <h3>🧾 Merchant Sales & Order Feed</h3>
+      <div id="orderList"><em>Loading incoming merchant orders...</em></div>
     </div>
 
-    <div class="section">
-      <h3>📊 Financial Ledger Activity</h3>
-      <div id="ledger"><span class="loader">⚡ Syncing journal ledger...</span></div>
-    </div>
-
-    <div class="section">
-      <h3>💰 Merchant Wallets</h3>
-      <div id="wallets"><span class="loader">⚡ Syncing wallet balances...</span></div>
+    <div class="box">
+      <h3>📜 Double-Entry Financial Ledger Lines</h3>
+      <div id="ledgerList"><em>Loading journal accounting entries...</em></div>
     </div>
   </div>
 
 </div>
 
-<!-- CONSOLE FEEDBACK -->
-<div class="section">
-  <h3>📡 System Feedback Console</h3>
-  <pre id="out">Marketplace system online.</pre>
+<!-- SYSTEM CONSOLE LOG -->
+<div class="box">
+  <h4 style="margin: 0 0 5px 0;">📡 Merchant Telemetry & Accounting Console</h4>
+  <pre id="consoleLog">Portal initialized.</pre>
 </div>
 
 <script>
-const LOCAL = "http://localhost:3000";
-const CLOUD = "https://rds-lab.onrender.com";
-const CART_STORAGE_KEY = "RDS_MARKET_CART_PERSIST_V3";
-
-let API = window.location.origin.includes("localhost") ? LOCAL : CLOUD;
-let MANUAL_OVERRIDE = false;
-let PRODUCTS = [];
-let CART = [];
-let BUSINESS_MAP = {};
-
 /* ========================================== */
-/* DUAL-RACER HYBRID ROUTE DETECTOR           */
+/* ENDPOINT DETECTOR & ROUTER                 */
 /* ========================================== */
-async function detectAPI() {
-  if (MANUAL_OVERRIDE) return;
-  updateStatus("DETECTING ROUTE...", "var(--warn-yellow)");
+const LOCAL_API = "http://localhost:3000";
+const CLOUD_API = "https://rds-lab.onrender.com";
+let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
+let currentBusinessId = "";
+
+function sysLog(msg) {
+  const el = document.getElementById("consoleLog");
+  const time = new Date().toLocaleTimeString();
+  el.innerText = `[${time}] ${typeof msg === 'object' ? JSON.stringify(msg) : msg}\n` + el.innerText;
+}
+
+async function resolveBackendRoute() {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 700);
-
-    await fetch(LOCAL + "/", { method: "GET", signal: controller.signal });
+    const timeout = setTimeout(() => controller.abort(), 800);
+    await fetch(`${LOCAL_API}/`, { method: "GET", signal: controller.signal });
     clearTimeout(timeout);
-
-    API = LOCAL;
-    updateUIBadge("LOCAL SERVER 🖥", "var(--neon-green)");
-  } catch {
-    API = CLOUD;
-    updateUIBadge("CLOUD SERVER ☁", "var(--gold)");
-  }
-}
-
-function forceServer(mode) {
-  MANUAL_OVERRIDE = true;
-  if (mode === "LOCAL") {
-    API = LOCAL;
-    updateUIBadge("FORCED LOCAL 🖥", "var(--neon-green)");
-  } else {
-    API = CLOUD;
-    updateUIBadge("FORCED CLOUD ☁", "var(--gold)");
-  }
-  out(`Switched marketplace endpoint route to: ${API}`);
-  load();
-}
-
-function updateStatus(text, color = "var(--neon-green)") {
-  updateUIBadge(text, color);
-}
-
-function updateUIBadge(text, color) {
-  const el = document.getElementById("status");
-  el.innerText = text;
-  el.style.borderColor = color;
-  el.style.color = color;
-
-  const btnLocal = document.getElementById("btnLocal");
-  const btnCloud = document.getElementById("btnCloud");
-  if (API === LOCAL) {
-    btnLocal.classList.add("active");
-    btnCloud.classList.remove("active");
-  } else {
-    btnCloud.classList.add("active");
-    btnLocal.classList.remove("active");
-  }
-}
-
-function out(msg) {
-  document.getElementById("out").innerText =
-    typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
-}
-
-function setSectionLoading(id, label) {
-  const el = document.getElementById(id);
-  if (el && !el.children.length) {
-    el.innerHTML = `<span class="loader">⚡ ${label}...</span>`;
+    API_BASE = LOCAL_API;
+    document.getElementById("routeBadge").innerText = "Route: LOCAL (3000)";
+  } catch (_) {
+    API_BASE = CLOUD_API;
+    document.getElementById("routeBadge").innerText = "Route: CLOUD (Render)";
   }
 }
 
 /* ========================================== */
-/* CART PERSISTENCE LAYER                     */
+/* SAFE API CALL ENGINE                       */
 /* ========================================== */
-function saveCartToStorage() {
-  try {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(CART));
-  } catch (e) {
-    console.warn("Cart serialization error", e);
-  }
-}
-
-function loadCartFromStorage() {
-  try {
-    const data = localStorage.getItem(CART_STORAGE_KEY);
-    if (data) CART = JSON.parse(data) || [];
-  } catch (e) {
-    CART = [];
-  }
-}
-
-/* ========================================== */
-/* EXPONENTIAL BACKOFF FETCH ENGINE           */
-/* ========================================== */
-async function safeFetch(url, opt = {}, retries = 3, backoff = 800) {
-  try {
-    const res = await fetch(url, opt);
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.error || `HTTP ${res.status}`);
-    }
-    return await res.json();
-  } catch (e) {
-    if (retries > 0) {
-      out(`⏳ Target server waking up... Retrying in ${backoff / 1000}s (${retries} attempts left)`);
-      await new Promise(r => setTimeout(r, backoff));
-      return safeFetch(url, opt, retries - 1, backoff * 1.5);
-    }
-    throw e;
-  }
-}
-
-async function safeFetchWithFallback(endpoints, options = {}) {
-  let lastError;
-  for (const ep of endpoints) {
+async function apiFetch(endpoints, options = {}) {
+  const targetEndpoints = Array.isArray(endpoints) ? endpoints : [endpoints];
+  
+  for (const ep of targetEndpoints) {
     try {
-      return await safeFetch(API + ep, options, 1, 500);
+      const res = await fetch(`${API_BASE}${ep}`, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        }
+      });
+      if (res.ok) {
+        return await res.json();
+      }
     } catch (err) {
-      lastError = err;
+      // Continue loop to backup endpoint alias
     }
   }
-  throw lastError || new Error("All endpoint fallbacks failed");
+  sysLog(`API Warning on endpoints: ${targetEndpoints.join(', ')}`);
+  return null;
 }
 
 /* ========================================== */
-/* MASTER INITIALIZATION                      */
+/* MERCHANT ACCOUNT & ONBOARDING              */
 /* ========================================== */
-async function init() {
-  const refreshBtn = document.getElementById("refreshBtn");
-  refreshBtn.disabled = true;
+async function loadBusinesses() {
+  const data = await apiFetch(["/businesses", "/shops"]);
+  const select = document.getElementById("businessSelect");
+  select.innerHTML = "";
 
-  out("Checking server environment routes...");
-  loadCartFromStorage();
-  await detectAPI();
+  const bizList = (data && (data.businesses || data.shops)) || [];
 
-  await load();
-  renderCart();
-  refreshBtn.disabled = false;
-}
-
-/* ========================================== */
-/* GLOBAL STATE LOAD                          */
-/* ========================================== */
-async function load() {
-  try {
-    await loadShops();
-
-    await Promise.all([
-      loadProducts(),
-      loadOrders(),
-      loadLedger(),
-      loadWallets()
-    ]);
-
-  } catch (e) {
-    console.error("Master Sync Error:", e);
-  }
-}
-
-/* ========================================== */
-/* SHOPS                                      */
-/* ========================================== */
-async function loadShops() {
-  setSectionLoading("shops", "Loading shops");
-  try {
-    const data = await safeFetchWithFallback(["/businesses", "/shops"]);
-
-    BUSINESS_MAP = {};
-    let h = "";
-
-    const rawList = data.businesses || data.shops || [];
-    const list = Array.from(new Map(rawList.map(b => [b.id, b])).values());
-
-    list.forEach(b => {
-      BUSINESS_MAP[b.id] = b.name;
-      h += `<div class="item-card"><div><b>${b.name}</b><br><span class="small">${b.category || 'Retail'} | ID: ${b.id}</span></div><span class="badge">ACTIVE</span></div>`;
-    });
-
-    document.getElementById("shops").innerHTML = h || "<em>No merchant shops registered yet.</em>";
-  } catch (e) {
-    document.getElementById("shops").innerHTML = "<em>Merchant shop directory empty or starting up...</em>";
-  }
-}
-
-/* ========================================== */
-/* PRODUCTS                                   */
-/* ========================================== */
-async function loadProducts() {
-  setSectionLoading("catalog", "Loading store catalog");
-  try {
-    const data = await safeFetch(API + "/products");
-
-    const rawProducts = data.products || [];
-    PRODUCTS = Array.from(new Map(rawProducts.map(p => [p.id, p])).values());
-    let h = "";
-
-    PRODUCTS.forEach(p => {
-      const merchantName = BUSINESS_MAP[p.businessId] || p.businessId || "General Store";
-      h += `
-        <div class="item-card">
-          <div>
-            <b>${p.name}</b> - <span style="color:var(--gold)">$${p.price}</span><br>
-            <span class="small">Merchant: ${merchantName} | Stock: ${p.stock !== undefined ? p.stock : 'In Stock'}</span>
-          </div>
-          <button onclick="add('${p.id}')">➕ Add</button>
-        </div>
-      `;
-    });
-
-    document.getElementById("catalog").innerHTML = h || "<em>No products listed in marketplace.</em>";
-  } catch (e) {
-    document.getElementById("catalog").innerHTML = "<em>Catalog empty or awaiting inventory...</em>";
-  }
-}
-
-/* ========================================== */
-/* CART CONTROLS                              */
-/* ========================================== */
-function add(id) {
-  const p = PRODUCTS.find(x => x.id === id);
-  if (!p) return;
-
-  let item = CART.find(x => x.id === id);
-
-  if (item) {
-    item.qty++;
-  } else {
-    CART.push({ id: p.id, name: p.name, price: p.price, qty: 1, businessId: p.businessId });
-  }
-
-  saveCartToStorage();
-  renderCart();
-  out(`🛒 Added "${p.name}" to cart.`);
-}
-
-function changeQty(id, delta) {
-  let item = CART.find(x => x.id === id);
-  if (!item) return;
-
-  item.qty += delta;
-  if (item.qty <= 0) {
-    CART = CART.filter(x => x.id !== id);
-  }
-
-  saveCartToStorage();
-  renderCart();
-}
-
-function removeItem(id) {
-  const item = CART.find(x => x.id === id);
-  if (item) {
-    CART = CART.filter(x => x.id !== id);
-    out(`🗑️ Removed "${item.name}" from cart.`);
-  }
-  saveCartToStorage();
-  renderCart();
-}
-
-function renderCart() {
-  const cartEl = document.getElementById("cart");
-  const totalEl = document.getElementById("total");
-  const payBtn = document.getElementById("payBtn");
-
-  if (CART.length === 0) {
-    cartEl.innerHTML = "<em>Cart is empty</em>";
-    totalEl.innerText = "0";
-    payBtn.disabled = true;
+  if (bizList.length === 0) {
+    select.innerHTML = "<option value=''>No merchants available</option>";
+    currentBusinessId = "";
     return;
   }
 
-  let h = "", total = 0;
+  bizList.forEach(b => {
+    const opt = document.createElement("option");
+    opt.value = b.id;
+    opt.innerText = `${b.name} (${b.category || 'Retail'})`;
+    select.appendChild(opt);
+  });
 
-  CART.forEach(i => {
-    let t = i.price * i.qty;
-    total += t;
+  if (!currentBusinessId && bizList.length > 0) {
+    currentBusinessId = bizList[0].id;
+  }
+  select.value = currentBusinessId;
+  sysLog(`Active Merchant profile set to: ${currentBusinessId}`);
+  await loadMerchantData();
+}
 
+function onBusinessSelected() {
+  currentBusinessId = document.getElementById("businessSelect").value;
+  sysLog(`Switched active Merchant ID: ${currentBusinessId}`);
+  loadMerchantData();
+}
+
+async function registerBusiness() {
+  const nameInput = document.getElementById("newBizName");
+  const catInput = document.getElementById("newBizCategory");
+  const name = nameInput.value.trim();
+  const category = catInput.value.trim() || "Retail";
+
+  if (!name) return alert("Please enter merchant name.");
+
+  const res = await apiFetch(["/business/add", "/business/create"], {
+    method: "POST",
+    body: JSON.stringify({ name, category })
+  });
+
+  if (res && res.success) {
+    const newBiz = res.business || res.shop;
+    currentBusinessId = newBiz.id;
+    nameInput.value = "";
+    sysLog(`✅ Merchant onboarded: ${newBiz.name}`);
+    await loadBusinesses();
+  }
+}
+
+/* ========================================== */
+/* CATALOG & INVENTORY CONTROLS              */
+/* ========================================== */
+async function addProduct() {
+  if (!currentBusinessId) return alert("Select or register a merchant profile first.");
+
+  const nameEl = document.getElementById("prodName");
+  const priceEl = document.getElementById("prodPrice");
+  const stockEl = document.getElementById("prodStock");
+
+  const name = nameEl.value.trim();
+  const price = parseFloat(priceEl.value) || 0;
+  const stock = parseInt(stockEl.value) || 0;
+
+  if (!name || price <= 0) return alert("Enter valid product name and price.");
+
+  const res = await apiFetch("/product/add", {
+    method: "POST",
+    body: JSON.stringify({
+      businessId: currentBusinessId,
+      name,
+      price,
+      stock
+    })
+  });
+
+  if (res && res.success) {
+    sysLog(`✅ Catalog item added: "${res.product.name}" at $${res.product.price}`);
+    nameEl.value = "";
+    priceEl.value = "";
+    stockEl.value = "50";
+    loadMerchantData();
+  }
+}
+
+async function loadProducts() {
+  if (!currentBusinessId) return [];
+
+  const data = await apiFetch(`/products?businessId=${currentBusinessId}`);
+  const rawProducts = (data && data.products) || [];
+  
+  // Filter for items associated with active merchant profile
+  const filteredProducts = rawProducts.filter(p => p.businessId === currentBusinessId);
+
+  const container = document.getElementById("productList");
+  if (filteredProducts.length === 0) {
+    container.innerHTML = "<p>No products listed in catalog.</p>";
+    return [];
+  }
+
+  let h = "";
+  filteredProducts.forEach(p => {
     h += `
-      <div class="item-card">
+      <div class="card">
         <div>
-          <b>${i.name}</b><br>
-          <small>$${i.price} × ${i.qty} = $${t}</small>
+          <b>${p.name}</b> - <span style="color:var(--gold)">$${p.price.toFixed(2)}</span><br>
+          <span class="small">Stock Qty: ${p.stock} | ID: ${p.id}</span>
         </div>
-        <div class="controls">
-          <button onclick="changeQty('${i.id}', 1)">+</button>
-          <button onclick="changeQty('${i.id}', -1)">-</button>
-          <button class="btn-danger" onclick="removeItem('${i.id}')">✕</button>
-        </div>
+        <span class="status-badge">${p.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK'}</span>
       </div>
     `;
   });
-
-  cartEl.innerHTML = h;
-  totalEl.innerText = total;
-  payBtn.disabled = false;
+  container.innerHTML = h;
+  return filteredProducts;
 }
 
 /* ========================================== */
-/* CHECKOUT PIPELINE                          */
+/* INCOMING ORDERS & FINANCIAL ACCOUNTING     */
 /* ========================================== */
-async function checkout() {
-  if (CART.length === 0) return;
+async function loadOrdersAndAccounting(products) {
+  const [ordersData, ledgerData] = await Promise.all([
+    apiFetch("/orders"),
+    apiFetch(["/ledger", "/transactions"])
+  ]);
 
-  const payBtn = document.getElementById("payBtn");
-  payBtn.disabled = true;
-  updateStatus("PROCESSING...", "var(--warn-yellow)");
+  const allOrders = (ordersData && ordersData.orders) || [];
+  const allLedger = (ledgerData && (ledgerData.ledger || ledgerData.transactions)) || [];
 
-  out("💳 Initiating enterprise dispatch checkout sequence...");
+  // Match items belonging to current merchant
+  const productIds = new Set(products.map(p => p.id));
+  
+  let merchantGrossVolume = 0;
+  let merchantOrderCount = 0;
+  let orderHtml = "";
 
-  const customerName = document.getElementById("custName").value.trim() || "Guest Customer";
-  const deliveryAddress = document.getElementById("custAddress").value.trim() || "Nairobi CBD";
+  allOrders.forEach(o => {
+    let orderMatch = false;
+    let merchantItemSubtotal = 0;
 
-  const orderItemsPayload = CART.map(i => ({
-    productId: i.id,
-    quantity: i.qty,
-    price: i.price,
-    name: i.name
-  }));
-
-  try {
-    let receipt;
-
-    // 1. Primary Attempt: Unified End-to-End Order Creation & Auto-Dispatch
-    try {
-      out("⏳ Submitting order & triggering nearest-driver dispatch...");
-      const res = await safeFetch(API + "/order/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerName,
-          customerPhone: "0700000000",
-          deliveryAddress,
-          targetLat: -1.286389,
-          targetLng: 36.817223,
-          items: orderItemsPayload
-        })
+    if (Array.isArray(o.items)) {
+      o.items.forEach(item => {
+        if (productIds.has(item.productId)) {
+          orderMatch = true;
+          merchantItemSubtotal += (item.price || 0) * (item.quantity || item.qty || 1);
+        }
       });
-
-      if (!res.success) throw new Error(res.error || "Order creation refused");
-      receipt = {
-        orderId: res.order.id,
-        total: res.order.total,
-        assignedDriver: res.assignedDriver,
-        deliveryId: res.delivery ? res.delivery.id : "QUEUED"
-      };
-
-    } catch (primaryError) {
-      // 2. Fallback Attempt: Batch or Legacy Checkout Endpoint
-      out("⚠️ Primary order dispatch endpoint failed. Executing fallback batch checkout...");
-
-      const res = await safeFetchWithFallback(["/checkout", "/order"], {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: orderItemsPayload })
-      });
-
-      if (!res.success) throw new Error(res.error || "Batch fallback checkout failed");
-      receipt = res.order || res;
     }
 
-    out({
-      status: "✅ TRANSACTION & DISPATCH COMPLETED",
-      receipt: receipt
-    });
+    if (orderMatch) {
+      merchantOrderCount++;
+      merchantGrossVolume += merchantItemSubtotal;
 
-    updateStatus("SUCCESS ✅", "var(--neon-green)");
+      orderHtml += `
+        <div class="card">
+          <div>
+            <b>Order ID: ${o.id}</b> | Subtotal: <span style="color:var(--gold)">$${merchantItemSubtotal.toFixed(2)}</span><br>
+            <span class="small">Customer: ${o.customerName || 'Guest'} | Status: ${o.status || 'PLACED'}</span>
+          </div>
+        </div>
+      `;
+    }
+  });
 
-    CART = [];
-    saveCartToStorage();
-    renderCart();
+  document.getElementById("orderList").innerHTML = orderHtml || "<p>No incoming orders for this merchant.</p>";
 
-    await load();
+  // Parse Double-Entry Ledger Entries
+  let ledgerHtml = "";
+  let calculatedWalletBalance = 0;
 
-  } catch (e) {
-    console.error("Checkout Failure:", e);
-    out(`❌ CHECKOUT FAILED: ${e.message}`);
-    updateStatus("ERROR ❌", "var(--alert-red)");
-    payBtn.disabled = false;
-  }
+  allLedger.forEach(tx => {
+    let relevantTx = false;
+
+    if (tx.entries && Array.isArray(tx.entries)) {
+      tx.entries.forEach(e => {
+        if (e.businessId === currentBusinessId) {
+          relevantTx = true;
+          if (e.credit) calculatedWalletBalance += e.credit;
+          if (e.debit) calculatedWalletBalance -= e.debit;
+        }
+      });
+    } else if (tx.businessId === currentBusinessId || tx.type === "ORDER_PAYMENT") {
+      relevantTx = true;
+    }
+
+    if (relevantTx) {
+      ledgerHtml += `
+        <div class="card">
+          <div>
+            <b>TX ID: ${tx.id}</b> | Type: ${tx.type || 'PAYMENT'}<br>
+            <span class="small">Amount: $${(tx.amount || 0).toFixed(2)} | Order Ref: ${tx.orderId || 'N/A'}</span>
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  document.getElementById("ledgerList").innerHTML = ledgerHtml || "<p>No ledger journal lines found.</p>";
+
+  // Update KPI Cards
+  document.getElementById("kpiBalance").innerText = `$${(merchantGrossVolume * 0.90).toFixed(2)}`; // 90% Net Payout after 10% platform fee
+  document.getElementById("kpiSales").innerText = `$${merchantGrossVolume.toFixed(2)}`;
+  document.getElementById("kpiCatalogCount").innerText = products.length;
+  document.getElementById("kpiOrdersCount").innerText = merchantOrderCount;
 }
 
 /* ========================================== */
-/* ORDERS                                     */
+/* MASTER DATA LOAD & AUTO-POLL              */
 /* ========================================== */
-async function loadOrders() {
-  setSectionLoading("orders", "Loading orders");
-  try {
-    const data = await safeFetch(API + "/orders");
-
-    let h = "";
-    const rawList = data.orders || [];
-    const list = Array.from(new Map(rawList.map(o => [o.id, o])).values())
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-    list.forEach(o => {
-      h += `<div style="border-bottom: 1px dashed #333; padding-bottom: 6px; margin-bottom: 6px;">`;
-      h += `📦 <b>Order:</b> ${o.id} | <b>Total:</b> $${o.total || 0}<br>`;
-
-      if (Array.isArray(o.items) && o.items.length > 0) {
-        o.items.forEach(i => {
-          h += `&nbsp;&nbsp;• ${i.name || 'Item'} x${i.quantity || i.qty || 1} = $${(i.price || 0) * (i.quantity || i.qty || 1)}<br>`;
-        });
-      }
-
-      h += `<span class="small">Customer: ${o.customerName || 'Guest'} | Status: ${o.status || 'PLACED'}</span>`;
-      h += `</div>`;
-    });
-
-    document.getElementById("orders").innerHTML = h || "<em>No orders placed yet.</em>";
-  } catch (e) {
-    document.getElementById("orders").innerHTML = "<em>No active orders in system feed.</em>";
-  }
+async function loadMerchantData() {
+  if (!currentBusinessId) return;
+  const products = await loadProducts();
+  await loadOrdersAndAccounting(products);
 }
 
-/* ========================================== */
-/* DOUBLE-ENTRY JOURNAL LEDGER                */
-/* ========================================== */
-async function loadLedger() {
-  setSectionLoading("ledger", "Loading ledger");
-  try {
-    const data = await safeFetch(API + "/admin/overview");
+setInterval(() => {
+  if (currentBusinessId) loadMerchantData();
+}, 4000);
 
-    let h = "";
-    const rawList = data.recentLedger || [];
-
-    rawList.forEach(l => {
-      h += `📜 <b>TX:</b> ${l.id} | <span class="badge">${l.type}</span><br>`;
-      h += `&nbsp;&nbsp;→ Amount: <b>$${l.amount}</b> | Order: ${l.orderId || 'N/A'}<br>`;
-      h += `<span class="small">Timestamp: ${new Date(l.timestamp || Date.now()).toLocaleString()}</span><br><hr style="border-color:#222;">`;
-    });
-
-    document.getElementById("ledger").innerHTML = h || "<em>No ledger entries logged yet.</em>";
-  } catch (e) {
-    document.getElementById("ledger").innerHTML = "<em>Ledger feed waiting for initial transactions...</em>";
-  }
+async function init() {
+  await resolveBackendRoute();
+  await loadBusinesses();
 }
 
-/* ========================================== */
-/* MERCHANT WALLETS                           */
-/* ========================================== */
-async function loadWallets() {
-  setSectionLoading("wallets", "Loading wallets");
-  try {
-    const data = await safeFetchWithFallback(["/businesses", "/shops"]);
-
-    let h = "";
-    const list = data.businesses || data.shops || [];
-
-    list.forEach(b => {
-      h += `<div class="item-card">💼 <b>${b.name}</b> <span class="small">(${b.id})</span> <b>$${b.balance || 0}</b></div>`;
-    });
-
-    document.getElementById("wallets").innerHTML = h || "<em>No active merchant wallets.</em>";
-  } catch (e) {
-    document.getElementById("wallets").innerHTML = "<em>Merchant wallet directory standby.</em>";
-  }
-}
-
-/* AUTO REFRESH LOOP */
-setInterval(load, 4000);
-
-/* START APPLICATION */
-init();
+window.onload = init;
 </script>
 
 </body>

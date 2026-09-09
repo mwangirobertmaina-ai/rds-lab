@@ -3,382 +3,282 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDS ADMIN FLEET CONTROL CENTER | ENTERPRISE CORE</title>
+<title>RDS ADMIN CONTROL CENTER | ULTRA CORE</title>
 
 <!-- LEAFLET MAP ASSETS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <style>
-  :root {
-    --neon-green: #00ff66;
-    --dark-bg: #0a0a0a;
-    --panel-bg: #121212;
-    --card-bg: #181818;
-    --border-color: #00ff66;
-    --dim-text: #888888;
-    --alert-red: #ff3366;
-    --gold: #ffd700;
-    --warn-yellow: #ffff00;
-    --cyan: #00e5ff;
-  }
+:root {
+  --neon: #00ff66;
+  --bg: #0a0a0a;
+  --panel: #121212;
+  --card: #181818;
+  --danger: #ff3366;
+  --gold: #ffd700;
+  --dim: #888;
+}
 
-  * { box-sizing: border-box; }
+* { box-sizing: border-box; }
 
-  body {
-    font-family: 'Courier New', Courier, monospace;
-    background: var(--dark-bg);
-    color: var(--neon-green);
-    padding: 20px;
-    margin: 0;
-  }
+body {
+  background: var(--bg);
+  color: var(--neon);
+  font-family: monospace;
+  margin: 0;
+  padding: 20px;
+}
 
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid var(--neon-green);
-    padding-bottom: 12px;
-    margin-bottom: 20px;
-  }
+h1, h2, h3 {
+  text-transform: uppercase;
+  margin-top: 0;
+}
 
-  h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
+h1 {
+  border-bottom: 2px solid var(--neon);
+  padding-bottom: 10px;
+}
 
-  button {
-    background: var(--neon-green);
-    color: #000;
-    font-weight: bold;
-    border: none;
-    padding: 8px 14px;
-    cursor: pointer;
-    font-family: monospace;
-    transition: all 0.2s ease;
-    text-transform: uppercase;
-  }
+.section {
+  border: 1px solid var(--neon);
+  padding: 15px;
+  margin-top: 20px;
+  background: var(--panel);
+}
 
-  button:hover:not(:disabled) {
-    background: #00cc52;
-    box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
-  }
+.grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
 
-  button:disabled {
-    background: #333;
-    color: #666;
-    cursor: not-allowed;
-  }
+@media (max-width: 1024px) {
+  .grid-layout { grid-template-columns: 1fr; }
+}
 
-  .btn-danger { background: var(--alert-red); color: #fff; }
-  .btn-warn { background: var(--warn-yellow); color: #000; }
-  .btn-gold { background: var(--gold); color: #000; }
+.grid-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
 
-  .btn-mode {
-    background: #000;
-    color: var(--neon-green);
-    border: 1px solid var(--neon-green);
-  }
-  .btn-mode.active {
-    background: var(--neon-green);
-    color: #000;
-  }
+.stat {
+  background: var(--card);
+  border: 1px solid #333;
+  padding: 15px;
+  text-align: center;
+}
 
-  .kpi-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
-  }
+.stat-val {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--gold);
+  margin-top: 5px;
+}
 
-  .kpi-card {
-    background: var(--panel-bg);
-    border: 1px solid var(--border-color);
-    padding: 14px;
-    text-align: center;
-  }
+input {
+  background: #000;
+  color: var(--neon);
+  border: 1px solid var(--neon);
+  padding: 8px;
+  margin: 4px;
+  font-family: monospace;
+}
 
-  .kpi-value {
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--gold);
-    margin-top: 5px;
-  }
+button {
+  background: var(--neon);
+  color: #000;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: monospace;
+  text-transform: uppercase;
+  transition: opacity 0.2s;
+}
 
-  .grid-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+button:hover { opacity: 0.85; }
 
-  @media (max-width: 1024px) {
-    .grid-layout { grid-template-columns: 1fr; }
-  }
+.danger {
+  background: var(--danger);
+  color: #fff;
+}
 
-  .section {
-    border: 1px solid var(--border-color);
-    padding: 16px;
-    margin-bottom: 16px;
-    background: var(--panel-bg);
-  }
+.gold {
+  background: var(--gold);
+  color: #000;
+}
 
-  #adminMap {
-    height: 380px;
-    border: 1px solid var(--border-color);
-    background: #050505;
-  }
+.card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid #333;
+  padding: 10px;
+  margin-top: 10px;
+}
 
-  .item-card {
-    border: 1px solid #222;
-    background: var(--card-bg);
-    padding: 10px;
-    margin-bottom: 8px;
-  }
+.small { font-size: 11px; color: var(--dim); }
 
-  input, select {
-    background: #000;
-    color: var(--neon-green);
-    border: 1px solid var(--neon-green);
-    padding: 8px;
-    font-family: monospace;
-    font-size: 13px;
-    margin-right: 6px;
-    margin-bottom: 6px;
-  }
+#adminMap {
+  height: 380px;
+  width: 100%;
+  border: 1px solid var(--neon);
+  background: #050505;
+  margin-top: 10px;
+}
 
-  pre {
-    background: #000;
-    padding: 12px;
-    border: 1px solid #333;
-    color: var(--neon-green);
-    white-space: pre-wrap;
-    word-break: break-all;
-    max-height: 200px;
-    overflow-y: auto;
-  }
+pre {
+  background: #000;
+  padding: 12px;
+  border: 1px solid #333;
+  color: var(--neon);
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
 
-  .badge {
-    background: #003311;
-    border: 1px solid var(--neon-green);
-    padding: 4px 8px;
-    font-size: 11px;
-    border-radius: 3px;
-  }
-
-  .small { font-size: 11px; color: var(--dim-text); }
-
-  /* Custom marker dark mode popups */
-  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-    background: #111 !important;
-    color: #00ff66 !important;
-    border: 1px solid #00ff66 !important;
-    font-family: monospace;
-  }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: #111 !important;
+  color: #00ff66 !important;
+  border: 1px solid #00ff66 !important;
+  font-family: monospace;
+}
 </style>
 </head>
 
 <body>
 
-<header>
-  <div>
-    <h2>👑 RDS ADMIN FLEET CONTROL CENTER</h2>
-    <span class="small">REAL-TIME TELEMETRY, GLOBAL DISPATCH & FINANCIAL AUDIT</span>
-  </div>
-  <div>
-    <button id="btnLocal" class="btn-mode" onclick="forceServer('LOCAL')">🖥 LOCAL</button>
-    <button id="btnCloud" class="btn-mode" onclick="forceServer('CLOUD')">☁ CLOUD</button>
-    <button id="refreshBtn" onclick="init()">🔄 SYNC TELEMETRY</button>
-    <span id="status" class="badge">INITIALIZING</span>
-  </div>
-</header>
+<h1>🛠 RDS ADMIN CONTROL CENTER</h1>
 
-<!-- TOP KPI METRICS ROW -->
-<div class="kpi-row">
-  <div class="kpi-card">
-    <div class="small">TOTAL SYSTEM VOLUME</div>
-    <div id="kpiVolume" class="kpi-value">$0.00</div>
-  </div>
-  <div class="kpi-card">
-    <div class="small">ACTIVE DRIVERS</div>
-    <div id="kpiDrivers" class="kpi-value">0 / 0</div>
-  </div>
-  <div class="kpi-card">
-    <div class="small">REGISTERED MERCHANTS</div>
-    <div id="kpiMerchants" class="kpi-value">0</div>
-  </div>
-  <div class="kpi-card">
-    <div class="small">ACTIVE DELIVERIES</div>
-    <div id="kpiDeliveries" class="kpi-value">0</div>
+<!-- API ROUTE STATUS -->
+<div class="section">
+  <b>🌐 CONNECTED API:</b> <span id="apiStatus">Detecting route...</span>
+</div>
+
+<!-- STATS OVERVIEW -->
+<div class="section">
+  <h3>📊 System Overview</h3>
+  <div class="grid-stats">
+    <div class="stat">💰 Gross Volume<div id="rev" class="stat-val">$0</div></div>
+    <div class="stat">🚚 Active Drivers<div id="drivers" class="stat-val">0</div></div>
+    <div class="stat">📦 Global Orders<div id="orders" class="stat-val">0</div></div>
+    <div class="stat">🏪 Merchants<div id="shops" class="stat-val">0</div></div>
   </div>
 </div>
 
-<!-- MAIN GRID LAYOUT -->
 <div class="grid-layout">
-
-  <!-- LEFT COLUMN: MAP & FLEET OPERATIONS -->
+  
+  <!-- LEFT COLUMN: LIVE MAP & COMMAND CONTROLS -->
   <div>
-    <!-- LIVE DRIVER TRACKING MAP -->
+    <!-- MAP CONTAINER -->
     <div class="section">
       <h3>🗺 Live Fleet Telemetry Map</h3>
       <div id="adminMap"></div>
     </div>
 
-    <!-- QUICK DISPATCH SIMULATION & DRIVER REGISTER -->
+    <!-- COMMAND & SIMULATION -->
     <div class="section">
-      <h3>⚡ Fleet Command & Driver Onboarding</h3>
-      <div style="margin-bottom: 12px;">
-        <input type="text" id="driverNameInput" placeholder="Driver Full Name..." />
-        <input type="text" id="driverPhoneInput" placeholder="Phone (0700000000)" value="0700000000" />
+      <h3>⚡ Command Operations & Simulation</h3>
+      <div style="margin-bottom: 10px;">
+        <b>Driver Onboarding:</b><br>
+        <input id="driverName" placeholder="Driver Full Name">
+        <input id="driverPhone" placeholder="Phone (0700000000)" value="0700000000">
         <button onclick="registerDriver()">➕ Register Driver</button>
       </div>
       <div>
-        <button onclick="triggerDispatchSimulation()" class="btn-gold">🚀 Simulate Market Order & Auto-Dispatch</button>
+        <button class="gold" onclick="simulateDispatch()">🚀 Simulate Market Order & Auto-Dispatch</button>
       </div>
     </div>
 
-    <!-- LIVE DRIVERS ROSTER -->
+    <!-- DRIVERS ROSTER -->
     <div class="section">
       <h3>🚚 Fleet Driver Roster</h3>
-      <div id="driverList"><em>Syncing fleet roster...</em></div>
+      <div id="driverList">Loading roster...</div>
     </div>
   </div>
 
-  <!-- RIGHT COLUMN: BUSINESSES, ORDERS & LEDGER -->
+  <!-- RIGHT COLUMN: MERCHANTS, ORDERS & LEDGER -->
   <div>
-    <!-- MERCHANT MANAGEMENT -->
+    <!-- ADD MERCHANT -->
     <div class="section">
-      <h3>🏬 Merchants & Product Portfolios</h3>
-      <div style="margin-bottom: 10px;">
-        <input type="text" id="bizNameInput" placeholder="Merchant Name..." />
-        <input type="text" id="bizCatInput" placeholder="Category (e.g. Retail)" value="Retail" />
-        <button onclick="addMerchant()">➕ Add Merchant</button>
-      </div>
-      <div id="businessList"><em>Syncing merchants...</em></div>
+      <h3>🏪 Add Merchant</h3>
+      <input id="name" placeholder="Shop Name">
+      <input id="category" placeholder="Category" value="Retail">
+      <button onclick="addShop()">➕ Add Shop</button>
     </div>
 
-    <!-- RECENT DISPATCHED ORDERS -->
+    <!-- MERCHANT SHOPS -->
+    <div class="section">
+      <h3>🏪 Merchant Portfolio</h3>
+      <div id="shopList">Loading shops...</div>
+    </div>
+
+    <!-- ORDERS FEED -->
     <div class="section">
       <h3>📦 Global Order Feed</h3>
-      <div id="orderList"><em>Syncing global orders...</em></div>
+      <div id="ordersList">Loading orders...</div>
     </div>
 
-    <!-- FINANCIAL LEDGER AUDIT -->
+    <!-- FINANCIAL LEDGER -->
     <div class="section">
-      <h3>📜 Financial Ledger & Platform Revenue</h3>
-      <div id="ledgerList"><em>Syncing double-entry ledger...</em></div>
+      <h3>💰 Double-Entry Journal Ledger</h3>
+      <div id="ledgerList">Loading ledger...</div>
     </div>
   </div>
 
 </div>
 
-<!-- CONSOLE FEEDBACK -->
+<!-- SYSTEM LOG CONSOLE -->
 <div class="section">
   <h3>📡 Control Center System Log</h3>
-  <pre id="consoleOut">Admin Control Center online.</pre>
+  <pre id="log">Terminal ready.</pre>
 </div>
 
 <script>
 const LOCAL = "http://localhost:3000";
 const CLOUD = "https://rds-lab.onrender.com";
 
-let API = LOCAL;
-let MANUAL_OVERRIDE = false;
+let API = location.hostname.includes("localhost") ? LOCAL : CLOUD;
+document.getElementById("apiStatus").innerText = API;
 
 let adminMap = null;
 let activeTileLayer = null;
 let driverMarkersMap = new Map();
 
-/* ========================================== */
-/* DUAL-RACER HYBRID ROUTE DETECTOR           */
-/* ========================================== */
-async function detectAPI() {
-  if (MANUAL_OVERRIDE) return;
-  updateStatus("DETECTING ROUTE...", "var(--warn-yellow)");
-
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 700);
-
-    await fetch(LOCAL + "/health", { method: "GET", signal: controller.signal });
-    clearTimeout(timeout);
-
-    API = LOCAL;
-    updateUIBadge("LOCAL SERVER 🖥", "var(--neon-green)");
-  } catch {
-    API = CLOUD;
-    updateUIBadge("CLOUD SERVER ☁", "var(--gold)");
-  }
-}
-
-function forceServer(mode) {
-  MANUAL_OVERRIDE = true;
-  if (mode === "LOCAL") {
-    API = LOCAL;
-    updateUIBadge("FORCED LOCAL 🖥", "var(--neon-green)");
-  } else {
-    API = CLOUD;
-    updateUIBadge("FORCED CLOUD ☁", "var(--gold)");
-  }
-  logOut(`Switched route context to: ${API}`);
-  loadAdminOverview();
-}
-
-function updateStatus(text, color = "var(--neon-green)") {
-  updateUIBadge(text, color);
-}
-
-function updateUIBadge(text, color) {
-  const el = document.getElementById("status");
-  el.innerText = text;
-  el.style.borderColor = color;
-  el.style.color = color;
-
-  const btnLocal = document.getElementById("btnLocal");
-  const btnCloud = document.getElementById("btnCloud");
-  if (API === LOCAL) {
-    btnLocal.classList.add("active");
-    btnCloud.classList.remove("active");
-  } else {
-    btnCloud.classList.add("active");
-    btnLocal.classList.remove("active");
-  }
-}
-
-function logOut(msg) {
+function log(msg) {
   const time = new Date().toLocaleTimeString();
   const text = typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
-  document.getElementById("consoleOut").innerText = `[${time}] ${text}\n` + document.getElementById("consoleOut").innerText;
+  document.getElementById("log").textContent =
+    `[${time}] ${text}\n` + document.getElementById("log").textContent;
 }
 
 /* ========================================== */
-/* EXPONENTIAL BACKOFF FETCH ENGINE           */
+/* SAFE API CALL ENGINE                       */
 /* ========================================== */
-async function safeFetch(url, opt = {}, retries = 2, backoff = 600) {
-  try {
-    const res = await fetch(url, opt);
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.error || `HTTP ${res.status}`);
-    }
-    return await res.json();
-  } catch (e) {
-    if (retries > 0) {
-      logOut(`⏳ Re-trying endpoint (${retries} attempts left)...`);
-      await new Promise(r => setTimeout(r, backoff));
-      return safeFetch(url, opt, retries - 1, backoff * 1.5);
-    }
-    throw e;
+async function api(endpoints, options = {}) {
+  const list = Array.isArray(endpoints) ? endpoints : [endpoints];
+
+  for (let ep of list) {
+    try {
+      const res = await fetch(API + ep, {
+        headers: { "Content-Type": "application/json" },
+        ...options
+      });
+
+      if (res.ok) return await res.json();
+    } catch (e) {}
   }
-}
 
-async function apiFetch(endpoint, options = {}) {
-  try {
-    return await safeFetch(`${API}${endpoint}`, options);
-  } catch (err) {
-    logOut(`API Error (${endpoint}): ${err.message}`);
-    return null;
-  }
+  log("API Warning on endpoints: " + list.join(", "));
+  return {};
 }
 
 /* ========================================== */
-/* 403-PROOF MULTI-PROVIDER TILE MAP ENGINE   */
+/* 403-PROOF MULTI-PROVIDER LEAFLET MAP      */
 /* ========================================== */
 function initAdminMap() {
   if (adminMap) return;
@@ -386,7 +286,7 @@ function initAdminMap() {
   adminMap = L.map('adminMap', {
     zoomControl: true,
     attributionControl: false
-  }).setView([-1.286389, 36.817223], 12); // Center Nairobi CBD
+  }).setView([-1.286389, 36.817223], 12); // Default Nairobi CBD coordinates
 
   const tileProviders = [
     {
@@ -421,7 +321,7 @@ function initAdminMap() {
     });
 
     activeTileLayer.on("tileerror", () => {
-      logOut(`Tile error on provider #${providerIndex}. Failover switching tile provider...`);
+      log(`Tile provider #${providerIndex} error. Switching failover map server...`);
       providerIndex = (providerIndex + 1) % tileProviders.length;
       loadTileLayer();
     });
@@ -430,233 +330,184 @@ function initAdminMap() {
   }
 
   loadTileLayer();
+
+  setTimeout(() => {
+    adminMap.invalidateSize();
+  }, 300);
 }
 
 /* ========================================== */
-/* MASTER INITIALIZATION & SYNC               */
+/* MASTER DATA LOAD                           */
 /* ========================================== */
-async function init() {
-  const refreshBtn = document.getElementById("refreshBtn");
-  refreshBtn.disabled = true;
-
-  initAdminMap();
-  await detectAPI();
-  await loadAdminOverview();
-
-  refreshBtn.disabled = false;
+async function loadAll() {
+  await Promise.all([
+    loadShops(),
+    loadOrders(),
+    loadDrivers(),
+    loadLedger()
+  ]);
 }
 
 /* ========================================== */
-/* LOAD ADMIN OVERVIEW TELEMETRY              */
+/* SHOPS PORTFOLIO                            */
 /* ========================================== */
-async function loadAdminOverview() {
-  const data = await apiFetch("/admin/overview");
+async function loadShops() {
+  const data = await api(["/businesses", "/shops"]);
+  const list = data.businesses || data.shops || [];
 
-  if (!data || !data.stats) {
-    logOut("⚠️ Admin telemetry load failed. Retrying...");
-    return;
+  document.getElementById("shops").innerText = list.length;
+
+  document.getElementById("shopList").innerHTML =
+    list.map(b => `
+      <div class="card">
+        <div>
+          <b>${b.name || "Unnamed Merchant"}</b><br>
+          <span class="small">${b.category || "Retail"} | Balance: $${b.balance || 0} | ID: ${b.id}</span>
+        </div>
+        <button class="danger" onclick="delShop('${b.id}')">Delete</button>
+      </div>
+    `).join("") || "<i>No merchant shops registered</i>";
+}
+
+async function addShop() {
+  const nameEl = document.getElementById("name");
+  const catEl = document.getElementById("category");
+  const name = nameEl.value.trim();
+  const category = catEl.value.trim() || "Retail";
+
+  if (!name) return alert("Please enter shop name");
+
+  const res = await api(
+    ["/business/add", "/business/create"],
+    {
+      method: "POST",
+      body: JSON.stringify({ name, category })
+    }
+  );
+
+  if (res && res.success) {
+    log(`✅ Merchant shop added: ${res.business.name}`);
+    nameEl.value = "";
+    loadShops();
   }
+}
 
-  // 1. Update KPI Cards
-  document.getElementById("kpiVolume").innerText = `$${(data.stats.totalVolume || 0).toFixed(2)}`;
-  document.getElementById("kpiDrivers").innerText = `${data.stats.availableDrivers || 0} / ${data.stats.driversCount || 0}`;
-  document.getElementById("kpiMerchants").innerText = data.stats.businessesCount || 0;
-  document.getElementById("kpiDeliveries").innerText = data.stats.pendingDeliveries || 0;
-
-  // 2. Update Map Markers for Drivers
-  updateMapMarkers(data.drivers || []);
-
-  // 3. Render Fleet Roster
-  renderDriverList(data.drivers || []);
-
-  // 4. Render Merchant List
-  const bizData = await apiFetch("/businesses");
-  renderBusinessList((bizData && bizData.businesses) || []);
-
-  // 5. Render Orders & Ledger
-  renderOrderList(data.recentOrders || []);
-  renderLedgerList(data.recentLedger || []);
+async function delShop(id) {
+  if (!confirm("Delete this merchant shop?")) return;
+  const res = await api([`/business/delete/${id}`, `/business/${id}`], { method: "DELETE" });
+  log(res);
+  loadShops();
 }
 
 /* ========================================== */
-/* RENDER MAP MARKERS WITH AUTO-PAN           */
+/* ORDERS DISPATCH FEED                       */
 /* ========================================== */
-function updateMapMarkers(drivers) {
-  if (!adminMap) return;
+async function loadOrders() {
+  const data = await api("/orders");
+  const orders = data.orders || [];
 
-  const activeIds = new Set();
+  document.getElementById("orders").innerText = orders.length;
 
-  drivers.forEach(d => {
-    const lat = d.location?.lat || 0;
-    const lng = d.location?.lng || 0;
+  let grossTotal = 0;
 
-    if (lat !== 0 && lng !== 0) {
-      activeIds.add(d.id);
-      const popupText = `<b>${d.name}</b><br>Status: ${d.status}<br>Earnings: $${d.earnings || 0}`;
+  document.getElementById("ordersList").innerHTML =
+    orders.map(o => {
+      const amount = o.total || o.amount || 0;
+      grossTotal += amount;
 
-      if (driverMarkersMap.has(d.id)) {
-        const marker = driverMarkersMap.get(d.id);
-        marker.setLatLng([lat, lng]);
-        marker.getPopup().setContent(popupText);
-      } else {
-        const marker = L.marker([lat, lng]).addTo(adminMap).bindPopup(popupText);
-        driverMarkersMap.set(d.id, marker);
+      return `
+        <div class="card">
+          <div>
+            <b>Order ID: ${o.id}</b> | <span style="color:var(--gold)">$${amount}</span><br>
+            <span class="small">Customer: ${o.customerName || "Guest"} | Status: ${o.status || "PLACED"}</span>
+          </div>
+        </div>
+      `;
+    }).join("") || "<i>No market orders placed</i>";
+
+  document.getElementById("rev").innerText = "$" + grossTotal.toFixed(2);
+}
+
+/* ========================================== */
+/* DRIVERS FLEET & TELEMETRY MAP UPDATE       */
+/* ========================================== */
+async function loadDrivers() {
+  const data = await api(["/drivers", "/driverLocations"]);
+  const drivers = data.drivers || [];
+
+  document.getElementById("drivers").innerText = drivers.length;
+
+  // Update Map Markers
+  if (adminMap) {
+    const activeIds = new Set();
+
+    drivers.forEach(d => {
+      const lat = d.location?.lat || d.lat || 0;
+      const lng = d.location?.lng || d.lng || 0;
+
+      if (lat !== 0 && lng !== 0) {
+        activeIds.add(d.id);
+        const popupText = `<b>${d.name}</b><br>Status: ${d.status || 'AVAILABLE'}<br>Earnings: $${d.earnings || 0}`;
+
+        if (driverMarkersMap.has(d.id)) {
+          const marker = driverMarkersMap.get(d.id);
+          marker.setLatLng([lat, lng]);
+          marker.getPopup().setContent(popupText);
+        } else {
+          const marker = L.marker([lat, lng]).addTo(adminMap).bindPopup(popupText);
+          driverMarkersMap.set(d.id, marker);
+        }
       }
-    }
-  });
+    });
 
-  // Cleanup offline or removed driver markers
-  driverMarkersMap.forEach((marker, id) => {
-    if (!activeIds.has(id)) {
-      adminMap.removeLayer(marker);
-      driverMarkersMap.delete(id);
-    }
-  });
-}
-
-/* ========================================== */
-/* RENDER PANELS                              */
-/* ========================================== */
-function renderDriverList(drivers) {
-  const container = document.getElementById("driverList");
-  if (drivers.length === 0) {
-    container.innerHTML = "<em>No drivers registered in fleet.</em>";
-    return;
+    driverMarkersMap.forEach((marker, id) => {
+      if (!activeIds.has(id)) {
+        adminMap.removeLayer(marker);
+        driverMarkersMap.delete(id);
+      }
+    });
   }
 
-  let h = "";
-  drivers.forEach(d => {
-    const isAvail = d.status === "AVAILABLE";
-    h += `
-      <div class="item-card">
+  // Render Driver List
+  document.getElementById("driverList").innerHTML =
+    drivers.map(d => `
+      <div class="card">
         <div>
-          <b>${d.name}</b> (${d.phone})<br>
-          <span class="small">Status: <span style="color:${isAvail ? 'var(--neon-green)' : 'var(--gold)'}">${d.status}</span> | Earnings: $${d.earnings || 0}</span>
-        </div>
-        <div>
-          <span class="badge">${d.id}</span>
+          <b>${d.name}</b> (${d.phone || 'N/A'})<br>
+          <span class="small">Status: ${d.status || "AVAILABLE"} | Earnings: $${d.earnings || 0} | ID: ${d.id}</span>
         </div>
       </div>
-    `;
-  });
-  container.innerHTML = h;
+    `).join("") || "<i>No drivers registered</i>";
 }
 
-function renderBusinessList(businesses) {
-  const container = document.getElementById("businessList");
-  if (businesses.length === 0) {
-    container.innerHTML = "<em>No merchants onboarded yet.</em>";
-    return;
-  }
-
-  let h = "";
-  businesses.forEach(b => {
-    h += `
-      <div class="item-card">
-        <div>
-          <b>${b.name}</b> <span class="small">(${b.category})</span><br>
-          <span class="small">Address: ${b.address}</span>
-        </div>
-        <span class="badge">$${b.balance || 0}</span>
-      </div>
-    `;
-  });
-  container.innerHTML = h;
-}
-
-function renderOrderList(orders) {
-  const container = document.getElementById("orderList");
-  if (orders.length === 0) {
-    container.innerHTML = "<em>No orders placed in market.</em>";
-    return;
-  }
-
-  let h = "";
-  orders.slice(0, 10).forEach(o => {
-    h += `
-      <div class="item-card">
-        <div>
-          <b>Order ID: ${o.id}</b> | <span style="color:var(--gold)">$${o.total}</span><br>
-          <span class="small">Customer: ${o.customerName} | Status: ${o.status}</span>
-        </div>
-      </div>
-    `;
-  });
-  container.innerHTML = h;
-}
-
-function renderLedgerList(ledger) {
-  const container = document.getElementById("ledgerList");
-  if (ledger.length === 0) {
-    container.innerHTML = "<em>No financial journal entries.</em>";
-    return;
-  }
-
-  let h = "";
-  ledger.slice(0, 10).forEach(l => {
-    h += `
-      <div style="border-bottom: 1px dashed #333; padding-bottom: 4px; margin-bottom: 4px;">
-        <span class="small">TX ${l.id}</span> | <b>${l.type}</b>: <span style="color:var(--neon-green)">$${l.amount}</span>
-      </div>
-    `;
-  });
-  container.innerHTML = h;
-}
-
-/* ========================================== */
-/* COMMAND ACTIONS                            */
-/* ========================================== */
 async function registerDriver() {
-  const nameInput = document.getElementById("driverNameInput");
-  const phoneInput = document.getElementById("driverPhoneInput");
-  const name = nameInput.value.trim();
-  const phone = phoneInput.value.trim();
+  const nameEl = document.getElementById("driverName");
+  const phoneEl = document.getElementById("driverPhone");
+  const name = nameEl.value.trim();
+  const phone = phoneEl.value.trim();
 
-  if (!name) return alert("Please enter driver name.");
+  if (!name) return alert("Enter driver full name");
 
-  const res = await apiFetch("/addDriver", {
+  const res = await api(["/addDriver", "/driver/add"], {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, phone })
   });
 
   if (res && res.success) {
-    logOut(`✅ Driver registered: ${res.driver.name}`);
-    nameInput.value = "";
-    loadAdminOverview();
+    log(`✅ Driver profile registered: ${res.driver.name}`);
+    nameEl.value = "";
+    loadDrivers();
   }
 }
 
-async function addMerchant() {
-  const nameInput = document.getElementById("bizNameInput");
-  const catInput = document.getElementById("bizCatInput");
-  const name = nameInput.value.trim();
-  const category = catInput.value.trim();
-
-  if (!name) return alert("Please enter merchant name.");
-
-  const res = await apiFetch("/business/add", {
+async function simulateDispatch() {
+  log("🚀 Executing simulated order & auto-dispatch pipeline...");
+  const res = await api("/order/create", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, category })
-  });
-
-  if (res && res.success) {
-    logOut(`✅ Merchant onboarded: ${res.business.name}`);
-    nameInput.value = "";
-    loadAdminOverview();
-  }
-}
-
-async function triggerDispatchSimulation() {
-  logOut("🚀 Triggering market order & auto-dispatch simulation...");
-  const res = await apiFetch("/order/create", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       customerName: "Admin Dispatch Simulation",
       customerPhone: "0722000111",
-      deliveryAddress: "Nairobi CBD",
+      deliveryAddress: "Nairobi Center",
       targetLat: -1.286389,
       targetLng: 36.817223,
       items: [
@@ -666,16 +517,43 @@ async function triggerDispatchSimulation() {
   });
 
   if (res && res.success) {
-    logOut(`✅ Order ${res.order.id} generated! Auto-assigned to: ${res.assignedDriver}`);
-    loadAdminOverview();
+    log(`✅ Order ${res.order.id} generated! Assigned driver: ${res.assignedDriver}`);
+    loadAll();
   }
 }
 
-/* AUTO-POLL TELEMETRY DAEMON */
-setInterval(loadAdminOverview, 4000);
+/* ========================================== */
+/* DOUBLE-ENTRY JOURNAL LEDGER                */
+/* ========================================== */
+async function loadLedger() {
+  const data = await api(["/ledger", "/transactions"]);
+  const list = data.ledger || data.transactions || [];
 
-/* INITIALIZE APP */
-init();
+  document.getElementById("ledgerList").innerHTML =
+    list.map(tx => `
+      <div class="card">
+        <div>
+          <b>TX ID: ${tx.id}</b> | Type: ${tx.type || "JOURNAL"}<br>
+          <span class="small">
+            Amount: <span style="color:var(--neon)">$${tx.amount || 0}</span> | 
+            Order ID: ${tx.orderId || "N/A"}
+          </span>
+        </div>
+      </div>
+    `).join("") || "<i>No financial ledger data</i>";
+}
+
+/* ========================================== */
+/* INITIALIZATION & DAEMON AUTO-POLL          */
+/* ========================================== */
+async function init() {
+  initAdminMap();
+  await loadAll();
+  log("Admin Control Center ONLINE");
+}
+
+setInterval(loadAll, 4000);
+window.onload = init;
 </script>
 
 </body>

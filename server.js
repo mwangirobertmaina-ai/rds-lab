@@ -19,7 +19,7 @@ app.use(cors({
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
-app.use(express.static(".")); // Serve frontend assets (Admin, Driver, Market)
+app.use(express.static(".")); // Serve static frontend assets (Admin, Merchant, Driver, Market)
 
 /* ========================================== */
 /* IN-MEMORY SCHEMA & SELF-HEALING ENGINE     */
@@ -43,7 +43,17 @@ function sanitizeDataState() {
   if (!Array.isArray(data.drivers)) data.drivers = [];
   if (!Array.isArray(data.deliveries)) data.deliveries = [];
 
-  // 1. Deduplicate & normalize Drivers
+  // 1. Sanitize Products & Ensure Stock/Price Integrity
+  data.products.forEach(p => {
+    if (p) {
+      p.price = parseFloat(p.price) || 0;
+      p.stock = typeof p.stock === "number" ? p.stock : (parseInt(p.stock) || 0);
+      p.businessId = p.businessId || "SYSTEM";
+      p.name = p.name || "Unnamed Product";
+    }
+  });
+
+  // 2. Deduplicate & normalize Drivers
   const driverNameMap = new Map();
   const driverIdRedirectMap = new Map();
 
@@ -64,7 +74,7 @@ function sanitizeDataState() {
         status: status,
         available: status === "AVAILABLE",
         earnings: typeof d.earnings === "number" ? d.earnings : 0,
-        location: d.location || { lat: 0, lng: 0, heading: 0, speed: 0, lastPing: null },
+        location: d.location || { lat: -1.286389, lng: 36.817223, heading: 0, speed: 0, lastPing: null },
         createdAt: d.createdAt || Date.now()
       };
       driverNameMap.set(nameKey, primaryDriver);
@@ -81,7 +91,7 @@ function sanitizeDataState() {
   });
   data.drivers = Array.from(driverNameMap.values());
 
-  // 2. Normalize Deliveries & map remapped Drivers
+  // 3. Normalize Deliveries & map remapped Drivers
   const deliveryMap = new Map();
   data.deliveries.forEach(del => {
     if (!del || !del.id) return;
@@ -101,7 +111,7 @@ function sanitizeDataState() {
   });
   data.deliveries = Array.from(deliveryMap.values());
 
-  // 3. System Wallets Integrity Safeguard
+  // 4. System Wallets Integrity Safeguard
   if (!data.wallets["SYSTEM_PLATFORM"]) {
     data.wallets["SYSTEM_PLATFORM"] = { balance: 0, escrow: 0 };
   }
@@ -242,11 +252,15 @@ app.get("/driverLocations", (req, res) => {
 /* ========================================== */
 /* 3. BUSINESS & MERCHANT API                 */
 /* ========================================== */
-app.get("/businesses", (req, res) => {
-  res.json({ success: true, businesses: data.businesses });
-});
+const getBusinessesHandler = (req, res) => {
+  sanitizeDataState();
+  res.json({ success: true, businesses: data.businesses, shops: data.businesses });
+};
 
-app.post("/business/add", (req, res) => {
+app.get("/businesses", getBusinessesHandler);
+app.get("/shops", getBusinessesHandler);
+
+const addBusinessHandler = (req, res) => {
   const { name, category, address, phone } = req.body;
   if (!name) return res.status(400).json({ success: false, error: "Business name required" });
 
@@ -264,10 +278,32 @@ app.post("/business/add", (req, res) => {
   data.wallets[business.id] = { balance: 0, escrow: 0 };
   saveDB();
 
-  res.status(201).json({ success: true, business });
-});
+  res.status(201).json({ success: true, business, shop: business });
+};
+
+app.post("/business/add", addBusinessHandler);
+app.post("/business/create", addBusinessHandler);
+
+const deleteBusinessHandler = (req, res) => {
+  const businessId = req.params.id || req.body.id || req.query.id;
+  const index = data.businesses.findIndex(b => b.id === businessId);
+
+  if (index === -1) {
+    return res.status(404).json({ success: false, error: "Business not found" });
+  }
+
+  const removed = data.businesses.splice(index, 1);
+  delete data.wallets[businessId];
+
+  saveDB();
+  res.json({ success: true, deleted: removed[0] });
+};
+
+app.delete("/business/delete/:id", deleteBusinessHandler);
+app.delete("/business/:id", deleteBusinessHandler);
 
 app.get("/products", (req, res) => {
+  sanitizeDataState();
   const { businessId } = req.query;
   let products = data.products;
   if (businessId) {
@@ -287,7 +323,7 @@ app.post("/product/add", (req, res) => {
     businessId,
     name: name.trim(),
     price: parseFloat(price) || 0,
-    stock: parseInt(stock) || 100,
+    stock: parseInt(stock) !== undefined && !isNaN(parseInt(stock)) ? parseInt(stock) : 50,
     category: category || "General",
     createdAt: Date.now()
   };
@@ -298,33 +334,34 @@ app.post("/product/add", (req, res) => {
 });
 
 /* ========================================== */
-/* 4. MARKET & ORDERS ENGINE                  */
+/* 4. MARKET, ORDERS & CHECKOUT ENGINE        */
 /* ========================================== */
-app.post("/order/create", (req, res) => {
-  const { customerName, customerPhone, items, deliveryAddress, targetLat, targetLng } = req.body;
-
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ success: false, error: "Order items list cannot be empty" });
-  }
+const createOrderInternal = (orderData) => {
+  const { customerName, customerPhone, items, deliveryAddress, targetLat, targetLng } = orderData;
 
   let totalAmount = 0;
   const verifiedItems = [];
 
   items.forEach(item => {
-    const prod = data.products.find(p => p.id === item.productId);
+    const prod = data.products.find(p => p.id === (item.productId || item.id));
     const itemPrice = prod ? prod.price : (parseFloat(item.price) || 0);
-    const qty = parseInt(item.quantity) || 1;
-    totalAmount += itemPrice * qty;
+    const qty = parseInt(item.quantity || item.qty) || 1;
+    const itemSubtotal = itemPrice * qty;
+    totalAmount += itemSubtotal;
+
+    const bizId = prod ? prod.businessId : (item.businessId || "SYSTEM");
 
     verifiedItems.push({
-      productId: item.productId || "CUSTOM",
+      productId: (prod ? prod.id : item.productId) || "CUSTOM",
+      businessId: bizId,
       name: prod ? prod.name : (item.name || "Item"),
       price: itemPrice,
-      quantity: qty
+      quantity: qty,
+      subtotal: itemSubtotal
     });
 
-    if (prod && prod.stock >= qty) {
-      prod.stock -= qty;
+    if (prod) {
+      prod.stock = Math.max(0, (prod.stock || 0) - qty);
     }
   });
 
@@ -346,12 +383,40 @@ app.post("/order/create", (req, res) => {
 
   data.orders.push(order);
 
-  // Financial Ledger Logging
+  // Financial Double-Entry Journal Logging
+  const ledgerEntries = [];
+  const merchantTotals = {};
+
+  verifiedItems.forEach(item => {
+    merchantTotals[item.businessId] = (merchantTotals[item.businessId] || 0) + item.subtotal;
+  });
+
+  Object.keys(merchantTotals).forEach(bId => {
+    const gross = merchantTotals[bId];
+    const platformFee = gross * 0.10; // 10% Commission
+    const merchantNet = gross - platformFee;
+
+    ledgerEntries.push(
+      { account: "ACCOUNTS_RECEIVABLE", businessId: bId, debit: gross, credit: 0 },
+      { account: "MERCHANT_EARNINGS", businessId: bId, debit: 0, credit: merchantNet },
+      { account: "PLATFORM_COMMISSION", businessId: "SYSTEM_PLATFORM", debit: 0, credit: platformFee }
+    );
+
+    const biz = data.businesses.find(b => b.id === bId);
+    if (biz) {
+      biz.balance = (biz.balance || 0) + merchantNet;
+    }
+    if (!data.wallets[bId]) data.wallets[bId] = { balance: 0, escrow: 0 };
+    data.wallets[bId].balance = (data.wallets[bId].balance || 0) + merchantNet;
+  });
+
   data.ledger.push({
     id: uid("TX_"),
     orderId: order.id,
     type: "ORDER_PAYMENT",
     amount: totalAmount,
+    entries: ledgerEntries,
+    createdAt: Date.now(),
     timestamp: Date.now()
   });
 
@@ -400,20 +465,91 @@ app.post("/order/create", (req, res) => {
   }
 
   saveDB();
+  return { order, delivery, assignedDriver };
+};
+
+// Batch Checkout Endpoint (Supported by Marketplace Frontends)
+app.post("/checkout", (req, res) => {
+  const { items } = req.body;
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ success: false, error: "Cart payload empty" });
+  }
+
+  const result = createOrderInternal({ items });
   res.status(201).json({
     success: true,
-    order,
-    delivery,
-    assignedDriver: assignedDriver ? assignedDriver.name : "Unassigned (Queued)"
+    order: result.order,
+    delivery: result.delivery,
+    assignedDriver: result.assignedDriver ? result.assignedDriver.name : "Unassigned"
   });
 });
 
+// Single Item Order Creation Endpoints
+const orderCreateHandler = (req, res) => {
+  let items = req.body.items;
+  if (!items && (req.body.productId || req.body.id)) {
+    items = [{
+      productId: req.body.productId || req.body.id,
+      qty: req.body.qty || req.body.quantity || 1
+    }];
+  }
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ success: false, error: "Order items list cannot be empty" });
+  }
+
+  const result = createOrderInternal({
+    customerName: req.body.customerName,
+    customerPhone: req.body.customerPhone,
+    deliveryAddress: req.body.deliveryAddress,
+    targetLat: req.body.targetLat,
+    targetLng: req.body.targetLng,
+    items
+  });
+
+  res.status(201).json({
+    success: true,
+    order: result.order,
+    delivery: result.delivery,
+    assignedDriver: result.assignedDriver ? result.assignedDriver.name : "Unassigned"
+  });
+};
+
+app.post("/order/create", orderCreateHandler);
+app.post("/order", orderCreateHandler);
+
 app.get("/orders", (req, res) => {
+  sanitizeDataState();
   res.json({ success: true, orders: data.orders });
 });
 
 /* ========================================== */
-/* 5. DRIVER FLEET TERMINAL ROUTER            */
+/* 5. LEDGER, WALLETS & JOURNAL ENDPOINTS     */
+/* ========================================== */
+const getLedgerHandler = (req, res) => {
+  sanitizeDataState();
+  res.json({
+    success: true,
+    ledger: data.ledger,
+    transactions: data.ledger
+  });
+};
+
+app.get("/ledger", getLedgerHandler);
+app.get("/transactions", getLedgerHandler);
+
+app.get("/wallets", (req, res) => {
+  sanitizeDataState();
+  const walletList = Object.keys(data.wallets).map(bizId => ({
+    businessId: bizId,
+    balance: data.wallets[bizId].balance || 0,
+    escrow: data.wallets[bizId].escrow || 0
+  }));
+  res.json({ success: true, wallets: walletList });
+});
+
+/* ========================================== */
+/* 6. DRIVER FLEET TERMINAL ROUTER            */
 /* ========================================== */
 app.get("/drivers", (req, res) => {
   sanitizeDataState();
@@ -499,7 +635,7 @@ app.post("/updateDriverLocation", updateLocationHandler);
 app.post("/driver/location", updateLocationHandler);
 
 /* ========================================== */
-/* 6. JOBS & FULFILLMENT PIPELINE            */
+/* 7. JOBS & FULFILLMENT PIPELINE            */
 /* ========================================== */
 const getDriverJobsHandler = (req, res) => {
   const driverId = req.query.driverId || req.params.driverId || req.body.driverId;
@@ -522,7 +658,7 @@ const completeDeliveryHandler = (req, res) => {
   delivery.status = "COMPLETED";
   delivery.updatedAt = Date.now();
 
-  // Update underlying Order Status
+  // Update Order Status
   const order = data.orders.find(o => o.id === delivery.orderId);
   if (order) {
     order.status = "DELIVERED";
@@ -541,6 +677,7 @@ const completeDeliveryHandler = (req, res) => {
       type: "DRIVER_PAYOUT",
       driverId: driver.id,
       amount: 50,
+      createdAt: Date.now(),
       timestamp: Date.now()
     });
   }
