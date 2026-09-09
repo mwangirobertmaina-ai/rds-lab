@@ -32,6 +32,23 @@
       "status": "DISPATCHED",
       "createdAt": 1788924010237,
       "updatedAt": 1788924010238
+    },
+    {
+      "id": "O_1788924400968_34729",
+      "items": [
+        {
+          "productId": "P_1788923930157_83294",
+          "name": "rice",
+          "price": 800,
+          "qty": 1,
+          "subtotal": 800
+        }
+      ],
+      "total": 800,
+      "commission": 40,
+      "status": "PAID",
+      "createdAt": 1788924400968,
+      "updatedAt": 1788924400968
     }
   ],
   "ledger": [
@@ -59,12 +76,37 @@
       "total": 800,
       "commission": 40,
       "createdAt": 1788924010237
+    },
+    {
+      "id": "L_1788924400968_72027",
+      "orderId": "O_1788924400968_34729",
+      "entries": [
+        {
+          "account": "CASH",
+          "debit": 800,
+          "credit": 0
+        },
+        {
+          "account": "BUSINESS_PAYABLE",
+          "businessId": "B_1788923915150_88524",
+          "debit": 0,
+          "credit": 760
+        },
+        {
+          "account": "PLATFORM_REVENUE",
+          "debit": 0,
+          "credit": 40
+        }
+      ],
+      "total": 800,
+      "commission": 40,
+      "createdAt": 1788924400968
     }
   ],
   "wallets": {
     "B_1788923915150_88524": {
       "businessId": "B_1788923915150_88524",
-      "balance": 760,
+      "balance": 1520,
       "transactions": [
         {
           "id": "WT_1788924010237_59000",
@@ -72,6 +114,13 @@
           "amount": 760,
           "orderId": "O_1788924010236_75810",
           "createdAt": 1788924010237
+        },
+        {
+          "id": "WT_1788924400968_78017",
+          "type": "CREDIT",
+          "amount": 760,
+          "orderId": "O_1788924400968_34729",
+          "createdAt": 1788924400968
         }
       ]
     }

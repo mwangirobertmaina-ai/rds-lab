@@ -1,518 +1,506 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDS FLEET | ULTIMATE DRIVER CONTROL PANEL</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDS DRIVER FLEET TERMINAL | PRO END-TO-END</title>
 
-<style>
-  :root {
-    --neon-green: #00ff66;
-    --dark-bg: #0a0a0a;
-    --panel-bg: #121212;
-    --card-bg: #181818;
-    --border-color: #00ff66;
-    --dim-text: #888888;
-    --alert-red: #ff3366;
-    --gold: #ffd700;
-    --warn-yellow: #ffff00;
-  }
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 
-  * { box-sizing: border-box; }
+  <style>
+    :root {
+      --neon-green: #00ff88;
+      --dark-bg: #000000;
+      --panel-bg: #111111;
+      --text-dim: #888888;
+      --alert-red: #ff3366;
+      --warn-yellow: #ffff00;
+      --gold: #ffd700;
+    }
 
-  body {
-    font-family: 'Courier New', Courier, monospace;
-    background: var(--dark-bg);
-    color: var(--neon-green);
-    padding: 20px;
-    margin: 0;
-  }
+    * { box-sizing: border-box; }
 
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid var(--neon-green);
-    padding-bottom: 12px;
-    margin-bottom: 20px;
-  }
+    body {
+      background: var(--dark-bg);
+      color: var(--neon-green);
+      font-family: monospace;
+      padding: 15px;
+      margin: 0;
+    }
 
-  h2, h3 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
+    button {
+      margin: 4px;
+      padding: 9px 14px;
+      background: var(--neon-green);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-family: monospace;
+      transition: opacity 0.2s;
+    }
 
-  button {
-    background: var(--neon-green);
-    color: #000;
-    font-weight: bold;
-    border: none;
-    padding: 8px 14px;
-    cursor: pointer;
-    font-family: monospace;
-    transition: all 0.2s ease;
-    text-transform: uppercase;
-  }
+    button:hover { opacity: 0.85; }
 
-  button:hover:not(:disabled) {
-    background: #00cc52;
-    box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
-  }
+    .btn-danger { background: var(--alert-red); color: #fff; }
+    .btn-warn { background: var(--warn-yellow); color: #000; }
+    .btn-gold { background: var(--gold); color: #000; }
 
-  button:disabled {
-    background: #333;
-    color: #666;
-    cursor: not-allowed;
-  }
+    select, input {
+      padding: 8px;
+      background: #111;
+      color: var(--neon-green);
+      border: 1px solid var(--neon-green);
+      font-family: monospace;
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
 
-  .btn-danger { background: var(--alert-red); color: #fff; }
-  .btn-danger:hover:not(:disabled) { background: #cc0033; }
+    .box {
+      border: 1px solid var(--neon-green);
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--panel-bg);
+    }
 
-  .btn-mode {
-    background: #000;
-    color: var(--neon-green);
-    border: 1px solid var(--neon-green);
-  }
-  .btn-mode.active {
-    background: var(--neon-green);
-    color: #000;
-  }
+    #map {
+      height: 320px;
+      margin-top: 10px;
+      border: 1px solid var(--neon-green);
+      background: #080808;
+    }
 
-  input, select {
-    background: #000;
-    color: var(--neon-green);
-    border: 1px solid var(--neon-green);
-    padding: 8px;
-    margin: 3px;
-    font-family: monospace;
-  }
+    .status-badge {
+      font-size: 0.85em;
+      padding: 2px 6px;
+      border: 1px solid var(--neon-green);
+      display: inline-block;
+      margin-top: 5px;
+    }
 
-  .grid-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+      background: #050505;
+      padding: 8px;
+      border: 1px solid #222;
+      color: #00ff88;
+    }
 
-  @media (max-width: 900px) {
-    .grid-layout { grid-template-columns: 1fr; }
-  }
-
-  .section {
-    border: 1px solid var(--border-color);
-    padding: 16px;
-    margin-bottom: 16px;
-    background: var(--panel-bg);
-  }
-
-  .card {
-    border: 1px solid #222;
-    background: var(--card-bg);
-    padding: 12px;
-    margin-bottom: 10px;
-  }
-
-  .badge {
-    background: #003311;
-    border: 1px solid var(--neon-green);
-    padding: 3px 8px;
-    font-size: 11px;
-    border-radius: 3px;
-  }
-
-  pre {
-    background: #000;
-    padding: 12px;
-    border: 1px solid #333;
-    color: var(--neon-green);
-    white-space: pre-wrap;
-    word-break: break-all;
-    max-height: 200px;
-    overflow-y: auto;
-  }
-
-  .small { font-size: 11px; color: var(--dim-text); }
-
-  .loader {
-    color: var(--warn-yellow);
-    font-style: italic;
-    animation: pulse 1s infinite alternate;
-  }
-
-  @keyframes pulse {
-    from { opacity: 0.3; }
-    to { opacity: 1; }
-  }
-</style>
+    .job-card {
+      padding: 10px;
+      border: 1px solid #333;
+      margin-bottom: 8px;
+      background: #181818;
+    }
+  </style>
 </head>
 
 <body>
 
-<header>
+<h2>🚚 RDS DRIVER FLEET TERMINAL (PRO)</h2>
+
+<!-- DRIVER PROFILE & REGISTRATION -->
+<div class="box">
+  <h3 style="margin-top: 0;">1. Driver Profile & Registration</h3>
   <div>
-    <h2>🚚 RDS DRIVER PANEL (STAGE 12 ENTERPRISE)</h2>
-    <span class="small">HYBRID FLEET DISPATCH CONTROL ENGINE</span>
+    <label for="driverSelect"><strong>Active Driver:</strong></label>
+    <select id="driverSelect" onchange="onDriverSelected()"></select>
+    <button onclick="loadDrivers()">🔄 Refresh List</button>
+    <span id="routeBadge" class="status-badge">Detecting Endpoint...</span>
   </div>
-  <div>
-    <button id="btnLocal" class="btn-mode" onclick="forceServer('LOCAL')">🖥 LOCAL</button>
-    <button id="btnCloud" class="btn-mode" onclick="forceServer('CLOUD')">☁ CLOUD</button>
-    <span id="status" class="badge">INITIALIZING</span>
+  <div style="margin-top: 10px;">
+    <input type="text" id="newDriverName" placeholder="New Driver Name..." />
+    <input type="text" id="newDriverPhone" placeholder="Phone (0700000000)" value="0700000000" />
+    <button onclick="registerNewDriver()">➕ Register Profile</button>
   </div>
-</header>
-
-<div class="grid-layout">
-
-  <!-- LEFT COLUMN: AUTH & JOBS -->
-  <div>
-    <div class="section">
-      <h3>🔑 Driver Authentication</h3>
-      <input id="name" placeholder="Driver name (e.g. kamau)">
-      <button onclick="setDriver()">SET / CREATE DRIVER</button>
-      <div id="driverInfo" style="margin-top:8px;">❌ No driver selected</div>
-    </div>
-
-    <div class="section">
-      <h3>⚡ Duty Status Controls</h3>
-      <button onclick="goOnline()">🟢 ONLINE (AVAILABLE)</button>
-      <button class="btn-danger" onclick="goOffline()">🔴 OFFLINE</button>
-      <button class="btn-mode" onclick="updateStatus('BUSY')">🟡 BUSY</button>
-      <h3 id="dutyStatus" style="margin-top:12px;">OFFLINE</h3>
-    </div>
-
-    <div class="section">
-      <h3>📦 Delivery Jobs</h3>
-      <div id="jobs"><span class="loader">Set driver to sync assigned deliveries...</span></div>
-    </div>
-  </div>
-
-  <!-- RIGHT COLUMN: FLEET ROSTER & CONSOLE -->
-  <div>
-    <div class="section">
-      <h3>👥 Fleet Active Roster</h3>
-      <div id="fleet"><span class="loader">⚡ Syncing fleet...</span></div>
-    </div>
-
-    <div class="section">
-      <h3>🧾 System Log Console</h3>
-      <pre id="out">Driver panel ready.</pre>
-    </div>
-  </div>
-
 </div>
 
+<!-- TELEMETRY & STATUS CONTROLS -->
+<div class="box">
+  <h3 style="margin-top: 0;">2. Status & GPS Control</h3>
+  <button onclick="goOnline()">🟢 ONLINE (AVAILABLE)</button>
+  <button onclick="goOffline()" class="btn-danger">🔴 OFFLINE</button>
+  <button onclick="setBusy()" class="btn-warn">🟡 BUSY</button>
+  <br>
+  <button onclick="startGPS()">📍 START GPS TELEMETRY</button>
+  <button onclick="stopGPS()" class="btn-danger">⛔ STOP GPS</button>
+
+  <h3 id="status" style="margin: 10px 0 5px 0;">STATUS: OFFLINE</h3>
+  <p id="gps" style="margin: 0;">GPS: --</p>
+</div>
+
+<!-- LIVE MAP -->
+<div class="box">
+  <h3 style="margin: 0;">🗺 Live Driver Map</h3>
+  <div id="map"></div>
+</div>
+
+<!-- JOBS & SIMULATION ENGINE -->
+<div class="box">
+  <h3 style="margin-top: 0;">📦 ASSIGNED DELIVERY JOBS</h3>
+  <div style="margin-bottom: 10px;">
+    <button onclick="createTestOrder()" class="btn-gold">⚡ Simulate Instant Order Dispatch</button>
+  </div>
+  <div id="jobs"><em>Loading delivery jobs...</em></div>
+</div>
+
+<!-- SYSTEM LOG CONSOLE -->
+<div class="box">
+  <h4 style="margin: 0 0 5px 0;">📡 System Telemetry Log</h4>
+  <pre id="consoleLog">Terminal initialized.</pre>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
 <script>
-const LOCAL = "http://localhost:3000";
-const CLOUD = "https://rds-lab.onrender.com";
+/* ========================================== */
+/* ENDPOINT DETECTOR & ROUTER                 */
+/* ========================================== */
+const LOCAL_API = "http://localhost:3000";
+const CLOUD_API = "https://rds-lab.onrender.com";
+let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
-let API = LOCAL;
-let MANUAL_OVERRIDE = false;
-let driverId = localStorage.getItem("RDS_DRIVER_ID") || "";
-let driverName = localStorage.getItem("RDS_DRIVER_NAME") || "";
+let driverId = "";
+let map = null;
+let marker = null;
+let gpsWatch = null;
+let activeTileLayer = null;
 
-function out(msg) {
-  document.getElementById("out").innerText = typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
+function sysLog(msg) {
+  const el = document.getElementById("consoleLog");
+  const time = new Date().toLocaleTimeString();
+  el.innerText = `[${time}] ${typeof msg === 'object' ? JSON.stringify(msg) : msg}\n` + el.innerText;
 }
 
-/* ========================================== */
-/* DUAL-RACER HYBRID ROUTE DETECTOR          */
-/* ========================================== */
-async function detectAPI() {
-  if (MANUAL_OVERRIDE) return;
-
+async function resolveBackendRoute() {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 800);
-
-    const res = await fetch(LOCAL + "/", { method: "GET", signal: controller.signal });
+    await fetch(`${LOCAL_API}/`, { method: "GET", signal: controller.signal });
     clearTimeout(timeout);
-
-    if (!res.ok) throw new Error("Local endpoint offline");
-    API = LOCAL;
-    updateUIBadge("LOCAL SERVER 🖥", "var(--neon-green)");
-  } catch {
-    API = CLOUD;
-    updateUIBadge("CLOUD SERVER ☁", "var(--gold)");
-  }
-}
-
-function forceServer(mode) {
-  MANUAL_OVERRIDE = true;
-  if (mode === "LOCAL") {
-    API = LOCAL;
-    updateUIBadge("FORCED LOCAL 🖥", "var(--neon-green)");
-  } else {
-    API = CLOUD;
-    updateUIBadge("FORCED CLOUD ☁", "var(--gold)");
-  }
-  out(`Switched endpoint route to: ${API}`);
-  loadJobs();
-  loadFleet();
-}
-
-function updateUIBadge(text, color) {
-  const el = document.getElementById("status");
-  el.innerText = text;
-  el.style.borderColor = color;
-  el.style.color = color;
-
-  const btnLocal = document.getElementById("btnLocal");
-  const btnCloud = document.getElementById("btnCloud");
-  if (API === LOCAL) {
-    btnLocal.classList.add("active");
-    btnCloud.classList.remove("active");
-  } else {
-    btnCloud.classList.add("active");
-    btnLocal.classList.remove("active");
+    API_BASE = LOCAL_API;
+    document.getElementById("routeBadge").innerText = "Route: LOCAL (3000)";
+  } catch (_) {
+    API_BASE = CLOUD_API;
+    document.getElementById("routeBadge").innerText = "Route: CLOUD (Render)";
   }
 }
 
 /* ========================================== */
-/* EXPONENTIAL BACKOFF FETCH ENGINE          */
+/* SAFE FETCH ENGINE WITH ALIAS FALLBACK      */
 /* ========================================== */
-async function safeFetch(url, options = {}, retries = 3, backoff = 800) {
-  try {
-    const res = await fetch(url, options);
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || `HTTP ${res.status}`);
-    }
-    return await res.json();
-  } catch (e) {
-    if (retries > 0) {
-      out(`⏳ Connection retry in ${backoff / 1000}s (${retries} left)...`);
-      await new Promise(r => setTimeout(r, backoff));
-      return safeFetch(url, options, retries - 1, backoff * 1.5);
-    }
-    throw e;
-  }
-}
-
-async function safeFetchWithFallback(endpoints, options = {}) {
-  let lastError;
-  for (const ep of endpoints) {
+async function apiFetch(endpoints, options = {}) {
+  const targetEndpoints = Array.isArray(endpoints) ? endpoints : [endpoints];
+  
+  for (const ep of targetEndpoints) {
     try {
-      return await safeFetch(API + ep, options, 1, 500);
-    } catch (err) {
-      lastError = err;
-    }
-  }
-  throw lastError || new Error("All endpoint fallbacks failed");
-}
-
-/* ========================================== */
-/* SET & SELF-CREATE DRIVER                   */
-/* ========================================== */
-async function setDriver() {
-  const nameInput = document.getElementById("name").value.trim();
-
-  if (!nameInput) {
-    alert("Please enter driver name");
-    return;
-  }
-
-  out(`Resolving driver profile for "${nameInput}"...`);
-
-  try {
-    const data = await safeFetch(API + "/drivers");
-    const drivers = data.drivers || [];
-
-    // Case-insensitive exact name lookup
-    let d = drivers.find(x => x.name && x.name.toLowerCase() === nameInput.toLowerCase());
-
-    // Auto-create driver record if missing on backend
-    if (!d) {
-      out(`Driver profile missing. Creating record for "${nameInput}"...`);
-      const createRes = await safeFetchWithFallback(["/addDriver", "/driver/add"], {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nameInput, phone: "0700000000" })
+      const res = await fetch(`${API_BASE}${ep}`, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        }
       });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      // Continue to next endpoint alias if available
+    }
+  }
+  sysLog(`API Error on endpoints: ${targetEndpoints.join(', ')}`);
+  return null;
+}
 
-      d = createRes.driver;
+/* ========================================== */
+/* 403-PROOF MULTI-PROVIDER TILE SYSTEM      */
+/* ========================================== */
+function initMap() {
+  if (map) return;
+
+  map = L.map("map", {
+    zoomControl: true,
+    attributionControl: false
+  }).setView([-1.286389, 36.817223], 13); // Default Nairobi CBD coordinates
+
+  const tileProviders = [
+    {
+      url: "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+      subdomains: ["a", "b", "c"],
+      maxZoom: 19
+    },
+    {
+      url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+      subdomains: ["a", "b", "c", "d"],
+      maxZoom: 19
+    },
+    {
+      url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      subdomains: ["a", "b", "c", "d"],
+      maxZoom: 19
+    }
+  ];
+
+  let providerIndex = 0;
+
+  function loadTileLayer() {
+    if (activeTileLayer && map.hasLayer(activeTileLayer)) {
+      map.removeLayer(activeTileLayer);
     }
 
-    driverId = d.id;
-    driverName = d.name;
-
-    localStorage.setItem("RDS_DRIVER_ID", driverId);
-    localStorage.setItem("RDS_DRIVER_NAME", driverName);
-
-    document.getElementById("driverInfo").innerHTML = `✅ Active Driver: <b>${d.name}</b> <span class="small">(${d.id})</span>`;
-    document.getElementById("dutyStatus").innerHTML = `<span class="badge">Status: ${d.status || 'OFFLINE'}</span>`;
-    out({ status: "✅ DRIVER AUTHENTICATED", driver: d });
-
-    await loadJobs();
-    await loadFleet();
-
-  } catch (e) {
-    out(`❌ Driver Auth Error: ${e.message}`);
-  }
-}
-
-/* ========================================== */
-/* DUTY STATUS CONTROLS                       */
-/* ========================================== */
-async function goOnline() {
-  await updateStatus("AVAILABLE");
-  document.getElementById("dutyStatus").innerText = "🟢 ONLINE";
-}
-
-async function goOffline() {
-  await updateStatus("OFFLINE");
-  document.getElementById("dutyStatus").innerText = "🔴 OFFLINE";
-}
-
-async function updateStatus(status) {
-  if (!driverId) {
-    alert("Set driver first");
-    return;
-  }
-
-  out(`Updating duty status to ${status}...`);
-
-  try {
-    const res = await safeFetchWithFallback(["/updateDriverStatus", "/driverStatus"], {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ driverId, status })
+    const provider = tileProviders[providerIndex];
+    activeTileLayer = L.tileLayer(provider.url, {
+      subdomains: provider.subdomains,
+      maxZoom: provider.maxZoom,
+      crossOrigin: true
     });
 
-    out(res);
-    await loadFleet();
-  } catch (e) {
-    out(`❌ Status Update Error: ${e.message}`);
+    activeTileLayer.on("tileerror", () => {
+      sysLog(`Tile error on provider #${providerIndex}. Switching backup tile layer...`);
+      providerIndex = (providerIndex + 1) % tileProviders.length;
+      loadTileLayer();
+    });
+
+    activeTileLayer.addTo(map);
+  }
+
+  loadTileLayer();
+  marker = L.marker([-1.286389, 36.817223]).addTo(map);
+}
+
+/* ========================================== */
+/* DRIVER MANAGEMENT & REGISTRATION          */
+/* ========================================== */
+async function loadDrivers() {
+  const data = await apiFetch("/drivers");
+  const select = document.getElementById("driverSelect");
+  select.innerHTML = "";
+
+  if (!data || !data.drivers || data.drivers.length === 0) {
+    select.innerHTML = "<option value=''>No drivers available</option>";
+    driverId = "";
+    return;
+  }
+
+  data.drivers.forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.innerText = `${d.name} (${d.status || 'OFFLINE'}) - $${d.earnings || 0}`;
+    select.appendChild(opt);
+  });
+
+  if (!driverId && data.drivers.length > 0) {
+    driverId = data.drivers[0].id;
+  }
+  select.value = driverId;
+  sysLog(`Active driver set to: ${driverId}`);
+  loadJobs();
+}
+
+function onDriverSelected() {
+  driverId = document.getElementById("driverSelect").value;
+  sysLog(`Selected Driver ID: ${driverId}`);
+  loadJobs();
+}
+
+async function registerNewDriver() {
+  const nameInput = document.getElementById("newDriverName");
+  const phoneInput = document.getElementById("newDriverPhone");
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+
+  if (!name) return alert("Please enter a driver name.");
+
+  const res = await apiFetch(["/addDriver", "/driver/add"], {
+    method: "POST",
+    body: JSON.stringify({ name, phone })
+  });
+
+  if (res && res.success && res.driver) {
+    driverId = res.driver.id;
+    nameInput.value = "";
+    sysLog(`✅ Driver registered: ${res.driver.name}`);
+    await loadDrivers();
   }
 }
 
 /* ========================================== */
-/* LOAD JOBS (MULTI-ENDPOINT COMPATIBLE)      */
+/* STATUS CONTROL                             */
+/* ========================================== */
+async function setStatus(status) {
+  driverId = document.getElementById("driverSelect").value;
+  if (!driverId) return alert("Select a driver profile first.");
+
+  const res = await apiFetch(["/updateDriverStatus", "/driverStatus"], {
+    method: "POST",
+    body: JSON.stringify({ driverId, status })
+  });
+
+  if (res && res.success) {
+    document.getElementById("status").innerText = "STATUS: " + status;
+    sysLog(`Status updated to: ${status}`);
+    loadDrivers();
+  }
+}
+
+function goOnline() { setStatus("AVAILABLE"); }
+function goOffline() { setStatus("OFFLINE"); }
+function setBusy() { setStatus("BUSY"); }
+
+/* ========================================== */
+/* GPS TELEMETRY & MAP TRACKING               */
+/* ========================================== */
+function startGPS() {
+  if (!navigator.geolocation) {
+    alert("Geolocation API is not supported by this browser.");
+    return;
+  }
+
+  if (gpsWatch !== null) {
+    navigator.geolocation.clearWatch(gpsWatch);
+  }
+
+  gpsWatch = navigator.geolocation.watchPosition(
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      document.getElementById("gps").innerText = `GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+      if (map && marker) {
+        marker.setLatLng([lat, lng]);
+        map.setView([lat, lng], 16, { animate: true });
+      }
+
+      if (driverId) {
+        await apiFetch(["/updateDriverLocation", "/driver/location"], {
+          method: "POST",
+          body: JSON.stringify({
+            driverId,
+            location: {
+              lat,
+              lng,
+              heading: pos.coords.heading || 0,
+              speed: pos.coords.speed || 0
+            }
+          })
+        });
+      }
+    },
+    (err) => {
+      sysLog(`GPS Error (${err.code}): ${err.message}`);
+      document.getElementById("gps").innerText = `GPS Error: ${err.message}`;
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10000
+    }
+  );
+
+  sysLog("GPS Telemetry tracking started.");
+}
+
+function stopGPS() {
+  if (gpsWatch !== null) {
+    navigator.geolocation.clearWatch(gpsWatch);
+    gpsWatch = null;
+    document.getElementById("gps.innerText = "GPS: STOPPED";
+    sysLog("GPS Telemetry stopped.");
+  }
+}
+
+/* ========================================== */
+/* JOBS DISPATCH & TEST SIMULATION ENGINE     */
 /* ========================================== */
 async function loadJobs() {
   if (!driverId) return;
 
-  try {
-    let myJobs = [];
+  const data = await apiFetch([`/driverJobs?driverId=${driverId}`, `/driver/${driverId}/deliveries`]);
+  const container = document.getElementById("jobs");
+  container.innerHTML = "";
 
-    try {
-      const jobData = await safeFetchWithFallback([
-        `/driverJobs?driverId=${driverId}`,
-        `/driver/${driverId}/deliveries`
-      ]);
-      myJobs = jobData.jobs || jobData.deliveries || [];
-    } catch {
-      const allData = await safeFetch(API + "/deliveries");
-      const list = allData.deliveries || [];
-      myJobs = list.filter(d => d.driverId === driverId);
-    }
+  const jobsList = (data && (data.jobs || data.deliveries)) || [];
 
-    // In-memory job deduplication
-    const cleanJobs = Array.from(new Map(myJobs.map(j => [j.id, j])).values());
-    const el = document.getElementById("jobs");
-
-    if (!cleanJobs.length) {
-      el.innerHTML = "<p><em>No assigned delivery jobs.</em></p>";
-      return;
-    }
-
-    let html = "";
-    cleanJobs.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).forEach(j => {
-      html += `
-        <div class="card">
-          <b>Delivery ID:</b> ${j.id}<br>
-          <b>Order ID:</b> ${j.orderId || 'N/A'}<br>
-          <b>Status:</b> <span class="badge">${j.status}</span><br><br>
-          <button onclick="complete('${j.id}')">✅ COMPLETE DELIVERY</button>
-        </div>
-      `;
-    });
-
-    el.innerHTML = html;
-
-  } catch (e) {
-    console.error("Jobs load failure:", e);
+  if (jobsList.length === 0) {
+    container.innerHTML = "<p>No active deliveries assigned.</p>";
+    return;
   }
+
+  jobsList.forEach(job => {
+    const div = document.createElement("div");
+    div.className = "job-card";
+
+    const isDone = job.status === "COMPLETED" || job.status === "DONE";
+
+    div.innerHTML = `
+      <p style="margin:2px 0;"><strong>Delivery ID:</strong> ${job.id}</p>
+      <p style="margin:2px 0;"><strong>Order ID:</strong> ${job.orderId || 'ORD_TEST'}</p>
+      <p style="margin:2px 0;"><strong>Status:</strong> <span style="color:${isDone ? 'var(--text-dim)' : 'var(--neon-green)'}">${job.status}</span></p>
+      ${!isDone 
+        ? `<button onclick="completeDelivery('${job.id}')">✅ Complete Delivery (+$50)</button>` 
+        : '<span style="color:#888;">[TASK FINISHED]</span>'}
+    `;
+
+    container.appendChild(div);
+  });
 }
 
-/* ========================================== */
-/* COMPLETE DELIVERY                          */
-/* ========================================== */
-async function complete(id) {
-  out(`Completing delivery task ${id}...`);
+async function completeDelivery(id) {
+  const res = await apiFetch(["/completeDelivery", "/updateDelivery"], {
+    method: "POST",
+    body: JSON.stringify({ deliveryId: id })
+  });
 
-  try {
-    const res = await safeFetchWithFallback(["/completeDelivery", "/updateDelivery", "/delivery/updateStatus"], {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ deliveryId: id, status: "COMPLETED" })
-    });
-
-    out(res);
+  if (res && res.success) {
+    sysLog(`✅ Delivery ${id} completed.`);
+    await loadDrivers();
     await loadJobs();
-    await loadFleet();
-  } catch (e) {
-    out(`❌ Completion Error: ${e.message}`);
+  }
+}
+
+async function createTestOrder() {
+  sysLog("⚡ Simulating new market order dispatch...");
+  const res = await apiFetch("/order/create", {
+    method: "POST",
+    body: JSON.stringify({
+      customerName: "Test Customer",
+      customerPhone: "0711111111",
+      deliveryAddress: "Nairobi Center",
+      targetLat: -1.286389,
+      targetLng: 36.817223,
+      items: [
+        { productId: "PROD_DEMO", name: "Simulated Market Item", price: 25, quantity: 2 }
+      ]
+    })
+  });
+
+  if (res && res.success) {
+    sysLog(`✅ Order ${res.order.id} dispatched to driver: ${res.assignedDriver}`);
+    await loadDrivers();
+    await loadJobs();
   }
 }
 
 /* ========================================== */
-/* DEDUPLICATED FLEET ROSTER                  */
+/* DAEMON AUTO-POLL & INIT                    */
 /* ========================================== */
-async function loadFleet() {
-  try {
-    const data = await safeFetch(API + "/drivers");
-    const rawList = data.drivers || [];
+setInterval(() => {
+  if (driverId) loadJobs();
+}, 4000);
 
-    // Deduplicate roster by normalized lower-case driver name
-    const uniqueFleetMap = new Map();
-    rawList.forEach(d => {
-      if (!d.name) return;
-      const key = d.name.trim().toLowerCase();
-
-      if (!uniqueFleetMap.has(key)) {
-        uniqueFleetMap.set(key, { ...d });
-      } else {
-        const existing = uniqueFleetMap.get(key);
-        if (d.status === "AVAILABLE" || d.status === "BUSY") {
-          existing.status = d.status;
-        }
-        existing.earnings = Math.max(existing.earnings || 0, d.earnings || 0);
-        existing.id = d.id;
-      }
-    });
-
-    const uniqueFleet = Array.from(uniqueFleetMap.values());
-
-    let html = "";
-    uniqueFleet.forEach(d => {
-      const isCurrent = (driverName && d.name.toLowerCase() === driverName.toLowerCase()) ? " (YOU)" : "";
-      html += `
-        <div style="border-bottom: 1px dashed #333; padding: 4px 0;">
-          <b>${d.name}</b> <span class="small">(${d.id})</span>${isCurrent}<br>
-          <span class="badge">Status: ${d.status}</span> | 💰 Earnings: $${d.earnings || 0}
-        </div>
-      `;
-    });
-
-    document.getElementById("fleet").innerHTML = html || "<em>No drivers in fleet roster.</em>";
-  } catch (e) {
-    document.getElementById("fleet").innerHTML = "<span style='color:var(--alert-red)'>❌ Fleet roster offline</span>";
-  }
-}
-
-/* ========================================== */
-/* AUTO SYNC & INITIALIZATION                 */
-/* ========================================== */
 async function init() {
-  await detectAPI();
-
-  if (driverName) {
-    document.getElementById("name").value = driverName;
-    setDriver();
-  } else {
-    loadFleet();
-  }
-
-  setInterval(loadJobs, 3000);
-  setInterval(loadFleet, 6000);
+  initMap();
+  await resolveBackendRoute();
+  await loadDrivers();
 }
 
-init();
+window.onload = init;
 </script>
 
 </body>

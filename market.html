@@ -107,6 +107,17 @@
     margin-left: 4px;
   }
 
+  input, select {
+    background: #000;
+    color: var(--neon-green);
+    border: 1px solid var(--neon-green);
+    padding: 8px;
+    font-family: monospace;
+    font-size: 14px;
+    margin-bottom: 8px;
+    width: 100%;
+  }
+
   pre {
     background: #000;
     padding: 12px;
@@ -171,14 +182,23 @@
     </div>
 
     <div class="section">
-      <h3>🛒 Shopping Cart</h3>
+      <h3>🛒 Shopping Cart & Checkout</h3>
       <div id="cart">Cart empty</div>
       <br>
+      <div style="margin-bottom: 12px;">
+        <label class="small">CUSTOMER NAME:</label>
+        <input type="text" id="custName" value="Robert (Valued Customer)" placeholder="Customer Name..." />
+        
+        <label class="small">DELIVERY ADDRESS / DESTINATION:</label>
+        <input type="text" id="custAddress" value="Nairobi CBD, Kenya" placeholder="Delivery Location..." />
+      </div>
+
       <div style="font-size: 18px; font-weight: bold; margin-bottom: 12px;">
         TOTAL: $<span id="total">0</span>
       </div>
+      
       <button id="payBtn" onclick="checkout()" style="width: 100%; padding: 12px; font-size: 16px;" disabled>
-        💳 PAY & PLACE ORDER
+        💳 PAY & DISPATCH ORDER
       </button>
     </div>
   </div>
@@ -191,7 +211,7 @@
     </div>
 
     <div class="section">
-      <h3>📊 Double-Entry Journal Ledger</h3>
+      <h3>📊 Financial Ledger Activity</h3>
       <div id="ledger"><span class="loader">⚡ Syncing journal ledger...</span></div>
     </div>
 
@@ -212,16 +232,16 @@
 <script>
 const LOCAL = "http://localhost:3000";
 const CLOUD = "https://rds-lab.onrender.com";
-const CART_STORAGE_KEY = "RDS_MARKET_CART_PERSIST_V2";
+const CART_STORAGE_KEY = "RDS_MARKET_CART_PERSIST_V3";
 
-let API = LOCAL;
+let API = window.location.origin.includes("localhost") ? LOCAL : CLOUD;
 let MANUAL_OVERRIDE = false;
 let PRODUCTS = [];
 let CART = [];
 let BUSINESS_MAP = {};
 
 /* ========================================== */
-/* DUAL-RACER HYBRID ROUTE DETECTOR          */
+/* DUAL-RACER HYBRID ROUTE DETECTOR           */
 /* ========================================== */
 async function detectAPI() {
   if (MANUAL_OVERRIDE) return;
@@ -362,10 +382,8 @@ async function init() {
 /* ========================================== */
 async function load() {
   try {
-    // 1. Fetch Shops First to Populate BUSINESS_MAP
     await loadShops();
 
-    // 2. Fetch Dependent Data in Parallel
     await Promise.all([
       loadProducts(),
       loadOrders(),
@@ -383,20 +401,24 @@ async function load() {
 /* ========================================== */
 async function loadShops() {
   setSectionLoading("shops", "Loading shops");
-  const data = await safeFetchWithFallback(["/businesses", "/shops"]);
+  try {
+    const data = await safeFetchWithFallback(["/businesses", "/shops"]);
 
-  BUSINESS_MAP = {};
-  let h = "";
+    BUSINESS_MAP = {};
+    let h = "";
 
-  const rawList = data.businesses || data.shops || [];
-  const list = Array.from(new Map(rawList.map(b => [b.id, b])).values());
+    const rawList = data.businesses || data.shops || [];
+    const list = Array.from(new Map(rawList.map(b => [b.id, b])).values());
 
-  list.forEach(b => {
-    BUSINESS_MAP[b.id] = b.name;
-    h += `<div class="item-card"><b>${b.name}</b> <span class="small">(${b.id})</span></div>`;
-  });
+    list.forEach(b => {
+      BUSINESS_MAP[b.id] = b.name;
+      h += `<div class="item-card"><div><b>${b.name}</b><br><span class="small">${b.category || 'Retail'} | ID: ${b.id}</span></div><span class="badge">ACTIVE</span></div>`;
+    });
 
-  document.getElementById("shops").innerHTML = h || "<em>No merchant shops registered.</em>";
+    document.getElementById("shops").innerHTML = h || "<em>No merchant shops registered yet.</em>";
+  } catch (e) {
+    document.getElementById("shops").innerHTML = "<em>Merchant shop directory empty or starting up...</em>";
+  }
 }
 
 /* ========================================== */
@@ -404,26 +426,30 @@ async function loadShops() {
 /* ========================================== */
 async function loadProducts() {
   setSectionLoading("catalog", "Loading store catalog");
-  const data = await safeFetch(API + "/products");
+  try {
+    const data = await safeFetch(API + "/products");
 
-  const rawProducts = data.products || [];
-  PRODUCTS = Array.from(new Map(rawProducts.map(p => [p.id, p])).values());
-  let h = "";
+    const rawProducts = data.products || [];
+    PRODUCTS = Array.from(new Map(rawProducts.map(p => [p.id, p])).values());
+    let h = "";
 
-  PRODUCTS.forEach(p => {
-    const merchantName = BUSINESS_MAP[p.businessId] || p.businessId;
-    h += `
-      <div class="item-card">
-        <div>
-          <b>${p.name}</b> - <span style="color:var(--gold)">$${p.price}</span><br>
-          <span class="small">Merchant: ${merchantName}</span>
+    PRODUCTS.forEach(p => {
+      const merchantName = BUSINESS_MAP[p.businessId] || p.businessId || "General Store";
+      h += `
+        <div class="item-card">
+          <div>
+            <b>${p.name}</b> - <span style="color:var(--gold)">$${p.price}</span><br>
+            <span class="small">Merchant: ${merchantName} | Stock: ${p.stock !== undefined ? p.stock : 'In Stock'}</span>
+          </div>
+          <button onclick="add('${p.id}')">➕ Add</button>
         </div>
-        <button onclick="add('${p.id}')">➕ Add</button>
-      </div>
-    `;
-  });
+      `;
+    });
 
-  document.getElementById("catalog").innerHTML = h || "<em>No products listed in marketplace.</em>";
+    document.getElementById("catalog").innerHTML = h || "<em>No products listed in marketplace.</em>";
+  } catch (e) {
+    document.getElementById("catalog").innerHTML = "<em>Catalog empty or awaiting inventory...</em>";
+  }
 }
 
 /* ========================================== */
@@ -438,7 +464,7 @@ function add(id) {
   if (item) {
     item.qty++;
   } else {
-    CART.push({ id: p.id, name: p.name, price: p.price, qty: 1 });
+    CART.push({ id: p.id, name: p.name, price: p.price, qty: 1, businessId: p.businessId });
   }
 
   saveCartToStorage();
@@ -508,7 +534,7 @@ function renderCart() {
 }
 
 /* ========================================== */
-/* CHECKOUT PIPELINE WITH FALLBACK            */
+/* CHECKOUT PIPELINE                          */
 /* ========================================== */
 async function checkout() {
   if (CART.length === 0) return;
@@ -517,65 +543,70 @@ async function checkout() {
   payBtn.disabled = true;
   updateStatus("PROCESSING...", "var(--warn-yellow)");
 
-  out("💳 Initiating checkout sequence...");
+  out("💳 Initiating enterprise dispatch checkout sequence...");
 
-  const itemsPayload = CART.map(i => ({
+  const customerName = document.getElementById("custName").value.trim() || "Guest Customer";
+  const deliveryAddress = document.getElementById("custAddress").value.trim() || "Nairobi CBD";
+
+  const orderItemsPayload = CART.map(i => ({
     productId: i.id,
-    qty: i.qty
+    quantity: i.qty,
+    price: i.price,
+    name: i.name
   }));
 
   try {
     let receipt;
 
-    // 1. Primary Attempt: Atomic Batch Checkout Endpoint
+    // 1. Primary Attempt: Unified End-to-End Order Creation & Auto-Dispatch
     try {
-      out("⏳ Submitting atomic batch checkout...");
-      const res = await safeFetch(API + "/checkout", {
+      out("⏳ Submitting order & triggering nearest-driver dispatch...");
+      const res = await safeFetch(API + "/order/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: itemsPayload })
+        body: JSON.stringify({
+          customerName,
+          customerPhone: "0700000000",
+          deliveryAddress,
+          targetLat: -1.286389,
+          targetLng: 36.817223,
+          items: orderItemsPayload
+        })
       });
 
-      if (!res.success) throw new Error(res.error || "Batch transaction refused");
-      receipt = res.order;
+      if (!res.success) throw new Error(res.error || "Order creation refused");
+      receipt = {
+        orderId: res.order.id,
+        total: res.order.total,
+        assignedDriver: res.assignedDriver,
+        deliveryId: res.delivery ? res.delivery.id : "QUEUED"
+      };
 
-    } catch (batchError) {
-      // 2. Fallback Attempt: Itemized Sequential Orders
-      out("⚠️ Batch endpoint unreachable. Executing sequential itemized orders...");
+    } catch (primaryError) {
+      // 2. Fallback Attempt: Batch or Legacy Checkout Endpoint
+      out("⚠️ Primary order dispatch endpoint failed. Executing fallback batch checkout...");
 
-      const orders = [];
-      let itemIdx = 1;
+      const res = await safeFetchWithFallback(["/checkout", "/order"], {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: orderItemsPayload })
+      });
 
-      for (let item of itemsPayload) {
-        out(`⏳ Processing transaction item ${itemIdx} of ${itemsPayload.length}...`);
-
-        const singleRes = await safeFetch(API + "/order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(item)
-        });
-
-        if (!singleRes.success) throw new Error(singleRes.error || `Failed order for item ${item.productId}`);
-        orders.push(singleRes.order);
-        itemIdx++;
-      }
-
-      receipt = { mode: "SEQUENTIAL_FALLBACK_SUCCESS", orders };
+      if (!res.success) throw new Error(res.error || "Batch fallback checkout failed");
+      receipt = res.order || res;
     }
 
     out({
-      status: "✅ TRANSACTION COMPLETED SUCCESSFULLY",
+      status: "✅ TRANSACTION & DISPATCH COMPLETED",
       receipt: receipt
     });
 
     updateStatus("SUCCESS ✅", "var(--neon-green)");
 
-    // Clear State Upon Validated Purchase
     CART = [];
     saveCartToStorage();
     renderCart();
 
-    // Instant Update of All Transparency Audit Panels
     await load();
 
   } catch (e) {
@@ -587,34 +618,36 @@ async function checkout() {
 }
 
 /* ========================================== */
-/* ORDERS (SORTED LATEST FIRST)               */
+/* ORDERS                                     */
 /* ========================================== */
 async function loadOrders() {
   setSectionLoading("orders", "Loading orders");
-  const data = await safeFetch(API + "/orders");
+  try {
+    const data = await safeFetch(API + "/orders");
 
-  let h = "";
-  const rawList = data.orders || [];
-  const list = Array.from(new Map(rawList.map(o => [o.id, o])).values())
-    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    let h = "";
+    const rawList = data.orders || [];
+    const list = Array.from(new Map(rawList.map(o => [o.id, o])).values())
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-  list.forEach(o => {
-    h += `<div style="border-bottom: 1px dashed #333; padding-bottom: 6px; margin-bottom: 6px;">`;
-    h += `📦 <b>Order ID:</b> ${o.id} | <b>Total:</b> $${o.total}<br>`;
+    list.forEach(o => {
+      h += `<div style="border-bottom: 1px dashed #333; padding-bottom: 6px; margin-bottom: 6px;">`;
+      h += `📦 <b>Order:</b> ${o.id} | <b>Total:</b> $${o.total || 0}<br>`;
 
-    if (Array.isArray(o.items) && o.items.length > 0) {
-      o.items.forEach(i => {
-        h += `&nbsp;&nbsp;• ${i.name} x${i.qty} = $${i.subtotal}<br>`;
-      });
-    } else if (o.productId) {
-      h += `&nbsp;&nbsp;• Product ID: ${o.productId} (x${o.qty || 1})<br>`;
-    }
+      if (Array.isArray(o.items) && o.items.length > 0) {
+        o.items.forEach(i => {
+          h += `&nbsp;&nbsp;• ${i.name || 'Item'} x${i.quantity || i.qty || 1} = $${(i.price || 0) * (i.quantity || i.qty || 1)}<br>`;
+        });
+      }
 
-    h += `<span class="small">Status: ${o.status || 'PAID'} | Timestamp: ${new Date(o.createdAt || Date.now()).toLocaleString()}</span>`;
-    h += `</div>`;
-  });
+      h += `<span class="small">Customer: ${o.customerName || 'Guest'} | Status: ${o.status || 'PLACED'}</span>`;
+      h += `</div>`;
+    });
 
-  document.getElementById("orders").innerHTML = h || "<em>No orders placed yet.</em>";
+    document.getElementById("orders").innerHTML = h || "<em>No orders placed yet.</em>";
+  } catch (e) {
+    document.getElementById("orders").innerHTML = "<em>No active orders in system feed.</em>";
+  }
 }
 
 /* ========================================== */
@@ -622,28 +655,22 @@ async function loadOrders() {
 /* ========================================== */
 async function loadLedger() {
   setSectionLoading("ledger", "Loading ledger");
-  const data = await safeFetch(API + "/ledger");
+  try {
+    const data = await safeFetch(API + "/admin/overview");
 
-  let h = "";
-  const rawList = data.ledger || [];
-  const list = Array.from(new Map(rawList.map(l => [l.id, l])).values())
-    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    let h = "";
+    const rawList = data.recentLedger || [];
 
-  list.forEach(l => {
-    const linkedContext = l.orderId ? `[Order: ${l.orderId}]` : (l.payoutId ? `[Payout: ${l.payoutId}]` : "");
-    h += `📜 <b>TX ID:</b> ${l.id} <span class="badge">${linkedContext}</span><br>`;
+    rawList.forEach(l => {
+      h += `📜 <b>TX:</b> ${l.id} | <span class="badge">${l.type}</span><br>`;
+      h += `&nbsp;&nbsp;→ Amount: <b>$${l.amount}</b> | Order: ${l.orderId || 'N/A'}<br>`;
+      h += `<span class="small">Timestamp: ${new Date(l.timestamp || Date.now()).toLocaleString()}</span><br><hr style="border-color:#222;">`;
+    });
 
-    if (Array.isArray(l.entries)) {
-      l.entries.forEach(e => {
-        const merchant = e.businessId ? `(${BUSINESS_MAP[e.businessId] || e.businessId})` : "";
-        h += `&nbsp;&nbsp;→ <b>${e.account}</b> ${merchant} | ${e.debit ? 'DR: $' + e.debit : ''} ${e.credit ? 'CR: $' + e.credit : ''}<br>`;
-      });
-    }
-
-    h += `<span class="small">Timestamp: ${new Date(l.createdAt || Date.now()).toLocaleString()}</span><br><hr style="border-color:#222;">`;
-  });
-
-  document.getElementById("ledger").innerHTML = h || "<em>No journal entries found.</em>";
+    document.getElementById("ledger").innerHTML = h || "<em>No ledger entries logged yet.</em>";
+  } catch (e) {
+    document.getElementById("ledger").innerHTML = "<em>Ledger feed waiting for initial transactions...</em>";
+  }
 }
 
 /* ========================================== */
@@ -651,17 +678,20 @@ async function loadLedger() {
 /* ========================================== */
 async function loadWallets() {
   setSectionLoading("wallets", "Loading wallets");
-  const data = await safeFetch(API + "/wallets");
+  try {
+    const data = await safeFetchWithFallback(["/businesses", "/shops"]);
 
-  let h = "";
-  const list = data.wallets || [];
+    let h = "";
+    const list = data.businesses || data.shops || [];
 
-  list.forEach(w => {
-    const merchantName = BUSINESS_MAP[w.businessId] || w.businessId;
-    h += `<div class="item-card">💼 <b>${merchantName}</b> <span class="small">(${w.businessId})</span> <b>$${w.balance}</b></div>`;
-  });
+    list.forEach(b => {
+      h += `<div class="item-card">💼 <b>${b.name}</b> <span class="small">(${b.id})</span> <b>$${b.balance || 0}</b></div>`;
+    });
 
-  document.getElementById("wallets").innerHTML = h || "<em>No active wallets.</em>";
+    document.getElementById("wallets").innerHTML = h || "<em>No active merchant wallets.</em>";
+  } catch (e) {
+    document.getElementById("wallets").innerHTML = "<em>Merchant wallet directory standby.</em>";
+  }
 }
 
 /* AUTO REFRESH LOOP */
