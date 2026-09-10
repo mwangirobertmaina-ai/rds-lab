@@ -91,13 +91,29 @@
       "status": "online",
       "earnings": 20.75,
       "location": {
-        "lat": -1.286389,
-        "lng": 36.817223,
+        "lat": -1.213556217922607,
+        "lng": 36.956515044297355,
         "heading": 0,
         "speed": 0
       },
-      "lastSeen": 1788999788575,
+      "lastSeen": 1789063343833,
       "createdAt": 1788997475972
+    },
+    {
+      "id": "DRV_1789063377649_16391",
+      "name": "Robert Maina",
+      "phone": "0721862397",
+      "vehicle": "Motorbike KAB 123X",
+      "status": "online",
+      "earnings": 0,
+      "location": {
+        "lat": -1.213556217922607,
+        "lng": 36.956515044297355,
+        "heading": 0,
+        "speed": 0
+      },
+      "lastSeen": 1789063445916,
+      "createdAt": 1789063377649
     }
   ],
   "deliveries": [],
@@ -151,6 +167,6 @@
   },
   "system": {
     "createdAt": 1788996981527,
-    "lastCheck": 1788999857383
+    "lastCheck": 1789063445916
   }
 }
