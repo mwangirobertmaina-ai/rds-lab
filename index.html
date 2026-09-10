@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,6 +14,7 @@
       --neon-green: #00ff88;
       --dark-bg: #000000;
       --panel-bg: #111111;
+      --card-bg: #181818;
       --text-dim: #888888;
       --alert-red: #ff3366;
       --gold: #ffd700;
@@ -31,6 +33,35 @@
 
     h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
 
+    button {
+      padding: 8px 12px;
+      background: var(--neon-green);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: monospace;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.85; }
+
+    .btn-danger { background: var(--alert-red); color: #fff; }
+    .btn-warn { background: var(--gold); color: #000; }
+    .btn-cyan { background: var(--cyan); color: #000; }
+
+    input, select {
+      padding: 8px;
+      background: #111;
+      color: var(--neon-green);
+      border: 1px solid var(--neon-green);
+      font-family: monospace;
+      border-radius: 4px;
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
+
     .box {
       border: 1px solid var(--neon-green);
       border-radius: 6px;
@@ -47,7 +78,7 @@
     }
 
     .kpi-card {
-      background: #181818;
+      background: var(--card-bg);
       border: 1px solid #333;
       padding: 12px;
       text-align: center;
@@ -80,11 +111,18 @@
       font-size: 0.8rem;
     }
 
-    .ledger-item {
-      padding: 6px 8px;
-      border-bottom: 1px solid #222;
-      font-size: 0.85rem;
+    .item-card {
+      padding: 8px;
+      border: 1px solid #333;
+      margin-bottom: 6px;
+      background: var(--card-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 4px;
     }
+
+    .small { font-size: 0.75rem; color: var(--text-dim); }
   </style>
 </head>
 <body>
@@ -112,28 +150,41 @@
 </div>
 
 <div class="grid-2">
-  <!-- LIVE MAP -->
-  <div class="box">
-    <h3>🗺️ Live Fleet Tracking Map</h3>
-    <div id="adminMap"></div>
-  </div>
-
-  <!-- RIGHT DATA PANEL -->
+  <!-- LEFT COLUMN: LIVE MAP & MERCHANT MANAGEMENT -->
   <div>
     <div class="box">
-      <h3>📜 Double-Entry System Ledger</h3>
+      <h3>MAP: Live Fleet Tracking Map</h3>
+      <div id="adminMap"></div>
+    </div>
+
+    <div class="box">
+      <h3>STORE: Merchant Portfolio Management</h3>
+      <div style="margin-bottom:10px;">
+        <input type="text" id="bizNameInput" placeholder="Shop Name..." />
+        <input type="text" id="bizCatInput" placeholder="Category" value="Retail" />
+        <button onclick="registerMerchant()" class="btn-cyan">ADD MERCHANT</button>
+      </div>
+      <div id="merchantList"><em>Loading merchant portfolio...</em></div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN: LEDGER & DRIVER ROSTER -->
+  <div>
+    <div class="box">
+      <h3>LOG: Double-Entry System Ledger</h3>
       <div id="ledgerFeed"><em>Loading system ledger...</em></div>
     </div>
+
     <div class="box">
-      <h3>🚗 Fleet Driver Roster</h3>
+      <h3>FLEET: Fleet Driver Roster</h3>
       <div id="driverRoster"><em>Loading roster...</em></div>
     </div>
   </div>
 </div>
 
-<!-- SYSTEM LOG -->
+<!-- SYSTEM CONSOLE LOG -->
 <div class="box">
-  <h4>📡 System Stream Console Log</h4>
+  <h4>CONSOLE: System Stream Console Log</h4>
   <pre id="adminLog">Admin control active.</pre>
 </div>
 
@@ -152,14 +203,17 @@ let activeTileLayer = null;
 function sysLog(msg) {
   const el = document.getElementById("adminLog");
   const time = new Date().toLocaleTimeString();
-  el.innerText = `[${time}] ${msg}\n` + el.innerText;
+  el.innerText = `[${time}] ${typeof msg === 'object' ? JSON.stringify(msg) : msg}\n` + el.innerText;
 }
 
-async function apiFetch(endpoints) {
+async function apiFetch(endpoints, options = {}) {
   const targetEndpoints = Array.isArray(endpoints) ? endpoints : [endpoints];
   for (const ep of targetEndpoints) {
     try {
-      const res = await fetch(`${API_BASE}${ep}`);
+      const res = await fetch(`${API_BASE}${ep}`, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+      });
       if (res.ok) return await res.json();
     } catch (e) {}
   }
@@ -221,21 +275,55 @@ function initAdminMap() {
   setTimeout(() => { map.invalidateSize(); }, 500);
 }
 
-/* ================= REAL-TIME DATA REFRESH ================= */
+/* ================= MERCHANT MANAGEMENT ================= */
+async function registerMerchant() {
+  const nameInput = document.getElementById("bizNameInput");
+  const catInput = document.getElementById("bizCatInput");
+  const name = nameInput.value.trim();
+  const category = catInput.value.trim() || "Retail";
+
+  if (!name) return alert("Enter merchant name.");
+
+  const res = await apiFetch(["/addBusiness", "/business/add"], {
+    method: "POST",
+    body: JSON.stringify({ name, category })
+  });
+
+  if (res && res.success) {
+    nameInput.value = "";
+    sysLog(`Merchant created: ${name}`);
+    refreshDashboard();
+  }
+}
+
+async function deleteMerchant(id) {
+  if (!confirm("Are you sure you want to delete this merchant profile?")) return;
+  const res = await apiFetch("/deleteBusiness", {
+    method: "POST",
+    body: JSON.stringify({ id })
+  });
+  if (res && res.success) {
+    sysLog(`Merchant ${id} removed.`);
+    refreshDashboard();
+  }
+}
+
+/* ================= REAL-TIME DASHBOARD DATA ================= */
 async function refreshDashboard() {
-  // 1. Fetch Summary Stats & Orders
-  const [statsData, ordersData, driversData, ledgerData] = await Promise.all([
+  const [statsData, ordersData, driversData, ledgerData, bizData] = await Promise.all([
     apiFetch("/system/stats"),
     apiFetch(["/orders"]),
     apiFetch(["/drivers", "/drivers/live"]),
-    apiFetch(["/ledger", "/transactions"])
+    apiFetch(["/ledger", "/transactions"]),
+    apiFetch(["/businesses", "/shops"])
   ]);
 
   const allOrders = (ordersData && (ordersData.orders || ordersData.data)) || [];
   const drivers = (driversData && (driversData.drivers || driversData.data)) || [];
   const ledger = (ledgerData && (ledgerData.ledger || ledgerData.transactions)) || [];
+  const businesses = (bizData && (bizData.businesses || bizData.shops)) || [];
 
-  // Calculate Volume
+  // 1. KPI Summaries
   let grossVolume = 0;
   allOrders.forEach(o => { grossVolume += Number(o.total || o.amount || 0); });
 
@@ -243,24 +331,47 @@ async function refreshDashboard() {
     document.getElementById("kpiVolume").innerText = `$${(statsData.stats.grossVolume || grossVolume).toFixed(2)}`;
     document.getElementById("kpiDrivers").innerText = statsData.stats.activeDrivers || drivers.length;
     document.getElementById("kpiOrders").innerText = statsData.stats.orders || allOrders.length;
-    document.getElementById("kpiMerchants").innerText = statsData.stats.businesses || 0;
+    document.getElementById("kpiMerchants").innerText = statsData.stats.businesses || businesses.length;
   } else {
     document.getElementById("kpiVolume").innerText = `$${grossVolume.toFixed(2)}`;
     document.getElementById("kpiDrivers").innerText = drivers.length;
     document.getElementById("kpiOrders").innerText = allOrders.length;
+    document.getElementById("kpiMerchants").innerText = businesses.length;
   }
 
-  // 2. Render Driver Fleet Roster & Map Markers
-  const roster = document.getElementById("driverRoster");
-  roster.innerHTML = "";
+  // 2. Merchant Portfolio
+  const merchantContainer = document.getElementById("merchantList");
+  if (businesses.length === 0) {
+    merchantContainer.innerHTML = "<p>No merchant stores registered.</p>";
+  } else {
+    let mHtml = "";
+    businesses.forEach(b => {
+      mHtml += `
+        <div class="item-card">
+          <div>
+            <b>${b.name}</b> (${b.category || 'Retail'})<br>
+            <span class="small">ID: ${b.id}</span>
+          </div>
+          <button onclick="deleteMerchant('${b.id}')" class="btn-danger">DELETE</button>
+        </div>
+      `;
+    });
+    merchantContainer.innerHTML = mHtml;
+  }
 
+  // 3. Driver Fleet Roster & Map Markers
+  const roster = document.getElementById("driverRoster");
   if (drivers.length === 0) {
     roster.innerHTML = "<p>No active drivers registered.</p>";
   } else {
+    let dHtml = "";
     drivers.forEach(d => {
-      roster.innerHTML += `
-        <div class="ledger-item">
-          <b>${d.name}</b> (${(d.status || 'OFFLINE').toUpperCase()}) - Earnings: <span style="color:var(--gold)">$${Number(d.earnings || 0).toFixed(2)}</span>
+      dHtml += `
+        <div class="item-card">
+          <div>
+            <b>${d.name}</b> - <span style="color:var(--cyan)">${(d.status || 'OFFLINE').toUpperCase()}</span><br>
+            <span class="small">Earnings: $${Number(d.earnings || 0).toFixed(2)}</span>
+          </div>
         </div>
       `;
 
@@ -273,32 +384,34 @@ async function refreshDashboard() {
         }
       }
     });
+    roster.innerHTML = dHtml;
   }
 
-  // 3. Render System Ledger Feed (Fixes undefined label)
+  // 4. Double-Entry System Ledger
   const feed = document.getElementById("ledgerFeed");
-  feed.innerHTML = "";
-
   if (ledger.length === 0) {
     feed.innerHTML = "<p>No journal entries generated.</p>";
   } else {
+    let lHtml = "";
     ledger.slice(-6).reverse().forEach(l => {
-      const typeLabel = l.type || l.transactionType || "JOURNAL";
+      const typeLabel = l.type || l.transactionType || "ORDER";
       const refId = l.orderId || l.id || 'N/A';
       const amountVal = Number(l.amount || l.total || 0).toFixed(2);
 
-      feed.innerHTML += `
-        <div class="ledger-item">
-          <strong style="color:var(--neon-green)">${typeLabel.toUpperCase()}</strong>: 
-          <span style="color:var(--gold)">$${amountVal}</span> 
-          <span style="color:#888">(Ref: ${refId})</span>
+      lHtml += `
+        <div class="item-card">
+          <div>
+            <b style="color:var(--neon-green)">${typeLabel.toUpperCase()}</b>: 
+            <span style="color:var(--gold)">$${amountVal}</span><br>
+            <span class="small">Ref: ${refId}</span>
+          </div>
         </div>
       `;
     });
+    feed.innerHTML = lHtml;
   }
 }
 
-// Auto-poll dashboard stats every 3 seconds
 setInterval(refreshDashboard, 3000);
 
 window.onload = async () => {
