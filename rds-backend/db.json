@@ -210,7 +210,7 @@
         "heading": 0,
         "speed": 0
       },
-      "lastSeen": 1789071426569,
+      "lastSeen": 1789072047540,
       "createdAt": 1788997475972
     },
     {
@@ -345,6 +345,6 @@
   },
   "system": {
     "createdAt": 1788996981527,
-    "lastCheck": 1789071470064
+    "lastCheck": 1789072047540
   }
 }

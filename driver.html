@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#000000">
-  <title>RDS DRIVER FLEET TERMINAL (MOBILE FIXED)</title>
+  <title>RDS DRIVER FLEET TERMINAL (WORLD CLASS)</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
@@ -67,7 +67,6 @@
       background: var(--panel-bg);
     }
 
-    /* Fixed height and explicit Z-index for mobile touch events */
     #map {
       height: 350px;
       width: 100%;
@@ -157,6 +156,7 @@ let driverId = "";
 let map = null;
 let marker = null;
 let gpsWatch = null;
+let activeTileLayer = null;
 
 function sysLog(msg) {
   const el = document.getElementById("consoleLog");
@@ -192,27 +192,61 @@ async function apiFetch(endpoints, options = {}) {
   return null;
 }
 
-/* ================= MOBILE-COMPATIBLE MAP ENGINE ================= */
+/* ================= WORLD CLASS AUTO-HEALING TILE ENGINE ================= */
 function initMap() {
   if (map) return;
 
-  // Initialize Leaflet Map centered on Nairobi CBD
   map = L.map("map", {
     tap: true,
     touchZoom: true,
     dragging: true
   }).setView([-1.286389, 36.817223], 15);
 
-  // CartoDB Raster Tile Layer (Dark Mode)
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png", {
-    maxZoom: 19,
-    subdomains: ["a", "b", "c", "d"],
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-  }).addTo(map);
+  // Auto-fallback providers without API key constraints
+  const tileProviders = [
+    {
+      url: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
+      subdomains: ["a", "b", "c", "d"],
+      maxZoom: 19
+    },
+    {
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      subdomains: [],
+      maxZoom: 16
+    },
+    {
+      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      subdomains: ["a", "b", "c"],
+      maxZoom: 19
+    }
+  ];
 
+  let providerIndex = 0;
+
+  function loadLayer() {
+    if (activeTileLayer && map.hasLayer(activeTileLayer)) {
+      map.removeLayer(activeTileLayer);
+    }
+
+    const provider = tileProviders[providerIndex];
+    activeTileLayer = L.tileLayer(provider.url, {
+      subdomains: provider.subdomains,
+      maxZoom: provider.maxZoom,
+      crossOrigin: true
+    });
+
+    activeTileLayer.on("tileerror", () => {
+      sysLog(`Tile warning on layer #${providerIndex}. Switching backup stream...`);
+      providerIndex = (providerIndex + 1) % tileProviders.length;
+      loadLayer();
+    });
+
+    activeTileLayer.addTo(map);
+  }
+
+  loadLayer();
   marker = L.marker([-1.286389, 36.817223]).addTo(map);
 
-  // Force map to re-calculate container height on touch devices
   setTimeout(() => {
     map.invalidateSize();
   }, 500);
