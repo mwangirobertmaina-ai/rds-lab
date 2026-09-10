@@ -13,6 +13,20 @@
       "category": "supermarket",
       "balance": 0,
       "createdAt": 1788999701763
+    },
+    {
+      "id": "B_1789069396121_86651",
+      "name": "maina",
+      "category": "Supermarket",
+      "balance": 0,
+      "createdAt": 1789069396121
+    },
+    {
+      "id": "B_1789069453709_53288",
+      "name": "mwangi",
+      "category": "Supermarket",
+      "balance": 0,
+      "createdAt": 1789069453709
     }
   ],
   "products": [
@@ -24,6 +38,15 @@
       "stock": 50,
       "category": "General",
       "createdAt": 1788999718883
+    },
+    {
+      "id": "P_1789069428925_92493",
+      "businessId": "B_1789069396121_86651",
+      "name": "maize",
+      "price": 250,
+      "stock": 50,
+      "category": "General",
+      "createdAt": 1789069428925
     }
   ],
   "orders": [
@@ -125,6 +148,52 @@
       "driverId": "DRV_1789063377649_16391",
       "createdAt": 1789067737590,
       "updatedAt": 1789067737610
+    },
+    {
+      "id": "ORD_1789069666917_47310",
+      "businessId": "SYSTEM",
+      "customerName": "Phone Test",
+      "customerPhone": "0700000000",
+      "deliveryAddress": "Nairobi CBD",
+      "pickup": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "dropoff": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "items": [],
+      "amount": 20,
+      "total": 20,
+      "status": "completed",
+      "driverId": "DRV_1788997475972_89954",
+      "createdAt": 1789069666917,
+      "updatedAt": 1789069669658,
+      "completedAt": 1789069669658
+    },
+    {
+      "id": "ORD_1789071443066_87109",
+      "businessId": "SYSTEM",
+      "customerName": "Phone Test",
+      "customerPhone": "0700000000",
+      "deliveryAddress": "Nairobi CBD",
+      "pickup": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "dropoff": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "items": [],
+      "amount": 20,
+      "total": 20,
+      "status": "completed",
+      "driverId": "DRV_1789063377649_16391",
+      "createdAt": 1789071443066,
+      "updatedAt": 1789071451234,
+      "completedAt": 1789071451234
     }
   ],
   "drivers": [
@@ -134,14 +203,14 @@
       "phone": "254721862397",
       "vehicle": "Motorbike KAB 123X",
       "status": "online",
-      "earnings": 20.75,
+      "earnings": 38.75,
       "location": {
-        "lat": -1.2135496319875156,
-        "lng": 36.95651641993118,
+        "lat": -1.213556217922607,
+        "lng": 36.956515044297355,
         "heading": 0,
         "speed": 0
       },
-      "lastSeen": 1789067557450,
+      "lastSeen": 1789071426569,
       "createdAt": 1788997475972
     },
     {
@@ -150,14 +219,14 @@
       "phone": "0721862397",
       "vehicle": "Motorbike KAB 123X",
       "status": "online",
-      "earnings": 18,
+      "earnings": 36,
       "location": {
         "lat": -1.2135496319875156,
         "lng": 36.95651641993118,
         "heading": 0,
         "speed": 0
       },
-      "lastSeen": 1789067772774,
+      "lastSeen": 1789071470064,
       "createdAt": 1789063377649
     }
   ],
@@ -218,6 +287,38 @@
       "orderId": "ORD_1789067737589_41781",
       "businessId": "SYSTEM",
       "createdAt": 1789067737590
+    },
+    {
+      "id": "TX_1789069666917_82479",
+      "type": "ORDER",
+      "amount": 20,
+      "orderId": "ORD_1789069666917_47310",
+      "businessId": "SYSTEM",
+      "createdAt": 1789069666917
+    },
+    {
+      "id": "TX_1789069669658_33265",
+      "type": "DELIVERY_PAYOUT",
+      "amount": 18,
+      "orderId": "ORD_1789069666917_47310",
+      "driverId": "DRV_1788997475972_89954",
+      "createdAt": 1789069669658
+    },
+    {
+      "id": "TX_1789071443066_97807",
+      "type": "ORDER",
+      "amount": 20,
+      "orderId": "ORD_1789071443066_87109",
+      "businessId": "SYSTEM",
+      "createdAt": 1789071443066
+    },
+    {
+      "id": "TX_1789071451234_84156",
+      "type": "DELIVERY_PAYOUT",
+      "amount": 18,
+      "orderId": "ORD_1789071443066_87109",
+      "driverId": "DRV_1789063377649_16391",
+      "createdAt": 1789071451234
     }
   ],
   "wallets": {
@@ -232,10 +333,18 @@
     "B_1788999701763_38035": {
       "balance": 0,
       "escrow": 0
+    },
+    "B_1789069396121_86651": {
+      "balance": 0,
+      "escrow": 0
+    },
+    "B_1789069453709_53288": {
+      "balance": 0,
+      "escrow": 0
     }
   },
   "system": {
     "createdAt": 1788996981527,
-    "lastCheck": 1789067772774
+    "lastCheck": 1789071470064
   }
 }
