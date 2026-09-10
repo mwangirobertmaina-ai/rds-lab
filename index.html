@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RDS ADMIN CONTROL CENTER | PRO STAGE 11</title>
+  <title>RDS SUPER-ADMIN CONTROL CENTER | PRO</title>
 
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 
   <style>
@@ -17,7 +18,9 @@
       --gold: #ffd700;
       --cyan: #00e5ff;
     }
+
     * { box-sizing: border-box; }
+
     body {
       background: var(--dark-bg);
       color: var(--neon-green);
@@ -25,7 +28,9 @@
       padding: 15px;
       margin: 0;
     }
-    h2, h3 { margin: 0 0 10px 0; text-transform: uppercase; }
+
+    h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
+
     .box {
       border: 1px solid var(--neon-green);
       border-radius: 6px;
@@ -33,12 +38,14 @@
       margin-bottom: 12px;
       background: var(--panel-bg);
     }
+
     .kpi-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 10px;
       margin-bottom: 12px;
     }
+
     .kpi-card {
       background: #181818;
       border: 1px solid #333;
@@ -46,20 +53,21 @@
       text-align: center;
       border-radius: 4px;
     }
+
     .kpi-val { font-size: 22px; font-weight: bold; color: var(--gold); margin-top: 4px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px; }
+
     @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
-    #adminMap { height: 350px; width: 100%; border: 1px solid var(--neon-green); border-radius: 4px; }
-    button {
-      padding: 8px 12px;
-      background: var(--neon-green);
-      color: #000;
-      font-weight: bold;
-      border: none;
-      cursor: pointer;
-      font-family: monospace;
+
+    #adminMap {
+      height: 350px;
+      width: 100%;
+      border: 1px solid var(--neon-green);
       border-radius: 4px;
+      background: #080808;
     }
+
     pre {
       white-space: pre-wrap;
       word-break: break-all;
@@ -69,6 +77,13 @@
       padding: 8px;
       border: 1px solid #222;
       color: #00ff88;
+      font-size: 0.8rem;
+    }
+
+    .ledger-item {
+      padding: 6px 8px;
+      border-bottom: 1px solid #222;
+      font-size: 0.85rem;
     }
   </style>
 </head>
@@ -76,6 +91,7 @@
 
 <h2>⚙️ RDS SUPER-ADMIN CONTROL CENTER</h2>
 
+<!-- SUMMARY METRICS -->
 <div class="kpi-row">
   <div class="kpi-card">
     <div style="font-size:11px; color:#888;">GROSS VOLUME</div>
@@ -96,15 +112,17 @@
 </div>
 
 <div class="grid-2">
+  <!-- LIVE MAP -->
   <div class="box">
     <h3>🗺️ Live Fleet Tracking Map</h3>
     <div id="adminMap"></div>
   </div>
 
+  <!-- RIGHT DATA PANEL -->
   <div>
     <div class="box">
       <h3>📜 Double-Entry System Ledger</h3>
-      <div id="ledgerFeed"><em>Loading journal lines...</em></div>
+      <div id="ledgerFeed"><em>Loading system ledger...</em></div>
     </div>
     <div class="box">
       <h3>🚗 Fleet Driver Roster</h3>
@@ -113,12 +131,15 @@
   </div>
 </div>
 
+<!-- SYSTEM LOG -->
 <div class="box">
   <h4>📡 System Stream Console Log</h4>
   <pre id="adminLog">Admin control active.</pre>
 </div>
 
+<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
 <script>
 const LOCAL_API = "http://localhost:3000";
 const CLOUD_API = "https://rds-lab.onrender.com";
@@ -126,6 +147,7 @@ let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_
 
 let map = null;
 let driverMarkers = {};
+let activeTileLayer = null;
 
 function sysLog(msg) {
   const el = document.getElementById("adminLog");
@@ -133,69 +155,150 @@ function sysLog(msg) {
   el.innerText = `[${time}] ${msg}\n` + el.innerText;
 }
 
-async function apiFetch(ep) {
-  try {
-    const res = await fetch(`${API_BASE}${ep}`);
-    if (res.ok) return await res.json();
-  } catch (e) {}
+async function apiFetch(endpoints) {
+  const targetEndpoints = Array.isArray(endpoints) ? endpoints : [endpoints];
+  for (const ep of targetEndpoints) {
+    try {
+      const res = await fetch(`${API_BASE}${ep}`);
+      if (res.ok) return await res.json();
+    } catch (e) {}
+  }
   return null;
 }
 
+/* ================= AUTO-HEALING PUBLIC TILE ENGINE ================= */
 function initAdminMap() {
   if (map) return;
-  map = L.map("adminMap").setView([-1.286389, 36.817223], 13);
-  
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png", {
-    maxZoom: 19,
-    subdomains: ["a", "b", "c", "d"]
-  }).addTo(map);
-}
 
-async function refreshDashboard() {
-  const stats = await apiFetch("/system/stats");
-  if (stats && stats.stats) {
-    document.getElementById("kpiVolume").innerText = `$${stats.stats.grossVolume.toFixed(2)}`;
-    document.getElementById("kpiDrivers").innerText = stats.stats.activeDrivers;
-    document.getElementById("kpiOrders").innerText = stats.stats.orders;
-    document.getElementById("kpiMerchants").innerText = stats.stats.businesses;
+  map = L.map("adminMap", {
+    tap: true,
+    touchZoom: true,
+    dragging: true
+  }).setView([-1.286389, 36.817223], 13);
+
+  const tileProviders = [
+    {
+      url: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
+      subdomains: ["a", "b", "c", "d"],
+      maxZoom: 19
+    },
+    {
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      subdomains: [],
+      maxZoom: 16
+    },
+    {
+      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      subdomains: ["a", "b", "c"],
+      maxZoom: 19
+    }
+  ];
+
+  let providerIndex = 0;
+
+  function loadLayer() {
+    if (activeTileLayer && map.hasLayer(activeTileLayer)) {
+      map.removeLayer(activeTileLayer);
+    }
+
+    const provider = tileProviders[providerIndex];
+    activeTileLayer = L.tileLayer(provider.url, {
+      subdomains: provider.subdomains,
+      maxZoom: provider.maxZoom,
+      crossOrigin: true
+    });
+
+    activeTileLayer.on("tileerror", () => {
+      providerIndex = (providerIndex + 1) % tileProviders.length;
+      loadLayer();
+    });
+
+    activeTileLayer.addTo(map);
   }
 
-  const driversData = await apiFetch("/drivers");
-  const drivers = (driversData && driversData.drivers) || [];
-  
-  const roster = document.getElementById("driverRoster");
-  roster.innerHTML = "";
-  drivers.forEach(d => {
-    roster.innerHTML += `
-      <div style="padding:6px; border-bottom:1px solid #222;">
-        <b>${d.name}</b> (${d.status.toUpperCase()}) - Earnings: $${d.earnings.toFixed(2)}
-      </div>
-    `;
+  loadLayer();
 
-    // Map Markers
-    if (d.location && d.location.lat) {
-      if (driverMarkers[d.id]) {
-        driverMarkers[d.id].setLatLng([d.location.lat, d.location.lng]);
-      } else {
-        driverMarkers[d.id] = L.marker([d.location.lat, d.location.lng]).addTo(map)
-          .bindPopup(`<b>${d.name}</b><br>Status: ${d.status}`);
-      }
-    }
-  });
-
-  const ledgerData = await apiFetch("/ledger");
-  const ledger = (ledgerData && ledgerData.ledger) || [];
-  const feed = document.getElementById("ledgerFeed");
-  feed.innerHTML = "";
-  ledger.slice(-5).reverse().forEach(l => {
-    feed.innerHTML += `
-      <div style="padding:6px; border-bottom:1px solid #222;">
-        <b>${l.type}</b>: $${Number(l.amount || l.total || 0).toFixed(2)} (Ref: ${l.orderId || 'N/A'})
-      </div>
-    `;
-  });
+  setTimeout(() => { map.invalidateSize(); }, 500);
 }
 
+/* ================= REAL-TIME DATA REFRESH ================= */
+async function refreshDashboard() {
+  // 1. Fetch Summary Stats & Orders
+  const [statsData, ordersData, driversData, ledgerData] = await Promise.all([
+    apiFetch("/system/stats"),
+    apiFetch(["/orders"]),
+    apiFetch(["/drivers", "/drivers/live"]),
+    apiFetch(["/ledger", "/transactions"])
+  ]);
+
+  const allOrders = (ordersData && (ordersData.orders || ordersData.data)) || [];
+  const drivers = (driversData && (driversData.drivers || driversData.data)) || [];
+  const ledger = (ledgerData && (ledgerData.ledger || ledgerData.transactions)) || [];
+
+  // Calculate Volume
+  let grossVolume = 0;
+  allOrders.forEach(o => { grossVolume += Number(o.total || o.amount || 0); });
+
+  if (statsData && statsData.stats) {
+    document.getElementById("kpiVolume").innerText = `$${(statsData.stats.grossVolume || grossVolume).toFixed(2)}`;
+    document.getElementById("kpiDrivers").innerText = statsData.stats.activeDrivers || drivers.length;
+    document.getElementById("kpiOrders").innerText = statsData.stats.orders || allOrders.length;
+    document.getElementById("kpiMerchants").innerText = statsData.stats.businesses || 0;
+  } else {
+    document.getElementById("kpiVolume").innerText = `$${grossVolume.toFixed(2)}`;
+    document.getElementById("kpiDrivers").innerText = drivers.length;
+    document.getElementById("kpiOrders").innerText = allOrders.length;
+  }
+
+  // 2. Render Driver Fleet Roster & Map Markers
+  const roster = document.getElementById("driverRoster");
+  roster.innerHTML = "";
+
+  if (drivers.length === 0) {
+    roster.innerHTML = "<p>No active drivers registered.</p>";
+  } else {
+    drivers.forEach(d => {
+      roster.innerHTML += `
+        <div class="ledger-item">
+          <b>${d.name}</b> (${(d.status || 'OFFLINE').toUpperCase()}) - Earnings: <span style="color:var(--gold)">$${Number(d.earnings || 0).toFixed(2)}</span>
+        </div>
+      `;
+
+      if (d.location && typeof d.location.lat === 'number' && typeof d.location.lng === 'number') {
+        if (driverMarkers[d.id]) {
+          driverMarkers[d.id].setLatLng([d.location.lat, d.location.lng]);
+        } else {
+          driverMarkers[d.id] = L.marker([d.location.lat, d.location.lng]).addTo(map)
+            .bindPopup(`<b>${d.name}</b><br>Status: ${d.status}`);
+        }
+      }
+    });
+  }
+
+  // 3. Render System Ledger Feed (Fixes undefined label)
+  const feed = document.getElementById("ledgerFeed");
+  feed.innerHTML = "";
+
+  if (ledger.length === 0) {
+    feed.innerHTML = "<p>No journal entries generated.</p>";
+  } else {
+    ledger.slice(-6).reverse().forEach(l => {
+      const typeLabel = l.type || l.transactionType || "JOURNAL";
+      const refId = l.orderId || l.id || 'N/A';
+      const amountVal = Number(l.amount || l.total || 0).toFixed(2);
+
+      feed.innerHTML += `
+        <div class="ledger-item">
+          <strong style="color:var(--neon-green)">${typeLabel.toUpperCase()}</strong>: 
+          <span style="color:var(--gold)">$${amountVal}</span> 
+          <span style="color:#888">(Ref: ${refId})</span>
+        </div>
+      `;
+    });
+  }
+}
+
+// Auto-poll dashboard stats every 3 seconds
 setInterval(refreshDashboard, 3000);
 
 window.onload = async () => {
