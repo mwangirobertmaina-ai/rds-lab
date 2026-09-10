@@ -4,42 +4,34 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#000000">
-  <title>RDS MERCHANT PORTAL | ENTERPRISE CORE</title>
-
+  <title>RDS HYBRID MARKETPLACE</title>
   <style>
     :root {
       --neon-green: #00ff88;
       --dark-bg: #000000;
       --panel-bg: #111111;
-      --card-bg: #181818;
       --text-dim: #888888;
-      --alert-red: #ff3366;
-      --warn-yellow: #ffff00;
-      --gold: #ffd700;
       --cyan: #00e5ff;
+      --gold: #ffd700;
     }
-
     * { box-sizing: border-box; touch-action: manipulation; }
-
     body {
       background: var(--dark-bg);
       color: var(--neon-green);
       font-family: monospace;
       padding: 12px;
       margin: 0;
-      -webkit-tap-highlight-color: transparent;
     }
-
-    h2, h3, h4 { 
-      margin: 0 0 10px 0; 
-      text-transform: uppercase; 
-      color: var(--neon-green); 
-      font-size: 1.1rem;
+    h2 { margin: 0 0 10px 0; font-size: 1.2rem; }
+    .box {
+      border: 1px solid var(--neon-green);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--panel-bg);
     }
-
     button {
-      margin: 4px 2px;
-      padding: 12px 14px;
+      padding: 10px 14px;
       background: var(--neon-green);
       color: #000;
       font-weight: bold;
@@ -47,450 +39,186 @@
       border-radius: 4px;
       cursor: pointer;
       font-family: monospace;
-      font-size: 0.85rem;
-      transition: opacity 0.2s, transform 0.1s;
     }
-
-    button:active {
-      transform: scale(0.98);
-      opacity: 0.85;
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
     }
-
-    .btn-danger { background: var(--alert-red); color: #fff; }
-    .btn-warn { background: var(--warn-yellow); color: #000; }
-    .btn-gold { background: var(--gold); color: #000; }
-    .btn-cyan { background: var(--cyan); color: #000; }
-
-    select, input {
+    .product-card {
+      border: 1px solid #333;
+      padding: 10px;
+      background: #181818;
+      border-radius: 4px;
+      text-align: center;
+    }
+    input {
+      width: 100%;
       padding: 10px;
       background: #111;
       color: var(--neon-green);
       border: 1px solid var(--neon-green);
       border-radius: 4px;
-      font-family: monospace;
-      font-size: 0.85rem;
-      margin-bottom: 6px;
-      width: 100%;
-    }
-
-    .box {
-      border: 1px solid var(--neon-green);
-      border-radius: 6px;
-      padding: 12px;
-      margin-bottom: 12px;
-      background: var(--panel-bg);
-      box-shadow: 0 0 10px rgba(0, 255, 136, 0.05);
-    }
-
-    .kpi-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .kpi-card {
-      background: var(--card-bg);
-      border: 1px solid #333;
-      border-radius: 4px;
-      padding: 10px;
-      text-align: center;
-    }
-
-    .kpi-val {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: var(--gold);
-      margin-top: 4px;
-    }
-
-    .grid-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    @media (max-width: 800px) {
-      .grid-layout { grid-template-columns: 1fr; }
-    }
-
-    .status-badge {
-      font-size: 0.8em;
-      padding: 2px 6px;
-      border: 1px solid var(--neon-green);
-      border-radius: 3px;
-      display: inline-block;
-      margin-top: 4px;
-    }
-
-    pre {
-      white-space: pre-wrap;
-      word-break: break-all;
-      max-height: 120px;
-      overflow-y: auto;
-      background: #050505;
-      padding: 8px;
-      border: 1px solid #222;
-      border-radius: 4px;
-      color: #00ff88;
-      font-size: 0.75rem;
-    }
-
-    .card {
-      padding: 10px;
-      border: 1px solid #333;
-      border-radius: 4px;
       margin-bottom: 8px;
-      background: #181818;
+      font-family: monospace;
+    }
+    .cart-item {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      border-bottom: 1px solid #222;
+      padding: 6px 0;
     }
-
-    .small { font-size: 0.75rem; color: var(--text-dim); }
-    .flex-row { display: flex; gap: 6px; flex-wrap: wrap; }
   </style>
 </head>
-
 <body>
 
-<h2>🏬 RDS MERCHANT PORTAL</h2>
+<h2>🛒 RDS CUSTOMER MARKETPLACE</h2>
 
-<!-- ACCOUNT SWITCHER & ONBOARDING -->
 <div class="box">
-  <h3 style="margin-top: 0;">1. Merchant Profile</h3>
-  <div>
-    <label for="businessSelect"><strong>Active Merchant:</strong></label>
-    <select id="businessSelect" onchange="onBusinessSelected()"></select>
-    <button onclick="loadBusinesses()">🔄 Refresh List</button>
-    <span id="routeBadge" class="status-badge">Detecting Endpoint...</span>
-  </div>
-  <div style="margin-top: 10px;">
-    <input type="text" id="newBizName" placeholder="New Merchant Name..." />
-    <input type="text" id="newBizCategory" placeholder="Category (e.g. Supermarket)" value="Supermarket" />
-    <button onclick="registerBusiness()" class="btn-cyan" style="width: 100%;">➕ Onboard Merchant Profile</button>
-  </div>
+  <label><strong>Select Merchant Store:</strong></label>
+  <select id="shopSelect" onchange="loadProducts()" style="width:100%; padding:8px; background:#111; color:#00ff88; border:1px solid #00ff88; margin-top:5px;"></select>
 </div>
 
-<!-- FINANCIAL KPIS OVERVIEW -->
-<div class="kpi-row">
-  <div class="kpi-card">
-    <div class="small">NET BALANCE</div>
-    <div id="kpiBalance" class="kpi-val">$0.00</div>
-  </div>
-  <div class="kpi-card">
-    <div class="small">GROSS SALES</div>
-    <div id="kpiSales" class="kpi-val">$0.00</div>
-  </div>
-  <div class="kpi-card">
-    <div class="small">CATALOG ITEMS</div>
-    <div id="kpiCatalogCount" class="kpi-val">0</div>
-  </div>
-  <div class="kpi-card">
-    <div class="small">ORDERS PROCESSED</div>
-    <div id="kpiOrdersCount" class="kpi-val">0</div>
-  </div>
-</div>
-
-<div class="grid-layout">
-
-  <!-- LEFT COLUMN: PRODUCT MANAGEMENT & INVENTORY -->
-  <div>
-    <div class="box">
-      <h3>📦 Inventory Management</h3>
-      <div style="margin-bottom: 10px;">
-        <input type="text" id="prodName" placeholder="Product Item Name..." />
-        <div class="flex-row">
-          <input type="number" id="prodPrice" placeholder="Price ($)" step="0.01" style="flex: 1;" />
-          <input type="number" id="prodStock" placeholder="Stock Qty" value="50" style="flex: 1;" />
-        </div>
-        <button onclick="addProduct()" style="width: 100%; margin-top: 4px;">➕ Add Product Item</button>
-      </div>
-      <div id="productList"><em>Loading inventory catalog...</em></div>
-    </div>
-  </div>
-
-  <!-- RIGHT COLUMN: INCOMING ORDERS & JOURNAL LEDGER -->
-  <div>
-    <div class="box">
-      <h3>🧾 Merchant Sales Feed</h3>
-      <div id="orderList"><em>Loading merchant orders...</em></div>
-    </div>
-
-    <div class="box">
-      <h3>📜 Financial Ledger Lines</h3>
-      <div id="ledgerList"><em>Loading financial transactions...</em></div>
-    </div>
-  </div>
-
-</div>
-
-<!-- SYSTEM CONSOLE LOG -->
 <div class="box">
-  <h4 style="margin: 0 0 5px 0;">📡 Telemetry & Accounting Log</h4>
-  <pre id="consoleLog">Portal ready.</pre>
+  <strong>📦 Available Inventory</strong>
+  <div id="productCatalog" class="product-grid"><em>Loading inventory...</em></div>
+</div>
+
+<div class="box">
+  <strong>🛍️ Shopping Cart</strong>
+  <div id="cartList" style="margin-top:8px;"><em>Cart is empty.</em></div>
+  <h3 id="cartTotal" style="margin:10px 0 5px 0;">Total: $0.00</h3>
+  <input type="text" id="custName" placeholder="Your Name (e.g. Robert)" value="Robert" />
+  <input type="text" id="custPhone" placeholder="Phone Number" value="0712345678" />
+  <button onclick="checkout()" style="width:100%; background:var(--gold);">⚡ Place Order & Request Driver</button>
+</div>
+
+<div class="box">
+  <strong>📡 Order Tracker Status</strong>
+  <p id="orderStatus">No active orders placed.</p>
 </div>
 
 <script>
-/* ========================================== */
-/* ENDPOINT DETECTOR & ROUTER                 */
-/* ========================================== */
 const LOCAL_API = "http://localhost:3000";
 const CLOUD_API = "https://rds-lab.onrender.com";
 let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
-let currentBusinessId = "";
+let cart = [];
 
-function sysLog(msg) {
-  const el = document.getElementById("consoleLog");
-  const time = new Date().toLocaleTimeString();
-  el.innerText = `[${time}] ${typeof msg === 'object' ? JSON.stringify(msg) : msg}\n` + el.innerText;
-}
-
-async function resolveBackendRoute() {
+async function apiFetch(ep, opts = {}) {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 800);
-    await fetch(`${LOCAL_API}/health`, { method: "GET", signal: controller.signal });
-    clearTimeout(timeout);
-    API_BASE = LOCAL_API;
-    document.getElementById("routeBadge").innerText = "Route: LOCAL";
-  } catch (_) {
-    API_BASE = CLOUD_API;
-    document.getElementById("routeBadge").innerText = "Route: CLOUD (Render)";
-  }
-}
-
-/* ========================================== */
-/* SAFE API CALL ENGINE                       */
-/* ========================================== */
-async function apiFetch(endpoints, options = {}) {
-  const targetEndpoints = Array.isArray(endpoints) ? endpoints : [endpoints];
-  
-  for (const ep of targetEndpoints) {
-    try {
-      const res = await fetch(`${API_BASE}${ep}`, {
-        ...options,
-        headers: {
-          "Content-Type": "application/json",
-          ...(options.headers || {})
-        }
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      // Continue loop to backup endpoint alias
-    }
-  }
-  return null;
-}
-
-/* ========================================== */
-/* MERCHANT ACCOUNT & ONBOARDING              */
-/* ========================================== */
-async function loadBusinesses() {
-  const data = await apiFetch(["/businesses", "/shops"]);
-  const select = document.getElementById("businessSelect");
-  select.innerHTML = "";
-
-  const bizList = (data && (data.businesses || data.shops)) || [];
-
-  if (bizList.length === 0) {
-    select.innerHTML = "<option value='BIZ-001'>Caro Supermarket (Default)</option>";
-    currentBusinessId = "BIZ-001";
-  } else {
-    bizList.forEach(b => {
-      const opt = document.createElement("option");
-      opt.value = b.id;
-      opt.innerText = `${b.name} (${b.category || 'Retail'})`;
-      select.appendChild(opt);
+    const res = await fetch(`${API_BASE}${ep}`, {
+      ...opts,
+      headers: { "Content-Type": "application/json", ...(opts.headers || {}) }
     });
-
-    if (!currentBusinessId && bizList.length > 0) {
-      currentBusinessId = bizList[0].id;
-    }
-    select.value = currentBusinessId;
-  }
-  sysLog(`Active Merchant profile: ${currentBusinessId}`);
-  await loadMerchantData();
+    return await res.json();
+  } catch (e) { return null; }
 }
 
-function onBusinessSelected() {
-  currentBusinessId = document.getElementById("businessSelect").value;
-  sysLog(`Active Merchant ID set to: ${currentBusinessId}`);
-  loadMerchantData();
-}
-
-async function registerBusiness() {
-  const nameInput = document.getElementById("newBizName");
-  const catInput = document.getElementById("newBizCategory");
-  const name = nameInput.value.trim();
-  const category = catInput.value.trim() || "Retail";
-
-  if (!name) return alert("Please enter a merchant name.");
-
-  const res = await apiFetch(["/business/add", "/business/create"], {
-    method: "POST",
-    body: JSON.stringify({ name, category })
-  });
-
-  if (res && res.success) {
-    const newBiz = res.business || res.shop;
-    currentBusinessId = newBiz.id;
-    nameInput.value = "";
-    sysLog(`✅ Merchant onboarded: ${newBiz.name}`);
-    await loadBusinesses();
+async function loadShops() {
+  const data = await apiFetch("/businesses");
+  const select = document.getElementById("shopSelect");
+  select.innerHTML = "";
+  const list = (data && data.businesses) || [];
+  if (list.length === 0) {
+    select.innerHTML = "<option value='BIZ-001'>Caro Supermarket (Default)</option>";
+  } else {
+    list.forEach(b => {
+      select.innerHTML += `<option value="${b.id}">${b.name} (${b.category || 'Retail'})</option>`;
+    });
   }
-}
-
-/* ========================================== */
-/* CATALOG & INVENTORY CONTROLS              */
-/* ========================================== */
-async function addProduct() {
-  if (!currentBusinessId) return alert("Select or register a merchant profile first.");
-
-  const nameEl = document.getElementById("prodName");
-  const priceEl = document.getElementById("prodPrice");
-  const stockEl = document.getElementById("prodStock");
-
-  const name = nameEl.value.trim();
-  const price = parseFloat(priceEl.value) || 0;
-  const stock = parseInt(stockEl.value) || 0;
-
-  if (!name || price <= 0) return alert("Enter valid product name and price.");
-
-  const res = await apiFetch(["/product/add"], {
-    method: "POST",
-    body: JSON.stringify({
-      businessId: currentBusinessId,
-      name,
-      price,
-      stock
-    })
-  });
-
-  if (res && res.success) {
-    const product = res.product || res.data;
-    sysLog(`✅ Catalog item added: "${product.name}" at $${product.price}`);
-    nameEl.value = "";
-    priceEl.value = "";
-    stockEl.value = "50";
-    loadMerchantData();
-  }
+  loadProducts();
 }
 
 async function loadProducts() {
-  if (!currentBusinessId) return [];
-
-  const data = await apiFetch(`/products?businessId=${currentBusinessId}`);
-  const rawProducts = (data && data.products) || [];
+  const bizId = document.getElementById("shopSelect").value || "BIZ-001";
+  const data = await apiFetch(`/products?businessId=${bizId}`);
+  const grid = document.getElementById("productCatalog");
   
-  const filteredProducts = rawProducts.filter(p => p.businessId === currentBusinessId || !p.businessId);
-
-  const container = document.getElementById("productList");
-  if (filteredProducts.length === 0) {
-    container.innerHTML = "<p>No products listed in catalog.</p>";
-    return [];
+  let products = (data && data.products) || [];
+  if (products.length === 0) {
+    products = [
+      { id: "P-101", name: "Fresh Milk 1L", price: 2.50 },
+      { id: "P-102", name: "Loaf of Bread", price: 1.80 },
+      { id: "P-103", name: "Bottled Water 500ml", price: 0.90 }
+    ];
   }
 
-  let h = "";
-  filteredProducts.forEach(p => {
-    h += `
-      <div class="card">
-        <div>
-          <b>${p.name}</b> - <span style="color:var(--gold)">$${p.price.toFixed(2)}</span><br>
-          <span class="small">Stock Qty: ${p.stock} | ID: ${p.id}</span>
-        </div>
-        <span class="status-badge">${p.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK'}</span>
+  grid.innerHTML = "";
+  products.forEach(p => {
+    grid.innerHTML += `
+      <div class="product-card">
+        <b>${p.name}</b><br>
+        <span style="color:var(--cyan)">$${p.price.toFixed(2)}</span><br><br>
+        <button onclick="addToCart('${p.name}', ${p.price})"> Add</button>
       </div>
     `;
   });
-  container.innerHTML = h;
-  return filteredProducts;
 }
 
-/* ========================================== */
-/* INCOMING ORDERS & FINANCIAL ACCOUNTING     */
-/* ========================================== */
-async function loadOrdersAndAccounting(products) {
-  const [ordersData, ledgerData] = await Promise.all([
-    apiFetch(["/orders"]),
-    apiFetch(["/ledger", "/transactions"])
-  ]);
+function addToCart(name, price) {
+  cart.push({ name, price });
+  renderCart();
+}
 
-  const allOrders = (ordersData && (ordersData.orders || ordersData.data)) || [];
-  const allLedger = (ledgerData && (ledgerData.ledger || ledgerData.transactions)) || [];
+function renderCart() {
+  const container = document.getElementById("cartList");
+  if (cart.length === 0) {
+    container.innerHTML = "<em>Cart is empty.</em>";
+    document.getElementById("cartTotal").innerText = "Total: $0.00";
+    return;
+  }
+  
+  let html = "";
+  let total = 0;
+  cart.forEach((item, index) => {
+    total += item.price;
+    html += `
+      <div class="cart-item">
+        <span>${item.name}</span>
+        <span>$${item.price.toFixed(2)}</span>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+  document.getElementById("cartTotal").innerText = `Total: $${total.toFixed(2)}`;
+}
 
-  let merchantGrossVolume = 0;
-  let merchantOrderCount = 0;
-  let orderHtml = "";
+async function checkout() {
+  if (cart.length === 0) return alert("Your cart is empty!");
+  const name = document.getElementById("custName").value.trim() || "Guest";
+  const phone = document.getElementById("custPhone").value.trim() || "0700000000";
+  const total = cart.reduce((sum, item) => sum + item.price, 0);
 
-  allOrders.forEach(o => {
-    const matchesBusiness = o.businessId === currentBusinessId || (!o.businessId && currentBusinessId === "BIZ-001");
+  document.getElementById("orderStatus").innerText = "⏳ Creating order and requesting nearby driver...";
 
-    if (matchesBusiness) {
-      merchantOrderCount++;
-      const orderAmount = Number(o.total || o.amount || 0);
-      merchantGrossVolume += orderAmount;
-
-      orderHtml += `
-        <div class="card">
-          <div>
-            <b>Order ID: ${o.id}</b> | Subtotal: <span style="color:var(--gold)">$${orderAmount.toFixed(2)}</span><br>
-            <span class="small">Customer: ${o.customerName || 'Guest'} | Status: ${o.status || 'pending'}</span>
-          </div>
-        </div>
-      `;
-    }
+  const res = await apiFetch("/order/create", {
+    method: "POST",
+    body: JSON.stringify({ customerName: name, customerPhone: phone, amount: total, items: cart })
   });
 
-  document.getElementById("orderList").innerHTML = orderHtml || "<p>No incoming orders for this merchant.</p>";
+  if (res && res.success) {
+    const orderId = res.order.id;
+    document.getElementById("orderStatus").innerText = `✅ Order ${orderId} created! Auto-dispatching driver...`;
+    
+    // Trigger spatial auto-dispatch
+    const dispatchRes = await apiFetch("/dispatch/auto", {
+      method: "POST",
+      body: JSON.stringify({ orderId })
+    });
 
-  // Parse Financial Ledger Lines
-  let ledgerHtml = "";
-  allLedger.forEach(tx => {
-    if (tx.businessId === currentBusinessId || tx.type === "ORDER") {
-      ledgerHtml += `
-        <div class="card">
-          <div>
-            <b>TX ID: ${tx.id}</b> | Type: ${tx.type || 'PAYMENT'}<br>
-            <span class="small">Amount: $${Number(tx.amount || 0).toFixed(2)} | Order Ref: ${tx.orderId || 'N/A'}</span>
-          </div>
-        </div>
-      `;
+    if (dispatchRes && dispatchRes.success) {
+      document.getElementById("orderStatus").innerText = `🚚 Order ${orderId} assigned to driver! Tracking live...`;
+      cart = [];
+      renderCart();
     }
-  });
-
-  document.getElementById("ledgerList").innerHTML = ledgerHtml || "<p>No ledger journal lines found.</p>";
-
-  // Update KPI Cards (90% Net Payout after 10% platform commission)
-  document.getElementById("kpiBalance").innerText = `$${(merchantGrossVolume * 0.90).toFixed(2)}`; 
-  document.getElementById("kpiSales").innerText = `$${merchantGrossVolume.toFixed(2)}`;
-  document.getElementById("kpiCatalogCount").innerText = products.length;
-  document.getElementById("kpiOrdersCount").innerText = merchantOrderCount;
+  }
 }
 
-/* ========================================== */
-/* MASTER DATA LOAD & AUTO-POLL               */
-/* ========================================== */
-async function loadMerchantData() {
-  if (!currentBusinessId) return;
-  const products = await loadProducts();
-  await loadOrdersAndAccounting(products);
-}
-
-setInterval(() => {
-  if (currentBusinessId) loadMerchantData();
-}, 4000);
-
-async function init() {
-  await resolveBackendRoute();
-  await loadBusinesses();
-}
-
-window.onload = init;
+window.onload = () => {
+  loadShops();
+};
 </script>
-
 </body>
 </html>
