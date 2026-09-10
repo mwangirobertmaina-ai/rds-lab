@@ -591,6 +591,26 @@ const completeOrderHandler = (req, res) => {
     }
   }
 
+  // Credit Merchant Wallet (90% Net Payout after 10% platform commission)
+  if (order && order.businessId) {
+    let wallet = data.wallets.find(w => w.businessId === order.businessId);
+    if (!wallet) {
+      wallet = { id: id("wal"), businessId: order.businessId, balance: 0 };
+      data.wallets.push(wallet);
+    }
+    const merchantShare = num(order.total) * 0.90;
+    wallet.balance += merchantShare;
+
+    data.ledger.push({
+      id: id("tx"),
+      type: "MERCHANT_CREDIT",
+      amount: merchantShare,
+      businessId: order.businessId,
+      orderId: order.id,
+      createdAt: Date.now()
+    });
+  }
+
   saveDB();
 
   io.emit("order:completed", { orderId: order ? order.id : targetId });
@@ -679,7 +699,94 @@ app.post("/mpesa/callback", (req, res) => {
   }
 });
 
+/* ================= MODULE 7: AUTOMATED SETTLEMENT & PAYOUTS ================= */
+
+// Merchant Settlement & Wallet Payout Endpoint
+app.post("/merchant/payout", auth("BUSINESS"), async (req, res) => {
+  try {
+    sanitizeDataState();
+    const { businessId, amount, phone } = req.body;
+
+    if (!businessId || !amount || num(amount) <= 0) {
+      return fail(res, "Invalid businessId or payout amount");
+    }
+
+    const business = data.businesses.find(b => b.id === businessId);
+    if (!business) return fail(res, "Merchant profile not found", 404);
+
+    let wallet = data.wallets.find(w => w.businessId === businessId);
+    if (!wallet) {
+      wallet = { id: id("wal"), businessId, balance: 0 };
+      data.wallets.push(wallet);
+    }
+
+    if (wallet.balance < num(amount)) {
+      return fail(res, "Insufficient merchant wallet balance");
+    }
+
+    // Deduct balance and record settlement journal entry
+    wallet.balance -= num(amount);
+
+    data.ledger.push({
+      id: id("tx"),
+      type: "MERCHANT_SETTLEMENT",
+      amount: num(amount),
+      businessId,
+      status: "COMPLETED",
+      createdAt: Date.now()
+    });
+
+    await saveDB();
+
+    io.emit("merchant:payout", { businessId, amount: num(amount), remainingBalance: wallet.balance });
+    log("SETTLEMENT", `Merchant Payout Released: ${business.name} - $${amount}`);
+
+    ok(res, { message: "Merchant payout successfully processed", balance: wallet.balance });
+  } catch (err) {
+    fail(res, "Merchant settlement processing failed", 500);
+  }
+});
+
+// Driver Earnings Cashout Endpoint
+app.post("/driver/cashout", auth("DRIVER"), async (req, res) => {
+  try {
+    sanitizeDataState();
+    const { driverId, amount, phone } = req.body;
+
+    if (!driverId || !amount || num(amount) <= 0) {
+      return fail(res, "Invalid driverId or cashout amount");
+    }
+
+    const driver = data.drivers.find(d => d.id === driverId);
+    if (!driver) return fail(res, "Driver profile not found", 404);
+
+    if (driver.earnings < num(amount)) {
+      return fail(res, "Cashout request exceeds available earnings");
+    }
+
+    driver.earnings -= num(amount);
+
+    data.ledger.push({
+      id: id("tx"),
+      type: "DRIVER_CASHOUT",
+      amount: num(amount),
+      driverId,
+      status: "COMPLETED",
+      createdAt: Date.now()
+    });
+
+    await saveDB();
+
+    io.emit("driver:cashout", { driverId, amount: num(amount), remainingEarnings: driver.earnings });
+    log("CASHOUT", `Driver Cashout Processed: ${driver.name} - $${amount}`);
+
+    ok(res, { message: "Driver cashout successfully disbursed", remainingEarnings: driver.earnings });
+  } catch (err) {
+    fail(res, "Driver cashout processing failed", 500);
+  }
+});
+
 /* ================= SERVER START ================= */
 server.listen(PORT, () => {
-  log("SYSTEM", `🚀 RDS CORE FROZEN ON PORT ${PORT} (SOCKET & M-PESA ENABLED)`);
+  log("SYSTEM", `🚀 RDS CORE FROZEN ON PORT ${PORT} (SOCKET, M-PESA & SETTLEMENTS ENABLED)`);
 });
