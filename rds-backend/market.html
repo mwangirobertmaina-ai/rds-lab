@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDS CUSTOMER MARKETPLACE</title>
+
+  <style>
+    :root {
+      --neon-cyan: #00e5ff;
+      --neon-green: #00ff88;
+      --dark-bg: #050505;
+      --panel-bg: #0d0d0d;
+      --card-bg: #141414;
+      --border-color: #222222;
+      --text-main: #e0e0e0;
+      --text-dim: #888888;
+      --alert-red: #ff3366;
+      --warn-yellow: #ffff00;
+      --gold: #ffd700;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      background: var(--dark-bg);
+      color: var(--text-main);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 15px;
+      margin: 0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--neon-cyan);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-cyan); font-family: monospace; }
+
+    button {
+      padding: 8px 14px;
+      background: var(--neon-cyan);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-family: monospace;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.85; }
+
+    .btn-green { background: var(--neon-green); color: #000; }
+    .btn-danger { background: var(--alert-red); color: #fff; }
+    .btn-warn { background: var(--warn-yellow); color: #000; }
+
+    input, select {
+      padding: 8px;
+      background: #111;
+      color: var(--neon-cyan);
+      border: 1px solid var(--border-color);
+      font-family: monospace;
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
+
+    .box {
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--panel-bg);
+      border-radius: 4px;
+    }
+
+    .grid-3col {
+      display: grid;
+      grid-template-columns: 280px 1fr 340px;
+      gap: 15px;
+    }
+
+    @media (max-width: 1100px) {
+      .grid-3col { grid-template-columns: 1fr; }
+    }
+
+    .status-badge {
+      font-size: 11px;
+      padding: 2px 6px;
+      border: 1px solid var(--neon-cyan);
+      display: inline-block;
+      font-family: monospace;
+      border-radius: 2px;
+    }
+
+    .card {
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 8px;
+      background: var(--card-bg);
+      border-radius: 4px;
+    }
+
+    .card-interactive {
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .card-interactive:hover {
+      border-color: var(--neon-cyan);
+      background: #1a1a1a;
+    }
+
+    .card-selected {
+      border-color: var(--neon-green) !important;
+      background: #12221a !important;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .small { font-size: 11px; color: var(--text-dim); font-family: monospace; }
+
+    .price-tag {
+      color: var(--gold);
+      font-weight: bold;
+      font-family: monospace;
+      font-size: 14px;
+    }
+
+    .cart-summary {
+      border-top: 1px solid var(--border-color);
+      margin-top: 10px;
+      padding-top: 10px;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 100px;
+      overflow-y: auto;
+      background: #000;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      color: var(--neon-green);
+      font-family: monospace;
+      font-size: 11px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div>
+    <h2>🛒 RDS MULTI-TENANT MARKETPLACE</h2>
+    <span class="small">Independent Storefronts | Unified Shopping Cart | Instant Automated Dispatch</span>
+  </div>
+  <div>
+    <span id="routeBadge" class="status-badge">Detecting Route...</span>
+    <button onclick="loadMarketData()" class="btn-green">🔄 Refresh Market</button>
+  </div>
+</header>
+
+<div class="grid-3col">
+
+  <!-- LEFT COLUMN: INDEPENDENT STORES DIRECTORY -->
+  <div>
+    <div class="box">
+      <h3>🏪 Hosted Shops</h3>
+      <div id="shopList"><em>Loading marketplace shops...</em></div>
+    </div>
+  </div>
+
+  <!-- MIDDLE COLUMN: PRODUCT CATALOG -->
+  <div>
+    <div class="box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0;" id="catalogTitle">🛍️ Product Catalog</h3>
+        <span id="productCount" class="small">0 Products</span>
+      </div>
+      <div id="productList" class="product-grid"><em>Select a store to view items...</em></div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN: SHOPPING CART & CHECKOUT -->
+  <div>
+    <div class="box">
+      <h3>🛒 Shopping Cart</h3>
+      <div id="cartItemsList"><em>Cart is empty. Add items from the catalog.</em></div>
+
+      <div class="cart-summary">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <span>Subtotal:</span>
+          <span id="lblSubtotal" class="price-tag">$0.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+          <span>Delivery Fee:</span>
+          <span class="price-tag" style="color: var(--neon-cyan)">$2.50</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; border-top: 1px dashed var(--border-color); padding-top: 8px;">
+          <span>Grand Total:</span>
+          <span id="lblTotal" class="price-tag" style="font-size: 18px; color: var(--neon-green)">$0.00</span>
+        </div>
+
+        <h4>📋 Delivery Checkout</h4>
+        <input type="text" id="custName" placeholder="Customer Name" value="John Doe" style="width: 100%;" />
+        <input type="text" id="custPhone" placeholder="Phone Number" value="0712345678" style="width: 100%;" />
+        <input type="text" id="custAddress" placeholder="Delivery Address" value="Nairobi CBD, House #4" style="width: 100%;" />
+
+        <button onclick="submitCheckout()" class="btn-green" style="width: 100%; margin-top: 10px; padding: 12px;">🚀 Place Order & Dispatch</button>
+      </div>
+    </div>
+
+    <!-- AUDIT CONSOLE -->
+    <div class="box">
+      <h4 style="margin: 0 0 5px 0;">📡 Order Activity Log</h4>
+      <pre id="marketLog">Marketplace initialized.</pre>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const LOCAL_API = "http://localhost:3000";
+const CLOUD_API = "https://rds-lab.onrender.com";
+let API_BASE = LOCAL_API;
+
+let activeShopId = "";
+let cart = [];
+let allProducts = [];
+
+function sysLog(msg) {
+  const el = document.getElementById("marketLog");
+  const time = new Date().toLocaleTimeString();
+  el.innerText = `[${time}] ${typeof msg === 'object' ? JSON.stringify(msg) : msg}\n` + el.innerText;
+}
+
+async function resolveBackendRoute() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1000);
+    const res = await fetch(`${LOCAL_API}/health`, { method: "GET", signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      API_BASE = LOCAL_API;
+      document.getElementById("routeBadge").innerText = "Route: LOCAL (3000)";
+      return;
+    }
+  } catch (_) {}
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(`${CLOUD_API}/health`, { method: "GET", signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      API_BASE = CLOUD_API;
+      document.getElementById("routeBadge").innerText = "Route: CLOUD (Render)";
+      return;
+    }
+  } catch (_) {}
+
+  API_BASE = LOCAL_API;
+  document.getElementById("routeBadge").innerText = "Route: LOCAL (Offline Cache)";
+}
+
+async function apiFetch(endpoints, options = {}) {
+  const targetEndpoints = Array.isArray(endpoints) ? endpoints : [endpoints];
+  for (const ep of targetEndpoints) {
+    try {
+      const res = await fetch(`${API_BASE}${ep}`, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {}
+  }
+  return null;
+}
+
+/* ========================================== */
+/* STORE DIRECTORY & CATALOG LOADING          */
+/* ========================================== */
+async function loadMarketData() {
+  let shopData = await apiFetch(["/businesses", "/shops"]);
+  let productData = await apiFetch("/products");
+
+  const shops = (shopData && (shopData.businesses || shopData.shops)) || [];
+  allProducts = (productData && productData.products) || [];
+
+  const shopListEl = document.getElementById("shopList");
+
+  if (shops.length === 0) {
+    shopListEl.innerHTML = "<p>No active shops online.</p>";
+    return;
+  }
+
+  let html = "";
+  shops.forEach(s => {
+    const isSelected = s.id === activeShopId ? "card-selected" : "";
+    html += `
+      <div class="card card-interactive ${isSelected}" onclick="selectShop('${s.id}', '${s.name}')">
+        <b>${s.name}</b><br>
+        <span class="status-badge">${s.category || 'Retail'}</span>
+      </div>
+    `;
+  });
+  shopListEl.innerHTML = html;
+
+  if (!activeShopId && shops.length > 0) {
+    selectShop(shops[0].id, shops[0].name);
+  } else {
+    renderProducts();
+  }
+}
+
+function selectShop(shopId, shopName) {
+  activeShopId = shopId;
+  document.getElementById("catalogTitle").innerText = `🛍️ Catalog: ${shopName}`;
+  loadMarketData();
+  renderProducts();
+}
+
+function renderProducts() {
+  const container = document.getElementById("productList");
+  const filtered = allProducts.filter(p => !activeShopId || p.businessId === activeShopId);
+
+  document.getElementById("productCount").innerText = `${filtered.length} Items`;
+
+  if (filtered.length === 0) {
+    container.innerHTML = "<p style='grid-column: 1/-1;'>No products available in this shop.</p>";
+    return;
+  }
+
+  let html = "";
+  filtered.forEach(p => {
+    html += `
+      <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <b>${p.name}</b><br>
+          <span class="small">Category: ${p.category || 'General'}</span><br>
+          <span class="price-tag">$${Number(p.price || 0).toFixed(2)}</span>
+        </div>
+        <button onclick="addToCart('${p.id}', '${p.name.replace(/'/g, "\\'")}', ${p.price})" class="btn-cyan" style="margin-top: 8px; width: 100%;">➕ Add to Cart</button>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+/* ========================================== */
+/* SHOPPING CART ENGINE                       */
+/* ========================================== */
+function addToCart(id, name, price) {
+  const existing = cart.find(item => item.id === id);
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    cart.push({ id, name, price: Number(price), qty: 1, businessId: activeShopId });
+  }
+  updateCartUI();
+  sysLog(`Added to cart: ${name}`);
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(item => item.id !== id);
+  updateCartUI();
+}
+
+function updateCartUI() {
+  const container = document.getElementById("cartItemsList");
+  if (cart.length === 0) {
+    container.innerHTML = "<em>Cart is empty. Add items from the catalog.</em>";
+    document.getElementById("lblSubtotal").innerText = "$0.00";
+    document.getElementById("lblTotal").innerText = "$0.00";
+    return;
+  }
+
+  let subtotal = 0;
+  let html = "";
+
+  cart.forEach(item => {
+    const itemTotal = item.price * item.qty;
+    subtotal += itemTotal;
+    html += `
+      <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <b>${item.name}</b><br>
+          <span class="small">$${item.price.toFixed(2)} x ${item.qty}</span>
+        </div>
+        <div>
+          <span class="price-tag" style="margin-right: 8px;">$${itemTotal.toFixed(2)}</span>
+          <button onclick="removeFromCart('${item.id}')" class="btn-danger" style="padding: 2px 6px; font-size: 10px;">❌</button>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+  const deliveryFee = 2.50;
+  document.getElementById("lblSubtotal").innerText = `$${subtotal.toFixed(2)}`;
+  document.getElementById("lblTotal").innerText = `$${(subtotal + deliveryFee).toFixed(2)}`;
+}
+
+/* ========================================== */
+/* CHECKOUT & AUTOMATED DISPATCH              */
+/* ========================================== */
+async function submitCheckout() {
+  if (cart.length === 0) return alert("Your shopping cart is empty.");
+
+  const customerName = document.getElementById("custName").value.trim();
+  const customerPhone = document.getElementById("custPhone").value.trim();
+  const deliveryAddress = document.getElementById("custAddress").value.trim();
+
+  if (!customerName || !deliveryAddress) {
+    return alert("Please enter customer name and delivery address.");
+  }
+
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  const total = subtotal + 2.50;
+
+  sysLog("Submitting marketplace order...");
+
+  const payload = {
+    customerName,
+    customerPhone,
+    deliveryAddress,
+    businessId: activeShopId || "SYSTEM",
+    items: cart,
+    amount: total,
+    total: total
+  };
+
+  const res = await apiFetch(["/order/create", "/orders/create", "/checkout"], {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+  if (res && res.success) {
+    const order = res.order || res.data;
+    sysLog(`✅ Order Placed Successfully! Order ID: ${order.id}`);
+
+    // Trigger Spatial Auto-Dispatch
+    const dispatchRes = await apiFetch(["/dispatch/auto", "/dispatch/assign"], {
+      method: "POST",
+      body: JSON.stringify({ orderId: order.id })
+    });
+
+    if (dispatchRes && dispatchRes.success) {
+      sysLog(`⚡ Auto-Dispatched Order ${order.id} to nearest online driver!`);
+    } else {
+      sysLog(`⚠️ Order created, queued for driver assignment.`);
+    }
+
+    cart = [];
+    updateCartUI();
+    alert(`Order ${order.id} placed successfully! It is now routed for automated delivery dispatch.`);
+  } else {
+    sysLog("❌ Order placement failed.");
+  }
+}
+
+async function init() {
+  await resolveBackendRoute();
+  await loadMarketData();
+}
+
+window.onload = init;
+</script>
+
+</body>
+</html>

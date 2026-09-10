@@ -1,0 +1,30 @@
+{
+  "businesses": [],
+  "products": [],
+  "orders": [],
+  "drivers": [
+    {
+      "id": "DRV_1788997475972_89954",
+      "name": "kamau",
+      "phone": "254721862397",
+      "vehicle": "Motorbike KAB 123X",
+      "status": "online",
+      "earnings": 0,
+      "location": null,
+      "lastSeen": 1788997542540,
+      "createdAt": 1788997475972
+    }
+  ],
+  "deliveries": [],
+  "ledger": [],
+  "wallets": {
+    "SYSTEM_PLATFORM": {
+      "balance": 0,
+      "escrow": 0
+    }
+  },
+  "system": {
+    "createdAt": 1788996981527,
+    "lastCheck": 1788997542540
+  }
+}

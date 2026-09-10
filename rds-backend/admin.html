@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDS SUPER-ADMIN CONTROL & LEDGER CENTER</title>
+  
+  <!-- Leaflet CSS for Live Interactive Mapping -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --neon-cyan: #00e5ff;
+      --neon-green: #00ff88;
+      --dark-bg: #050505;
+      --panel-bg: #0d0d0d;
+      --card-bg: #141414;
+      --border-color: #222222;
+      --text-main: #e0e0e0;
+      --text-dim: #888888;
+      --alert-red: #ff3366;
+      --warn-yellow: #ffff00;
+      --gold: #ffd700;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      background: var(--dark-bg);
+      color: var(--text-main);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 15px;
+      margin: 0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--neon-cyan);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-cyan); font-family: monospace; }
+
+    button {
+      padding: 8px 14px;
+      background: var(--neon-cyan);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-family: monospace;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.85; }
+
+    .btn-green { background: var(--neon-green); color: #000; }
+    .btn-danger { background: var(--alert-red); color: #fff; }
+    .btn-warn { background: var(--warn-yellow); color: #000; }
+
+    input, select {
+      padding: 8px;
+      background: #111;
+      color: var(--neon-cyan);
+      border: 1px solid var(--border-color);
+      font-family: monospace;
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
+
+    .box {
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--panel-bg);
+      border-radius: 4px;
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      text-align: center;
+      border-radius: 4px;
+    }
+
+    .kpi-title { font-size: 11px; color: var(--text-dim); font-family: monospace; }
+    .kpi-val { font-size: 22px; font-weight: bold; color: var(--gold); margin-top: 4px; font-family: monospace; }
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    @media (max-width: 1000px) {
+      .grid-2col { grid-template-columns: 1fr; }
+    }
+
+    #map {
+      height: 350px;
+      width: 100%;
+      border: 1px solid var(--border-color);
+      background: #111;
+      border-radius: 4px;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      padding: 2px 6px;
+      border: 1px solid var(--neon-cyan);
+      display: inline-block;
+      font-family: monospace;
+      border-radius: 2px;
+    }
+
+    .badge-online { border-color: var(--neon-green); color: var(--neon-green); }
+    .badge-busy { border-color: var(--warn-yellow); color: var(--warn-yellow); }
+    .badge-offline { border-color: var(--text-dim); color: var(--text-dim); }
+
+    .card {
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 8px;
+      background: var(--card-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 4px;
+    }
+
+    .small { font-size: 11px; color: var(--text-dim); font-family: monospace; }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+      background: #000;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      color: var(--neon-green);
+      font-family: monospace;
+      font-size: 11px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div>
+    <h2>🛡️ RDS SUPER-ADMIN CONTROL & LEDGER CENTER</h2>
+    <span class="small">Platform Operations | Automated Dispatch | Double-Entry Ledger</span>
+  </div>
+  <div>
+    <span id="routeBadge" class="status-badge">Detecting Route...</span>
+    <button onclick="triggerFullSync()" class="btn-green">🔄 Force Sync</button>
+  </div>
+</header>
+
+<!-- TOP KPI METRICS BAR -->
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="kpi-title">GROSS MARKETPLACE VOLUME</div>
+    <div id="kpiGmv" class="kpi-val">$0.00</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">PLATFORM REVENUE (10%)</div>
+    <div id="kpiComm" class="kpi-val" style="color: var(--neon-green);">$0.00</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">ACTIVE ONLINE FLEET</div>
+    <div id="kpiDrivers" class="kpi-val" style="color: var(--neon-cyan);">0</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">HOSTED MERCHANTS</div>
+    <div id="kpiShops" class="kpi-val">0</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">TOTAL ORDERS PROCESSED</div>
+    <div id="kpiOrders" class="kpi-val">0</div>
+  </div>
+</div>
+
+<!-- MERCHANT & SHOP MANAGEMENT -->
+<div class="box">
+  <h3>🏬 Onboard New Shop / Supermarket</h3>
+  <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+    <input type="text" id="shopName" placeholder="Shop Name (e.g., Caro Retail)" style="flex: 1; min-width: 200px;" />
+    <input type="text" id="shopCategory" placeholder="Category (e.g., Supermarket)" value="Supermarket" style="width: 180px;" />
+    <button onclick="addShop()">➕ Add Shop</button>
+  </div>
+  <div id="shopRosterList" style="margin-top: 10px;"><em>Loading registered shops...</em></div>
+</div>
+
+<div class="grid-2col">
+
+  <!-- LEFT COLUMN: LIVE FLEET TELEMETRY & DISPATCH CONTROL -->
+  <div>
+    <div class="box">
+      <h3>MAP Live Driver Telemetry Map</h3>
+      <div id="map"></div>
+    </div>
+
+    <div class="box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0;">⚡ Dispatch Command Center</h3>
+        <button onclick="runAutoDispatch()" class="btn-warn">🚀 Run Spatial Auto-Dispatch</button>
+      </div>
+      <div id="dispatchOrdersList"><em>Loading pending orders queue...</em></div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN: FLEET ROSTER & DOUBLE-ENTRY LEDGER -->
+  <div>
+    <div class="box">
+      <h3>🏍️ Active Driver Fleet Roster</h3>
+      <div id="driverRosterList"><em>Loading driver fleet...</em></div>
+    </div>
+
+    <div class="box">
+      <h3>📜 Central Double-Entry Financial Ledger</h3>
+      <div id="walletBalances" style="margin-bottom: 10px;" class="small">Loading wallet escrows...</div>
+      <div id="ledgerLinesList"><em>Loading accounting ledger entries...</em></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CONSOLE AUDIT LOG -->
+<div class="box">
+  <h4 style="margin: 0 0 5px 0;">📡 Super-Admin System Audit Console</h4>
+  <pre id="adminLog">System initialized.</pre>
+</div>
+
+<!-- Leaflet JS Engine -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+const LOCAL_API = "http://localhost:3000";
+const CLOUD_API = "https://rds-lab.onrender.com";
+let API_BASE = LOCAL_API;
+
+let map, driverMarkers = {};
+
+function sysLog(msg) {
+  const el = document.getElementById("adminLog");
+  const time = new Date().toLocaleTimeString();
+  el.innerText = `[${time}] ${typeof msg === 'object' ? JSON.stringify(msg) : msg}\n` + el.innerText;
+}
+
+async function resolveBackendRoute() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1000);
+    const res = await fetch(`${LOCAL_API}/health`, { method: "GET", signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      API_BASE = LOCAL_API;
+      document.getElementById("routeBadge").innerText = "Route: LOCAL (3000)";
+      return;
+    }
+  } catch (_) {}
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(`${CLOUD_API}/health`, { method: "GET", signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      API_BASE = CLOUD_API;
+      document.getElementById("routeBadge").innerText = "Route: CLOUD (Render)";
+      return;
+    }
+  } catch (_) {}
+
+  API_BASE = LOCAL_API;
+  document.getElementById("routeBadge").innerText = "Route: OFFLINE (Local Cache)";
+}
+
+async function apiFetch(endpoints, options = {}) {
+  const targetEndpoints = Array.isArray(endpoints) ? endpoints : [endpoints];
+  for (const ep of targetEndpoints) {
+    try {
+      const res = await fetch(`${API_BASE}${ep}`, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {}
+  }
+  return null;
+}
+
+/* ========================================== */
+/* HYBRID TILE MAP ENGINE                     */
+/* ========================================== */
+function initMap() {
+  map = L.map('map').setView([-1.286389, 36.817223], 13);
+  
+  const osmHot = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors'
+  });
+
+  const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap © CARTO'
+  });
+
+  osmHot.addTo(map);
+
+  osmHot.on('tileerror', function() {
+    map.removeLayer(osmHot);
+    cartoDark.addTo(map);
+  });
+}
+
+/* ========================================== */
+/* MERCHANT & SHOP MANAGEMENT                 */
+/* ========================================== */
+async function loadShops() {
+  let data = await apiFetch(["/businesses", "/shops"]);
+  if (data) {
+    localStorage.setItem("cache_shops", JSON.stringify(data));
+  } else {
+    data = JSON.parse(localStorage.getItem("cache_shops") || "{}");
+  }
+
+  const shops = (data && (data.businesses || data.shops)) || [];
+  document.getElementById("kpiShops").innerText = shops.length;
+  const rosterEl = document.getElementById("shopRosterList");
+
+  if (shops.length === 0) {
+    rosterEl.innerHTML = "<p>No registered shops onboarded.</p>";
+    return;
+  }
+
+  let html = "";
+  shops.forEach(s => {
+    html += `
+      <div class="card">
+        <div>
+          <b style="font-size: 14px; color: var(--gold);">${s.name}</b> 
+          <span class="status-badge">${s.category || 'Retail'}</span><br>
+          <span class="small">ID: ${s.id} | Balance: $${(s.balance || 0).toFixed(2)}</span>
+        </div>
+        <button onclick="deleteShop('${s.id}')" class="btn-danger">🗑️ Delete</button>
+      </div>
+    `;
+  });
+  rosterEl.innerHTML = html;
+}
+
+async function addShop() {
+  const nameInput = document.getElementById("shopName");
+  const catInput = document.getElementById("shopCategory");
+
+  const name = nameInput.value.trim();
+  const category = catInput.value.trim() || "Supermarket";
+
+  if (!name) return alert("Please enter shop name.");
+
+  const res = await apiFetch(["/business/add", "/business/create"], {
+    method: "POST",
+    body: JSON.stringify({ name, category })
+  });
+
+  if (res && res.success) {
+    const newBiz = res.business || res.shop;
+    sysLog(`✅ Shop Onboarded: ${newBiz.name} (${newBiz.id})`);
+    nameInput.value = "";
+    await loadShops();
+  }
+}
+
+async function deleteShop(id) {
+  if (!confirm(`Delete shop ${id}?`)) return;
+
+  const res = await apiFetch([`/business/delete/${id}`, `/business/${id}`], {
+    method: "DELETE"
+  });
+
+  if (res && res.success) {
+    sysLog(`🗑️ Shop Deleted: ${id}`);
+    await loadShops();
+  }
+}
+
+/* ========================================== */
+/* STAGGERED FEEDS STREAM                     */
+/* ========================================== */
+async function loadDriversAndMap() {
+  let data = await apiFetch(["/drivers/map", "/drivers/live", "/drivers"]);
+  if (data) {
+    localStorage.setItem("cache_drivers", JSON.stringify(data));
+  } else {
+    data = JSON.parse(localStorage.getItem("cache_drivers") || "{}");
+  }
+
+  const drivers = (data && (data.drivers || data.data)) || [];
+  const rosterEl = document.getElementById("driverRosterList");
+  let rosterHtml = "";
+  let activeCount = 0;
+
+  drivers.forEach(d => {
+    const isOnline = (d.status === "online" || d.status === "busy");
+    if (isOnline) activeCount++;
+
+    const statusBadgeClass = d.status === "online" ? "badge-online" : (d.status === "busy" ? "badge-busy" : "badge-offline");
+
+    rosterHtml += `
+      <div class="card">
+        <div>
+          <b>${d.name}</b> <span class="status-badge ${statusBadgeClass}">${(d.status || 'offline').toUpperCase()}</span><br>
+          <span class="small">Phone: ${d.phone || '0700000000'} | Vehicle: ${d.vehicle || 'N/A'}</span>
+        </div>
+        <div>
+          <span style="color: var(--gold); font-weight: bold;">$${(d.earnings || 0).toFixed(2)}</span>
+        </div>
+      </div>
+    `;
+
+    if (d.location && d.location.lat && d.location.lng) {
+      const lat = Number(d.location.lat);
+      const lng = Number(d.location.lng);
+
+      if (driverMarkers[d.id]) {
+        driverMarkers[d.id].setLatLng([lat, lng]);
+      } else {
+        driverMarkers[d.id] = L.marker([lat, lng]).addTo(map)
+          .bindPopup(`<b>${d.name}</b><br>Status: ${d.status}`);
+      }
+    }
+  });
+
+  rosterEl.innerHTML = rosterHtml || "<p>No registered drivers in roster.</p>";
+  document.getElementById("kpiDrivers").innerText = activeCount;
+}
+
+async function loadOrdersAndDispatch() {
+  let data = await apiFetch("/orders");
+  const stats = await apiFetch("/system/stats");
+  
+  if (data) {
+    localStorage.setItem("cache_orders", JSON.stringify(data));
+  } else {
+    data = JSON.parse(localStorage.getItem("cache_orders") || "{}");
+  }
+
+  const allOrders = (data && (data.orders || data.data)) || [];
+  const dispatchEl = document.getElementById("dispatchOrdersList");
+  let pendingHtml = "";
+
+  allOrders.forEach(o => {
+    const st = (o.status || "").toLowerCase();
+    if (["pending", "placed", "unassigned"].includes(st)) {
+      pendingHtml += `
+        <div class="card">
+          <div>
+            <b>Order ID: ${o.id}</b> - <span style="color:var(--gold)">$${(o.total || o.amount || 0).toFixed(2)}</span><br>
+            <span class="small">Merchant: ${o.businessId || 'SYSTEM'} | Customer: ${o.customerName || 'Guest'}</span>
+          </div>
+          <button onclick="manualAssign('${o.id}')">⚡ Assign</button>
+        </div>
+      `;
+    }
+  });
+
+  dispatchEl.innerHTML = pendingHtml || "<p style='color: var(--neon-green);'>✅ All orders dispatched and assigned.</p>";
+
+  if (stats && stats.stats) {
+    document.getElementById("kpiOrders").innerText = stats.stats.orders || allOrders.length;
+  } else {
+    document.getElementById("kpiOrders").innerText = allOrders.length;
+  }
+}
+
+async function runAutoDispatch() {
+  sysLog("Triggering Spatial Auto-Dispatch Engine...");
+  const res = await apiFetch(["/dispatch/auto", "/dispatch/assign"], { method: "POST" });
+  if (res && res.success) {
+    sysLog(`✅ Auto-Dispatch complete: ${res.message || 'Orders assigned'}`);
+    await loadOrdersAndDispatch();
+    await loadDriversAndMap();
+  } else {
+    sysLog(`⚠️ Auto-Dispatch: ${res ? res.error : 'No pending orders or online drivers'}`);
+  }
+}
+
+async function manualAssign(orderId) {
+  const driverId = prompt("Enter Driver ID to assign:");
+  if (!driverId) return;
+
+  const res = await apiFetch(["/dispatch/assign", "/order/assign"], {
+    method: "POST",
+    body: JSON.stringify({ orderId, driverId })
+  });
+
+  if (res && res.success) {
+    sysLog(`✅ Order ${orderId} assigned to Driver ${driverId}`);
+    await loadOrdersAndDispatch();
+    await loadDriversAndMap();
+  }
+}
+
+async function loadLedgerAndWallets() {
+  let ledgerData = await apiFetch(["/ledger", "/transactions"]);
+  const summaryData = await apiFetch("/ledger/summary");
+  const walletData = await apiFetch("/wallets");
+
+  if (ledgerData) {
+    localStorage.setItem("cache_ledger", JSON.stringify(ledgerData));
+  } else {
+    ledgerData = JSON.parse(localStorage.getItem("cache_ledger") || "{}");
+  }
+
+  const ledgerList = (ledgerData && (ledgerData.ledger || ledgerData.transactions)) || [];
+  let gmv = 0;
+  let platformCommission = 0;
+  let ledgerHtml = "";
+
+  ledgerList.forEach(tx => {
+    const amt = Number(tx.amount) || 0;
+    if (tx.type === "ORDER") gmv += amt;
+    if (tx.type === "COMMISSION") platformCommission += amt;
+
+    ledgerHtml += `
+      <div class="card">
+        <div>
+          <b>TX: ${tx.id}</b> | <span style="color:var(--neon-cyan)">${tx.type || 'ORDER'}</span><br>
+          <span class="small">Ref Order: ${tx.orderId || 'N/A'} | Merchant: ${tx.businessId || 'SYSTEM'}</span>
+        </div>
+        <span style="color:var(--gold); font-weight:bold; font-family:monospace;">$${amt.toFixed(2)}</span>
+      </div>
+    `;
+  });
+
+  document.getElementById("ledgerLinesList").innerHTML = ledgerHtml || "<p>No financial accounting lines recorded.</p>";
+
+  if (summaryData && summaryData.summary) {
+    document.getElementById("kpiGmv").innerText = `$${(summaryData.summary.grossVolume || gmv).toFixed(2)}`;
+    document.getElementById("kpiComm").innerText = `$${(summaryData.summary.totalCommission || platformCommission).toFixed(2)}`;
+  } else {
+    document.getElementById("kpiGmv").innerText = `$${gmv.toFixed(2)}`;
+    document.getElementById("kpiComm").innerText = `$${(gmv * 0.10).toFixed(2)}`;
+  }
+
+  if (walletData && walletData.wallets) {
+    let wHtml = "<strong>Escrow Balances:</strong> ";
+    walletData.wallets.forEach(w => {
+      wHtml += `[${w.businessId}: <span style="color:var(--gold)">$${(w.balance || 0).toFixed(2)}</span>] `;
+    });
+    document.getElementById("walletBalances").innerHTML = wHtml;
+  }
+}
+
+async function triggerFullSync() {
+  await loadShops();
+  await loadDriversAndMap();
+  await loadOrdersAndDispatch();
+  await loadLedgerAndWallets();
+}
+
+function initStaggeredPolling() {
+  setInterval(loadDriversAndMap, 4000);
+  setInterval(loadOrdersAndDispatch, 8000);
+  setInterval(loadLedgerAndWallets, 15000);
+}
+
+async function init() {
+  initMap();
+  await resolveBackendRoute();
+  await triggerFullSync();
+  initStaggeredPolling();
+}
+
+window.onload = init;
+</script>
+
+</body>
+</html>
