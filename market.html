@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#000000">
   <title>RDS MERCHANT PORTAL | ENTERPRISE CORE</title>
 
   <style>
@@ -18,56 +19,72 @@
       --cyan: #00e5ff;
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; touch-action: manipulation; }
 
     body {
       background: var(--dark-bg);
       color: var(--neon-green);
       font-family: monospace;
-      padding: 15px;
+      padding: 12px;
       margin: 0;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
+    h2, h3, h4 { 
+      margin: 0 0 10px 0; 
+      text-transform: uppercase; 
+      color: var(--neon-green); 
+      font-size: 1.1rem;
+    }
 
     button {
-      margin: 4px;
-      padding: 9px 14px;
+      margin: 4px 2px;
+      padding: 12px 14px;
       background: var(--neon-green);
       color: #000;
       font-weight: bold;
       border: none;
+      border-radius: 4px;
       cursor: pointer;
       font-family: monospace;
-      transition: opacity 0.2s;
+      font-size: 0.85rem;
+      transition: opacity 0.2s, transform 0.1s;
     }
 
-    button:hover { opacity: 0.85; }
+    button:active {
+      transform: scale(0.98);
+      opacity: 0.85;
+    }
 
     .btn-danger { background: var(--alert-red); color: #fff; }
     .btn-warn { background: var(--warn-yellow); color: #000; }
     .btn-gold { background: var(--gold); color: #000; }
+    .btn-cyan { background: var(--cyan); color: #000; }
 
     select, input {
-      padding: 8px;
+      padding: 10px;
       background: #111;
       color: var(--neon-green);
       border: 1px solid var(--neon-green);
+      border-radius: 4px;
       font-family: monospace;
-      margin-right: 5px;
-      margin-bottom: 5px;
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+      width: 100%;
     }
 
     .box {
       border: 1px solid var(--neon-green);
+      border-radius: 6px;
       padding: 12px;
       margin-bottom: 12px;
       background: var(--panel-bg);
+      box-shadow: 0 0 10px rgba(0, 255, 136, 0.05);
     }
 
     .kpi-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 10px;
       margin-bottom: 12px;
     }
@@ -75,12 +92,13 @@
     .kpi-card {
       background: var(--card-bg);
       border: 1px solid #333;
-      padding: 12px;
+      border-radius: 4px;
+      padding: 10px;
       text-align: center;
     }
 
     .kpi-val {
-      font-size: 20px;
+      font-size: 1.2rem;
       font-weight: bold;
       color: var(--gold);
       margin-top: 4px;
@@ -89,35 +107,39 @@
     .grid-layout {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 15px;
+      gap: 12px;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 800px) {
       .grid-layout { grid-template-columns: 1fr; }
     }
 
     .status-badge {
-      font-size: 0.85em;
+      font-size: 0.8em;
       padding: 2px 6px;
       border: 1px solid var(--neon-green);
+      border-radius: 3px;
       display: inline-block;
-      margin-top: 5px;
+      margin-top: 4px;
     }
 
     pre {
       white-space: pre-wrap;
       word-break: break-all;
-      max-height: 140px;
+      max-height: 120px;
       overflow-y: auto;
       background: #050505;
       padding: 8px;
       border: 1px solid #222;
+      border-radius: 4px;
       color: #00ff88;
+      font-size: 0.75rem;
     }
 
     .card {
       padding: 10px;
       border: 1px solid #333;
+      border-radius: 4px;
       margin-bottom: 8px;
       background: #181818;
       display: flex;
@@ -125,17 +147,18 @@
       align-items: center;
     }
 
-    .small { font-size: 11px; color: var(--text-dim); }
+    .small { font-size: 0.75rem; color: var(--text-dim); }
+    .flex-row { display: flex; gap: 6px; flex-wrap: wrap; }
   </style>
 </head>
 
 <body>
 
-<h2>🏬 RDS MERCHANT & BUSINESS PORTAL</h2>
+<h2>🏬 RDS MERCHANT PORTAL</h2>
 
 <!-- ACCOUNT SWITCHER & ONBOARDING -->
 <div class="box">
-  <h3 style="margin-top: 0;">1. Merchant Account & Profile</h3>
+  <h3 style="margin-top: 0;">1. Merchant Profile</h3>
   <div>
     <label for="businessSelect"><strong>Active Merchant:</strong></label>
     <select id="businessSelect" onchange="onBusinessSelected()"></select>
@@ -144,27 +167,27 @@
   </div>
   <div style="margin-top: 10px;">
     <input type="text" id="newBizName" placeholder="New Merchant Name..." />
-    <input type="text" id="newBizCategory" placeholder="Category (Retail)" value="Retail" />
-    <button onclick="registerBusiness()">➕ Register Merchant</button>
+    <input type="text" id="newBizCategory" placeholder="Category (e.g. Supermarket)" value="Supermarket" />
+    <button onclick="registerBusiness()" class="btn-cyan" style="width: 100%;">➕ Onboard Merchant Profile</button>
   </div>
 </div>
 
 <!-- FINANCIAL KPIS OVERVIEW -->
 <div class="kpi-row">
   <div class="kpi-card">
-    <div class="small">WALLET BALANCE</div>
+    <div class="small">NET BALANCE</div>
     <div id="kpiBalance" class="kpi-val">$0.00</div>
   </div>
   <div class="kpi-card">
-    <div class="small">GROSS SALES VOLUME</div>
+    <div class="small">GROSS SALES</div>
     <div id="kpiSales" class="kpi-val">$0.00</div>
   </div>
   <div class="kpi-card">
-    <div class="small">ACTIVE CATALOG ITEMS</div>
+    <div class="small">CATALOG ITEMS</div>
     <div id="kpiCatalogCount" class="kpi-val">0</div>
   </div>
   <div class="kpi-card">
-    <div class="small">TOTAL ORDERS PROCESSED</div>
+    <div class="small">ORDERS PROCESSED</div>
     <div id="kpiOrdersCount" class="kpi-val">0</div>
   </div>
 </div>
@@ -174,27 +197,29 @@
   <!-- LEFT COLUMN: PRODUCT MANAGEMENT & INVENTORY -->
   <div>
     <div class="box">
-      <h3>📦 Catalog & Stock Management</h3>
+      <h3>📦 Inventory Management</h3>
       <div style="margin-bottom: 10px;">
-        <input type="text" id="prodName" placeholder="Product Name..." />
-        <input type="number" id="prodPrice" placeholder="Price ($)" step="0.01" style="width: 100px;" />
-        <input type="number" id="prodStock" placeholder="Stock Qty" value="50" style="width: 100px;" />
-        <button onclick="addProduct()">➕ Add Product</button>
+        <input type="text" id="prodName" placeholder="Product Item Name..." />
+        <div class="flex-row">
+          <input type="number" id="prodPrice" placeholder="Price ($)" step="0.01" style="flex: 1;" />
+          <input type="number" id="prodStock" placeholder="Stock Qty" value="50" style="flex: 1;" />
+        </div>
+        <button onclick="addProduct()" style="width: 100%; margin-top: 4px;">➕ Add Product Item</button>
       </div>
-      <div id="productList"><em>Loading product inventory...</em></div>
+      <div id="productList"><em>Loading inventory catalog...</em></div>
     </div>
   </div>
 
   <!-- RIGHT COLUMN: INCOMING ORDERS & JOURNAL LEDGER -->
   <div>
     <div class="box">
-      <h3>🧾 Merchant Sales & Order Feed</h3>
-      <div id="orderList"><em>Loading incoming merchant orders...</em></div>
+      <h3>🧾 Merchant Sales Feed</h3>
+      <div id="orderList"><em>Loading merchant orders...</em></div>
     </div>
 
     <div class="box">
-      <h3>📜 Double-Entry Financial Ledger Lines</h3>
-      <div id="ledgerList"><em>Loading journal accounting entries...</em></div>
+      <h3>📜 Financial Ledger Lines</h3>
+      <div id="ledgerList"><em>Loading financial transactions...</em></div>
     </div>
   </div>
 
@@ -202,8 +227,8 @@
 
 <!-- SYSTEM CONSOLE LOG -->
 <div class="box">
-  <h4 style="margin: 0 0 5px 0;">📡 Merchant Telemetry & Accounting Console</h4>
-  <pre id="consoleLog">Portal initialized.</pre>
+  <h4 style="margin: 0 0 5px 0;">📡 Telemetry & Accounting Log</h4>
+  <pre id="consoleLog">Portal ready.</pre>
 </div>
 
 <script>
@@ -226,10 +251,10 @@ async function resolveBackendRoute() {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 800);
-    await fetch(`${LOCAL_API}/`, { method: "GET", signal: controller.signal });
+    await fetch(`${LOCAL_API}/health`, { method: "GET", signal: controller.signal });
     clearTimeout(timeout);
     API_BASE = LOCAL_API;
-    document.getElementById("routeBadge").innerText = "Route: LOCAL (3000)";
+    document.getElementById("routeBadge").innerText = "Route: LOCAL";
   } catch (_) {
     API_BASE = CLOUD_API;
     document.getElementById("routeBadge").innerText = "Route: CLOUD (Render)";
@@ -258,7 +283,6 @@ async function apiFetch(endpoints, options = {}) {
       // Continue loop to backup endpoint alias
     }
   }
-  sysLog(`API Warning on endpoints: ${targetEndpoints.join(', ')}`);
   return null;
 }
 
@@ -273,29 +297,28 @@ async function loadBusinesses() {
   const bizList = (data && (data.businesses || data.shops)) || [];
 
   if (bizList.length === 0) {
-    select.innerHTML = "<option value=''>No merchants available</option>";
-    currentBusinessId = "";
-    return;
-  }
+    select.innerHTML = "<option value='BIZ-001'>Caro Supermarket (Default)</option>";
+    currentBusinessId = "BIZ-001";
+  } else {
+    bizList.forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b.id;
+      opt.innerText = `${b.name} (${b.category || 'Retail'})`;
+      select.appendChild(opt);
+    });
 
-  bizList.forEach(b => {
-    const opt = document.createElement("option");
-    opt.value = b.id;
-    opt.innerText = `${b.name} (${b.category || 'Retail'})`;
-    select.appendChild(opt);
-  });
-
-  if (!currentBusinessId && bizList.length > 0) {
-    currentBusinessId = bizList[0].id;
+    if (!currentBusinessId && bizList.length > 0) {
+      currentBusinessId = bizList[0].id;
+    }
+    select.value = currentBusinessId;
   }
-  select.value = currentBusinessId;
-  sysLog(`Active Merchant profile set to: ${currentBusinessId}`);
+  sysLog(`Active Merchant profile: ${currentBusinessId}`);
   await loadMerchantData();
 }
 
 function onBusinessSelected() {
   currentBusinessId = document.getElementById("businessSelect").value;
-  sysLog(`Switched active Merchant ID: ${currentBusinessId}`);
+  sysLog(`Active Merchant ID set to: ${currentBusinessId}`);
   loadMerchantData();
 }
 
@@ -305,7 +328,7 @@ async function registerBusiness() {
   const name = nameInput.value.trim();
   const category = catInput.value.trim() || "Retail";
 
-  if (!name) return alert("Please enter merchant name.");
+  if (!name) return alert("Please enter a merchant name.");
 
   const res = await apiFetch(["/business/add", "/business/create"], {
     method: "POST",
@@ -337,7 +360,7 @@ async function addProduct() {
 
   if (!name || price <= 0) return alert("Enter valid product name and price.");
 
-  const res = await apiFetch("/product/add", {
+  const res = await apiFetch(["/product/add"], {
     method: "POST",
     body: JSON.stringify({
       businessId: currentBusinessId,
@@ -348,7 +371,8 @@ async function addProduct() {
   });
 
   if (res && res.success) {
-    sysLog(`✅ Catalog item added: "${res.product.name}" at $${res.product.price}`);
+    const product = res.product || res.data;
+    sysLog(`✅ Catalog item added: "${product.name}" at $${product.price}`);
     nameEl.value = "";
     priceEl.value = "";
     stockEl.value = "50";
@@ -362,8 +386,7 @@ async function loadProducts() {
   const data = await apiFetch(`/products?businessId=${currentBusinessId}`);
   const rawProducts = (data && data.products) || [];
   
-  // Filter for items associated with active merchant profile
-  const filteredProducts = rawProducts.filter(p => p.businessId === currentBusinessId);
+  const filteredProducts = rawProducts.filter(p => p.businessId === currentBusinessId || !p.businessId);
 
   const container = document.getElementById("productList");
   if (filteredProducts.length === 0) {
@@ -392,42 +415,30 @@ async function loadProducts() {
 /* ========================================== */
 async function loadOrdersAndAccounting(products) {
   const [ordersData, ledgerData] = await Promise.all([
-    apiFetch("/orders"),
+    apiFetch(["/orders"]),
     apiFetch(["/ledger", "/transactions"])
   ]);
 
-  const allOrders = (ordersData && ordersData.orders) || [];
+  const allOrders = (ordersData && (ordersData.orders || ordersData.data)) || [];
   const allLedger = (ledgerData && (ledgerData.ledger || ledgerData.transactions)) || [];
 
-  // Match items belonging to current merchant
-  const productIds = new Set(products.map(p => p.id));
-  
   let merchantGrossVolume = 0;
   let merchantOrderCount = 0;
   let orderHtml = "";
 
   allOrders.forEach(o => {
-    let orderMatch = false;
-    let merchantItemSubtotal = 0;
+    const matchesBusiness = o.businessId === currentBusinessId || (!o.businessId && currentBusinessId === "BIZ-001");
 
-    if (Array.isArray(o.items)) {
-      o.items.forEach(item => {
-        if (productIds.has(item.productId)) {
-          orderMatch = true;
-          merchantItemSubtotal += (item.price || 0) * (item.quantity || item.qty || 1);
-        }
-      });
-    }
-
-    if (orderMatch) {
+    if (matchesBusiness) {
       merchantOrderCount++;
-      merchantGrossVolume += merchantItemSubtotal;
+      const orderAmount = Number(o.total || o.amount || 0);
+      merchantGrossVolume += orderAmount;
 
       orderHtml += `
         <div class="card">
           <div>
-            <b>Order ID: ${o.id}</b> | Subtotal: <span style="color:var(--gold)">$${merchantItemSubtotal.toFixed(2)}</span><br>
-            <span class="small">Customer: ${o.customerName || 'Guest'} | Status: ${o.status || 'PLACED'}</span>
+            <b>Order ID: ${o.id}</b> | Subtotal: <span style="color:var(--gold)">$${orderAmount.toFixed(2)}</span><br>
+            <span class="small">Customer: ${o.customerName || 'Guest'} | Status: ${o.status || 'pending'}</span>
           </div>
         </div>
       `;
@@ -436,31 +447,15 @@ async function loadOrdersAndAccounting(products) {
 
   document.getElementById("orderList").innerHTML = orderHtml || "<p>No incoming orders for this merchant.</p>";
 
-  // Parse Double-Entry Ledger Entries
+  // Parse Financial Ledger Lines
   let ledgerHtml = "";
-  let calculatedWalletBalance = 0;
-
   allLedger.forEach(tx => {
-    let relevantTx = false;
-
-    if (tx.entries && Array.isArray(tx.entries)) {
-      tx.entries.forEach(e => {
-        if (e.businessId === currentBusinessId) {
-          relevantTx = true;
-          if (e.credit) calculatedWalletBalance += e.credit;
-          if (e.debit) calculatedWalletBalance -= e.debit;
-        }
-      });
-    } else if (tx.businessId === currentBusinessId || tx.type === "ORDER_PAYMENT") {
-      relevantTx = true;
-    }
-
-    if (relevantTx) {
+    if (tx.businessId === currentBusinessId || tx.type === "ORDER") {
       ledgerHtml += `
         <div class="card">
           <div>
             <b>TX ID: ${tx.id}</b> | Type: ${tx.type || 'PAYMENT'}<br>
-            <span class="small">Amount: $${(tx.amount || 0).toFixed(2)} | Order Ref: ${tx.orderId || 'N/A'}</span>
+            <span class="small">Amount: $${Number(tx.amount || 0).toFixed(2)} | Order Ref: ${tx.orderId || 'N/A'}</span>
           </div>
         </div>
       `;
@@ -469,15 +464,15 @@ async function loadOrdersAndAccounting(products) {
 
   document.getElementById("ledgerList").innerHTML = ledgerHtml || "<p>No ledger journal lines found.</p>";
 
-  // Update KPI Cards
-  document.getElementById("kpiBalance").innerText = `$${(merchantGrossVolume * 0.90).toFixed(2)}`; // 90% Net Payout after 10% platform fee
+  // Update KPI Cards (90% Net Payout after 10% platform commission)
+  document.getElementById("kpiBalance").innerText = `$${(merchantGrossVolume * 0.90).toFixed(2)}`; 
   document.getElementById("kpiSales").innerText = `$${merchantGrossVolume.toFixed(2)}`;
   document.getElementById("kpiCatalogCount").innerText = products.length;
   document.getElementById("kpiOrdersCount").innerText = merchantOrderCount;
 }
 
 /* ========================================== */
-/* MASTER DATA LOAD & AUTO-POLL              */
+/* MASTER DATA LOAD & AUTO-POLL               */
 /* ========================================== */
 async function loadMerchantData() {
   if (!currentBusinessId) return;
