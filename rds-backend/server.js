@@ -1,10 +1,21 @@
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const fs = require("fs");
 const fsPromises = require("fs").promises;
 const cors = require("cors");
 const path = require("path");
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 
@@ -204,13 +215,46 @@ const saveDB = async () => {
   }
 };
 
+/* ================= SOCKET.IO REAL-TIME STREAMING ENGINE ================= */
+io.on("connection", (socket) => {
+  log("SOCKET", `Client Connected: ${socket.id}`);
+
+  // Driver GPS Telemetry Stream
+  socket.on("driver:location", (payload) => {
+    sanitizeDataState();
+    const driverId = payload.driverId || payload.id;
+    if (!driverId) return;
+
+    const latN = num(payload.lat);
+    const lngN = num(payload.lng);
+    const driver = data.drivers.find(d => d.id === driverId);
+
+    if (driver) {
+      driver.location = { lat: latN, lng: lngN, heading: num(payload.heading), speed: num(payload.speed) };
+      driver.lastSeen = Date.now();
+      saveDB();
+
+      io.emit("telemetry:stream", {
+        driverId: driver.id,
+        driverName: driver.name,
+        status: driver.status,
+        location: driver.location
+      });
+    }
+  });
+
+  socket.on("disconnect", () => {
+    log("SOCKET", `Client Disconnected: ${socket.id}`);
+  });
+});
+
 /* ================= SYSTEM HEALTH & METRICS ================= */
 app.get("/", (req, res) => {
-  ok(res, { status: "RDS HYBRID CORE RUNNING", time: Date.now() });
+  ok(res, { status: "RDS HYBRID CORE RUNNING", mode: "SOCKET_ENABLED", time: Date.now() });
 });
 
 app.get("/health", (req, res) => {
-  ok(res, { status: "HEALTHY", uptime: process.uptime(), time: Date.now() });
+  ok(res, { status: "HEALTHY", mode: "SOCKET_ENABLED", uptime: process.uptime(), time: Date.now() });
 });
 
 app.get("/system/stats", (req, res) => {
@@ -218,7 +262,7 @@ app.get("/system/stats", (req, res) => {
     sanitizeDataState();
     const grossVolume = data.orders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
     const totalCommission = data.ledger
-      .filter(l => l.type === "COMMISSION")
+      .filter(l => l.type === "COMMISSION" || l.type === "DELIVERY_PAYOUT")
       .reduce((sum, l) => sum + num(l.amount), 0);
 
     ok(res, {
@@ -269,6 +313,7 @@ const addBusinessHandler = (req, res) => {
     data.wallets[b.id] = { balance: 0, escrow: 0 };
     saveDB();
 
+    io.emit("business:created", b);
     log("BUSINESS", `Onboarded: ${b.name} (${b.id})`);
     ok(res, { business: b, shop: b });
   } catch (err) {
@@ -293,6 +338,7 @@ const deleteBusinessHandler = (req, res) => {
     delete data.wallets[bizId];
     saveDB();
 
+    io.emit("business:deleted", { businessId: bizId });
     log("BUSINESS", `Deleted: ${bizId}`);
     ok(res, { message: `Business ${bizId} deleted` });
   } catch (err) {
@@ -341,6 +387,7 @@ app.post("/product/add", (req, res) => {
     data.products.push(product);
     saveDB();
 
+    io.emit("product:added", product);
     log("PRODUCT", `Added: ${product.name}`);
     ok(res, { product });
   } catch (err) {
@@ -385,6 +432,7 @@ const registerDriverHandler = (req, res) => {
       driver.lastSeen = Date.now();
       if (vehicle !== "N/A") driver.vehicle = vehicle;
       saveDB();
+      io.emit("driver:updated", driver);
       return ok(res, { message: "Existing driver reactivated", driver, data: driver });
     }
 
@@ -404,6 +452,7 @@ const registerDriverHandler = (req, res) => {
     data.drivers.push(driver);
     saveDB();
 
+    io.emit("driver:registered", driver);
     log("DRIVER", `Registered: ${driver.name} (${driver.id})`);
     ok(res, { message: "Driver registered successfully", driver, data: driver });
   } catch (err) {
@@ -433,6 +482,7 @@ const updateDriverStatusHandler = (req, res) => {
     driver.updatedAt = Date.now();
 
     saveDB();
+    io.emit("driver:statusChanged", { driverId, status });
     ok(res, { message: "Driver status updated", driver, data: driver });
   } catch (err) {
     fail(res, "Status update failed", 500);
@@ -467,6 +517,14 @@ const updateLocationHandler = (req, res) => {
     driver.updatedAt = Date.now();
 
     saveDB();
+
+    io.emit("telemetry:stream", {
+      driverId: driver.id,
+      driverName: driver.name,
+      status: driver.status,
+      location: driver.location
+    });
+
     ok(res, { message: "Location updated", driver, location: driver.location });
   } catch (err) {
     fail(res, "GPS telemetry update failed", 500);
@@ -535,6 +593,8 @@ const createOrderHandler = (req, res) => {
     });
 
     saveDB();
+
+    io.emit("order:created", order);
     log("ORDER", `Created: ${order.id} ($${finalAmount})`);
     ok(res, { message: "Order created successfully", data: order, order });
   } catch (err) {
@@ -560,18 +620,19 @@ const completeOrderHandler = (req, res) => {
     order.completedAt = Date.now();
     order.updatedAt = Date.now();
 
+    let payout = 0;
     if (order.driverId) {
       const driver = data.drivers.find(d => d.id === order.driverId);
       if (driver) {
-        const earn = (order.total || order.amount || 0) * 0.10;
-        driver.earnings += earn;
+        payout = (order.total || order.amount || 0) * 0.90;
+        driver.earnings += payout;
         driver.status = "online";
         driver.updatedAt = Date.now();
 
         data.ledger.push({
           id: id("TX"),
           type: "DELIVERY_PAYOUT",
-          amount: earn,
+          amount: payout,
           orderId: order.id,
           driverId: driver.id,
           createdAt: Date.now()
@@ -580,6 +641,8 @@ const completeOrderHandler = (req, res) => {
     }
 
     saveDB();
+
+    io.emit("order:completed", { orderId: order.id, driverId: order.driverId, payout });
     log("FULFILLMENT", `Completed: ${order.id}`);
     ok(res, { message: "Order completed successfully", data: order, order });
   } catch (err) {
@@ -651,6 +714,8 @@ const autoDispatchHandler = (req, res) => {
             driverId: nearestDriver.id,
             driverName: nearestDriver.name
           });
+
+          io.emit("order:dispatched", { orderId: order.id, driverId: nearestDriver.id });
         }
       }
 
@@ -691,6 +756,8 @@ const autoDispatchHandler = (req, res) => {
     selectedDriver.updatedAt = Date.now();
 
     saveDB();
+
+    io.emit("order:dispatched", { orderId: order.id, driverId: selectedDriver.id });
     ok(res, { message: "Order auto-dispatched successfully", order, driver: selectedDriver });
   } catch (err) {
     fail(res, "Dispatch processing failed", 500);
@@ -735,6 +802,6 @@ app.use((err, req, res, next) => {
 });
 
 /* ================= SERVER START ================= */
-app.listen(PORT, () => {
-  log("SYSTEM", `RDS HYBRID CORE SERVER RUNNING ON PORT ${PORT}`);
+server.listen(PORT, () => {
+  log("SYSTEM", `RDS HYBRID CORE SERVER RUNNING ON PORT ${PORT} (SOCKET_ENABLED)`);
 });
