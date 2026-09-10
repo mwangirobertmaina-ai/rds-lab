@@ -1,7 +1,87 @@
 {
-  "businesses": [],
-  "products": [],
-  "orders": [],
+  "businesses": [
+    {
+      "id": "B_1788999525077_92915",
+      "name": "naivas",
+      "category": "naivas kahawa sukari",
+      "balance": 0,
+      "createdAt": 1788999525077
+    },
+    {
+      "id": "B_1788999701763_38035",
+      "name": "naivas",
+      "category": "supermarket",
+      "balance": 0,
+      "createdAt": 1788999701763
+    }
+  ],
+  "products": [
+    {
+      "id": "P_1788999718883_7725",
+      "businessId": "B_1788999701763_38035",
+      "name": "sugure",
+      "price": 190,
+      "stock": 50,
+      "category": "General",
+      "createdAt": 1788999718883
+    }
+  ],
+  "orders": [
+    {
+      "id": "ORD_1788999788558_57864",
+      "businessId": "SYSTEM",
+      "customerName": "Instant Test Customer",
+      "customerPhone": "0700000000",
+      "deliveryAddress": "Nairobi CBD",
+      "pickup": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "dropoff": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "items": [],
+      "amount": 15,
+      "total": 15,
+      "status": "completed",
+      "driverId": "DRV_1788997475972_89954",
+      "createdAt": 1788999788559,
+      "updatedAt": 1788999791367,
+      "completedAt": 1788999791367
+    },
+    {
+      "id": "ORD_1788999837867_90445",
+      "businessId": "B_1788999701763_38035",
+      "customerName": "John Doe",
+      "customerPhone": "0712345678",
+      "deliveryAddress": "Nairobi CBD, House #4",
+      "pickup": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "dropoff": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "items": [
+        {
+          "id": "P_1788999718883_7725",
+          "name": "sugure",
+          "price": 190,
+          "qty": 1,
+          "businessId": "B_1788999701763_38035"
+        }
+      ],
+      "amount": 192.5,
+      "total": 192.5,
+      "status": "completed",
+      "driverId": "DRV_1788997475972_89954",
+      "createdAt": 1788999837867,
+      "updatedAt": 1788999857383,
+      "completedAt": 1788999857383
+    }
+  ],
   "drivers": [
     {
       "id": "DRV_1788997475972_89954",
@@ -9,22 +89,68 @@
       "phone": "254721862397",
       "vehicle": "Motorbike KAB 123X",
       "status": "online",
-      "earnings": 0,
-      "location": null,
-      "lastSeen": 1788997542540,
+      "earnings": 20.75,
+      "location": {
+        "lat": -1.286389,
+        "lng": 36.817223,
+        "heading": 0,
+        "speed": 0
+      },
+      "lastSeen": 1788999788575,
       "createdAt": 1788997475972
     }
   ],
   "deliveries": [],
-  "ledger": [],
+  "ledger": [
+    {
+      "id": "TX_1788999788559_54330",
+      "type": "ORDER",
+      "amount": 15,
+      "orderId": "ORD_1788999788558_57864",
+      "businessId": "SYSTEM",
+      "createdAt": 1788999788559
+    },
+    {
+      "id": "TX_1788999791367_897",
+      "type": "DELIVERY_PAYOUT",
+      "amount": 1.5,
+      "orderId": "ORD_1788999788558_57864",
+      "driverId": "DRV_1788997475972_89954",
+      "createdAt": 1788999791367
+    },
+    {
+      "id": "TX_1788999837867_7606",
+      "type": "ORDER",
+      "amount": 192.5,
+      "orderId": "ORD_1788999837867_90445",
+      "businessId": "B_1788999701763_38035",
+      "createdAt": 1788999837867
+    },
+    {
+      "id": "TX_1788999857383_9937",
+      "type": "DELIVERY_PAYOUT",
+      "amount": 19.25,
+      "orderId": "ORD_1788999837867_90445",
+      "driverId": "DRV_1788997475972_89954",
+      "createdAt": 1788999857383
+    }
+  ],
   "wallets": {
     "SYSTEM_PLATFORM": {
+      "balance": 0,
+      "escrow": 0
+    },
+    "B_1788999525077_92915": {
+      "balance": 0,
+      "escrow": 0
+    },
+    "B_1788999701763_38035": {
       "balance": 0,
       "escrow": 0
     }
   },
   "system": {
     "createdAt": 1788996981527,
-    "lastCheck": 1788997542540
+    "lastCheck": 1788999857383
   }
 }
