@@ -1,69 +1,208 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>ADMIN PANEL</title>
-<style>
-body{font-family:Arial;padding:20px}
-.card{border:1px solid #ccc;padding:10px;margin:5px}
-</style>
-</head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDS ADMIN CONTROL CENTER | PRO STAGE 11</title>
 
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+
+  <style>
+    :root {
+      --neon-green: #00ff88;
+      --dark-bg: #000000;
+      --panel-bg: #111111;
+      --text-dim: #888888;
+      --alert-red: #ff3366;
+      --gold: #ffd700;
+      --cyan: #00e5ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--dark-bg);
+      color: var(--neon-green);
+      font-family: monospace;
+      padding: 15px;
+      margin: 0;
+    }
+    h2, h3 { margin: 0 0 10px 0; text-transform: uppercase; }
+    .box {
+      border: 1px solid var(--neon-green);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--panel-bg);
+    }
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .kpi-card {
+      background: #181818;
+      border: 1px solid #333;
+      padding: 12px;
+      text-align: center;
+      border-radius: 4px;
+    }
+    .kpi-val { font-size: 22px; font-weight: bold; color: var(--gold); margin-top: 4px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+    #adminMap { height: 350px; width: 100%; border: 1px solid var(--neon-green); border-radius: 4px; }
+    button {
+      padding: 8px 12px;
+      background: var(--neon-green);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-family: monospace;
+      border-radius: 4px;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+      background: #050505;
+      padding: 8px;
+      border: 1px solid #222;
+      color: #00ff88;
+    }
+  </style>
+</head>
 <body>
 
-<h2>🛠 ADMIN PANEL</h2>
+<h2>⚙️ RDS SUPER-ADMIN CONTROL CENTER</h2>
 
-<h3>Add Shop</h3>
-<input id="shopName" placeholder="Shop name">
-<button onclick="addShop()">Add</button>
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div style="font-size:11px; color:#888;">GROSS VOLUME</div>
+    <div id="kpiVolume" class="kpi-val">$0.00</div>
+  </div>
+  <div class="kpi-card">
+    <div style="font-size:11px; color:#888;">ACTIVE DRIVERS</div>
+    <div id="kpiDrivers" class="kpi-val">0</div>
+  </div>
+  <div class="kpi-card">
+    <div style="font-size:11px; color:#888;">GLOBAL ORDERS</div>
+    <div id="kpiOrders" class="kpi-val">0</div>
+  </div>
+  <div class="kpi-card">
+    <div style="font-size:11px; color:#888;">MERCHANTS</div>
+    <div id="kpiMerchants" class="kpi-val">0</div>
+  </div>
+</div>
 
-<h3>Shops</h3>
-<div id="shops"></div>
+<div class="grid-2">
+  <div class="box">
+    <h3>🗺️ Live Fleet Tracking Map</h3>
+    <div id="adminMap"></div>
+  </div>
 
+  <div>
+    <div class="box">
+      <h3>📜 Double-Entry System Ledger</h3>
+      <div id="ledgerFeed"><em>Loading journal lines...</em></div>
+    </div>
+    <div class="box">
+      <h3>🚗 Fleet Driver Roster</h3>
+      <div id="driverRoster"><em>Loading roster...</em></div>
+    </div>
+  </div>
+</div>
+
+<div class="box">
+  <h4>📡 System Stream Console Log</h4>
+  <pre id="adminLog">Admin control active.</pre>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
-const API="http://localhost:3000";
+const LOCAL_API = "http://localhost:3000";
+const CLOUD_API = "https://rds-lab.onrender.com";
+let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
-async function load(){
-  const r=await fetch(API+"/businesses");
-  const d=await r.json();
+let map = null;
+let driverMarkers = {};
 
-  let h="";
-  d.businesses.forEach(b=>{
-    h+=`
-      <div class="card">
-        ${b.name}<br>
-        <button onclick="del('${b.id}')">Delete</button>
+function sysLog(msg) {
+  const el = document.getElementById("adminLog");
+  const time = new Date().toLocaleTimeString();
+  el.innerText = `[${time}] ${msg}\n` + el.innerText;
+}
+
+async function apiFetch(ep) {
+  try {
+    const res = await fetch(`${API_BASE}${ep}`);
+    if (res.ok) return await res.json();
+  } catch (e) {}
+  return null;
+}
+
+function initAdminMap() {
+  if (map) return;
+  map = L.map("adminMap").setView([-1.286389, 36.817223], 13);
+  
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 19,
+    subdomains: ["a", "b", "c", "d"]
+  }).addTo(map);
+}
+
+async function refreshDashboard() {
+  const stats = await apiFetch("/system/stats");
+  if (stats && stats.stats) {
+    document.getElementById("kpiVolume").innerText = `$${stats.stats.grossVolume.toFixed(2)}`;
+    document.getElementById("kpiDrivers").innerText = stats.stats.activeDrivers;
+    document.getElementById("kpiOrders").innerText = stats.stats.orders;
+    document.getElementById("kpiMerchants").innerText = stats.stats.businesses;
+  }
+
+  const driversData = await apiFetch("/drivers");
+  const drivers = (driversData && driversData.drivers) || [];
+  
+  const roster = document.getElementById("driverRoster");
+  roster.innerHTML = "";
+  drivers.forEach(d => {
+    roster.innerHTML += `
+      <div style="padding:6px; border-bottom:1px solid #222;">
+        <b>${d.name}</b> (${d.status.toUpperCase()}) - Earnings: $${d.earnings.toFixed(2)}
+      </div>
+    `;
+
+    // Map Markers
+    if (d.location && d.location.lat) {
+      if (driverMarkers[d.id]) {
+        driverMarkers[d.id].setLatLng([d.location.lat, d.location.lng]);
+      } else {
+        driverMarkers[d.id] = L.marker([d.location.lat, d.location.lng]).addTo(map)
+          .bindPopup(`<b>${d.name}</b><br>Status: ${d.status}`);
+      }
+    }
+  });
+
+  const ledgerData = await apiFetch("/ledger");
+  const ledger = (ledgerData && ledgerData.ledger) || [];
+  const feed = document.getElementById("ledgerFeed");
+  feed.innerHTML = "";
+  ledger.slice(-5).reverse().forEach(l => {
+    feed.innerHTML += `
+      <div style="padding:6px; border-bottom:1px solid #222;">
+        <b>${l.type}</b>: $${Number(l.amount || l.total || 0).toFixed(2)} (Ref: ${l.orderId || 'N/A'})
       </div>
     `;
   });
-
-  shops.innerHTML=h;
 }
 
-async function addShop(){
-  const name=document.getElementById("shopName").value;
+setInterval(refreshDashboard, 3000);
 
-  await fetch(API+"/addBusiness",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({name})
-  });
-
-  load();
-}
-
-async function del(id){
-  await fetch(API+"/deleteBusiness",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({id})
-  });
-
-  load();
-}
-
-load();
+window.onload = async () => {
+  initAdminMap();
+  await refreshDashboard();
+  sysLog("Admin Control Center linked to cluster.");
+};
 </script>
-
 </body>
 </html>
