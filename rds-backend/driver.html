@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RDS DRIVER FLEET TERMINAL (PRO)</title>
   
-  <!-- Leaflet Map CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
@@ -113,7 +112,6 @@
 
 <h2>🚚 RDS DRIVER FLEET TERMINAL (PRO)</h2>
 
-<!-- 1. DRIVER PROFILE & REGISTRATION -->
 <div class="box">
   <h3>1. Driver Profile & Registration</h3>
   <div>
@@ -129,7 +127,6 @@
   </div>
 </div>
 
-<!-- 2. STATUS & GPS CONTROL -->
 <div class="box">
   <h3>2. Status & GPS Control</h3>
   <div>
@@ -147,26 +144,22 @@
   </div>
 </div>
 
-<!-- 3. LIVE DRIVER MAP -->
 <div class="box">
   <h3>🗺️ Live Telemetry Location Map</h3>
   <div id="driverMap"></div>
 </div>
 
-<!-- 4. ASSIGNED DELIVERY JOBS -->
 <div class="box">
   <h3>📦 ASSIGNED DELIVERY JOBS</h3>
   <button onclick="simulateOrderDispatch()" class="btn-warn">⚡ Simulate Instant Order Dispatch</button>
   <div id="jobsList" style="margin-top: 10px;"><em>Loading assigned delivery jobs...</em></div>
 </div>
 
-<!-- 5. TELEMETRY LOG -->
 <div class="box">
   <h4>📡 System Telemetry Log</h4>
   <pre id="terminalLog">Terminal initialized.</pre>
 </div>
 
-<!-- Leaflet JS Engine -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
@@ -178,7 +171,6 @@ let currentDriverId = "";
 let gpsInterval = null;
 let map, driverMarker;
 
-// Nairobi Coordinates (-1.286389, 36.817223)
 let currentLat = -1.286389;
 let currentLng = 36.817223;
 
@@ -254,9 +246,7 @@ function initMap() {
   driverMarker = L.marker([currentLat, currentLng]).addTo(map)
     .bindPopup("<b>Rider Location</b>");
 
-  setTimeout(() => {
-    map.invalidateSize();
-  }, 500);
+  setTimeout(() => { map.invalidateSize(); }, 500);
 }
 
 async function loadDrivers() {
