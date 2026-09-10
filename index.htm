@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDS SUPER-ADMIN CONTROL CENTER | PRO STAGE 14</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+
+  <style>
+    :root {
+      --neon-green: #00ff88;
+      --dark-bg: #000000;
+      --panel-bg: #111111;
+      --card-bg: #181818;
+      --text-dim: #888888;
+      --alert-red: #ff3366;
+      --gold: #ffd700;
+      --cyan: #00e5ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      background: var(--dark-bg);
+      color: var(--neon-green);
+      font-family: monospace;
+      padding: 15px;
+      margin: 0;
+    }
+
+    h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
+
+    button {
+      padding: 8px 12px;
+      background: var(--neon-green);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: monospace;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.85; }
+
+    .btn-danger { background: var(--alert-red); color: #fff; }
+    .btn-warn { background: var(--gold); color: #000; }
+    .btn-cyan { background: var(--cyan); color: #000; }
+
+    input, select {
+      padding: 8px;
+      background: #111;
+      color: var(--neon-green);
+      border: 1px solid var(--neon-green);
+      font-family: monospace;
+      border-radius: 4px;
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
+
+    .box {
+      border: 1px solid var(--neon-green);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--panel-bg);
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid #333;
+      padding: 12px;
+      text-align: center;
+      border-radius: 4px;
+    }
+
+    .kpi-val { font-size: 22px; font-weight: bold; color: var(--gold); margin-top: 4px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px; }
+
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    #adminMap {
+      height: 350px;
+      width: 100%;
+      border: 1px solid var(--neon-green);
+      border-radius: 4px;
+      background: #080808;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+      background: #050505;
+      padding: 8px;
+      border: 1px solid #222;
+      color: #00ff88;
+      font-size: 0.8rem;
+    }
+
+    .item-card {
+      padding: 8px;
+      border: 1px solid #333;
+      margin-bottom: 6px;
+      background: var(--card-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 4px;
+    }
+
+    .small { font-size: 0.75rem; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<h2>⚙️ RDS SUPER-ADMIN CONTROL CENTER</h2>
+
+<!-- SUMMARY METRICS -->
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div style="font-size:11px; color:#888;">GROSS VOLUME</div>
+    <div id="kpiVolume" class="kpi-val">$0.00</div>
+  </div>
+  <div class="kpi-card">
+    <div style="font-size:11px; color:#888;">ACTIVE DRIVERS</div>
+    <div id="kpiDrivers" class="kpi-val">0</div>
+  </div>
+  <div class="kpi-card">
+    <div style="font-size:11px; color:#888;">GLOBAL ORDERS</div>
+    <div id="kpiOrders" class="kpi-val">0</div>
+  </div>
+  <div class="kpi-card">
+    <div style="font-size:11px; color:#888;">MERCHANTS</div>
+    <div id="kpiMerchants" class="kpi-val">0</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- LEFT COLUMN: LIVE MAP & MERCHANT MANAGEMENT -->
+  <div>
+    <div class="box">
+      <h3>🗺️ Live Fleet Tracking Map</h3>
+      <div id="adminMap"></div>
+    </div>
+
+    <div class="box">
+      <h3>🏬 Merchant Portfolio Management</h3>
+      <div style="margin-bottom:10px;">
+        <input type="text" id="bizNameInput" placeholder="Shop Name..." />
+        <input type="text" id="bizCatInput" placeholder="Category" value="Retail" />
+        <button onclick="registerMerchant()" class="btn-cyan">➕ Add Merchant</button>
+      </div>
+      <div id="merchantList"><em>Loading merchant portfolio...</em></div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN: LEDGER & DRIVER ROSTER -->
+  <div>
+    <div class="box">
+      <h3>📜 Double-Entry System Ledger</h3>
+      <div id="ledgerFeed"><em>Loading system ledger...</em></div>
+    </div>
+
+    <div class="box">
+      <h3>🚗 Fleet Driver Roster</h3>
+      <div id="driverRoster"><em>Loading roster...</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- SYSTEM CONSOLE LOG -->
+<div class="box">
+  <h4>📡 System Stream Console Log</h4>
+  <pre id="adminLog">Admin control active.</pre>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<script>
+const LOCAL_API = "http://localhost:3000";
+const CLOUD_API = "https://rds-lab.onrender.com";
+let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
+
+let map = null;
+let driverMarkers = {};
+let activeTileLayer = null;
+
+function sysLog(msg) {
+  const el = document.getElementById("adminLog");
+  const time = new Date().toLocaleTimeString();
+  el.innerText = `[${time}] ${typeof msg === 'object' ? JSON.stringify(msg) : msg}\n` + el.innerText;
+}
+
+async function apiFetch(endpoints, options = {}) {
+  const targetEndpoints = Array.isArray(endpoints) ? endpoints : [endpoints];
+  for (const ep of targetEndpoints) {
+    try {
+      const res = await fetch(`${API_BASE}${ep}`, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+  }
+  return null;
+}
+
+/* ================= AUTO-HEALING PUBLIC TILE ENGINE ================= */
+function initAdminMap() {
+  if (map) return;
+
+  map = L.map("adminMap", {
+    tap: true,
+    touchZoom: true,
+    dragging: true
+  }).setView([-1.286389, 36.817223], 13);
+
+  const tileProviders = [
+    {
+      url: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
+      subdomains: ["a", "b", "c", "d"],
+      maxZoom: 19
+    },
+    {
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      subdomains: [],
+      maxZoom: 16
+    },
+    {
+      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      subdomains: ["a", "b", "c"],
+      maxZoom: 19
+    }
+  ];
+
+  let providerIndex = 0;
+
+  function loadLayer() {
+    if (activeTileLayer && map.hasLayer(activeTileLayer)) {
+      map.removeLayer(activeTileLayer);
+    }
+
+    const provider = tileProviders[providerIndex];
+    activeTileLayer = L.tileLayer(provider.url, {
+      subdomains: provider.subdomains,
+      maxZoom: provider.maxZoom,
+      crossOrigin: true
+    });
+
+    activeTileLayer.on("tileerror", () => {
+      providerIndex = (providerIndex + 1) % tileProviders.length;
+      loadLayer();
+    });
+
+    activeTileLayer.addTo(map);
+  }
+
+  loadLayer();
+
+  setTimeout(() => { map.invalidateSize(); }, 500);
+}
+
+/* ================= MERCHANT MANAGEMENT ================= */
+async function registerMerchant() {
+  const nameInput = document.getElementById("bizNameInput");
+  const catInput = document.getElementById("bizCatInput");
+  const name = nameInput.value.trim();
+  const category = catInput.value.trim() || "Retail";
+
+  if (!name) return alert("Enter merchant name.");
+
+  const res = await apiFetch(["/addBusiness", "/business/add"], {
+    method: "POST",
+    body: JSON.stringify({ name, category })
+  });
+
+  if (res && res.success) {
+    nameInput.value = "";
+    sysLog(`Merchant created: ${name}`);
+    refreshDashboard();
+  }
+}
+
+async function deleteMerchant(id) {
+  if (!confirm("Are you sure you want to delete this merchant profile?")) return;
+  const res = await apiFetch("/deleteBusiness", {
+    method: "POST",
+    body: JSON.stringify({ id })
+  });
+  if (res && res.success) {
+    sysLog(`Merchant ${id} removed.`);
+    refreshDashboard();
+  }
+}
+
+/* ================= REAL-TIME DASHBOARD DATA ================= */
+async function refreshDashboard() {
+  const [statsData, ordersData, driversData, ledgerData, bizData] = await Promise.all([
+    apiFetch("/system/stats"),
+    apiFetch(["/orders"]),
+    apiFetch(["/drivers", "/drivers/live"]),
+    apiFetch(["/ledger", "/transactions"]),
+    apiFetch(["/businesses", "/shops"])
+  ]);
+
+  const allOrders = (ordersData && (ordersData.orders || ordersData.data)) || [];
+  const drivers = (driversData && (driversData.drivers || driversData.data)) || [];
+  const ledger = (ledgerData && (ledgerData.ledger || ledgerData.transactions)) || [];
+  const businesses = (bizData && (bizData.businesses || bizData.shops)) || [];
+
+  // 1. KPI Summaries
+  let grossVolume = 0;
+  allOrders.forEach(o => { grossVolume += Number(o.total || o.amount || 0); });
+
+  if (statsData && statsData.stats) {
+    document.getElementById("kpiVolume").innerText = `$${(statsData.stats.grossVolume || grossVolume).toFixed(2)}`;
+    document.getElementById("kpiDrivers").innerText = statsData.stats.activeDrivers || drivers.length;
+    document.getElementById("kpiOrders").innerText = statsData.stats.orders || allOrders.length;
+    document.getElementById("kpiMerchants").innerText = statsData.stats.businesses || businesses.length;
+  } else {
+    document.getElementById("kpiVolume").innerText = `$${grossVolume.toFixed(2)}`;
+    document.getElementById("kpiDrivers").innerText = drivers.length;
+    document.getElementById("kpiOrders").innerText = allOrders.length;
+    document.getElementById("kpiMerchants").innerText = businesses.length;
+  }
+
+  // 2. Merchant Portfolio
+  const merchantContainer = document.getElementById("merchantList");
+  if (businesses.length === 0) {
+    merchantContainer.innerHTML = "<p>No merchant stores registered.</p>";
+  } else {
+    let mHtml = "";
+    businesses.forEach(b => {
+      mHtml += `
+        <div class="item-card">
+          <div>
+            <b>${b.name}</b> (${b.category || 'Retail'})<br>
+            <span class="small">ID: ${b.id}</span>
+          </div>
+          <button onclick="deleteMerchant('${b.id}')" class="btn-danger">DELETE</button>
+        </div>
+      `;
+    });
+    merchantContainer.innerHTML = mHtml;
+  }
+
+  // 3. Driver Fleet Roster & Map Markers
+  const roster = document.getElementById("driverRoster");
+  if (drivers.length === 0) {
+    roster.innerHTML = "<p>No active drivers registered.</p>";
+  } else {
+    let dHtml = "";
+    drivers.forEach(d => {
+      dHtml += `
+        <div class="item-card">
+          <div>
+            <b>${d.name}</b> - <span style="color:var(--cyan)">${(d.status || 'OFFLINE').toUpperCase()}</span><br>
+            <span class="small">Earnings: $${Number(d.earnings || 0).toFixed(2)}</span>
+          </div>
+        </div>
+      `;
+
+      if (d.location && typeof d.location.lat === 'number' && typeof d.location.lng === 'number') {
+        if (driverMarkers[d.id]) {
+          driverMarkers[d.id].setLatLng([d.location.lat, d.location.lng]);
+        } else {
+          driverMarkers[d.id] = L.marker([d.location.lat, d.location.lng]).addTo(map)
+            .bindPopup(`<b>${d.name}</b><br>Status: ${d.status}`);
+        }
+      }
+    });
+    roster.innerHTML = dHtml;
+  }
+
+  // 4. Double-Entry System Ledger
+  const feed = document.getElementById("ledgerFeed");
+  if (ledger.length === 0) {
+    feed.innerHTML = "<p>No journal entries generated.</p>";
+  } else {
+    let lHtml = "";
+    ledger.slice(-6).reverse().forEach(l => {
+      const typeLabel = l.type || l.transactionType || "ORDER";
+      const refId = l.orderId || l.id || 'N/A';
+      const amountVal = Number(l.amount || l.total || 0).toFixed(2);
+
+      lHtml += `
+        <div class="item-card">
+          <div>
+            <b style="color:var(--neon-green)">${typeLabel.toUpperCase()}</b>: 
+            <span style="color:var(--gold)">$${amountVal}</span><br>
+            <span class="small">Ref: ${refId}</span>
+          </div>
+        </div>
+      `;
+    });
+    feed.innerHTML = lHtml;
+  }
+}
+
+setInterval(refreshDashboard, 3000);
+
+window.onload = async () => {
+  initAdminMap();
+  await refreshDashboard();
+  sysLog("Admin Control Center linked to cluster.");
+};
+</script>
+</body>
+</html>
