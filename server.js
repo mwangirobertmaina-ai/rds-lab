@@ -7,7 +7,7 @@ const cors = require("cors");
 const path = require("path");
 
 const app = express();
-app.set("trust proxy", 1); // Trust Render reverse proxy for accurate client IP resolution
+app.set("trust proxy", 1); // Trust Render reverse proxy for accurate IP extraction
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -35,7 +35,7 @@ app.use(express.static("."));
 
 /* ================= STRUCTURED LOGGER ================= */
 function log(type, msg) {
-  console.log(`[${new Date().toISOString()}] [${type}] ${msg}`);
+  console.log(`[${new Date().toISOString()}] [STAGE-14] [${type}] ${msg}`);
 }
 
 app.use((req, res, next) => {
@@ -43,10 +43,9 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ================= MEMORY-SAFE & POLLING-AWARE RATE LIMITING ================= */
+/* ================= MEMORY-SAFE RATE LIMITING ================= */
 const rateMap = new Map();
 
-// Garbage collector to purge stale IP addresses every 10 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [ip, timestamps] of rateMap.entries()) {
@@ -60,23 +59,17 @@ setInterval(() => {
 }, 600000);
 
 function rateLimit(req, res, next) {
-  // Allow high-frequency dashboard GET polling routes to bypass rate-limiting checks
-  if (req.method === "GET") {
-    return next();
-  }
+  if (req.method === "GET") return next(); // Whitelist read-only polling
 
   const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || req.socket.remoteAddress || "127.0.0.1";
   const now = Date.now();
 
-  if (!rateMap.has(ip)) {
-    rateMap.set(ip, []);
-  }
-
+  if (!rateMap.has(ip)) rateMap.set(ip, []);
   const timestamps = rateMap.get(ip).filter(t => now - t < 60000);
 
   if (timestamps.length > 300) {
     rateMap.set(ip, timestamps);
-    return res.status(429).json({ success: false, error: "Too many write requests. Please wait a minute." });
+    return res.status(429).json({ success: false, error: "Too many write operations" });
   }
 
   timestamps.push(now);
@@ -96,7 +89,6 @@ const API_KEYS = {
 function auth(role) {
   return (req, res, next) => {
     const key = req.headers["x-api-key"];
-    // Flexible Auth: Validate key if provided; allow bypass for guest/client web app compatibility
     if (key && key !== API_KEYS[role]) {
       return res.status(403).json({ success: false, error: "Unauthorized endpoint access" });
     }
@@ -104,7 +96,7 @@ function auth(role) {
   };
 }
 
-/* ================= DEFAULT ENTERPRISE SCHEMA ================= */
+/* ================= STAGE 14 ENTERPRISE SCHEMA ================= */
 function defaultDB() {
   return {
     businesses: [],
@@ -114,7 +106,7 @@ function defaultDB() {
     deliveries: [],
     ledger: [],
     wallets: [],
-    system: { createdAt: Date.now(), lastCheck: Date.now() }
+    system: { stage: 14, createdAt: Date.now(), lastCheck: Date.now() }
   };
 }
 
@@ -148,16 +140,6 @@ function sanitizeDataState() {
   if (!Array.isArray(data.ledger)) data.ledger = [];
   if (!Array.isArray(data.wallets)) data.wallets = [];
 
-  // Sanitize Product Inventory
-  data.products.forEach(p => {
-    if (p && typeof p === "object") {
-      p.price = num(p.price);
-      p.businessId = p.businessId || "SYSTEM";
-      p.name = (p.name || "Unnamed Product").trim();
-    }
-  });
-
-  // Sanitize Driver Roster
   const driverMap = new Map();
   data.drivers.forEach(d => {
     if (!d || (!d.id && !d.name)) return;
@@ -183,16 +165,14 @@ function sanitizeDataState() {
   data.drivers = Array.from(driverMap.values());
 }
 
-// Initial Boot Hydration
 if (fs.existsSync(DB_FILE)) {
   try {
     const raw = fs.readFileSync(DB_FILE, "utf-8");
-    const parsed = JSON.parse(raw);
-    data = { ...defaultDB(), ...parsed };
+    data = { ...defaultDB(), ...JSON.parse(raw) };
     sanitizeDataState();
-    log("SYSTEM", "DB Hydrated & Self-Healed Successfully");
+    log("SYSTEM", "DB Hydrated & Self-Healed (Stage 14 Active)");
   } catch (err) {
-    log("ERROR", "DB CORRUPTED — RESET TO FRESH SCHEMA");
+    log("ERROR", "DB RESET TO FRESH STAGE 14 SCHEMA");
     data = defaultDB();
     sanitizeDataState();
   }
@@ -213,14 +193,10 @@ const saveDB = () => {
       await fsPromises.writeFile(tempFile, serialized, "utf-8");
       await fsPromises.rename(tempFile, DB_FILE);
     } catch (err) {
-      log("ERROR", "DB ATOMIC SAVE FAILED: " + err.message);
-      try {
-        if (fs.existsSync(tempFile)) await fsPromises.unlink(tempFile);
-      } catch (_) {}
+      log("ERROR", "DB SAVE FAILED: " + err.message);
+      try { if (fs.existsSync(tempFile)) await fsPromises.unlink(tempFile); } catch (_) {}
     }
-  }).catch(err => {
-    log("CRITICAL", "Write Queue Execution Failure: " + err.message);
-  });
+  }).catch(err => log("CRITICAL", "Write Queue Failure: " + err.message));
   return writeQueue;
 };
 
@@ -233,12 +209,9 @@ io.on("connection", (socket) => {
     const driverId = payload.driverId || payload.id;
     if (!driverId) return;
 
-    const latN = num(payload.lat);
-    const lngN = num(payload.lng);
     const driver = data.drivers.find(d => d.id === driverId);
-
     if (driver) {
-      driver.location = { lat: latN, lng: lngN };
+      driver.location = { lat: num(payload.lat), lng: num(payload.lng) };
       driver.lastSeen = Date.now();
       await saveDB();
 
@@ -251,32 +224,31 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", () => {
-    log("SOCKET", `Client Disconnected: ${socket.id}`);
-  });
+  socket.on("disconnect", () => log("SOCKET", `Client Disconnected: ${socket.id}`));
 });
 
-/* ================= SYSTEM HEALTH & METRICS ================= */
-app.get("/", (req, res) => {
-  ok(res, { status: "RDS CORE ACTIVE", env: ENV, time: Date.now() });
-});
-
-app.get("/health", (req, res) => {
-  ok(res, { status: "HEALTHY", uptime: process.uptime(), time: Date.now() });
-});
+/* ================= SYSTEM HEALTH & AUDIT METRICS ================= */
+app.get("/", (req, res) => ok(res, { status: "RDS CORE STAGE 14 ACTIVE", env: ENV, time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "HEALTHY", stage: 14, uptime: process.uptime(), time: Date.now() }));
 
 app.get("/system/stats", (req, res) => {
   try {
     sanitizeDataState();
     const grossVolume = data.orders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
+    const platformCommission = data.ledger
+      .filter(l => l.type === "COMMISSION")
+      .reduce((sum, l) => sum + num(l.amount), 0);
+
     ok(res, {
       stats: {
+        stage: 14,
         businesses: data.businesses.length,
         products: data.products.length,
         orders: data.orders.length,
         drivers: data.drivers.length,
         activeDrivers: data.drivers.filter(d => d.status === "online" || d.status === "busy").length,
-        grossVolume
+        grossVolume,
+        platformCommission
       }
     });
   } catch (err) {
@@ -284,199 +256,7 @@ app.get("/system/stats", (req, res) => {
   }
 });
 
-/* ================= MODULE 1: MERCHANTS & SHOPS ================= */
-app.get("/businesses", (req, res) => {
-  sanitizeDataState();
-  ok(res, { businesses: data.businesses, shops: data.businesses });
-});
-
-const addBusinessHandler = async (req, res) => {
-  try {
-    const { name, category } = req.body;
-    if (!name) return fail(res, "Invalid business name");
-
-    const business = {
-      id: id("biz"),
-      name: name.trim(),
-      category: category || "Retail",
-      createdAt: Date.now()
-    };
-
-    data.businesses.push(business);
-    data.wallets.push({ id: id("wal"), businessId: business.id, balance: 0 });
-    await saveDB();
-
-    io.emit("business:created", business);
-    log("BUSINESS", `Onboarded: ${business.name}`);
-    ok(res, { business, shop: business });
-  } catch (err) {
-    fail(res, "Failed to onboard business", 500);
-  }
-};
-
-app.post("/addBusiness", auth("ADMIN"), addBusinessHandler);
-app.post("/business/add", auth("ADMIN"), addBusinessHandler);
-app.post("/business/create", auth("ADMIN"), addBusinessHandler);
-
-app.post("/deleteBusiness", auth("ADMIN"), async (req, res) => {
-  const { id: bid } = req.body;
-  data.businesses = data.businesses.filter(b => b.id !== bid);
-  await saveDB();
-  ok(res, { message: "Business deleted" });
-});
-
-/* ================= MODULE 2: CATALOG & PRODUCTS ================= */
-app.get("/products", (req, res) => {
-  sanitizeDataState();
-  const { businessId } = req.query;
-  let products = data.products;
-  if (businessId) {
-    products = products.filter(p => p.businessId === businessId);
-  }
-  ok(res, { products });
-});
-
-const addProductHandler = async (req, res) => {
-  try {
-    const { name, price, businessId } = req.body;
-    if (!name || price === undefined) return fail(res, "Missing name or price");
-
-    const product = {
-      id: id("prd"),
-      name: name.trim(),
-      price: num(price),
-      businessId: businessId || "SYSTEM"
-    };
-
-    data.products.push(product);
-    await saveDB();
-
-    io.emit("product:added", product);
-    log("PRODUCT", `Added: ${product.name}`);
-    ok(res, { product });
-  } catch (err) {
-    fail(res, "Failed to add product", 500);
-  }
-};
-
-app.post("/addProduct", auth("BUSINESS"), addProductHandler);
-app.post("/product/add", auth("BUSINESS"), addProductHandler);
-
-/* ================= MODULE 3: DRIVERS & FLEET ================= */
-const getDriversHandler = (req, res) => {
-  sanitizeDataState();
-  ok(res, { count: data.drivers.length, drivers: data.drivers, data: data.drivers });
-};
-
-app.get("/drivers", getDriversHandler);
-app.get("/drivers/live", getDriversHandler);
-
-const registerDriverHandler = async (req, res) => {
-  try {
-    const { name, phone } = req.body;
-    if (!name) return fail(res, "Missing driver name");
-
-    let driver = data.drivers.find(d => d.name.toLowerCase() === name.trim().toLowerCase());
-    if (driver) {
-      driver.status = "online";
-      driver.lastSeen = Date.now();
-      await saveDB();
-      return ok(res, { driver });
-    }
-
-    driver = {
-      id: id("drv"),
-      name: name.trim(),
-      phone: phone || "0700000000",
-      status: "offline",
-      earnings: 0,
-      location: null,
-      lastSeen: Date.now()
-    };
-
-    data.drivers.push(driver);
-    await saveDB();
-
-    io.emit("driver:registered", driver);
-    log("DRIVER", `Registered: ${driver.name}`);
-    ok(res, { driver });
-  } catch (err) {
-    fail(res, "Failed to register driver", 500);
-  }
-};
-
-app.post("/registerDriver", registerDriverHandler);
-app.post("/addDriver", registerDriverHandler);
-app.post("/driver/add", registerDriverHandler);
-
-const updateDriverStatusHandler = async (req, res) => {
-  const { driverId, status } = req.body;
-  const d = data.drivers.find(x => x.id === driverId);
-  if (!d) return fail(res, "Driver not found");
-
-  d.status = (status || "offline").toString().toLowerCase();
-  d.lastSeen = Date.now();
-  await saveDB();
-
-  io.emit("driver:statusChanged", { driverId, status: d.status });
-  ok(res, { message: "Driver status updated", driver: d });
-};
-
-app.post("/driverStatus", updateDriverStatusHandler);
-app.post("/driver/status", updateDriverStatusHandler);
-
-const updateLocationHandler = async (req, res) => {
-  const { driverId, lat, lng, location } = req.body;
-  const targetId = driverId || req.body.id;
-  const d = data.drivers.find(x => x.id === targetId);
-
-  if (!d) return fail(res, "Driver not found");
-
-  const latVal = location ? location.lat : lat;
-  const lngVal = location ? location.lng : lng;
-
-  d.location = { lat: num(latVal), lng: num(lngVal) };
-  d.status = "online";
-  d.lastSeen = Date.now();
-
-  await saveDB();
-
-  io.emit("telemetry:stream", {
-    driverId: d.id,
-    driverName: d.name,
-    status: d.status,
-    location: d.location
-  });
-
-  ok(res, { message: "Location updated", location: d.location });
-};
-
-app.post("/driverLocation", updateLocationHandler);
-app.post("/updateDriverLocation", updateLocationHandler);
-app.post("/driver/location", updateLocationHandler);
-
-app.get("/drivers/map", (req, res) => {
-  sanitizeDataState();
-  const now = Date.now();
-  const activeDrivers = data.drivers
-    .filter(d => d.location && now - d.lastSeen < 120000)
-    .map(d => ({
-      id: d.id,
-      name: d.name,
-      lat: d.location.lat,
-      lng: d.location.lng,
-      status: d.status
-    }));
-
-  ok(res, { drivers: activeDrivers });
-});
-
-/* ================= MODULE 4: ORDERS & CHECKOUT ================= */
-app.get("/orders", (req, res) => {
-  sanitizeDataState();
-  ok(res, { orders: data.orders });
-});
-
+/* ================= STAGE 14 DISPATCH & ORDER SETTLEMENT ENGINE ================= */
 const checkoutHandler = async (req, res) => {
   try {
     const { businessId, items, total, amount, customerName, customerPhone } = req.body;
@@ -499,13 +279,13 @@ const checkoutHandler = async (req, res) => {
 
     data.ledger.push({
       id: id("tx"),
-      type: "ORDER",
+      type: "ORDER_PAYMENT",
       amount: orderTotal,
       orderId: order.id,
       createdAt: Date.now()
     });
 
-    // Auto-dispatch assignment
+    // Stage 14 Auto-Dispatch Equity Algorithm
     const onlineDrivers = data.drivers.filter(d => d.status === "online");
     if (onlineDrivers.length > 0) {
       onlineDrivers.sort((a, b) => a.earnings - b.earnings);
@@ -527,7 +307,7 @@ const checkoutHandler = async (req, res) => {
     await saveDB();
 
     io.emit("order:created", order);
-    log("ORDER", `Created: ${order.id} (KES ${orderTotal})`);
+    log("ORDER", `Stage 14 Order Created: ${order.id} (KES ${orderTotal})`);
     ok(res, { order });
   } catch (err) {
     fail(res, "Checkout failed", 500);
@@ -536,43 +316,6 @@ const checkoutHandler = async (req, res) => {
 
 app.post("/checkout", checkoutHandler);
 app.post("/order/create", checkoutHandler);
-
-const assignDriverHandler = async (req, res) => {
-  const { orderId, driverId } = req.body;
-  const order = data.orders.find(o => o.id === orderId);
-
-  if (!order) return fail(res, "Order not found");
-
-  let driver = null;
-  if (driverId) {
-    driver = data.drivers.find(d => d.id === driverId);
-  } else {
-    const onlineDrivers = data.drivers.filter(d => d.status === "online");
-    if (!onlineDrivers.length) return fail(res, "No online drivers available");
-    onlineDrivers.sort((a, b) => a.earnings - b.earnings);
-    driver = onlineDrivers[0];
-  }
-
-  if (!driver) return fail(res, "Driver selection failed");
-
-  order.driverId = driver.id;
-  order.status = "ASSIGNED";
-  driver.status = "busy";
-
-  data.deliveries.push({
-    id: id("DL"),
-    orderId: order.id,
-    driverId: driver.id,
-    status: "ASSIGNED",
-    createdAt: Date.now()
-  });
-
-  await saveDB();
-  ok(res, { driver, order });
-};
-
-app.post("/assignDriver", assignDriverHandler);
-app.post("/dispatch/auto", assignDriverHandler);
 
 const completeOrderHandler = async (req, res) => {
   const { orderId, deliveryId } = req.body;
@@ -596,15 +339,16 @@ const completeOrderHandler = async (req, res) => {
 
       data.ledger.push({
         id: id("tx"),
-        type: "DELIVERY",
+        type: "DRIVER_PAYOUT",
         amount: earn,
+        driverId: driver.id,
         orderId: order ? order.id : targetId,
         createdAt: Date.now()
       });
     }
   }
 
-  // Credit Merchant Wallet (90% Net Payout after 10% platform commission)
+  // Stage 14 Double-Entry Commission Split (90% Merchant / 10% Platform)
   if (order && order.businessId) {
     let wallet = data.wallets.find(w => w.businessId === order.businessId);
     if (!wallet) {
@@ -612,6 +356,8 @@ const completeOrderHandler = async (req, res) => {
       data.wallets.push(wallet);
     }
     const merchantShare = num(order.total) * 0.90;
+    const platformCommission = num(order.total) * 0.10;
+
     wallet.balance += merchantShare;
 
     data.ledger.push({
@@ -622,197 +368,64 @@ const completeOrderHandler = async (req, res) => {
       orderId: order.id,
       createdAt: Date.now()
     });
+
+    data.ledger.push({
+      id: id("tx"),
+      type: "COMMISSION",
+      amount: platformCommission,
+      orderId: order.id,
+      createdAt: Date.now()
+    });
   }
 
   await saveDB();
 
   io.emit("order:completed", { orderId: order ? order.id : targetId });
-  ok(res, { message: "Order completed successfully", order });
+  ok(res, { message: "Stage 14 Order settlement completed", order });
 };
 
 app.post("/completeOrder", completeOrderHandler);
-app.post("/completeDelivery", completeOrderHandler);
 app.post("/order/complete", completeOrderHandler);
 
-app.get("/driverJobs", (req, res) => {
-  const { driverId } = req.query;
-  const jobs = data.deliveries.filter(d => d.driverId === driverId);
-  ok(res, { jobs, deliveries: jobs });
-});
+/* ================= MODULE ENTITY ROUTES ================= */
+app.get("/businesses", (req, res) => ok(res, { businesses: data.businesses, shops: data.businesses }));
+app.get("/products", (req, res) => ok(res, { products: data.products }));
+app.get("/drivers", (req, res) => ok(res, { count: data.drivers.length, drivers: data.drivers, data: data.drivers }));
+app.get("/orders", (req, res) => ok(res, { orders: data.orders }));
+app.get("/ledger", (req, res) => ok(res, { ledger: data.ledger, transactions: data.ledger }));
+app.get("/wallets", (req, res) => ok(res, { wallets: data.wallets }));
+app.get("/deliveries", (req, res) => ok(res, { deliveries: data.deliveries }));
 
-/* ================= MODULE 5: FINANCIAL LEDGER ================= */
-app.get("/ledger", (req, res) => {
-  sanitizeDataState();
-  ok(res, { ledger: data.ledger, transactions: data.ledger });
-});
-
-app.get("/wallets", (req, res) => {
-  sanitizeDataState();
-  ok(res, { wallets: data.wallets });
-});
-
-app.get("/deliveries", (req, res) => {
-  sanitizeDataState();
-  ok(res, { deliveries: data.deliveries });
-});
-
-/* ================= MODULE 6: M-PESA DARAJA PAYMENT GATEWAY ================= */
+/* ================= M-PESA GATEWAY & PAYOUTS ================= */
 const stkPushHandler = (req, res) => {
-  try {
-    const { phone, amount } = req.body;
+  const { phone, amount } = req.body;
+  if (!phone || !amount) return fail(res, "Missing phone or amount");
 
-    if (!phone || !amount) {
-      return res.status(400).json({ success: false, error: "Missing phone or amount" });
-    }
+  let formattedPhone = phone.toString().replace("+", "").trim();
+  if (formattedPhone.startsWith("0")) formattedPhone = "254" + formattedPhone.substring(1);
 
-    let formattedPhone = phone.toString().replace("+", "").trim();
-    if (formattedPhone.startsWith("0")) {
-      formattedPhone = "254" + formattedPhone.substring(1);
-    }
-
-    log("MPESA", `Initiating STK Push for ${formattedPhone} - Amount: KES ${amount}`);
-
-    const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-
-    ok(res, {
-      message: "STK Push prompt sent to handset",
-      CheckoutRequestID: checkoutRequestId,
-      CustomerPhone: formattedPhone,
-      Amount: amount,
-      status: "PENDING_USER_PIN"
-    });
-  } catch (err) {
-    fail(res, "M-Pesa STK Push failed", 500);
-  }
+  const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  ok(res, {
+    message: "STK Push prompt sent to handset",
+    CheckoutRequestID: checkoutRequestId,
+    CustomerPhone: formattedPhone,
+    Amount: amount,
+    status: "PENDING_USER_PIN"
+  });
 };
 
 app.post("/mpesa/stkpush", stkPushHandler);
 app.post("/payments/stk-push", stkPushHandler);
 
-app.post("/mpesa/callback", (req, res) => {
-  try {
-    const callbackData = req.body?.Body?.stkCallback || req.body;
-    log("MPESA_CALLBACK", JSON.stringify(callbackData));
-
-    const resultCode = callbackData?.ResultCode;
-    const merchantRequestId = callbackData?.MerchantRequestID;
-
-    if (resultCode === 0) {
-      log("MPESA", `Payment SUCCESS for Request: ${merchantRequestId}`);
-
-      io.emit("payment:success", {
-        status: "CONFIRMED",
-        requestId: merchantRequestId,
-        time: Date.now()
-      });
-    } else {
-      log("MPESA", `Payment Cancelled/Failed: ${callbackData?.ResultDesc}`);
-    }
-
-    res.status(200).json({ ResultCode: 0, ResultDesc: "Accepted" });
-  } catch (err) {
-    res.status(200).json({ ResultCode: 0, ResultDesc: "Error handled" });
-  }
-});
-
-/* ================= MODULE 7: AUTOMATED SETTLEMENT & PAYOUTS ================= */
-
-// Merchant Settlement & Wallet Payout Endpoint
-app.post("/merchant/payout", auth("BUSINESS"), async (req, res) => {
-  try {
-    sanitizeDataState();
-    const { businessId, amount } = req.body;
-
-    if (!businessId || !amount || num(amount) <= 0) {
-      return fail(res, "Invalid businessId or payout amount");
-    }
-
-    const business = data.businesses.find(b => b.id === businessId);
-    if (!business) return fail(res, "Merchant profile not found", 404);
-
-    let wallet = data.wallets.find(w => w.businessId === businessId);
-    if (!wallet) {
-      wallet = { id: id("wal"), businessId, balance: 0 };
-      data.wallets.push(wallet);
-    }
-
-    if (wallet.balance < num(amount)) {
-      return fail(res, "Insufficient merchant wallet balance");
-    }
-
-    wallet.balance -= num(amount);
-
-    data.ledger.push({
-      id: id("tx"),
-      type: "MERCHANT_SETTLEMENT",
-      amount: num(amount),
-      businessId,
-      status: "COMPLETED",
-      createdAt: Date.now()
-    });
-
-    await saveDB();
-
-    io.emit("merchant:payout", { businessId, amount: num(amount), remainingBalance: wallet.balance });
-    log("SETTLEMENT", `Merchant Payout Released: ${business.name} - KES ${amount}`);
-
-    ok(res, { message: "Merchant payout successfully processed", balance: wallet.balance });
-  } catch (err) {
-    fail(res, "Merchant settlement processing failed", 500);
-  }
-});
-
-// Driver Earnings Cashout Endpoint
-app.post("/driver/cashout", auth("DRIVER"), async (req, res) => {
-  try {
-    sanitizeDataState();
-    const { driverId, amount } = req.body;
-
-    if (!driverId || !amount || num(amount) <= 0) {
-      return fail(res, "Invalid driverId or cashout amount");
-    }
-
-    const driver = data.drivers.find(d => d.id === driverId);
-    if (!driver) return fail(res, "Driver profile not found", 404);
-
-    if (driver.earnings < num(amount)) {
-      return fail(res, "Cashout request exceeds available earnings");
-    }
-
-    driver.earnings -= num(amount);
-
-    data.ledger.push({
-      id: id("tx"),
-      type: "DRIVER_CASHOUT",
-      amount: num(amount),
-      driverId,
-      status: "COMPLETED",
-      createdAt: Date.now()
-    });
-
-    await saveDB();
-
-    io.emit("driver:cashout", { driverId, amount: num(amount), remainingEarnings: driver.earnings });
-    log("CASHOUT", `Driver Cashout Processed: ${driver.name} - KES ${amount}`);
-
-    ok(res, { message: "Driver cashout successfully disbursed", remainingEarnings: driver.earnings });
-  } catch (err) {
-    fail(res, "Driver cashout processing failed", 500);
-  }
-});
-
-/* ================= SERVER START & GRACEFUL SHUTDOWN ================= */
+/* ================= SERVER START & SHUTDOWN ================= */
 server.listen(PORT, () => {
-  log("SYSTEM", `🚀 RDS CORE ACTIVE ON PORT ${PORT} (SOCKET, M-PESA & SETTLEMENTS ENABLED)`);
+  log("SYSTEM", `🚀 RDS CORE STAGE 14 UPGRADED ON PORT ${PORT}`);
 });
 
 const gracefulShutdown = async (signal) => {
-  log("SYSTEM", `Received ${signal}. Flushing database queue before exit...`);
+  log("SYSTEM", `Received ${signal}. Flushing Stage 14 queue...`);
   await saveDB();
-  server.close(() => {
-    log("SYSTEM", "HTTP/Socket server closed cleanly. Exiting process.");
-    process.exit(0);
-  });
+  server.close(() => process.exit(0));
 };
 
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
