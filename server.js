@@ -7,7 +7,7 @@ const cors = require("cors");
 const path = require("path");
 
 const app = express();
-app.set("trust proxy", 1); // Trust Render reverse proxy for accurate IP extraction
+app.set("trust proxy", 1); // Trust Render reverse proxy for accurate client IP resolution
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -43,8 +43,21 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ================= SAFE RATE LIMITING ================= */
+/* ================= MEMORY-SAFE RATE LIMITING ================= */
 const rateMap = new Map();
+
+// Garbage collector to purge stale IP addresses every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, timestamps] of rateMap.entries()) {
+    const valid = timestamps.filter(t => now - t < 60000);
+    if (valid.length === 0) {
+      rateMap.delete(ip);
+    } else {
+      rateMap.set(ip, valid);
+    }
+  }
+}, 600000);
 
 function rateLimit(req, res, next) {
   const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || req.socket.remoteAddress || "127.0.0.1";
@@ -55,10 +68,10 @@ function rateLimit(req, res, next) {
   }
 
   const timestamps = rateMap.get(ip).filter(t => now - t < 60000);
-  
+
   if (timestamps.length > 150) {
     rateMap.set(ip, timestamps);
-    return res.status(429).json({ success: false, error: "Too many requests" });
+    return res.status(429).json({ success: false, error: "Too many requests. Please wait a minute." });
   }
 
   timestamps.push(now);
@@ -78,7 +91,7 @@ const API_KEYS = {
 function auth(role) {
   return (req, res, next) => {
     const key = req.headers["x-api-key"];
-    // Flexible Auth: Enforce validation only if header is explicitly provided
+    // Flexible Auth: Validate key if provided; allow bypass for guest/client web app compatibility
     if (key && key !== API_KEYS[role]) {
       return res.status(403).json({ success: false, error: "Unauthorized endpoint access" });
     }
@@ -183,41 +196,34 @@ if (fs.existsSync(DB_FILE)) {
   sanitizeDataState();
 }
 
-/* ================= ATOMIC PERSISTENCE MUTEX ================= */
-let isWriting = false;
-let pendingWrite = false;
+/* ================= HARDENED ATOMIC PERSISTENCE QUEUE ================= */
+let writeQueue = Promise.resolve();
 
-const saveDB = async () => {
-  if (isWriting) {
-    pendingWrite = true;
-    return;
-  }
-  isWriting = true;
-  sanitizeDataState();
-  const tempFile = `${DB_FILE}.${Date.now()}_${Math.floor(Math.random() * 1000)}.tmp`;
-  try {
-    const serialized = JSON.stringify(data, null, 2);
-    await fsPromises.writeFile(tempFile, serialized, "utf-8");
-    await fsPromises.rename(tempFile, DB_FILE);
-  } catch (err) {
-    log("ERROR", "DB ATOMIC SAVE FAILED: " + err.message);
+const saveDB = () => {
+  writeQueue = writeQueue.then(async () => {
+    sanitizeDataState();
+    const tempFile = `${DB_FILE}.${Date.now()}_${Math.floor(Math.random() * 1000)}.tmp`;
     try {
-      if (fs.existsSync(tempFile)) await fsPromises.unlink(tempFile);
-    } catch (_) {}
-  } finally {
-    isWriting = false;
-    if (pendingWrite) {
-      pendingWrite = false;
-      await saveDB();
+      const serialized = JSON.stringify(data, null, 2);
+      await fsPromises.writeFile(tempFile, serialized, "utf-8");
+      await fsPromises.rename(tempFile, DB_FILE);
+    } catch (err) {
+      log("ERROR", "DB ATOMIC SAVE FAILED: " + err.message);
+      try {
+        if (fs.existsSync(tempFile)) await fsPromises.unlink(tempFile);
+      } catch (_) {}
     }
-  }
+  }).catch(err => {
+    log("CRITICAL", "Write Queue Execution Failure: " + err.message);
+  });
+  return writeQueue;
 };
 
 /* ================= SOCKET.IO REAL-TIME ENGINE ================= */
 io.on("connection", (socket) => {
   log("SOCKET", `Client Connected: ${socket.id}`);
 
-  socket.on("driver:location", (payload) => {
+  socket.on("driver:location", async (payload) => {
     sanitizeDataState();
     const driverId = payload.driverId || payload.id;
     if (!driverId) return;
@@ -229,7 +235,7 @@ io.on("connection", (socket) => {
     if (driver) {
       driver.location = { lat: latN, lng: lngN };
       driver.lastSeen = Date.now();
-      saveDB();
+      await saveDB();
 
       io.emit("telemetry:stream", {
         driverId: driver.id,
@@ -279,7 +285,7 @@ app.get("/businesses", (req, res) => {
   ok(res, { businesses: data.businesses, shops: data.businesses });
 });
 
-const addBusinessHandler = (req, res) => {
+const addBusinessHandler = async (req, res) => {
   try {
     const { name, category } = req.body;
     if (!name) return fail(res, "Invalid business name");
@@ -293,7 +299,7 @@ const addBusinessHandler = (req, res) => {
 
     data.businesses.push(business);
     data.wallets.push({ id: id("wal"), businessId: business.id, balance: 0 });
-    saveDB();
+    await saveDB();
 
     io.emit("business:created", business);
     log("BUSINESS", `Onboarded: ${business.name}`);
@@ -307,10 +313,10 @@ app.post("/addBusiness", auth("ADMIN"), addBusinessHandler);
 app.post("/business/add", auth("ADMIN"), addBusinessHandler);
 app.post("/business/create", auth("ADMIN"), addBusinessHandler);
 
-app.post("/deleteBusiness", auth("ADMIN"), (req, res) => {
+app.post("/deleteBusiness", auth("ADMIN"), async (req, res) => {
   const { id: bid } = req.body;
   data.businesses = data.businesses.filter(b => b.id !== bid);
-  saveDB();
+  await saveDB();
   ok(res, { message: "Business deleted" });
 });
 
@@ -325,7 +331,7 @@ app.get("/products", (req, res) => {
   ok(res, { products });
 });
 
-const addProductHandler = (req, res) => {
+const addProductHandler = async (req, res) => {
   try {
     const { name, price, businessId } = req.body;
     if (!name || price === undefined) return fail(res, "Missing name or price");
@@ -338,7 +344,7 @@ const addProductHandler = (req, res) => {
     };
 
     data.products.push(product);
-    saveDB();
+    await saveDB();
 
     io.emit("product:added", product);
     log("PRODUCT", `Added: ${product.name}`);
@@ -360,7 +366,7 @@ const getDriversHandler = (req, res) => {
 app.get("/drivers", getDriversHandler);
 app.get("/drivers/live", getDriversHandler);
 
-const registerDriverHandler = (req, res) => {
+const registerDriverHandler = async (req, res) => {
   try {
     const { name, phone } = req.body;
     if (!name) return fail(res, "Missing driver name");
@@ -369,7 +375,7 @@ const registerDriverHandler = (req, res) => {
     if (driver) {
       driver.status = "online";
       driver.lastSeen = Date.now();
-      saveDB();
+      await saveDB();
       return ok(res, { driver });
     }
 
@@ -384,7 +390,7 @@ const registerDriverHandler = (req, res) => {
     };
 
     data.drivers.push(driver);
-    saveDB();
+    await saveDB();
 
     io.emit("driver:registered", driver);
     log("DRIVER", `Registered: ${driver.name}`);
@@ -398,14 +404,14 @@ app.post("/registerDriver", registerDriverHandler);
 app.post("/addDriver", registerDriverHandler);
 app.post("/driver/add", registerDriverHandler);
 
-const updateDriverStatusHandler = (req, res) => {
+const updateDriverStatusHandler = async (req, res) => {
   const { driverId, status } = req.body;
   const d = data.drivers.find(x => x.id === driverId);
   if (!d) return fail(res, "Driver not found");
 
   d.status = (status || "offline").toString().toLowerCase();
   d.lastSeen = Date.now();
-  saveDB();
+  await saveDB();
 
   io.emit("driver:statusChanged", { driverId, status: d.status });
   ok(res, { message: "Driver status updated", driver: d });
@@ -414,7 +420,7 @@ const updateDriverStatusHandler = (req, res) => {
 app.post("/driverStatus", updateDriverStatusHandler);
 app.post("/driver/status", updateDriverStatusHandler);
 
-const updateLocationHandler = (req, res) => {
+const updateLocationHandler = async (req, res) => {
   const { driverId, lat, lng, location } = req.body;
   const targetId = driverId || req.body.id;
   const d = data.drivers.find(x => x.id === targetId);
@@ -428,7 +434,7 @@ const updateLocationHandler = (req, res) => {
   d.status = "online";
   d.lastSeen = Date.now();
 
-  saveDB();
+  await saveDB();
 
   io.emit("telemetry:stream", {
     driverId: d.id,
@@ -466,7 +472,7 @@ app.get("/orders", (req, res) => {
   ok(res, { orders: data.orders });
 });
 
-const checkoutHandler = (req, res) => {
+const checkoutHandler = async (req, res) => {
   try {
     const { businessId, items, total, amount, customerName, customerPhone } = req.body;
     const orderTotal = num(total || amount);
@@ -513,10 +519,10 @@ const checkoutHandler = (req, res) => {
       });
     }
 
-    saveDB();
+    await saveDB();
 
     io.emit("order:created", order);
-    log("ORDER", `Created: ${order.id} ($${orderTotal})`);
+    log("ORDER", `Created: ${order.id} (KES ${orderTotal})`);
     ok(res, { order });
   } catch (err) {
     fail(res, "Checkout failed", 500);
@@ -526,7 +532,7 @@ const checkoutHandler = (req, res) => {
 app.post("/checkout", checkoutHandler);
 app.post("/order/create", checkoutHandler);
 
-const assignDriverHandler = (req, res) => {
+const assignDriverHandler = async (req, res) => {
   const { orderId, driverId } = req.body;
   const order = data.orders.find(o => o.id === orderId);
 
@@ -556,14 +562,14 @@ const assignDriverHandler = (req, res) => {
     createdAt: Date.now()
   });
 
-  saveDB();
+  await saveDB();
   ok(res, { driver, order });
 };
 
 app.post("/assignDriver", assignDriverHandler);
 app.post("/dispatch/auto", assignDriverHandler);
 
-const completeOrderHandler = (req, res) => {
+const completeOrderHandler = async (req, res) => {
   const { orderId, deliveryId } = req.body;
   const targetId = orderId || deliveryId;
 
@@ -613,7 +619,7 @@ const completeOrderHandler = (req, res) => {
     });
   }
 
-  saveDB();
+  await saveDB();
 
   io.emit("order:completed", { orderId: order ? order.id : targetId });
   ok(res, { message: "Order completed successfully", order });
@@ -790,7 +796,19 @@ app.post("/driver/cashout", auth("DRIVER"), async (req, res) => {
   }
 });
 
-/* ================= SERVER START ================= */
+/* ================= SERVER START & GRACEFUL SHUTDOWN ================= */
 server.listen(PORT, () => {
   log("SYSTEM", `🚀 RDS CORE ACTIVE ON PORT ${PORT} (SOCKET, M-PESA & SETTLEMENTS ENABLED)`);
 });
+
+const gracefulShutdown = async (signal) => {
+  log("SYSTEM", `Received ${signal}. Flushing database queue before exit...`);
+  await saveDB();
+  server.close(() => {
+    log("SYSTEM", "HTTP/Socket server closed cleanly. Exiting process.");
+    process.exit(0);
+  });
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
