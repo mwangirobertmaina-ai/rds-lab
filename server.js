@@ -43,7 +43,7 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ================= MEMORY-SAFE RATE LIMITING ================= */
+/* ================= MEMORY-SAFE & POLLING-AWARE RATE LIMITING ================= */
 const rateMap = new Map();
 
 // Garbage collector to purge stale IP addresses every 10 minutes
@@ -60,6 +60,11 @@ setInterval(() => {
 }, 600000);
 
 function rateLimit(req, res, next) {
+  // Allow high-frequency dashboard GET polling routes to bypass rate-limiting checks
+  if (req.method === "GET") {
+    return next();
+  }
+
   const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || req.socket.remoteAddress || "127.0.0.1";
   const now = Date.now();
 
@@ -69,9 +74,9 @@ function rateLimit(req, res, next) {
 
   const timestamps = rateMap.get(ip).filter(t => now - t < 60000);
 
-  if (timestamps.length > 150) {
+  if (timestamps.length > 300) {
     rateMap.set(ip, timestamps);
-    return res.status(429).json({ success: false, error: "Too many requests. Please wait a minute." });
+    return res.status(429).json({ success: false, error: "Too many write requests. Please wait a minute." });
   }
 
   timestamps.push(now);
