@@ -7,6 +7,8 @@ const cors = require("cors");
 const path = require("path");
 
 const app = express();
+app.set("trust proxy", 1); // Trust Render reverse proxy for accurate IP extraction
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -20,9 +22,7 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 const ENV = process.env.NODE_ENV || "development";
 
-/* ========================================== */
-/* DYNAMIC CORS & EXPRESS MIDDLEWARE          */
-/* ========================================== */
+/* ================= MIDDLEWARE & CORS ================= */
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -43,24 +43,26 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ================= RATE LIMITING ================= */
-const rateMap = {};
+/* ================= SAFE RATE LIMITING ================= */
+const rateMap = new Map();
 
 function rateLimit(req, res, next) {
-  const ip = req.ip || req.headers["x-forwarded-for"] || "127.0.0.1";
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || req.socket.remoteAddress || "127.0.0.1";
   const now = Date.now();
 
-  if (!rateMap[ip]) {
-    rateMap[ip] = [];
+  if (!rateMap.has(ip)) {
+    rateMap.set(ip, []);
   }
 
-  rateMap[ip] = rateMap[ip].filter(t => now - t < 60000);
-
-  if (rateMap[ip].length > 150) {
+  const timestamps = rateMap.get(ip).filter(t => now - t < 60000);
+  
+  if (timestamps.length > 150) {
+    rateMap.set(ip, timestamps);
     return res.status(429).json({ success: false, error: "Too many requests" });
   }
 
-  rateMap[ip].push(now);
+  timestamps.push(now);
+  rateMap.set(ip, timestamps);
   next();
 }
 
@@ -76,7 +78,7 @@ const API_KEYS = {
 function auth(role) {
   return (req, res, next) => {
     const key = req.headers["x-api-key"];
-    // Optional Auth: Bypass if no key provided in development mode to support client app compatibility
+    // Flexible Auth: Enforce validation only if header is explicitly provided
     if (key && key !== API_KEYS[role]) {
       return res.status(403).json({ success: false, error: "Unauthorized endpoint access" });
     }
@@ -181,7 +183,7 @@ if (fs.existsSync(DB_FILE)) {
   sanitizeDataState();
 }
 
-/* ================= ATOMIC NON-BLOCKING PERSISTENCE ================= */
+/* ================= ATOMIC PERSISTENCE MUTEX ================= */
 let isWriting = false;
 let pendingWrite = false;
 
@@ -206,12 +208,12 @@ const saveDB = async () => {
     isWriting = false;
     if (pendingWrite) {
       pendingWrite = false;
-      saveDB();
+      await saveDB();
     }
   }
 };
 
-/* ================= SOCKET.IO REAL-TIME STREAMING ENGINE ================= */
+/* ================= SOCKET.IO REAL-TIME ENGINE ================= */
 io.on("connection", (socket) => {
   log("SOCKET", `Client Connected: ${socket.id}`);
 
@@ -245,7 +247,7 @@ io.on("connection", (socket) => {
 
 /* ================= SYSTEM HEALTH & METRICS ================= */
 app.get("/", (req, res) => {
-  ok(res, { status: "RDS CORE FROZEN", env: ENV, time: Date.now() });
+  ok(res, { status: "RDS CORE ACTIVE", env: ENV, time: Date.now() });
 });
 
 app.get("/health", (req, res) => {
@@ -646,7 +648,7 @@ app.get("/deliveries", (req, res) => {
 /* ================= MODULE 6: M-PESA DARAJA PAYMENT GATEWAY ================= */
 const stkPushHandler = (req, res) => {
   try {
-    const { phone, amount, orderId } = req.body;
+    const { phone, amount } = req.body;
 
     if (!phone || !amount) {
       return res.status(400).json({ success: false, error: "Missing phone or amount" });
@@ -678,11 +680,11 @@ app.post("/payments/stk-push", stkPushHandler);
 
 app.post("/mpesa/callback", (req, res) => {
   try {
-    const callbackData = req.body.Body ? req.body.Body.stkCallback : req.body;
+    const callbackData = req.body?.Body?.stkCallback || req.body;
     log("MPESA_CALLBACK", JSON.stringify(callbackData));
 
-    const resultCode = callbackData.ResultCode;
-    const merchantRequestId = callbackData.MerchantRequestID;
+    const resultCode = callbackData?.ResultCode;
+    const merchantRequestId = callbackData?.MerchantRequestID;
 
     if (resultCode === 0) {
       log("MPESA", `Payment SUCCESS for Request: ${merchantRequestId}`);
@@ -693,7 +695,7 @@ app.post("/mpesa/callback", (req, res) => {
         time: Date.now()
       });
     } else {
-      log("MPESA", `Payment Cancelled/Failed: ${callbackData.ResultDesc}`);
+      log("MPESA", `Payment Cancelled/Failed: ${callbackData?.ResultDesc}`);
     }
 
     res.status(200).json({ ResultCode: 0, ResultDesc: "Accepted" });
@@ -708,7 +710,7 @@ app.post("/mpesa/callback", (req, res) => {
 app.post("/merchant/payout", auth("BUSINESS"), async (req, res) => {
   try {
     sanitizeDataState();
-    const { businessId, amount, phone } = req.body;
+    const { businessId, amount } = req.body;
 
     if (!businessId || !amount || num(amount) <= 0) {
       return fail(res, "Invalid businessId or payout amount");
@@ -727,7 +729,6 @@ app.post("/merchant/payout", auth("BUSINESS"), async (req, res) => {
       return fail(res, "Insufficient merchant wallet balance");
     }
 
-    // Deduct balance and record settlement journal entry
     wallet.balance -= num(amount);
 
     data.ledger.push({
@@ -742,7 +743,7 @@ app.post("/merchant/payout", auth("BUSINESS"), async (req, res) => {
     await saveDB();
 
     io.emit("merchant:payout", { businessId, amount: num(amount), remainingBalance: wallet.balance });
-    log("SETTLEMENT", `Merchant Payout Released: ${business.name} - $${amount}`);
+    log("SETTLEMENT", `Merchant Payout Released: ${business.name} - KES ${amount}`);
 
     ok(res, { message: "Merchant payout successfully processed", balance: wallet.balance });
   } catch (err) {
@@ -754,7 +755,7 @@ app.post("/merchant/payout", auth("BUSINESS"), async (req, res) => {
 app.post("/driver/cashout", auth("DRIVER"), async (req, res) => {
   try {
     sanitizeDataState();
-    const { driverId, amount, phone } = req.body;
+    const { driverId, amount } = req.body;
 
     if (!driverId || !amount || num(amount) <= 0) {
       return fail(res, "Invalid driverId or cashout amount");
@@ -781,7 +782,7 @@ app.post("/driver/cashout", auth("DRIVER"), async (req, res) => {
     await saveDB();
 
     io.emit("driver:cashout", { driverId, amount: num(amount), remainingEarnings: driver.earnings });
-    log("CASHOUT", `Driver Cashout Processed: ${driver.name} - $${amount}`);
+    log("CASHOUT", `Driver Cashout Processed: ${driver.name} - KES ${amount}`);
 
     ok(res, { message: "Driver cashout successfully disbursed", remainingEarnings: driver.earnings });
   } catch (err) {
@@ -791,5 +792,5 @@ app.post("/driver/cashout", auth("DRIVER"), async (req, res) => {
 
 /* ================= SERVER START ================= */
 server.listen(PORT, () => {
-  log("SYSTEM", `🚀 RDS CORE FROZEN ON PORT ${PORT} (SOCKET, M-PESA & SETTLEMENTS ENABLED)`);
+  log("SYSTEM", `🚀 RDS CORE ACTIVE ON PORT ${PORT} (SOCKET, M-PESA & SETTLEMENTS ENABLED)`);
 });
