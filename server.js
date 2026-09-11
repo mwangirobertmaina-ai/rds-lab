@@ -644,7 +644,7 @@ app.get("/deliveries", (req, res) => {
 });
 
 /* ================= MODULE 6: M-PESA DARAJA PAYMENT GATEWAY ================= */
-app.post("/mpesa/stkpush", (req, res) => {
+const stkPushHandler = (req, res) => {
   try {
     const { phone, amount, orderId } = req.body;
 
@@ -671,7 +671,10 @@ app.post("/mpesa/stkpush", (req, res) => {
   } catch (err) {
     fail(res, "M-Pesa STK Push failed", 500);
   }
-});
+};
+
+app.post("/mpesa/stkpush", stkPushHandler);
+app.post("/payments/stk-push", stkPushHandler);
 
 app.post("/mpesa/callback", (req, res) => {
   try {
