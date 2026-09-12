@@ -59,7 +59,8 @@
       "commission": 40,
       "status": "DISPATCHED",
       "createdAt": 1788924010237,
-      "updatedAt": 1788924010238
+      "updatedAt": 1788924010238,
+      "driverId": "D_1788917494728_60043"
     },
     {
       "id": "O_1788924400968_34729",
@@ -76,7 +77,8 @@
       "commission": 40,
       "status": "PAID",
       "createdAt": 1788924400968,
-      "updatedAt": 1788924400968
+      "updatedAt": 1788924400968,
+      "driverId": "D_1788934424495_92753"
     },
     {
       "id": "ORD_1788932182240_30065",
@@ -97,7 +99,8 @@
       ],
       "total": 800,
       "status": "PLACED",
-      "createdAt": 1788932182240
+      "createdAt": 1788932182240,
+      "driverId": "D_1788917494728_60043"
     },
     {
       "id": "ORD_1788933857516_27173",
@@ -118,7 +121,8 @@
       ],
       "total": 6400,
       "status": "PLACED",
-      "createdAt": 1788933857517
+      "createdAt": 1788933857517,
+      "driverId": "D_1788934424495_92753"
     },
     {
       "id": "ORD_1788933961695_78001",
@@ -139,7 +143,8 @@
       ],
       "total": 40,
       "status": "DISPATCHED",
-      "createdAt": 1788933961695
+      "createdAt": 1788933961695,
+      "driverId": "D_1788917494728_60043"
     }
   ],
   "drivers": [
@@ -148,7 +153,8 @@
       "name": "kamau",
       "phone": "0700000000",
       "status": "online",
-      "earnings": 0,
+      "earnings": 1558,
+      "walletBalance": 1558,
       "location": {
         "lat": 0,
         "lng": 0
@@ -160,7 +166,8 @@
       "name": "robert",
       "phone": "254722123456",
       "status": "online",
-      "earnings": 0,
+      "earnings": 6840,
+      "walletBalance": 6840,
       "location": {
         "lat": -1.286389,
         "lng": 36.817223
@@ -259,7 +266,18 @@
       "timestamp": 1788933961695
     }
   ],
-  "wallets": [],
+  "wallets": [
+    {
+      "id": "wal_1789251853672_57042",
+      "businessId": "B_1788923915150_88524",
+      "balance": 0
+    },
+    {
+      "id": "wal_1789251853689_92002",
+      "businessId": "BIZ_1788934394576_9413",
+      "balance": 0
+    }
+  ],
   "escrow": [],
   "system": {
     "stage": 20,
