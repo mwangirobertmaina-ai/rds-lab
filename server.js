@@ -23,9 +23,9 @@ const DB_FILE = path.join(__dirname, "db.json");
 const ENV = process.env.NODE_ENV || "development";
 
 /* ========================================================================== */
-/* 0. FINANCIAL GOVERNANCE CONFIGURATION                                      */
+/* 0. FINANCIAL GOVERNANCE CONFIGURATION (5% COMMISSION + 16% KRA VAT)       */
 /* ========================================================================== */
-const COMMISSION_RATE = 0.05; // 5% Flat Platform Commission
+const COMMISSION_RATE = 0.05; // 5% Flat Platform Commission Rule
 const TAX_RATE = 0.16;       // 16% KRA VAT on Platform Commission
 
 function processPayment(amount) {
@@ -221,6 +221,7 @@ function sanitizeDataState() {
         phone: d.phone || "0700000000",
         status: status,
         earnings: num(d.earnings),
+        walletBalance: num(d.walletBalance || d.earnings),
         location: d.location ? { lat: num(d.location.lat), lng: num(d.location.lng) } : null,
         lastSeen: num(d.lastSeen) || Date.now()
       });
@@ -302,7 +303,7 @@ app.get("/system/stats", (req, res) => {
     sanitizeDataState();
     const grossVolume = data.orders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
     
-    // Aggregated from Double-Entry Ledger entries
+    // Calculated live from Double-Entry Ledger entries
     const totalCommission = data.ledger
       .filter(l => l.type === "PLATFORM_COMMISSION" || l.type === "COMMISSION")
       .reduce((sum, l) => sum + num(l.amount), 0);
@@ -446,6 +447,7 @@ const registerDriverHandler = async (req, res) => {
       phone: phone || "0700000000",
       status: "offline",
       earnings: 0,
+      walletBalance: 0,
       location: null,
       lastSeen: Date.now()
     };
@@ -616,24 +618,25 @@ const completeOrderHandler = async (req, res) => {
     escrowRecord.releasedAt = Date.now();
   }
 
-  if (order) order.status = "DELIVERED";
+  if (order) order.status = "PAID";
   if (delivery) delivery.status = "COMPLETED";
 
   const orderAmount = order ? num(order.total) : 0;
-  const financialSplit = processPayment(orderAmount);
+  const result = processPayment(orderAmount);
 
-  // Credit Driver Wallet with exact net earnings (Gross minus Platform Commission)
+  // Credit Driver Wallet (95%)
   const targetDriverId = (order && order.driverId) || (delivery && delivery.driverId);
   if (targetDriverId) {
     const driver = data.drivers.find(d => d.id === targetDriverId);
     if (driver) {
-      driver.earnings += financialSplit.driverAmount;
+      driver.earnings += result.driverAmount;
+      driver.walletBalance = num(driver.walletBalance) + result.driverAmount;
       driver.status = "online";
 
       data.ledger.push({
         id: id("tx"),
         type: "DRIVER_PAYOUT",
-        amount: financialSplit.driverAmount,
+        amount: result.driverAmount,
         driverId: driver.id,
         orderId: order ? order.id : targetId,
         createdAt: Date.now()
@@ -641,11 +644,11 @@ const completeOrderHandler = async (req, res) => {
     }
   }
 
-  // Credit Platform Ledger & KRA Tax Vault
+  // Double-Entry Ledger Entries (Executed ONLY when Order is PAID)
   data.ledger.push({
     id: id("tx"),
     type: "ORDER_PAYMENT",
-    amount: financialSplit.gross,
+    amount: result.gross,
     orderId: order ? order.id : targetId,
     createdAt: Date.now()
   });
@@ -653,7 +656,7 @@ const completeOrderHandler = async (req, res) => {
   data.ledger.push({
     id: id("tx"),
     type: "PLATFORM_COMMISSION",
-    amount: financialSplit.commission,
+    amount: result.commission,
     orderId: order ? order.id : targetId,
     createdAt: Date.now()
   });
@@ -661,15 +664,15 @@ const completeOrderHandler = async (req, res) => {
   data.ledger.push({
     id: id("tx"),
     type: "TAX",
-    amount: financialSplit.tax,
+    amount: result.tax,
     orderId: order ? order.id : targetId,
     createdAt: Date.now()
   });
 
   await saveDB();
 
-  io.emit("order:completed", { orderId: order ? order.id : targetId, financialSplit });
-  ok(res, { message: "Stage 50 Settlement Complete", order, financialSplit });
+  io.emit("order:completed", { orderId: order ? order.id : targetId, financialSplit: result });
+  ok(res, { message: "Stage 50 Settlement Complete", order, financialSplit: result });
 };
 
 app.post("/completeOrder", completeOrderHandler);
@@ -698,33 +701,14 @@ const stkPushHandler = (req, res) => {
     if (formattedPhone.startsWith("0")) formattedPhone = "254" + formattedPhone.substring(1);
 
     const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    const financialSplit = processPayment(amount);
     
-    // Automatically log ledger breakdown on successful payment initialization
     data.ledger.push({
       id: id("tx"),
-      type: "ORDER_PAYMENT",
-      amount: financialSplit.gross,
+      type: "STK_PUSH_INITIATED",
+      amount: num(amount),
       phone: formattedPhone,
       createdAt: Date.now()
     });
-
-    data.ledger.push({
-      id: id("tx"),
-      type: "PLATFORM_COMMISSION",
-      amount: financialSplit.commission,
-      phone: formattedPhone,
-      createdAt: Date.now()
-    });
-
-    data.ledger.push({
-      id: id("tx"),
-      type: "TAX",
-      amount: financialSplit.tax,
-      phone: formattedPhone,
-      createdAt: Date.now()
-    });
-
     saveDB();
 
     ok(res, {
@@ -732,7 +716,6 @@ const stkPushHandler = (req, res) => {
       CheckoutRequestID: checkoutRequestId,
       CustomerPhone: formattedPhone,
       Amount: amount,
-      split: financialSplit,
       status: "PENDING_USER_PIN"
     });
   } catch (err) {
@@ -806,9 +789,11 @@ app.post("/driver/cashout", auth("DRIVER"), async (req, res) => {
     if (!driverId || !amount || num(amount) <= 0) return fail(res, "Invalid payload");
 
     const driver = data.drivers.find(d => d.id === driverId);
-    if (!driver || driver.earnings < num(amount)) return fail(res, "Insufficient driver earnings");
+    const balance = num(driver.walletBalance || driver.earnings);
+    if (!driver || balance < num(amount)) return fail(res, "Insufficient driver earnings");
 
     driver.earnings -= num(amount);
+    driver.walletBalance = num(driver.walletBalance) - num(amount);
 
     data.ledger.push({
       id: id("tx"),
@@ -821,7 +806,7 @@ app.post("/driver/cashout", auth("DRIVER"), async (req, res) => {
 
     await saveDB();
     io.emit("driver:cashout", { driverId, amount: num(amount), remainingEarnings: driver.earnings });
-    ok(res, { message: "Driver cashout disbursed", remainingEarnings: driver.earnings });
+    ok(res, { message: "Driver cashout disbursed", remainingEarnings: driver.earnings, remainingWallet: driver.walletBalance });
   } catch (err) {
     fail(res, "Cashout processing failed", 500);
   }
