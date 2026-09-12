@@ -76,11 +76,12 @@ async function getMpesaAccessToken() {
     const response = await axios.get(`${MPESA_BASE_URL}/oauth/v1/generate?grant_type=client_credentials`, {
       headers: {
         Authorization: `Basic ${authString}`
-      }
+      },
+      timeout: 10000
     });
     return response.data.access_token;
   } catch (err) {
-    log("MPESA_AUTH_ERROR", err.response?.data ? JSON.stringify(err.response.data) : err.message);
+    log("MPESA_AUTH_ERROR", err.response?.data ? JSON.stringify(err.response.data) : (err.code === 'ECONNABORTED' ? 'Daraja Auth Timeout (10s)' : err.message));
     throw new Error("Failed to authenticate with M-Pesa Daraja API");
   }
 }
@@ -734,11 +735,12 @@ const stkPushHandler = async (req, res) => {
     let darajaResponse;
     try {
       const response = await axios.post(`${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`, payload, {
-        headers: { Authorization: `Bearer ${accessToken}` }
+        headers: { Authorization: `Bearer ${accessToken}` },
+        timeout: 10000
       });
       darajaResponse = response.data;
     } catch (apiErr) {
-      const errDetails = apiErr.response?.data ? JSON.stringify(apiErr.response.data) : apiErr.message;
+      const errDetails = apiErr.response?.data ? JSON.stringify(apiErr.response.data) : (apiErr.code === 'ECONNABORTED' ? 'Daraja API Timeout (10s)' : apiErr.message);
       log("DARAJA_API_ERROR_FULL", errDetails);
       return fail(res, `M-Pesa Daraja Rejected: ${errDetails}`, 502);
     }
