@@ -1,4 +1,3 @@
-
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -26,7 +25,7 @@ const ENV = process.env.NODE_ENV || "development";
 /* ========================================================================== */
 /* 0. DYNAMIC TRANSPORT PRICING & FINANCIAL GOVERNANCE                        */
 /* ========================================================================== */
-const COMMISSION_RATE = 0.05; // 5% Flat Platform Commission Rule
+const COMMISSION_RATE = 0.05; // 5% Flat Platform Commission
 const TAX_RATE = 0.16;       // 16% KRA VAT on Platform Commission
 
 const BASE_FARE = 100;       // KES Base Fare
@@ -42,7 +41,7 @@ function processTrip(distanceKm, overrideAmount = null) {
   const commission = fare * COMMISSION_RATE;
   const tax = commission * TAX_RATE;
   const netRevenue = commission - tax;
-  const driverAmount = fare - commission; // 95% to driver
+  const driverAmount = fare - commission; // 95% Payout to Driver
 
   return {
     fare,
@@ -157,7 +156,7 @@ function auth(role) {
 }
 
 /* ========================================================================== */
-/* 2. SELF-HEALING ENTERPRISE DATA ENGINE                                     */
+/* 2. SELF-HEALING ENTERPRISE DATA ENGINE (AUTOMATED DRIVER RECOVERY)        */
 /* ========================================================================== */
 
 function defaultDB() {
@@ -214,6 +213,14 @@ function sanitizeDataState() {
   if (!Array.isArray(data.wallets)) data.wallets = [];
   if (!Array.isArray(data.escrow)) data.escrow = [];
 
+  // Seed default enterprise drivers if database is completely empty
+  if (data.drivers.length === 0) {
+    data.drivers = [
+      { id: "drv_kamau", name: "kamau", phone: "0711000001", status: "online", earnings: 0, walletBalance: 0, location: null, lastSeen: Date.now() },
+      { id: "drv_robert", name: "robert", phone: "0711000002", status: "online", earnings: 0, walletBalance: 0, location: null, lastSeen: Date.now() }
+    ];
+  }
+
   const driverMap = new Map();
   data.drivers.forEach(d => {
     if (!d || (!d.id && !d.name)) return;
@@ -226,7 +233,7 @@ function sanitizeDataState() {
 
     if (!driverMap.has(nameKey)) {
       driverMap.set(nameKey, {
-        id: d.id || id("drv"),
+        id: d.id || `drv_${nameKey}`,
         name: cleanName,
         phone: d.phone || "0700000000",
         status: status,
@@ -238,6 +245,30 @@ function sanitizeDataState() {
     }
   });
   data.drivers = Array.from(driverMap.values());
+
+  // RETROACTIVE ASSIGNMENT: Auto-fix legacy orders without driver assignments
+  if (data.drivers.length > 0 && data.orders.length > 0) {
+    data.orders.forEach((ord, index) => {
+      if (!ord.driverId) {
+        const assignedDriver = data.drivers[index % data.drivers.length];
+        ord.driverId = assignedDriver.id;
+      }
+    });
+  }
+
+  // RECALCULATE WALLETS: Dynamically update driver earnings across all orders
+  data.drivers.forEach(driver => {
+    const matchedOrders = data.orders.filter(
+      o => o.driverId === driver.id || 
+           (o.driverId && o.driverId.toString().toLowerCase() === driver.name.toLowerCase())
+    );
+
+    const grossVolume = matchedOrders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
+    const calculatedEarnings = grossVolume > 0 ? grossVolume * 0.95 : num(driver.earnings);
+
+    driver.earnings = Math.round(calculatedEarnings * 100) / 100;
+    driver.walletBalance = Math.round(calculatedEarnings * 100) / 100;
+  });
 }
 
 if (fs.existsSync(DB_FILE)) {
@@ -286,7 +317,7 @@ io.on("connection", (socket) => {
     const driverId = payload.driverId || payload.id;
     if (!driverId) return;
 
-    const driver = data.drivers.find(d => d.id === driverId);
+    const driver = data.drivers.find(d => d.id === driverId || d.name.toLowerCase() === driverId.toString().toLowerCase());
     if (driver) {
       driver.location = { lat: num(payload.lat), lng: num(payload.lng) };
       driver.lastSeen = Date.now();
@@ -425,30 +456,7 @@ app.post("/product/add", auth("BUSINESS"), addProductHandler);
 /* ================= MODULE 3: DRIVERS & FLEET TELEMETRY ================= */
 const getDriversHandler = (req, res) => {
   sanitizeDataState();
-
-  const totalGrossVolume = data.orders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
-  const totalDriverPool = totalGrossVolume * 0.95; // 95% total net driver earnings
-  const driverCount = data.drivers.length > 0 ? data.drivers.length : 1;
-  const splitSharePerDriver = Math.round((totalDriverPool / driverCount) * 100) / 100;
-
-  const updatedDrivers = data.drivers.map(driver => {
-    // 1. Calculate explicit orders tied to this driver
-    const driverOrders = data.orders.filter(o => o.driverId === driver.id || o.driverId === driver.name);
-    let driverEarnings = driverOrders.reduce((sum, o) => sum + (num(o.total || o.amount) * 0.95), 0);
-
-    // 2. Fallback: If legacy unassigned orders exist, distribute driver pool evenly
-    if (driverEarnings === 0 && totalGrossVolume > 0) {
-      driverEarnings = splitSharePerDriver;
-    }
-
-    return {
-      ...driver,
-      earnings: Math.round(driverEarnings * 100) / 100,
-      walletBalance: Math.round(driverEarnings * 100) / 100
-    };
-  });
-
-  ok(res, { count: updatedDrivers.length, drivers: updatedDrivers, data: updatedDrivers, driverLocations: updatedDrivers });
+  ok(res, { count: data.drivers.length, drivers: data.drivers, data: data.drivers, driverLocations: data.drivers });
 };
 
 app.get("/drivers", getDriversHandler);
@@ -536,6 +544,11 @@ const checkoutHandler = async (req, res) => {
     const baseTotal = num(total || amount);
     const result = processTrip(distanceKm, baseTotal);
 
+    // Dynamic dispatch strategy: assign driver with lowest balance
+    const activeDrivers = data.drivers.length > 0 ? [...data.drivers] : [];
+    activeDrivers.sort((a, b) => num(a.earnings) - num(b.earnings));
+    const assignedDriver = activeDrivers.length > 0 ? activeDrivers[0] : null;
+
     const order = {
       id: id("ord"),
       businessId: businessId || "SYSTEM",
@@ -548,17 +561,12 @@ const checkoutHandler = async (req, res) => {
       total: result.fare,
       amount: result.fare,
       status: "PAID",
-      driverId: null,
+      driverId: assignedDriver ? assignedDriver.id : null,
       createdAt: Date.now()
     };
 
-    const onlineDrivers = data.drivers.filter(d => d.status === "online");
-    if (onlineDrivers.length > 0) {
-      onlineDrivers.sort((a, b) => a.earnings - b.earnings);
-      const assignedDriver = onlineDrivers[0];
-
-      order.driverId = assignedDriver.id;
-      assignedDriver.earnings += result.driverAmount;
+    if (assignedDriver) {
+      assignedDriver.earnings = num(assignedDriver.earnings) + result.driverAmount;
       assignedDriver.walletBalance = num(assignedDriver.walletBalance) + result.driverAmount;
       assignedDriver.status = "busy";
 
@@ -659,8 +667,9 @@ const stkPushHandler = (req, res) => {
     const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const result = processTrip(distanceKm, amount);
 
-    const onlineDrivers = data.drivers.filter(d => d.status === "online" || d.status === "idle");
-    const assignedDriver = onlineDrivers.length > 0 ? onlineDrivers[0] : (data.drivers[0] || null);
+    const activeDrivers = data.drivers.length > 0 ? [...data.drivers] : [];
+    activeDrivers.sort((a, b) => num(a.earnings) - num(b.earnings));
+    const assignedDriver = activeDrivers.length > 0 ? activeDrivers[0] : null;
 
     const order = {
       id: id("ORD"),
@@ -676,7 +685,7 @@ const stkPushHandler = (req, res) => {
     data.orders.push(order);
 
     if (assignedDriver) {
-      assignedDriver.earnings += result.driverAmount;
+      assignedDriver.earnings = num(assignedDriver.earnings) + result.driverAmount;
       assignedDriver.walletBalance = num(assignedDriver.walletBalance) + result.driverAmount;
     }
 
