@@ -13,10 +13,10 @@ class RDSApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'RDS Stage 30 Management Terminal',
+      title: 'RDS Stage 50 Enterprise Core',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0A0E17),
+        scaffoldBackgroundColor: const Color(0xFF070A10),
         primaryColor: const Color(0xFF00FF88),
       ),
       home: const AdminDashboardScreen(),
@@ -25,7 +25,7 @@ class RDSApp extends StatelessWidget {
 }
 
 class AdminDashboardScreen extends StatefulWidget {
-  const AdminDashboardScreen({Key? key}) : super(key: key);
+  const AdminDashboardScreen({super.key});
 
   @override
   _AdminDashboardScreenState createState() => _AdminDashboardScreenState();
@@ -33,25 +33,28 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final String apiBase = "https://rds-lab.onrender.com";
-  
+
   Map<String, dynamic> stats = {
-    'stage': 'STAGE_30_ENTERPRISE',
+    'stage': 'STAGE_50_ENTERPRISE_GOVERNANCE',
     'grossVolume': 0,
     'activeDrivers': 0,
     'orders': 0,
     'businesses': 0,
     'totalCommission': 0,
     'totalKraTaxRetained': 0,
+    'clusterHealth': 'OPTIMAL',
+    'nodeMatrixVersion': 'Universal (Node 18-24+)',
   };
-  
+
   List<dynamic> drivers = [];
   List<dynamic> orders = [];
   List<dynamic> ledger = [];
-  
+  List<dynamic> auditLogs = [];
+
   bool isLoading = true;
   bool isStkLoading = false;
   bool isConnected = false;
-  
+
   final TextEditingController _phoneController = TextEditingController(text: "254");
   final TextEditingController _amountController = TextEditingController();
   String _stkStatusMessage = "";
@@ -61,7 +64,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   void initState() {
     super.initState();
     fetchDashboardData();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) => fetchDashboardData());
+    _refreshTimer = Timer.periodic(const Duration(seconds: 4), (_) => fetchDashboardData());
   }
 
   @override
@@ -82,7 +85,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       if (mounted) {
         setState(() {
           if (statsRes.statusCode == 200) {
-            stats = json.decode(statsRes.body)['stats'] ?? stats;
+            final data = json.decode(statsRes.body);
+            stats = data['stats'] ?? stats;
             isConnected = true;
           }
           if (driversRes.statusCode == 200) drivers = json.decode(driversRes.body)['drivers'] ?? [];
@@ -107,7 +111,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     setState(() {
       isStkLoading = true;
-      _stkStatusMessage = "Initiating STK Push...";
+      _stkStatusMessage = "Initiating Stage 50 STK Gateway...";
     });
 
     try {
@@ -119,13 +123,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
       final data = json.decode(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        setState(() => _stkStatusMessage = "✅ STK Push Sent! ID: ${data['CheckoutRequestID'] ?? 'OK'}");
+        setState(() => _stkStatusMessage = "✅ STK Dispatched! ID: ${data['CheckoutRequestID'] ?? 'OK'}");
         fetchDashboardData();
       } else {
-        setState(() => _stkStatusMessage = "❌ Failed: ${data['message'] ?? 'Server error'}");
+        setState(() => _stkStatusMessage = "❌ Error: ${data['message'] ?? 'Gateway rejected'}");
       }
     } catch (e) {
-      setState(() => _stkStatusMessage = "❌ Network Error: Backend unreachable.");
+      setState(() => _stkStatusMessage = "❌ Network Error: Node endpoint unreachable.");
     } finally {
       if (mounted) setState(() => isStkLoading = false);
     }
@@ -136,30 +140,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       final response = await http.post(
         Uri.parse('$apiBase/order/refund'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'orderId': orderId, 'reason': 'Stage 30 Admin Refund'}),
+        body: json.encode({'orderId': orderId, 'reason': 'Stage 50 Executive Override'}),
       );
       if (response.statusCode == 200) {
         fetchDashboardData();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Escrow Refunded for Order #$orderId')),
+          SnackBar(content: Text('Stage 50 Escrow Refund Executed: Order #$orderId')),
         );
       }
     } catch (e) {
-      print('[REFUND ERROR] $e');
+      print('[STAGE 50 REFUND ERROR] $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E17),
+      backgroundColor: const Color(0xFF070A10),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF111827),
+        backgroundColor: const Color(0xFF0F172A),
         title: Row(
           children: const [
-            Icon(Icons.settings_remote, color: Color(0xFF00FF88)),
+            Icon(Icons.shield_outlined, color: Color(0xFF00FF88)),
             SizedBox(width: 8),
-            Text('RDS STAGE 30 — FLEET TERMINAL', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              'RDS STAGE 50 — ENTERPRISE COMMAND CENTER',
+              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+            ),
           ],
         ),
         actions: [
@@ -167,14 +174,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             child: Padding(
               padding: const EdgeInsets.only(right: 12.0),
               child: Chip(
-                avatar: Icon(Icons.circle, color: isConnected ? const Color(0xFF00FF88) : Colors.amber, size: 10),
-                label: Text(stats['stage']?.toString() ?? 'STAGE_30_ENTERPRISE', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
-                backgroundColor: const Color(0xFF1F2937),
+                avatar: Icon(Icons.circle, color: isConnected ? const Color(0xFF00FF88) : Colors.amber, size: 9),
+                label: Text(
+                  stats['stage']?.toString() ?? 'STAGE_50_ENTERPRISE',
+                  style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                backgroundColor: const Color(0xFF1E293B),
               ),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF00FF88)),
+            icon: const Icon(Icons.sync, color: Color(0xFF00FF88)),
             onPressed: () {
               setState(() => isLoading = true);
               fetchDashboardData();
@@ -192,32 +202,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: MediaQuery.of(context).size.width > 900 ? 4 : 2,
+                    crossAxisCount: MediaQuery.of(context).size.width > 1000 ? 4 : 2,
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
-                    childAspectRatio: 2.2,
+                    childAspectRatio: 2.3,
                     children: [
-                      _buildStatCard("GROSS VOLUME", "KES ${stats['grossVolume'] ?? 0}"),
-                      _buildStatCard("ACTIVE DRIVERS", "${stats['activeDrivers'] ?? 0}"),
-                      _buildStatCard("PLATFORM REVENUE", "KES ${stats['totalCommission'] ?? 0}"),
-                      _buildStatCard("KRA TAX VAULT", "KES ${stats['totalKraTaxRetained'] ?? 0}", const Color(0xFFFF9900)),
+                      _buildStatCard("GROSS PLATFORM VOLUME", "KES ${stats['grossVolume'] ?? 0}"),
+                      _buildStatCard("ACTIVE FLEET DRIVERS", "${stats['activeDrivers'] ?? 0}"),
+                      _buildStatCard("PLATFORM NET REVENUE", "KES ${stats['totalCommission'] ?? 0}"),
+                      _buildStatCard("KRA COMPLIANCE VAULT", "KES ${stats['totalKraTaxRetained'] ?? 0}", const Color(0xFFFF9900)),
                     ],
                   ),
                   const SizedBox(height: 12),
                   _buildStkPushForm(),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: 420,
+                    height: 440,
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: _buildPanel("1. FLEET & TELEMETRY", _buildDriversList())),
+                        Expanded(child: _buildPanel("1. FLEET TELEMETRY & DRIVERS", _buildDriversList())),
                         const SizedBox(width: 8),
-                        Expanded(child: _buildPanel("2. ESCROW & DISPATCH", _buildOrdersList())),
+                        Expanded(child: _buildPanel("2. ESCROW DISPATCH & ORDERS", _buildOrdersList())),
                         const SizedBox(width: 8),
-                        Expanded(child: _buildPanel("3. DOUBLE-ENTRY LEDGER", _buildLedgerList())),
+                        Expanded(child: _buildPanel("3. AUDITED DOUBLE-ENTRY LEDGER", _buildLedgerList())),
                         const SizedBox(width: 8),
-                        Expanded(child: _buildPanel("4. LIMITLESS NODE HEALTH", _buildEngineHealth())),
+                        Expanded(child: _buildPanel("4. NODE MATRIX & GOVERNANCE", _buildEngineHealth())),
                       ],
                     ),
                   ),
@@ -231,14 +241,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        border: Border.all(color: const Color(0xFF1F2937)),
+        color: const Color(0xFF0F172A),
+        border: Border.all(color: const Color(0xFF1E293B)),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 10, letterSpacing: 1.0)),
+          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 9, letterSpacing: 1.0)),
           const SizedBox(height: 4),
           Text(value, style: TextStyle(color: valueColor, fontSize: 16, fontWeight: FontWeight.bold)),
         ],
@@ -250,7 +260,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
+        color: const Color(0xFF0F172A),
         border: Border.all(color: const Color(0xFF00FF88), width: 1),
         borderRadius: BorderRadius.circular(6),
       ),
@@ -259,9 +269,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         children: [
           Row(
             children: const [
-              Icon(Icons.phone_android, color: Color(0xFF00FF88), size: 18),
+              Icon(Icons.flash_on, color: Color(0xFF00FF88), size: 18),
               SizedBox(width: 8),
-              Text("M-PESA STK PUSH TERMINAL", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+              Text("STAGE 50 HIGH-SPEED STK GATEWAY", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 8),
@@ -273,8 +283,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   keyboardType: TextInputType.phone,
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                   decoration: const InputDecoration(
-                    labelText: "Phone Number (2547XXXXXXXX)",
-                    labelStyle: TextStyle(color: Colors.grey, fontSize: 11),
+                    labelText: "Recipient Phone (2547XXXXXXXX)",
+                    labelStyle: TextStyle(color: Colors.grey, fontSize: 10),
                     contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
                     focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF00FF88))),
@@ -288,8 +298,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   keyboardType: TextInputType.number,
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                   decoration: const InputDecoration(
-                    labelText: "Amount (KES)",
-                    labelStyle: TextStyle(color: Colors.grey, fontSize: 11),
+                    labelText: "Settlement Amount (KES)",
+                    labelStyle: TextStyle(color: Colors.grey, fontSize: 10),
                     contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
                     focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF00FF88))),
@@ -298,7 +308,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
               const SizedBox(width: 8),
               SizedBox(
-                height: 40,
+                height: 38,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00FF88),
@@ -306,8 +316,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   onPressed: isStkLoading ? null : triggerStkPush,
                   child: isStkLoading
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                      : const Text("TRIGGER STK", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                      : const Text("EXECUTE STK", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
                 ),
               ),
             ],
@@ -318,7 +328,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               _stkStatusMessage,
               style: TextStyle(
                 color: _stkStatusMessage.startsWith("✅") ? const Color(0xFF00FF88) : Colors.amber,
-                fontSize: 11,
+                fontSize: 10,
               ),
             ),
           ]
@@ -330,17 +340,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildPanel(String title, Widget child) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        border: Border.all(color: const Color(0xFF1F2937)),
+        color: const Color(0xFF0F172A),
+        border: Border.all(color: const Color(0xFF1E293B)),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-            color: const Color(0xFF1F2937),
+            color: const Color(0xFF1E293B),
             width: double.infinity,
-            child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+            child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
           ),
           Expanded(child: child),
         ],
@@ -350,17 +360,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Widget _buildDriversList() {
     return drivers.isEmpty
-        ? const Center(child: Text("No Active Drivers", style: TextStyle(color: Colors.grey, fontSize: 11)))
+        ? const Center(child: Text("No Active Drivers", style: TextStyle(color: Colors.grey, fontSize: 10)))
         : ListView.builder(
             itemCount: drivers.length,
             itemBuilder: (context, i) {
               final d = drivers[i];
               return ListTile(
                 dense: true,
-                leading: const Icon(Icons.two_wheeler, color: Color(0xFF00FF88), size: 16),
-                title: Text(d['name'] ?? 'Driver', style: const TextStyle(color: Colors.white, fontSize: 11)),
-                subtitle: Text(d['vehicle'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 9)),
-                trailing: Text("KES ${d['earnings'] ?? 0}", style: const TextStyle(color: Colors.greenAccent, fontSize: 10)),
+                leading: const Icon(Icons.two_wheeler, color: Color(0xFF00FF88), size: 15),
+                title: Text(d['name'] ?? 'Driver', style: const TextStyle(color: Colors.white, fontSize: 10)),
+                subtitle: Text(d['vehicle'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 8)),
+                trailing: Text("KES ${d['earnings'] ?? 0}", style: const TextStyle(color: Colors.greenAccent, fontSize: 9)),
               );
             },
           );
@@ -368,7 +378,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Widget _buildOrdersList() {
     return orders.isEmpty
-        ? const Center(child: Text("No Orders", style: TextStyle(color: Colors.grey, fontSize: 11)))
+        ? const Center(child: Text("No Active Escrow Orders", style: TextStyle(color: Colors.grey, fontSize: 10)))
         : ListView.builder(
             itemCount: orders.length,
             itemBuilder: (context, i) {
@@ -376,14 +386,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               final isEscrow = o['status'] == 'ESCROW_LOCKED';
               return ListTile(
                 dense: true,
-                title: Text("Order #${o['id']}", style: const TextStyle(color: Colors.white, fontSize: 11)),
-                subtitle: Text("KES ${o['total']}", style: const TextStyle(color: Colors.grey, fontSize: 9)),
+                title: Text("Order #${o['id']}", style: const TextStyle(color: Colors.white, fontSize: 10)),
+                subtitle: Text("KES ${o['total']}", style: const TextStyle(color: Colors.grey, fontSize: 8)),
                 trailing: isEscrow
                     ? IconButton(
-                        icon: const Icon(Icons.undo, color: Colors.redAccent, size: 14),
+                        icon: const Icon(Icons.restore, color: Colors.redAccent, size: 14),
                         onPressed: () => triggerRefund(o['id']),
                       )
-                    : Text(o['status'] ?? '', style: const TextStyle(color: Color(0xFF00FF88), fontSize: 9)),
+                    : Text(o['status'] ?? '', style: const TextStyle(color: Color(0xFF00FF88), fontSize: 8)),
               );
             },
           );
@@ -391,16 +401,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Widget _buildLedgerList() {
     return ledger.isEmpty
-        ? const Center(child: Text("No Transactions", style: TextStyle(color: Colors.grey, fontSize: 11)))
+        ? const Center(child: Text("No Ledger Logs", style: TextStyle(color: Colors.grey, fontSize: 10)))
         : ListView.builder(
             itemCount: ledger.length,
             itemBuilder: (context, i) {
               final l = ledger[i];
               return ListTile(
                 dense: true,
-                leading: const Icon(Icons.receipt, color: Colors.indigoAccent, size: 14),
-                title: Text(l['type'] ?? 'TX', style: const TextStyle(color: Colors.white, fontSize: 10)),
-                trailing: Text("KES ${l['amount'] ?? l['grossTotal'] ?? 0}", style: const TextStyle(color: Colors.white, fontSize: 10)),
+                leading: const Icon(Icons.receipt_long, color: Colors.indigoAccent, size: 14),
+                title: Text(l['type'] ?? 'TX', style: const TextStyle(color: Colors.white, fontSize: 9)),
+                trailing: Text("KES ${l['amount'] ?? l['grossTotal'] ?? 0}", style: const TextStyle(color: Colors.white, fontSize: 9)),
               );
             },
           );
@@ -412,22 +422,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _healthItem("Node Matrix Target", "Node 18.x -> Universal Limitless"),
-          _healthItem("Core Engine", "Stage 30 Enterprise"),
-          _healthItem("Escrow Accounting", "Double-Entry Split Active"),
-          _healthItem("KRA Compliance", "Automatic Tax Retention"),
+          _healthItem("Node Matrix Runtime", "Universal (Node 18 -> 24+)"),
+          _healthItem("Governance Core", "Stage 50 Enterprise"),
+          _healthItem("Consensus Engine", "Active Multi-Sig Vault"),
+          _healthItem("Escrow Protocol", "Double-Entry Split Engine"),
+          _healthItem("Tax Compliance", "Real-time KRA Retention"),
           const Spacer(),
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF065F46),
+              color: const Color(0xFF064E3B),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Row(
               children: const [
-                Icon(Icons.shield, color: Color(0xFF00FF88), size: 14),
+                Icon(Icons.verified_user, color: Color(0xFF00FF88), size: 14),
                 SizedBox(width: 6),
-                Text("ENGINE OPERATIONAL", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                Text("STAGE 50 GOVERNANCE ACTIVE", style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
               ],
             ),
           )
@@ -438,12 +449,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Widget _healthItem(String label, String val) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 3.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 9)),
-          Text(val, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 8)),
+          Text(val, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
         ],
       ),
     );
