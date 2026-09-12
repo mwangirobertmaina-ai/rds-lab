@@ -23,19 +23,34 @@ const DB_FILE = path.join(__dirname, "db.json");
 const ENV = process.env.NODE_ENV || "development";
 
 /* ========================================================================== */
-/* 0. FINANCIAL GOVERNANCE CONFIGURATION (5% COMMISSION + 16% KRA VAT)       */
+/* 0. DYNAMIC TRANSPORT PRICING & FINANCIAL GOVERNANCE                        */
 /* ========================================================================== */
 const COMMISSION_RATE = 0.05; // 5% Flat Platform Commission Rule
 const TAX_RATE = 0.16;       // 16% KRA VAT on Platform Commission
 
-function processPayment(amount) {
-  const gross = num(amount);
-  const commission = gross * COMMISSION_RATE;
+const BASE_FARE = 100;       // KES Base Fare
+const RATE_PER_KM = 50;      // KES per KM
+
+function calculateFare(distanceKm) {
+  const km = num(distanceKm) > 0 ? num(distanceKm) : 10; // Default 10 KM if non-distance trip
+  return BASE_FARE + (km * RATE_PER_KM);
+}
+
+function processTrip(distanceKm, overrideAmount = null) {
+  const fare = overrideAmount && num(overrideAmount) > 0 ? num(overrideAmount) : calculateFare(distanceKm);
+  const commission = fare * COMMISSION_RATE;
   const tax = commission * TAX_RATE;
   const netRevenue = commission - tax;
-  const driverAmount = gross - commission;
+  const driverAmount = fare - commission;
 
-  return { gross, commission, tax, netRevenue, driverAmount };
+  return {
+    fare,
+    gross: fare,
+    commission,
+    tax,
+    netRevenue,
+    driverAmount
+  };
 }
 
 /* ========================================================================== */
@@ -506,11 +521,9 @@ app.get("/orders", (req, res) => {
 
 const checkoutHandler = async (req, res) => {
   try {
-    const { businessId, items, total, amount, customerName, customerPhone } = req.body;
+    const { businessId, items, total, amount, distanceKm, customerName, customerPhone } = req.body;
     const baseTotal = num(total || amount);
-    const surge = calculateSurgeMultiplier();
-    const finalTotal = baseTotal * surge;
-    const result = processPayment(finalTotal);
+    const result = processTrip(distanceKm, baseTotal);
 
     const order = {
       id: id("ord"),
@@ -518,10 +531,11 @@ const checkoutHandler = async (req, res) => {
       customerName: customerName || "Guest",
       customerPhone: customerPhone || "0700000000",
       items: Array.isArray(items) ? items : [],
-      baseTotal,
-      surgeMultiplier: surge,
-      total: finalTotal,
-      amount: finalTotal,
+      baseTotal: result.fare,
+      distanceKm: num(distanceKm) || 10,
+      surgeMultiplier: calculateSurgeMultiplier(),
+      total: result.fare,
+      amount: result.fare,
       status: "PAID",
       driverId: null,
       createdAt: Date.now()
@@ -575,7 +589,7 @@ const checkoutHandler = async (req, res) => {
     await saveDB();
 
     io.emit("order:created", order);
-    log("ORDER", `Stage 50 Order Executed & Paid: ${order.id} (KES ${finalTotal})`);
+    log("ORDER", `Stage 50 Transport Order Paid: ${order.id} (KES ${result.fare})`);
     ok(res, { order, split: result });
   } catch (err) {
     fail(res, "Checkout execution failed", 500);
@@ -625,14 +639,14 @@ app.get("/escrow", (req, res) => ok(res, { escrow: data.escrow, data: data.escro
 /* ================= MODULE 6: M-PESA DARAJA GATEWAY ALIASED ROUTES ================= */
 const stkPushHandler = (req, res) => {
   try {
-    const { phone, amount } = req.body;
-    if (!phone || !amount) return fail(res, "Missing phone or amount", 400);
+    const { phone, amount, distanceKm } = req.body;
+    if (!phone || (!amount && !distanceKm)) return fail(res, "Missing phone or amount/distance", 400);
 
     let formattedPhone = phone.toString().replace("+", "").trim();
     if (formattedPhone.startsWith("0")) formattedPhone = "254" + formattedPhone.substring(1);
 
     const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    const result = processPayment(amount);
+    const result = processTrip(distanceKm, amount);
 
     const order = {
       id: id("ORD"),
@@ -683,7 +697,7 @@ const stkPushHandler = (req, res) => {
       message: "STK Push executed and settled",
       CheckoutRequestID: checkoutRequestId,
       CustomerPhone: formattedPhone,
-      Amount: amount,
+      Amount: result.gross,
       split: result,
       status: "COMPLETED"
     });
