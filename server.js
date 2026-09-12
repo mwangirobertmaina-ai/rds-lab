@@ -7,7 +7,7 @@ const cors = require("cors");
 const path = require("path");
 
 const app = express();
-app.set("trust proxy", 1); // Real IP extraction behind Render/Cloudflare proxies
+app.set("trust proxy", 1);
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -25,8 +25,8 @@ const ENV = process.env.NODE_ENV || "development";
 /* ========================================================================== */
 /* 0. FINANCIAL GOVERNANCE CONFIGURATION (5% COMMISSION + 16% KRA VAT)       */
 /* ========================================================================== */
-const COMMISSION_RATE = 0.05; // 5% Flat Platform Commission Rule
-const TAX_RATE = 0.16;       // 16% KRA VAT on Platform Commission
+const COMMISSION_RATE = 0.05; // 5% Platform Commission
+const TAX_RATE = 0.16;       // 16% KRA VAT on Commission
 
 function processPayment(amount) {
   const gross = num(amount);
@@ -302,8 +302,7 @@ app.get("/system/stats", (req, res) => {
   try {
     sanitizeDataState();
     const grossVolume = data.orders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
-    
-    // Calculated live from Double-Entry Ledger entries
+
     const totalCommission = data.ledger
       .filter(l => l.type === "PLATFORM_COMMISSION" || l.type === "COMMISSION")
       .reduce((sum, l) => sum + num(l.amount), 0);
@@ -510,6 +509,8 @@ const checkoutHandler = async (req, res) => {
     const surge = calculateSurgeMultiplier();
     const finalTotal = baseTotal * surge;
 
+    const result = processPayment(finalTotal);
+
     const order = {
       id: id("ord"),
       businessId: businessId || "SYSTEM",
@@ -520,29 +521,12 @@ const checkoutHandler = async (req, res) => {
       surgeMultiplier: surge,
       total: finalTotal,
       amount: finalTotal,
-      status: "ESCROW_LOCKED",
+      status: "PAID",
       driverId: null,
       createdAt: Date.now()
     };
 
     data.orders.push(order);
-
-    data.escrow.push({
-      id: id("esc"),
-      orderId: order.id,
-      businessId: order.businessId,
-      amount: finalTotal,
-      status: "LOCKED",
-      createdAt: Date.now()
-    });
-
-    data.ledger.push({
-      id: id("tx"),
-      type: "ESCROW_LOCK",
-      amount: finalTotal,
-      orderId: order.id,
-      createdAt: Date.now()
-    });
 
     const onlineDrivers = data.drivers.filter(d => d.status === "online");
     if (onlineDrivers.length > 0) {
@@ -550,7 +534,8 @@ const checkoutHandler = async (req, res) => {
       const assignedDriver = onlineDrivers[0];
 
       order.driverId = assignedDriver.id;
-      order.status = "DISPATCHED";
+      assignedDriver.earnings += result.driverAmount;
+      assignedDriver.walletBalance = num(assignedDriver.walletBalance) + result.driverAmount;
       assignedDriver.status = "busy";
 
       data.deliveries.push({
@@ -562,11 +547,36 @@ const checkoutHandler = async (req, res) => {
       });
     }
 
+    // Write Double-Entry Ledger split immediately upon payment completion
+    data.ledger.push({
+      id: id("tx"),
+      type: "ORDER_PAYMENT",
+      amount: result.gross,
+      orderId: order.id,
+      createdAt: Date.now()
+    });
+
+    data.ledger.push({
+      id: id("tx"),
+      type: "PLATFORM_COMMISSION",
+      amount: result.commission,
+      orderId: order.id,
+      createdAt: Date.now()
+    });
+
+    data.ledger.push({
+      id: id("tx"),
+      type: "TAX",
+      amount: result.tax,
+      orderId: order.id,
+      createdAt: Date.now()
+    });
+
     await saveDB();
 
     io.emit("order:created", order);
-    log("ORDER", `Stage 50 Escrow Lock Created: ${order.id} (KES ${finalTotal})`);
-    ok(res, { order });
+    log("ORDER", `Stage 50 Order Executed & Paid: ${order.id} (KES ${finalTotal})`);
+    ok(res, { order, split: result });
   } catch (err) {
     fail(res, "Checkout execution failed", 500);
   }
@@ -582,9 +592,6 @@ app.post("/order/refund", async (req, res) => {
     if (!order) return fail(res, "Order not found", 404);
 
     order.status = "REFUNDED";
-
-    const escrowRecord = data.escrow.find(e => e.orderId === orderId);
-    if (escrowRecord) escrowRecord.status = "REFUNDED";
 
     data.ledger.push({
       id: id("tx"),
@@ -602,82 +609,6 @@ app.post("/order/refund", async (req, res) => {
     fail(res, "Refund execution failed", 500);
   }
 });
-
-const completeOrderHandler = async (req, res) => {
-  const { orderId, deliveryId } = req.body;
-  const targetId = orderId || deliveryId;
-
-  let delivery = data.deliveries.find(d => d.id === targetId || d.orderId === targetId);
-  let order = data.orders.find(o => o.id === targetId || (delivery && o.id === delivery.orderId));
-
-  if (!order && !delivery) return fail(res, "Order record not found", 404);
-
-  const escrowRecord = data.escrow.find(e => e.orderId === (order ? order.id : targetId) && e.status === "LOCKED");
-  if (escrowRecord) {
-    escrowRecord.status = "RELEASED";
-    escrowRecord.releasedAt = Date.now();
-  }
-
-  if (order) order.status = "PAID";
-  if (delivery) delivery.status = "COMPLETED";
-
-  const orderAmount = order ? num(order.total) : 0;
-  const result = processPayment(orderAmount);
-
-  // Credit Driver Wallet (95%)
-  const targetDriverId = (order && order.driverId) || (delivery && delivery.driverId);
-  if (targetDriverId) {
-    const driver = data.drivers.find(d => d.id === targetDriverId);
-    if (driver) {
-      driver.earnings += result.driverAmount;
-      driver.walletBalance = num(driver.walletBalance) + result.driverAmount;
-      driver.status = "online";
-
-      data.ledger.push({
-        id: id("tx"),
-        type: "DRIVER_PAYOUT",
-        amount: result.driverAmount,
-        driverId: driver.id,
-        orderId: order ? order.id : targetId,
-        createdAt: Date.now()
-      });
-    }
-  }
-
-  // Double-Entry Ledger Entries (Executed ONLY when Order is PAID)
-  data.ledger.push({
-    id: id("tx"),
-    type: "ORDER_PAYMENT",
-    amount: result.gross,
-    orderId: order ? order.id : targetId,
-    createdAt: Date.now()
-  });
-
-  data.ledger.push({
-    id: id("tx"),
-    type: "PLATFORM_COMMISSION",
-    amount: result.commission,
-    orderId: order ? order.id : targetId,
-    createdAt: Date.now()
-  });
-
-  data.ledger.push({
-    id: id("tx"),
-    type: "TAX",
-    amount: result.tax,
-    orderId: order ? order.id : targetId,
-    createdAt: Date.now()
-  });
-
-  await saveDB();
-
-  io.emit("order:completed", { orderId: order ? order.id : targetId, financialSplit: result });
-  ok(res, { message: "Stage 50 Settlement Complete", order, financialSplit: result });
-};
-
-app.post("/completeOrder", completeOrderHandler);
-app.post("/completeDelivery", completeOrderHandler);
-app.post("/order/complete", completeOrderHandler);
 
 /* ================= MODULE 5: FINANCIAL LEDGER & WALLETS ================= */
 const getLedgerHandler = (req, res) => {
@@ -701,22 +632,63 @@ const stkPushHandler = (req, res) => {
     if (formattedPhone.startsWith("0")) formattedPhone = "254" + formattedPhone.substring(1);
 
     const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    
+    const result = processPayment(amount);
+
+    // Create paid order record dynamically for STK pushes
+    const order = {
+      id: id("ORD"),
+      businessId: "SYSTEM",
+      customerName: "M-Pesa Gateway",
+      customerPhone: formattedPhone,
+      total: result.gross,
+      amount: result.gross,
+      status: "PAID",
+      createdAt: Date.now()
+    };
+    data.orders.push(order);
+
+    // Auto-credit online driver
+    const onlineDrivers = data.drivers.filter(d => d.status === "online");
+    if (onlineDrivers.length > 0) {
+      const assignedDriver = onlineDrivers[0];
+      assignedDriver.earnings += result.driverAmount;
+      assignedDriver.walletBalance = num(assignedDriver.walletBalance) + result.driverAmount;
+    }
+
+    // Write Double-Entry Ledger entries
     data.ledger.push({
       id: id("tx"),
-      type: "STK_PUSH_INITIATED",
-      amount: num(amount),
+      type: "ORDER_PAYMENT",
+      amount: result.gross,
       phone: formattedPhone,
       createdAt: Date.now()
     });
+
+    data.ledger.push({
+      id: id("tx"),
+      type: "PLATFORM_COMMISSION",
+      amount: result.commission,
+      phone: formattedPhone,
+      createdAt: Date.now()
+    });
+
+    data.ledger.push({
+      id: id("tx"),
+      type: "TAX",
+      amount: result.tax,
+      phone: formattedPhone,
+      createdAt: Date.now()
+    });
+
     saveDB();
 
     ok(res, {
-      message: "STK Push prompt sent to handset",
+      message: "STK Push executed and settled",
       CheckoutRequestID: checkoutRequestId,
       CustomerPhone: formattedPhone,
       Amount: amount,
-      status: "PENDING_USER_PIN"
+      split: result,
+      status: "COMPLETED"
     });
   } catch (err) {
     fail(res, "M-Pesa Gateway Failure", 500);
