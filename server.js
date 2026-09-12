@@ -1,3 +1,4 @@
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -35,13 +36,7 @@ function processPayment(amount) {
   const netRevenue = commission - tax;
   const driverAmount = gross - commission;
 
-  return {
-    gross,
-    commission,
-    tax,
-    netRevenue,
-    driverAmount
-  };
+  return { gross, commission, tax, netRevenue, driverAmount };
 }
 
 /* ========================================================================== */
@@ -228,6 +223,40 @@ function sanitizeDataState() {
     }
   });
   data.drivers = Array.from(driverMap.values());
+
+  // RETROACTIVE MIGRATION: Generate missing Commission & Tax Ledger entries for existing payments
+  const existingPaymentOrders = new Set(
+    data.ledger.filter(l => l.type === "PLATFORM_COMMISSION").map(l => l.orderId || l.phone)
+  );
+
+  const paymentEntries = data.ledger.filter(l => l.type === "ORDER_PAYMENT");
+
+  paymentEntries.forEach(p => {
+    const refKey = p.orderId || p.phone;
+    if (refKey && !existingPaymentOrders.has(refKey)) {
+      const split = processPayment(p.amount);
+
+      data.ledger.push({
+        id: id("tx"),
+        type: "PLATFORM_COMMISSION",
+        amount: split.commission,
+        orderId: p.orderId,
+        phone: p.phone,
+        createdAt: p.createdAt || Date.now()
+      });
+
+      data.ledger.push({
+        id: id("tx"),
+        type: "TAX",
+        amount: split.tax,
+        orderId: p.orderId,
+        phone: p.phone,
+        createdAt: p.createdAt || Date.now()
+      });
+
+      existingPaymentOrders.add(refKey);
+    }
+  });
 }
 
 if (fs.existsSync(DB_FILE)) {
@@ -301,15 +330,22 @@ app.get("/health", (req, res) => ok(res, { status: "HEALTHY", stage: "STAGE_50_E
 app.get("/system/stats", (req, res) => {
   try {
     sanitizeDataState();
+
     const grossVolume = data.orders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
 
-    const totalCommission = data.ledger
+    let totalCommission = data.ledger
       .filter(l => l.type === "PLATFORM_COMMISSION" || l.type === "COMMISSION")
       .reduce((sum, l) => sum + num(l.amount), 0);
 
-    const totalKraTaxRetained = data.ledger
+    let totalKraTaxRetained = data.ledger
       .filter(l => l.type === "TAX")
       .reduce((sum, l) => sum + num(l.amount), 0);
+
+    // Fallback: Calculate direct metrics from gross volume if ledger entries are missing
+    if (totalCommission === 0 && grossVolume > 0) {
+      totalCommission = grossVolume * COMMISSION_RATE;
+      totalKraTaxRetained = totalCommission * TAX_RATE;
+    }
 
     const escrowLocked = data.escrow
       .filter(e => e.status === "LOCKED")
@@ -508,7 +544,6 @@ const checkoutHandler = async (req, res) => {
     const baseTotal = num(total || amount);
     const surge = calculateSurgeMultiplier();
     const finalTotal = baseTotal * surge;
-
     const result = processPayment(finalTotal);
 
     const order = {
@@ -547,7 +582,6 @@ const checkoutHandler = async (req, res) => {
       });
     }
 
-    // Write Double-Entry Ledger split immediately upon payment completion
     data.ledger.push({
       id: id("tx"),
       type: "ORDER_PAYMENT",
@@ -634,7 +668,6 @@ const stkPushHandler = (req, res) => {
     const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const result = processPayment(amount);
 
-    // Create paid order record dynamically for STK pushes
     const order = {
       id: id("ORD"),
       businessId: "SYSTEM",
@@ -647,7 +680,6 @@ const stkPushHandler = (req, res) => {
     };
     data.orders.push(order);
 
-    // Auto-credit online driver
     const onlineDrivers = data.drivers.filter(d => d.status === "online");
     if (onlineDrivers.length > 0) {
       const assignedDriver = onlineDrivers[0];
@@ -655,7 +687,6 @@ const stkPushHandler = (req, res) => {
       assignedDriver.walletBalance = num(assignedDriver.walletBalance) + result.driverAmount;
     }
 
-    // Write Double-Entry Ledger entries
     data.ledger.push({
       id: id("tx"),
       type: "ORDER_PAYMENT",
