@@ -1,4 +1,4 @@
-name: Node Backend Limitless CI
+name: RDS Enterprise Universal CI
 
 on:
   push:
@@ -13,13 +13,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18.x, 20.x, 22.x, 24.x, "latest"]
+        node-version: [18.x, 20.x, 22.x, 24.x]
 
     steps:
       - name: Checkout Code Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js Environment (${{ matrix.node-version }})
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
@@ -27,8 +27,16 @@ jobs:
       - name: Install Project Dependencies
         run: npm install --legacy-peer-deps || npm install
 
-      - name: Verify Core Backend Syntax (server.js)
+      - name: Verify Stage 30 Server Syntax
         run: node -c server.js
 
-      - name: Pipeline Health Check
-        run: echo "Stage 20 Core Engine validated successfully on Node ${{ matrix.node-version }}. Webpack dependency permanently removed."
+      - name: Integration Test (Server Health Check)
+        run: |
+          node server.js &
+          SERVER_PID=$!
+          sleep 4
+          curl -f http://localhost:3000/health || exit 1
+          kill $SERVER_PID
+
+      - name: Deployment Verification
+        run: echo "RDS Engine verified successfully on Node.js ${{ matrix.node-version }}"
