@@ -1,4 +1,3 @@
-
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -26,7 +25,7 @@ const ENV = process.env.NODE_ENV || "development";
 /* ========================================================================== */
 /* 0. FINANCIAL GOVERNANCE CONFIGURATION (5% COMMISSION + 16% KRA VAT)       */
 /* ========================================================================== */
-const COMMISSION_RATE = 0.05; // 5% Platform Commission
+const COMMISSION_RATE = 0.05; // 5% Flat Platform Commission
 const TAX_RATE = 0.16;       // 16% KRA VAT on Commission
 
 function processPayment(amount) {
@@ -223,40 +222,6 @@ function sanitizeDataState() {
     }
   });
   data.drivers = Array.from(driverMap.values());
-
-  // RETROACTIVE MIGRATION: Generate missing Commission & Tax Ledger entries for existing payments
-  const existingPaymentOrders = new Set(
-    data.ledger.filter(l => l.type === "PLATFORM_COMMISSION").map(l => l.orderId || l.phone)
-  );
-
-  const paymentEntries = data.ledger.filter(l => l.type === "ORDER_PAYMENT");
-
-  paymentEntries.forEach(p => {
-    const refKey = p.orderId || p.phone;
-    if (refKey && !existingPaymentOrders.has(refKey)) {
-      const split = processPayment(p.amount);
-
-      data.ledger.push({
-        id: id("tx"),
-        type: "PLATFORM_COMMISSION",
-        amount: split.commission,
-        orderId: p.orderId,
-        phone: p.phone,
-        createdAt: p.createdAt || Date.now()
-      });
-
-      data.ledger.push({
-        id: id("tx"),
-        type: "TAX",
-        amount: split.tax,
-        orderId: p.orderId,
-        phone: p.phone,
-        createdAt: p.createdAt || Date.now()
-      });
-
-      existingPaymentOrders.add(refKey);
-    }
-  });
 }
 
 if (fs.existsSync(DB_FILE)) {
@@ -331,21 +296,14 @@ app.get("/system/stats", (req, res) => {
   try {
     sanitizeDataState();
 
+    // 1. Calculate Gross Volume directly from all orders
     const grossVolume = data.orders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
 
-    let totalCommission = data.ledger
-      .filter(l => l.type === "PLATFORM_COMMISSION" || l.type === "COMMISSION")
-      .reduce((sum, l) => sum + num(l.amount), 0);
+    // 2. Compute 5% Platform Revenue directly from Gross Volume
+    const totalCommission = Math.round(grossVolume * COMMISSION_RATE * 100) / 100;
 
-    let totalKraTaxRetained = data.ledger
-      .filter(l => l.type === "TAX")
-      .reduce((sum, l) => sum + num(l.amount), 0);
-
-    // Fallback: Calculate direct metrics from gross volume if ledger entries are missing
-    if (totalCommission === 0 && grossVolume > 0) {
-      totalCommission = grossVolume * COMMISSION_RATE;
-      totalKraTaxRetained = totalCommission * TAX_RATE;
-    }
+    // 3. Compute 16% KRA Tax directly from Platform Revenue
+    const totalKraTaxRetained = Math.round(totalCommission * TAX_RATE * 100) / 100;
 
     const escrowLocked = data.escrow
       .filter(e => e.status === "LOCKED")
