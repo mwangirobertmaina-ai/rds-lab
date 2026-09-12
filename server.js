@@ -5,6 +5,7 @@ const fs = require("fs");
 const fsPromises = require("fs").promises;
 const cors = require("cors");
 const path = require("path");
+const axios = require("axios"); // Added for live Daraja API communication
 
 const app = express();
 app.set("trust proxy", 1);
@@ -26,7 +27,7 @@ const ENV = process.env.NODE_ENV || "development";
 /* 0. DYNAMIC TRANSPORT PRICING & FINANCIAL GOVERNANCE                        */
 /* ========================================================================== */
 const COMMISSION_RATE = 0.05; // 5% Flat Platform Commission
-const TAX_RATE = 0.16;       // 16% KRA VAT on Platform Commission
+const TAX_RATE = 0.16;        // 16% KRA VAT on Platform Commission
 
 const BASE_FARE = 100;       // KES Base Fare
 const RATE_PER_KM = 50;      // KES per KM
@@ -51,6 +52,37 @@ function processTrip(distanceKm, overrideAmount = null) {
     netRevenue,
     driverAmount
   };
+}
+
+/* ========================================================================== */
+/* 0.1 LIVE M-PESA DARAJA CONFIGURATION & AUTH ENGINE                         */
+/* ========================================================================== */
+const MPESA_CONFIG = {
+  consumerKey: process.env.MPESA_CONSUMER_KEY || "StKG72R5qJSkDDMXeNfxI2zH8qjSLnlAaUXwP7DknDRYALNw",
+  consumerSecret: process.env.MPESA_CONSUMER_SECRET || "dKzqEzOfR8ExEzHIAiUj4cyeOVymr7k2IaxghhWTIQVlVkcY3iuWLW6cjpdGq7Bz",
+  shortCode: process.env.MPESA_SHORTCODE || "1672064",
+  storeNumber: process.env.MPESA_STORE_NUMBER || "1200280",
+  passkey: process.env.MPESA_PASSKEY || "3174",
+  environment: process.env.MPESA_ENV || "production"
+};
+
+const MPESA_BASE_URL = MPESA_CONFIG.environment === "production"
+  ? "https://api.safaricom.co.ke"
+  : "https://sandbox.safaricom.co.ke";
+
+async function getMpesaAccessToken() {
+  try {
+    const authString = Buffer.from(`${MPESA_CONFIG.consumerKey}:${MPESA_CONFIG.consumerSecret}`).toString("base64");
+    const response = await axios.get(`${MPESA_BASE_URL}/oauth/v1/generate?grant_type=client_credentials`, {
+      headers: {
+        Authorization: `Basic ${authString}`
+      }
+    });
+    return response.data.access_token;
+  } catch (err) {
+    log("MPESA_AUTH_ERROR", err.response?.data ? JSON.stringify(err.response.data) : err.message);
+    throw new Error("Failed to authenticate with M-Pesa Daraja API");
+  }
 }
 
 /* ========================================================================== */
@@ -254,7 +286,6 @@ function sanitizeDataState() {
     });
   }
 
-  // RECALCULATE DRIVER WALLETS
   data.drivers.forEach(driver => {
     const matchedOrders = data.orders.filter(
       o => o.driverId === driver.id || 
@@ -268,7 +299,6 @@ function sanitizeDataState() {
     driver.walletBalance = Math.round(calculatedEarnings * 100) / 100;
   });
 
-  // RECALCULATE MERCHANT WALLETS
   data.businesses.forEach(biz => {
     let wallet = data.wallets.find(w => w.businessId === biz.id);
     if (!wallet) {
@@ -553,7 +583,6 @@ const checkoutHandler = async (req, res) => {
     const baseTotal = num(total || amount);
     const result = processTrip(distanceKm, baseTotal);
 
-    // Credit Merchant Wallet
     if (businessId && businessId !== "SYSTEM") {
       let merchantWallet = data.wallets.find(w => w.businessId === businessId);
       if (!merchantWallet) {
@@ -673,8 +702,8 @@ app.get("/wallets", (req, res) => ok(res, { wallets: data.wallets, data: data.wa
 app.get("/deliveries", (req, res) => ok(res, { deliveries: data.deliveries, data: data.deliveries }));
 app.get("/escrow", (req, res) => ok(res, { escrow: data.escrow, data: data.escrow }));
 
-/* ================= MODULE 6: M-PESA DARAJA GATEWAY ALIASED ROUTES ================= */
-const stkPushHandler = (req, res) => {
+/* ================= MODULE 6: M-PESA DARAJA LIVE GATEWAY ENGINE ================= */
+const stkPushHandler = async (req, res) => {
   try {
     const { phone, amount, distanceKm, businessId } = req.body;
     if (!phone || (!amount && !distanceKm)) return fail(res, "Missing phone or amount/distance", 400);
@@ -682,8 +711,36 @@ const stkPushHandler = (req, res) => {
     let formattedPhone = phone.toString().replace("+", "").trim();
     if (formattedPhone.startsWith("0")) formattedPhone = "254" + formattedPhone.substring(1);
 
-    const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const result = processTrip(distanceKm, amount);
+    const accessToken = await getMpesaAccessToken();
+
+    const timestamp = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14);
+    const password = Buffer.from(`${MPESA_CONFIG.shortCode}${MPESA_CONFIG.passkey}${timestamp}`).toString("base64");
+
+    const payload = {
+      BusinessShortCode: MPESA_CONFIG.shortCode,
+      Password: password,
+      Timestamp: timestamp,
+      TransactionType: "CustomerPayBillOnline",
+      Amount: Math.round(result.gross),
+      PartyA: formattedPhone,
+      PartyB: MPESA_CONFIG.shortCode,
+      PhoneNumber: formattedPhone,
+      CallBackURL: `${req.protocol}://${req.get("host")}/mpesa/callback`,
+      AccountReference: "RDS-Lab",
+      TransactionDesc: "RDS Transport and Delivery Payment"
+    };
+
+    let darajaResponse;
+    try {
+      const response = await axios.post(`${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`, payload, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      darajaResponse = response.data;
+    } catch (apiErr) {
+      log("DARAJA_API_ERROR", apiErr.response?.data ? JSON.stringify(apiErr.response.data) : apiErr.message);
+      return fail(res, "M-Pesa Daraja STK Push rejected by Safaricom", 502);
+    }
 
     if (businessId && businessId !== "SYSTEM") {
       let merchantWallet = data.wallets.find(w => w.businessId === businessId);
@@ -691,7 +748,7 @@ const stkPushHandler = (req, res) => {
         merchantWallet = { id: id("wal"), businessId, balance: 0 };
         data.wallets.push(merchantWallet);
       }
-      merchantWallet.balance = num(merchantWallet.balance) + num(amount);
+      merchantWallet.balance = num(merchantWallet.balance) + result.gross;
     }
 
     const activeDrivers = data.drivers.length > 0 ? [...data.drivers] : [];
@@ -701,11 +758,12 @@ const stkPushHandler = (req, res) => {
     const order = {
       id: id("ORD"),
       businessId: businessId || "SYSTEM",
-      customerName: "M-Pesa Gateway",
+      customerName: "M-Pesa Daraja Live",
       customerPhone: formattedPhone,
       total: result.gross,
       amount: result.gross,
-      status: "PAID",
+      status: "PENDING_STK",
+      checkoutRequestId: darajaResponse.CheckoutRequestID,
       driverId: assignedDriver ? assignedDriver.id : null,
       createdAt: Date.now()
     };
@@ -718,61 +776,62 @@ const stkPushHandler = (req, res) => {
 
     data.ledger.push({
       id: id("tx"),
-      type: "ORDER_PAYMENT",
+      type: "MPESA_STK_INITIATED",
       amount: result.gross,
       phone: formattedPhone,
+      checkoutRequestId: darajaResponse.CheckoutRequestID,
       createdAt: Date.now()
     });
 
-    data.ledger.push({
-      id: id("tx"),
-      type: "PLATFORM_COMMISSION",
-      amount: result.commission,
-      phone: formattedPhone,
-      createdAt: Date.now()
-    });
-
-    data.ledger.push({
-      id: id("tx"),
-      type: "TAX",
-      amount: result.tax,
-      phone: formattedPhone,
-      createdAt: Date.now()
-    });
-
-    saveDB();
+    await saveDB();
 
     ok(res, {
-      message: "STK Push executed and settled",
-      CheckoutRequestID: checkoutRequestId,
+      message: "Live M-Pesa STK Push sent successfully",
+      CheckoutRequestID: darajaResponse.CheckoutRequestID,
+      MerchantRequestID: darajaResponse.MerchantRequestID,
       CustomerPhone: formattedPhone,
       Amount: result.gross,
       split: result,
-      status: "COMPLETED"
+      status: "PENDING"
     });
   } catch (err) {
-    fail(res, "M-Pesa Gateway Failure", 500);
+    log("STK_FATAL", err.message);
+    fail(res, "M-Pesa Live Gateway Failure: " + err.message, 500);
   }
 };
 
 app.post("/mpesa/stkpush", stkPushHandler);
 app.post("/payments/stk-push", stkPushHandler);
 
-app.post("/mpesa/callback", (req, res) => {
+app.post("/mpesa/callback", async (req, res) => {
   try {
     const callbackData = req.body?.Body?.stkCallback || req.body;
     log("MPESA_CALLBACK", JSON.stringify(callbackData));
 
     const resultCode = callbackData?.ResultCode;
+    const checkoutRequestId = callbackData?.CheckoutRequestID;
     const merchantRequestId = callbackData?.MerchantRequestID;
 
-    if (resultCode === 0) {
-      io.emit("payment:success", {
-        status: "CONFIRMED",
-        requestId: merchantRequestId,
-        time: Date.now()
-      });
+    const order = data.orders.find(o => o.checkoutRequestId === checkoutRequestId || o.id === merchantRequestId);
+    if (order) {
+      if (resultCode === 0) {
+        order.status = "PAID";
+        const result = processTrip(order.distanceKm || 10, order.total);
+        data.ledger.push({ id: id("tx"), type: "ORDER_PAYMENT", amount: result.gross, orderId: order.id, createdAt: Date.now() });
+        data.ledger.push({ id: id("tx"), type: "PLATFORM_COMMISSION", amount: result.commission, orderId: order.id, createdAt: Date.now() });
+        data.ledger.push({ id: id("tx"), type: "TAX", amount: result.tax, orderId: order.id, createdAt: Date.now() });
+      } else {
+        order.status = "FAILED";
+      }
+      await saveDB();
     }
+
+    io.emit("payment:callback", {
+      resultCode,
+      checkoutRequestId,
+      status: resultCode === 0 ? "CONFIRMED" : "FAILED",
+      time: Date.now()
+    });
 
     res.status(200).json({ ResultCode: 0, ResultDesc: "Accepted" });
   } catch (err) {
@@ -871,7 +930,7 @@ app.use((err, req, res, next) => {
 
 /* ================= SERVER START & GRACEFUL SHUTDOWN ================= */
 server.listen(PORT, () => {
-  log("SYSTEM", `🚀 STAGE 50 ENTERPRISE CORE ACTIVE ON PORT ${PORT} (ZERO-ERROR SHIELD ENABLED)`);
+  log("SYSTEM", `🚀 STAGE 50 ENTERPRISE CORE ACTIVE ON PORT ${PORT} (LIVE DARAJA STK PUSH INTEGRATED)`);
 });
 
 const gracefulShutdown = async (signal) => {
