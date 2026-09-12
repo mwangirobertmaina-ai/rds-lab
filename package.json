@@ -1,25 +1,25 @@
 {
   "name": "rds-lab",
   "version": "1.0.0",
+  "description": "RDS Enterprise Fleet Management Core Backend Engine",
   "main": "server.js",
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "scripts": {
-    "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
+  "type": "commonjs",
   "author": "Robert",
   "license": "ISC",
-  "description": "RDS Enterprise Fleet Management Core Backend Engine",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node -c server.js",
+    "build": "echo 'Backend deployment - skipping webpack bundling'"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "dependencies": {
-    "cors": "^2.8.6",
+    "cors": "^2.8.5",
     "express": "^4.19.2",
     "firebase-admin": "^13.0.0",
     "socket.io": "^4.7.5"
-  },
-  "devDependencies": {
-    "webpack-cli": "^7.2.3"
   }
 }
