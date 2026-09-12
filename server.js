@@ -738,8 +738,9 @@ const stkPushHandler = async (req, res) => {
       });
       darajaResponse = response.data;
     } catch (apiErr) {
-      log("DARAJA_API_ERROR", apiErr.response?.data ? JSON.stringify(apiErr.response.data) : apiErr.message);
-      return fail(res, "M-Pesa Daraja STK Push rejected by Safaricom", 502);
+      const errDetails = apiErr.response?.data ? JSON.stringify(apiErr.response.data) : apiErr.message;
+      log("DARAJA_API_ERROR_FULL", errDetails);
+      return fail(res, `M-Pesa Daraja Rejected: ${errDetails}`, 502);
     }
 
     if (businessId && businessId !== "SYSTEM") {
