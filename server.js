@@ -23,10 +23,31 @@ const DB_FILE = path.join(__dirname, "db.json");
 const ENV = process.env.NODE_ENV || "development";
 
 /* ========================================================================== */
+/* 0. FINANCIAL GOVERNANCE CONFIGURATION                                      */
+/* ========================================================================== */
+const COMMISSION_RATE = 0.05; // 5% Flat Platform Commission
+const TAX_RATE = 0.16;       // 16% KRA VAT on Platform Commission
+
+function processPayment(amount) {
+  const gross = num(amount);
+  const commission = gross * COMMISSION_RATE;
+  const tax = commission * TAX_RATE;
+  const netRevenue = commission - tax;
+  const driverAmount = gross - commission;
+
+  return {
+    gross,
+    commission,
+    tax,
+    netRevenue,
+    driverAmount
+  };
+}
+
+/* ========================================================================== */
 /* 1. IMMUTABLE SECURITY & SANITIZATION MIDDLEWARE                            */
 /* ========================================================================== */
 
-// CORS configured for both local dev and production GitHub Pages
 const allowedOrigins = [
   "https://mwangirobertmaina-ai.github.io",
   "http://localhost:58399"
@@ -38,27 +59,25 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith("http://localhost")) {
       return callback(null, true);
     }
-    return callback(null, true); // Permissive fallback for seamless API interop
+    return callback(null, true);
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-api-key"],
   credentials: true
 }));
 
-// Hardened Payload Limits & Deep Anti-Injection Sanitizer
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(express.static("."));
 
-// Anti-Hacking & NoSQL/Script Injection Sanitizer Middleware
 app.use((req, res, next) => {
   const sanitize = (obj) => {
     if (!obj || typeof obj !== "object") return;
     for (const key in obj) {
       if (key.startsWith("$") || key.includes(".")) {
-        delete obj[key]; // Neutralize NoSQL injection vectors
+        delete obj[key];
       } else if (typeof obj[key] === "string") {
-        obj[key] = obj[key].replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ""); // Strip script tags
+        obj[key] = obj[key].replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
       } else if (typeof obj[key] === "object") {
         sanitize(obj[key]);
       }
@@ -70,7 +89,6 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ================= STRUCTURED LOGGER ================= */
 function log(type, msg) {
   console.log(`[${new Date().toISOString()}] [STAGE-50-ENTERPRISE] [${type}] ${msg}`);
 }
@@ -80,7 +98,6 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ================= NON-BLOCKING RATE LIMITING ================= */
 const rateMap = new Map();
 
 setInterval(() => {
@@ -93,7 +110,7 @@ setInterval(() => {
 }, 600000);
 
 function rateLimit(req, res, next) {
-  if (req.method === "GET") return next(); // Whitelist read-only dashboard polling loops
+  if (req.method === "GET") return next();
 
   const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || req.socket.remoteAddress || "127.0.0.1";
   const now = Date.now();
@@ -113,7 +130,6 @@ function rateLimit(req, res, next) {
 
 app.use(rateLimit);
 
-/* ================= API SECURITY AUTH ================= */
 const API_KEYS = {
   ADMIN: process.env.ADMIN_KEY || "admin-secret",
   BUSINESS: process.env.BUSINESS_KEY || "business-secret",
@@ -213,7 +229,6 @@ function sanitizeDataState() {
   data.drivers = Array.from(driverMap.values());
 }
 
-// Initial Boot Hydration
 if (fs.existsSync(DB_FILE)) {
   try {
     const raw = fs.readFileSync(DB_FILE, "utf-8");
@@ -230,7 +245,6 @@ if (fs.existsSync(DB_FILE)) {
   sanitizeDataState();
 }
 
-/* ================= NON-BLOCKING PERSISTENCE QUEUE ================= */
 let writeQueue = Promise.resolve();
 
 const saveDB = () => {
@@ -287,13 +301,21 @@ app.get("/system/stats", (req, res) => {
   try {
     sanitizeDataState();
     const grossVolume = data.orders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
+    
+    // Aggregated from Double-Entry Ledger entries
     const totalCommission = data.ledger
-      .filter(l => l.type === "COMMISSION")
+      .filter(l => l.type === "PLATFORM_COMMISSION" || l.type === "COMMISSION")
       .reduce((sum, l) => sum + num(l.amount), 0);
+
+    const totalKraTaxRetained = data.ledger
+      .filter(l => l.type === "TAX")
+      .reduce((sum, l) => sum + num(l.amount), 0);
+
     const escrowLocked = data.escrow
       .filter(e => e.status === "LOCKED")
       .reduce((sum, e) => sum + num(e.amount), 0);
-    const totalKraTaxRetained = Math.round(grossVolume * 0.03); // Simulated 3% KRA Tax Retention
+
+    const netRevenue = totalCommission - totalKraTaxRetained;
 
     ok(res, {
       stats: {
@@ -305,8 +327,9 @@ app.get("/system/stats", (req, res) => {
         activeDrivers: data.drivers.filter(d => d.status === "online" || d.status === "busy").length,
         grossVolume,
         totalCommission,
-        escrowLocked,
         totalKraTaxRetained,
+        netRevenue,
+        escrowLocked,
         surgeMultiplier: calculateSurgeMultiplier()
       }
     });
@@ -550,7 +573,6 @@ const checkoutHandler = async (req, res) => {
 app.post("/checkout", checkoutHandler);
 app.post("/order/create", checkoutHandler);
 
-// Executive Escrow Refund Handler
 app.post("/order/refund", async (req, res) => {
   try {
     const { orderId, reason } = req.body;
@@ -597,18 +619,21 @@ const completeOrderHandler = async (req, res) => {
   if (order) order.status = "DELIVERED";
   if (delivery) delivery.status = "COMPLETED";
 
+  const orderAmount = order ? num(order.total) : 0;
+  const financialSplit = processPayment(orderAmount);
+
+  // Credit Driver Wallet with exact net earnings (Gross minus Platform Commission)
   const targetDriverId = (order && order.driverId) || (delivery && delivery.driverId);
   if (targetDriverId) {
     const driver = data.drivers.find(d => d.id === targetDriverId);
     if (driver) {
-      const earn = order ? num(order.total) * 0.15 : 50;
-      driver.earnings += earn;
+      driver.earnings += financialSplit.driverAmount;
       driver.status = "online";
 
       data.ledger.push({
         id: id("tx"),
         type: "DRIVER_PAYOUT",
-        amount: earn,
+        amount: financialSplit.driverAmount,
         driverId: driver.id,
         orderId: order ? order.id : targetId,
         createdAt: Date.now()
@@ -616,39 +641,35 @@ const completeOrderHandler = async (req, res) => {
     }
   }
 
-  if (order && order.businessId) {
-    let wallet = data.wallets.find(w => w.businessId === order.businessId);
-    if (!wallet) {
-      wallet = { id: id("wal"), businessId: order.businessId, balance: 0 };
-      data.wallets.push(wallet);
-    }
-    const merchantShare = num(order.total) * 0.80;
-    const platformCommission = num(order.total) * 0.20;
+  // Credit Platform Ledger & KRA Tax Vault
+  data.ledger.push({
+    id: id("tx"),
+    type: "ORDER_PAYMENT",
+    amount: financialSplit.gross,
+    orderId: order ? order.id : targetId,
+    createdAt: Date.now()
+  });
 
-    wallet.balance += merchantShare;
+  data.ledger.push({
+    id: id("tx"),
+    type: "PLATFORM_COMMISSION",
+    amount: financialSplit.commission,
+    orderId: order ? order.id : targetId,
+    createdAt: Date.now()
+  });
 
-    data.ledger.push({
-      id: id("tx"),
-      type: "MERCHANT_CREDIT",
-      amount: merchantShare,
-      businessId: order.businessId,
-      orderId: order.id,
-      createdAt: Date.now()
-    });
-
-    data.ledger.push({
-      id: id("tx"),
-      type: "COMMISSION",
-      amount: platformCommission,
-      orderId: order.id,
-      createdAt: Date.now()
-    });
-  }
+  data.ledger.push({
+    id: id("tx"),
+    type: "TAX",
+    amount: financialSplit.tax,
+    orderId: order ? order.id : targetId,
+    createdAt: Date.now()
+  });
 
   await saveDB();
 
-  io.emit("order:completed", { orderId: order ? order.id : targetId });
-  ok(res, { message: "Stage 50 Settlement Complete", order });
+  io.emit("order:completed", { orderId: order ? order.id : targetId, financialSplit });
+  ok(res, { message: "Stage 50 Settlement Complete", order, financialSplit });
 };
 
 app.post("/completeOrder", completeOrderHandler);
@@ -677,15 +698,33 @@ const stkPushHandler = (req, res) => {
     if (formattedPhone.startsWith("0")) formattedPhone = "254" + formattedPhone.substring(1);
 
     const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const financialSplit = processPayment(amount);
     
-    // Automatically register transaction in ledger for instant Stage 50 dashboard telemetry
+    // Automatically log ledger breakdown on successful payment initialization
     data.ledger.push({
       id: id("tx"),
-      type: "STK_PUSH_INITIATED",
-      amount: num(amount),
+      type: "ORDER_PAYMENT",
+      amount: financialSplit.gross,
       phone: formattedPhone,
       createdAt: Date.now()
     });
+
+    data.ledger.push({
+      id: id("tx"),
+      type: "PLATFORM_COMMISSION",
+      amount: financialSplit.commission,
+      phone: formattedPhone,
+      createdAt: Date.now()
+    });
+
+    data.ledger.push({
+      id: id("tx"),
+      type: "TAX",
+      amount: financialSplit.tax,
+      phone: formattedPhone,
+      createdAt: Date.now()
+    });
+
     saveDB();
 
     ok(res, {
@@ -693,6 +732,7 @@ const stkPushHandler = (req, res) => {
       CheckoutRequestID: checkoutRequestId,
       CustomerPhone: formattedPhone,
       Amount: amount,
+      split: financialSplit,
       status: "PENDING_USER_PIN"
     });
   } catch (err) {
@@ -788,10 +828,9 @@ app.post("/driver/cashout", auth("DRIVER"), async (req, res) => {
 });
 
 /* ========================================================================== */
-/* 4. UNIVERSAL 404 CATCH-ALL & ERROR SHIELD (ZERO BROKEN API)                */
+/* 4. UNIVERSAL 404 CATCH-ALL & ERROR SHIELD                                  */
 /* ========================================================================== */
 
-// Catch-All Endpoint Fallback — Converts any missing route into a valid 200/404 Hybrid Payload
 app.use((req, res) => {
   log("RECOVERY_404", `Auto-healed unhandled path: ${req.method} ${req.url}`);
   res.status(200).json({
@@ -803,7 +842,6 @@ app.use((req, res) => {
   });
 });
 
-// Global Unhandled Exception Shield — Catches crashes and prevents process exit
 app.use((err, req, res, next) => {
   log("CRITICAL_RECOVERY", `Shielded runtime exception: ${err.message}`);
   res.status(200).json({
