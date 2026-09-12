@@ -25,8 +25,8 @@ const ENV = process.env.NODE_ENV || "development";
 /* ========================================================================== */
 /* 0. FINANCIAL GOVERNANCE CONFIGURATION (5% COMMISSION + 16% KRA VAT)       */
 /* ========================================================================== */
-const COMMISSION_RATE = 0.05; // 5% Flat Platform Commission
-const TAX_RATE = 0.16;       // 16% KRA VAT on Commission
+const COMMISSION_RATE = 0.05; // 5% Flat Platform Commission Rule
+const TAX_RATE = 0.16;       // 16% KRA VAT on Platform Commission
 
 function processPayment(amount) {
   const gross = num(amount);
@@ -296,13 +296,8 @@ app.get("/system/stats", (req, res) => {
   try {
     sanitizeDataState();
 
-    // 1. Calculate Gross Volume directly from all orders
     const grossVolume = data.orders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
-
-    // 2. Compute 5% Platform Revenue directly from Gross Volume
     const totalCommission = Math.round(grossVolume * COMMISSION_RATE * 100) / 100;
-
-    // 3. Compute 16% KRA Tax directly from Platform Revenue
     const totalKraTaxRetained = Math.round(totalCommission * TAX_RATE * 100) / 100;
 
     const escrowLocked = data.escrow
@@ -414,7 +409,20 @@ app.post("/product/add", auth("BUSINESS"), addProductHandler);
 /* ================= MODULE 3: DRIVERS & FLEET TELEMETRY ================= */
 const getDriversHandler = (req, res) => {
   sanitizeDataState();
-  ok(res, { count: data.drivers.length, drivers: data.drivers, data: data.drivers, driverLocations: data.drivers });
+
+  const updatedDrivers = data.drivers.map(driver => {
+    const driverOrders = data.orders.filter(o => o.driverId === driver.id && (o.status === "PAID" || o.status === "DISPATCHED"));
+    const totalDriverVolume = driverOrders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
+    const calculatedEarnings = totalDriverVolume > 0 ? totalDriverVolume * 0.95 : num(driver.earnings);
+
+    return {
+      ...driver,
+      earnings: Math.round(calculatedEarnings * 100) / 100,
+      walletBalance: Math.round(calculatedEarnings * 100) / 100
+    };
+  });
+
+  ok(res, { count: updatedDrivers.length, drivers: updatedDrivers, data: updatedDrivers, driverLocations: updatedDrivers });
 };
 
 app.get("/drivers", getDriversHandler);
