@@ -156,7 +156,7 @@ function auth(role) {
 }
 
 /* ========================================================================== */
-/* 2. SELF-HEALING ENTERPRISE DATA ENGINE (AUTOMATED DRIVER RECOVERY)        */
+/* 2. SELF-HEALING ENTERPRISE DATA ENGINE (AUTOMATED DRIVER & MERCHANT RECOVERY)*/
 /* ========================================================================== */
 
 function defaultDB() {
@@ -213,7 +213,6 @@ function sanitizeDataState() {
   if (!Array.isArray(data.wallets)) data.wallets = [];
   if (!Array.isArray(data.escrow)) data.escrow = [];
 
-  // Seed default enterprise drivers if database is completely empty
   if (data.drivers.length === 0) {
     data.drivers = [
       { id: "drv_kamau", name: "kamau", phone: "0711000001", status: "online", earnings: 0, walletBalance: 0, location: null, lastSeen: Date.now() },
@@ -246,7 +245,6 @@ function sanitizeDataState() {
   });
   data.drivers = Array.from(driverMap.values());
 
-  // RETROACTIVE ASSIGNMENT: Auto-fix legacy orders without driver assignments
   if (data.drivers.length > 0 && data.orders.length > 0) {
     data.orders.forEach((ord, index) => {
       if (!ord.driverId) {
@@ -256,7 +254,7 @@ function sanitizeDataState() {
     });
   }
 
-  // RECALCULATE WALLETS: Dynamically update driver earnings across all orders
+  // RECALCULATE DRIVER WALLETS
   data.drivers.forEach(driver => {
     const matchedOrders = data.orders.filter(
       o => o.driverId === driver.id || 
@@ -268,6 +266,17 @@ function sanitizeDataState() {
 
     driver.earnings = Math.round(calculatedEarnings * 100) / 100;
     driver.walletBalance = Math.round(calculatedEarnings * 100) / 100;
+  });
+
+  // RECALCULATE MERCHANT WALLETS
+  data.businesses.forEach(biz => {
+    let wallet = data.wallets.find(w => w.businessId === biz.id);
+    if (!wallet) {
+      wallet = { id: id("wal"), businessId: biz.id, balance: 0 };
+      data.wallets.push(wallet);
+    }
+    const bizOrders = data.orders.filter(o => o.businessId === biz.id);
+    wallet.balance = bizOrders.reduce((sum, o) => sum + num(o.baseTotal || o.amount), 0);
   });
 }
 
@@ -544,7 +553,16 @@ const checkoutHandler = async (req, res) => {
     const baseTotal = num(total || amount);
     const result = processTrip(distanceKm, baseTotal);
 
-    // Dynamic dispatch strategy: assign driver with lowest balance
+    // Credit Merchant Wallet
+    if (businessId && businessId !== "SYSTEM") {
+      let merchantWallet = data.wallets.find(w => w.businessId === businessId);
+      if (!merchantWallet) {
+        merchantWallet = { id: id("wal"), businessId, balance: 0 };
+        data.wallets.push(merchantWallet);
+      }
+      merchantWallet.balance = num(merchantWallet.balance) + baseTotal;
+    }
+
     const activeDrivers = data.drivers.length > 0 ? [...data.drivers] : [];
     activeDrivers.sort((a, b) => num(a.earnings) - num(b.earnings));
     const assignedDriver = activeDrivers.length > 0 ? activeDrivers[0] : null;
@@ -555,7 +573,7 @@ const checkoutHandler = async (req, res) => {
       customerName: customerName || "Guest",
       customerPhone: customerPhone || "0700000000",
       items: Array.isArray(items) ? items : [],
-      baseTotal: result.fare,
+      baseTotal: baseTotal,
       distanceKm: num(distanceKm) || 10,
       surgeMultiplier: calculateSurgeMultiplier(),
       total: result.fare,
@@ -658,7 +676,7 @@ app.get("/escrow", (req, res) => ok(res, { escrow: data.escrow, data: data.escro
 /* ================= MODULE 6: M-PESA DARAJA GATEWAY ALIASED ROUTES ================= */
 const stkPushHandler = (req, res) => {
   try {
-    const { phone, amount, distanceKm } = req.body;
+    const { phone, amount, distanceKm, businessId } = req.body;
     if (!phone || (!amount && !distanceKm)) return fail(res, "Missing phone or amount/distance", 400);
 
     let formattedPhone = phone.toString().replace("+", "").trim();
@@ -667,13 +685,22 @@ const stkPushHandler = (req, res) => {
     const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const result = processTrip(distanceKm, amount);
 
+    if (businessId && businessId !== "SYSTEM") {
+      let merchantWallet = data.wallets.find(w => w.businessId === businessId);
+      if (!merchantWallet) {
+        merchantWallet = { id: id("wal"), businessId, balance: 0 };
+        data.wallets.push(merchantWallet);
+      }
+      merchantWallet.balance = num(merchantWallet.balance) + num(amount);
+    }
+
     const activeDrivers = data.drivers.length > 0 ? [...data.drivers] : [];
     activeDrivers.sort((a, b) => num(a.earnings) - num(b.earnings));
     const assignedDriver = activeDrivers.length > 0 ? activeDrivers[0] : null;
 
     const order = {
       id: id("ORD"),
-      businessId: "SYSTEM",
+      businessId: businessId || "SYSTEM",
       customerName: "M-Pesa Gateway",
       customerPhone: formattedPhone,
       total: result.gross,
