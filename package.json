@@ -10,7 +10,7 @@
     "start": "node server.js",
     "dev": "node server.js",
     "test": "node -c server.js",
-    "build": "echo 'Backend deployment - skipping webpack bundling'"
+    "build": "echo \"Backend deployment - skipping webpack bundling\""
   },
   "engines": {
     "node": ">=18.0.0",

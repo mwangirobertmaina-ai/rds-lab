@@ -1,0 +1,44 @@
+name: RDS Stage 30 Enterprise Core CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  stage30_verification:
+    name: Core Engine Verification
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18.x, 20.x, 22.x, 24.x]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install Stage 30 Dependencies
+        run: npm install --legacy-peer-deps || npm install
+
+      - name: Verify Stage 30 Engine Syntax
+        run: node -c server.js
+
+      - name: Live Integration & Health Check
+        run: |
+          node server.js &
+          SERVER_PID=$!
+          sleep 4
+          curl -f http://localhost:3000/health || exit 1
+          kill $SERVER_PID
+
+      - name: Stage 30 CI Gate Passed
+        run: echo "Stage 30 Core Engine verified on Node.js ${{ matrix.node-version }}"
