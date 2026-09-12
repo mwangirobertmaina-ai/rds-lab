@@ -142,6 +142,50 @@
       "createdAt": 1788933961695
     }
   ],
+  "drivers": [
+    {
+      "id": "D_1788917494728_60043",
+      "name": "kamau",
+      "phone": "0700000000",
+      "status": "online",
+      "earnings": 0,
+      "location": {
+        "lat": 0,
+        "lng": 0
+      },
+      "lastSeen": 1789221738883
+    },
+    {
+      "id": "D_1788934424495_92753",
+      "name": "robert",
+      "phone": "254722123456",
+      "status": "online",
+      "earnings": 0,
+      "location": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "lastSeen": 1789221738883
+    }
+  ],
+  "deliveries": [
+    {
+      "id": "DL_1788924010238_6174",
+      "orderId": "O_1788924010236_75810",
+      "driverId": "D_1788917494728_60043",
+      "status": "ASSIGNED",
+      "createdAt": 1788924010238,
+      "updatedAt": 1788924010238
+    },
+    {
+      "id": "DEL_1788933961695_94310",
+      "orderId": "ORD_1788933961695_78001",
+      "driverId": "D_1788917494728_60043",
+      "status": "ASSIGNED",
+      "createdAt": 1788933961695,
+      "updatedAt": 1788933961695
+    }
+  ],
   "ledger": [
     {
       "id": "L_1788924010237_89404",
@@ -215,86 +259,12 @@
       "timestamp": 1788933961695
     }
   ],
-  "wallets": {
-    "B_1788923915150_88524": {
-      "businessId": "B_1788923915150_88524",
-      "balance": 1520,
-      "transactions": [
-        {
-          "id": "WT_1788924010237_59000",
-          "type": "CREDIT",
-          "amount": 760,
-          "orderId": "O_1788924010236_75810",
-          "createdAt": 1788924010237
-        },
-        {
-          "id": "WT_1788924400968_78017",
-          "type": "CREDIT",
-          "amount": 760,
-          "orderId": "O_1788924400968_34729",
-          "createdAt": 1788924400968
-        }
-      ]
-    },
-    "SYSTEM_PLATFORM": {
-      "balance": 0,
-      "escrow": 0
-    },
-    "BIZ_1788934394576_9413": {
-      "balance": 0,
-      "escrow": 0
-    }
-  },
-  "drivers": [
-    {
-      "id": "D_1788917494728_60043",
-      "name": "kamau",
-      "phone": "0700000000",
-      "status": "AVAILABLE",
-      "available": true,
-      "earnings": 0,
-      "location": {
-        "lat": 0,
-        "lng": 0,
-        "heading": 0,
-        "speed": 0,
-        "lastPing": null
-      },
-      "createdAt": 1788917494729
-    },
-    {
-      "id": "D_1788934424495_92753",
-      "name": "robert",
-      "phone": "254722123456",
-      "status": "AVAILABLE",
-      "available": true,
-      "earnings": 0,
-      "location": {
-        "lat": -1.286389,
-        "lng": 36.817223,
-        "heading": 0,
-        "speed": 0,
-        "lastPing": 1788934424495
-      },
-      "createdAt": 1788934424495
-    }
-  ],
-  "deliveries": [
-    {
-      "id": "DL_1788924010238_6174",
-      "orderId": "O_1788924010236_75810",
-      "driverId": "D_1788917494728_60043",
-      "status": "ASSIGNED",
-      "createdAt": 1788924010238,
-      "updatedAt": 1788924010238
-    },
-    {
-      "id": "DEL_1788933961695_94310",
-      "orderId": "ORD_1788933961695_78001",
-      "driverId": "D_1788917494728_60043",
-      "status": "ASSIGNED",
-      "createdAt": 1788933961695,
-      "updatedAt": 1788933961695
-    }
-  ]
+  "wallets": [],
+  "escrow": [],
+  "system": {
+    "stage": 20,
+    "mode": "HYBRID_ZERO_ERROR",
+    "createdAt": 1789221738882,
+    "lastCheck": 1789221738882
+  }
 }
