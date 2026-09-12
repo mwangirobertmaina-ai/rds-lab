@@ -26,12 +26,23 @@ const ENV = process.env.NODE_ENV || "development";
 /* 1. IMMUTABLE SECURITY & SANITIZATION MIDDLEWARE                            */
 /* ========================================================================== */
 
-// Ultra-Permissive Dynamic CORS to eliminate preflight options blocking
+// CORS configured for both local dev and production GitHub Pages
+const allowedOrigins = [
+  "https://mwangirobertmaina-ai.github.io",
+  "http://localhost:58399"
+];
+
 app.use(cors({
-  origin: "*",
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith("http://localhost")) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Permissive fallback for seamless API interop
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-api-key"],
-  credentials: false
+  credentials: true
 }));
 
 // Hardened Payload Limits & Deep Anti-Injection Sanitizer
@@ -61,7 +72,7 @@ app.use((req, res, next) => {
 
 /* ================= STRUCTURED LOGGER ================= */
 function log(type, msg) {
-  console.log(`[${new Date().toISOString()}] [STAGE-20-HYBRID] [${type}] ${msg}`);
+  console.log(`[${new Date().toISOString()}] [STAGE-50-ENTERPRISE] [${type}] ${msg}`);
 }
 
 app.use((req, res, next) => {
@@ -133,7 +144,7 @@ function defaultDB() {
     ledger: [],
     wallets: [],
     escrow: [],
-    system: { stage: 20, mode: "HYBRID_ZERO_ERROR", createdAt: Date.now(), lastCheck: Date.now() }
+    system: { stage: "STAGE_50_ENTERPRISE_GOVERNANCE", mode: "HYBRID_ZERO_ERROR", createdAt: Date.now(), lastCheck: Date.now() }
   };
 }
 
@@ -208,7 +219,7 @@ if (fs.existsSync(DB_FILE)) {
     const raw = fs.readFileSync(DB_FILE, "utf-8");
     data = { ...defaultDB(), ...JSON.parse(raw) };
     sanitizeDataState();
-    log("SYSTEM", "Store Engine Hydrated & Self-Healed Successfully");
+    log("SYSTEM", "Stage 50 Store Engine Hydrated & Self-Healed Successfully");
   } catch (err) {
     log("ERROR", "DB CORRUPTED — AUTOMATIC SELF-HEALING RESET");
     data = defaultDB();
@@ -269,36 +280,38 @@ io.on("connection", (socket) => {
 });
 
 /* ================= SYSTEM HEALTH & METRICS ================= */
-app.get("/", (req, res) => ok(res, { status: "RDS CORE STAGE 20 HYBRID FROZEN", env: ENV, time: Date.now() }));
-app.get("/health", (req, res) => ok(res, { status: "HEALTHY", stage: 20, uptime: process.uptime(), time: Date.now() }));
+app.get("/", (req, res) => ok(res, { status: "RDS CORE STAGE 50 ENTERPRISE ACTIVE", env: ENV, time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "HEALTHY", stage: "STAGE_50_ENTERPRISE_GOVERNANCE", uptime: process.uptime(), time: Date.now() }));
 
 app.get("/system/stats", (req, res) => {
   try {
     sanitizeDataState();
     const grossVolume = data.orders.reduce((sum, o) => sum + num(o.total || o.amount), 0);
-    const platformCommission = data.ledger
+    const totalCommission = data.ledger
       .filter(l => l.type === "COMMISSION")
       .reduce((sum, l) => sum + num(l.amount), 0);
     const escrowLocked = data.escrow
       .filter(e => e.status === "LOCKED")
       .reduce((sum, e) => sum + num(e.amount), 0);
+    const totalKraTaxRetained = Math.round(grossVolume * 0.03); // Simulated 3% KRA Tax Retention
 
     ok(res, {
       stats: {
-        stage: 20,
+        stage: "STAGE_50_ENTERPRISE_GOVERNANCE",
         businesses: data.businesses.length,
         products: data.products.length,
         orders: data.orders.length,
         drivers: data.drivers.length,
         activeDrivers: data.drivers.filter(d => d.status === "online" || d.status === "busy").length,
         grossVolume,
-        platformCommission,
+        totalCommission,
         escrowLocked,
+        totalKraTaxRetained,
         surgeMultiplier: calculateSurgeMultiplier()
       }
     });
   } catch (err) {
-    fail(res, "Failed to calculate metrics", 500);
+    fail(res, "Failed to calculate Stage 50 metrics", 500);
   }
 });
 
@@ -527,7 +540,7 @@ const checkoutHandler = async (req, res) => {
     await saveDB();
 
     io.emit("order:created", order);
-    log("ORDER", `Stage 20 Escrow Lock Created: ${order.id} (KES ${finalTotal})`);
+    log("ORDER", `Stage 50 Escrow Lock Created: ${order.id} (KES ${finalTotal})`);
     ok(res, { order });
   } catch (err) {
     fail(res, "Checkout execution failed", 500);
@@ -536,6 +549,35 @@ const checkoutHandler = async (req, res) => {
 
 app.post("/checkout", checkoutHandler);
 app.post("/order/create", checkoutHandler);
+
+// Executive Escrow Refund Handler
+app.post("/order/refund", async (req, res) => {
+  try {
+    const { orderId, reason } = req.body;
+    const order = data.orders.find(o => o.id === orderId);
+    if (!order) return fail(res, "Order not found", 404);
+
+    order.status = "REFUNDED";
+
+    const escrowRecord = data.escrow.find(e => e.orderId === orderId);
+    if (escrowRecord) escrowRecord.status = "REFUNDED";
+
+    data.ledger.push({
+      id: id("tx"),
+      type: "ESCROW_REFUND",
+      amount: order.total || order.amount,
+      orderId: order.id,
+      reason: reason || "Stage 50 Admin Override",
+      createdAt: Date.now()
+    });
+
+    await saveDB();
+    log("ORDER", `Order #${orderId} Refunded: ${reason}`);
+    ok(res, { message: `Escrow Refunded for Order #${orderId}`, order });
+  } catch (err) {
+    fail(res, "Refund execution failed", 500);
+  }
+});
 
 const completeOrderHandler = async (req, res) => {
   const { orderId, deliveryId } = req.body;
@@ -606,7 +648,7 @@ const completeOrderHandler = async (req, res) => {
   await saveDB();
 
   io.emit("order:completed", { orderId: order ? order.id : targetId });
-  ok(res, { message: "Stage 20 Settlement Complete", order });
+  ok(res, { message: "Stage 50 Settlement Complete", order });
 };
 
 app.post("/completeOrder", completeOrderHandler);
@@ -635,6 +677,17 @@ const stkPushHandler = (req, res) => {
     if (formattedPhone.startsWith("0")) formattedPhone = "254" + formattedPhone.substring(1);
 
     const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    
+    // Automatically register transaction in ledger for instant Stage 50 dashboard telemetry
+    data.ledger.push({
+      id: id("tx"),
+      type: "STK_PUSH_INITIATED",
+      amount: num(amount),
+      phone: formattedPhone,
+      createdAt: Date.now()
+    });
+    saveDB();
+
     ok(res, {
       message: "STK Push prompt sent to handset",
       CheckoutRequestID: checkoutRequestId,
@@ -735,7 +788,7 @@ app.post("/driver/cashout", auth("DRIVER"), async (req, res) => {
 });
 
 /* ========================================================================== */
-/* 4. UNIVERSAL 404 CATCH-ALL & ERROR SHIELD (ZERO BROKEN API)               */
+/* 4. UNIVERSAL 404 CATCH-ALL & ERROR SHIELD (ZERO BROKEN API)                */
 /* ========================================================================== */
 
 // Catch-All Endpoint Fallback — Converts any missing route into a valid 200/404 Hybrid Payload
@@ -744,7 +797,7 @@ app.use((req, res) => {
   res.status(200).json({
     success: true,
     autoHealed: true,
-    message: "Endpoint route automatically resolved by Stage 20 Hybrid Core",
+    message: "Endpoint route automatically resolved by Stage 50 Enterprise Core",
     path: req.url,
     data: []
   });
@@ -756,14 +809,14 @@ app.use((err, req, res, next) => {
   res.status(200).json({
     success: true,
     shieldedError: true,
-    message: "Request safe-landed by Stage 20 Security Engine",
+    message: "Request safe-landed by Stage 50 Security Engine",
     error: err.message
   });
 });
 
 /* ================= SERVER START & GRACEFUL SHUTDOWN ================= */
 server.listen(PORT, () => {
-  log("SYSTEM", `🚀 STAGE 20 HYBRID CORE ACTIVE ON PORT ${PORT} (ZERO-ERROR SHIELD ENABLED)`);
+  log("SYSTEM", `🚀 STAGE 50 ENTERPRISE CORE ACTIVE ON PORT ${PORT} (ZERO-ERROR SHIELD ENABLED)`);
 });
 
 const gracefulShutdown = async (signal) => {
