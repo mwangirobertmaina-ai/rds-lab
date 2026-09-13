@@ -127,44 +127,77 @@ app.get("/health", (req, res) => ok(res, { status: "HEALTHY", time: Date.now() }
 
 // ================= AUTOMATED DRIVER DISPATCH ENGINE =================
 app.post('/api/dispatch/auto', async (req, res) => {
-    const { orderId, dropoffLocation } = req.body;
-
-    const availableDrivers = data.drivers.filter(d => d.status === 'ONLINE' || d.status === 'available');
-    
-    if (availableDrivers.length === 0) {
-        return res.status(404).json({ success: false, error: "No active drivers available for dispatch." });
-    }
-
-    let nearestDriver = availableDrivers[0];
-    let minDistance = Infinity;
-
-    availableDrivers.forEach(driver => {
-        if (driver.location && typeof driver.location.lat === 'number') {
-            const dx = driver.location.lat - (dropoffLocation?.lat || -1.286389);
-            const dy = driver.location.lng - (dropoffLocation?.lng || 36.817223);
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < minDistance) {
-                minDistance = dist;
-                nearestDriver = driver;
-            }
+    try {
+        const { orderId, dropoffLocation } = req.body;
+        const drivers = Array.isArray(data.drivers) ? data.drivers : [];
+        const availableDrivers = drivers.filter(d => d.status === 'ONLINE' || d.status === 'available');
+        
+        if (availableDrivers.length === 0) {
+            return fail(res, "No active drivers available for dispatch.", 404);
         }
-    });
 
-    nearestDriver.status = 'BUSY';
-    
-    const order = data.orders.find(o => o.id === orderId);
-    if (order) {
-        order.driverId = nearestDriver.id;
-        order.status = 'DISPATCHED';
+        let nearestDriver = availableDrivers[0];
+        let minDistance = Infinity;
+
+        availableDrivers.forEach(driver => {
+            if (driver.location && typeof driver.location.lat === 'number') {
+                const dx = driver.location.lat - (dropoffLocation?.lat || -1.286389);
+                const dy = driver.location.lng - (dropoffLocation?.lng || 36.817223);
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    nearestDriver = driver;
+                }
+            }
+        });
+
+        nearestDriver.status = 'BUSY';
+        
+        const order = data.orders.find(o => o.id === orderId);
+        if (order) {
+            order.driverId = nearestDriver.id;
+            order.status = 'DISPATCHED';
+        }
+
+        await saveDB();
+
+        if (global.io) {
+            global.io.emit('orderDispatched', { orderId, driverId: nearestDriver.id });
+        }
+
+        return ok(res, { dispatchedDriver: nearestDriver });
+    } catch (err) {
+        return fail(res, "Dispatch Error: " + err.message, 500);
     }
+});
 
-    await saveDB();
+// ================= KRA COMPLIANCE & TAX VAULTING ENGINE (HARDENED) =================
+app.get('/api/compliance/kra-vault', (req, res) => {
+    try {
+        const ledger = Array.isArray(data.ledger) ? data.ledger : [];
+        const totalRevenue = ledger.reduce((acc, curr) => acc + (num(curr.gross) || 0), 0);
+        const totalTaxCollected = ledger.reduce((acc, curr) => acc + (num(curr.tax) || 0), 0);
+        const totalCommission = ledger.reduce((acc, curr) => acc + (num(curr.commission) || 0), 0);
 
-    if (global.io) {
-        global.io.emit('orderDispatched', { orderId, driverId: nearestDriver.id });
+        const kraReport = {
+            vaultStatus: "SECURE_LOCKED",
+            pinRegistered: "P051XXXXXXF",
+            compliancePeriod: "2026-Q3",
+            metrics: {
+                grossVolume: totalRevenue,
+                taxableCommission: totalCommission,
+                vatLiability: totalTaxCollected,
+                withholdingTax: totalTaxCollected * 0.05
+            },
+            transactionsLogged: ledger.length,
+            timestamp: Date.now()
+        };
+
+        return ok(res, { kraReport });
+    } catch (err) {
+        log("KRA_VAULT_ERROR", err.message);
+        return fail(res, "Failed to generate KRA compliance vault report", 500);
     }
-
-    res.json({ success: true, dispatchedDriver: nearestDriver });
 });
 
 const stkPushHandler = async (req, res) => {
