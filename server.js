@@ -1,4 +1,3 @@
-
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -22,7 +21,6 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
-const ENV = process.env.NODE_ENV || "development";
 
 const COMMISSION_RATE = 0.05; 
 const TAX_RATE = 0.16;        
@@ -66,7 +64,7 @@ async function getMpesaAccessToken() {
     });
     return response.data.access_token;
   } catch (err) {
-    log("MPESA_AUTH_ERROR", err.response?.data ? JSON.stringify(err.response.data) : (err.code === 'ECONNABORTED' ? 'Daraja Auth Timeout (10s)' : err.message));
+    log("MPESA_AUTH_ERROR", err.response?.data ? JSON.stringify(err.response.data) : err.message);
     throw new Error("Failed to authenticate with M-Pesa Daraja API");
   }
 }
@@ -147,7 +145,7 @@ const stkPushHandler = async (req, res) => {
       PartyA: formattedPhone,
       PartyB: MPESA_CONFIG.shortCode,
       PhoneNumber: formattedPhone,
-      CallBackURL: "https://webhook.site/00000000-0000-0000-0000-000000000000",
+      CallBackURL: "https://mydomain.co.ke/api/v1/webhook-listener",
       AccountReference: "RDS",
       TransactionDesc: "RDS Payment"
     };
@@ -160,7 +158,7 @@ const stkPushHandler = async (req, res) => {
       });
       darajaResponse = response.data;
     } catch (apiErr) {
-      const errDetails = apiErr.response?.data ? JSON.stringify(apiErr.response.data) : (apiErr.code === 'ECONNABORTED' ? 'Daraja API Timeout (10s)' : apiErr.message);
+      const errDetails = apiErr.response?.data ? JSON.stringify(apiErr.response.data) : apiErr.message;
       log("DARAJA_API_ERROR_FULL", errDetails);
       return fail(res, `M-Pesa Daraja Rejected: ${errDetails}`, 502);
     }
@@ -191,7 +189,7 @@ const stkPushHandler = async (req, res) => {
 
 app.post("/mpesa/stkpush", stkPushHandler);
 
-app.post("/mpesa/callback", async (req, res) => {
+app.post("/api/v1/webhook-listener", async (req, res) => {
   try {
     const result = req.body?.Body?.stkCallback;
     if (!result) return res.json({ success: false });
