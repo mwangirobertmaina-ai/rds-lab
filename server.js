@@ -45,10 +45,10 @@ function processTrip(distanceKm, overrideAmount = null) {
 const MPESA_CONFIG = {
   consumerKey: process.env.MPESA_CONSUMER_KEY || "1gUiUGRcrNGP7GEplYsE62mNKqAnItctwfteNSPPklSop61w",
   consumerSecret: process.env.MPESA_CONSUMER_SECRET || "wF4tdktQCUIATJr3DNqW9wtIjtImd7bNGGyYhYa5k3LNesW20xRG1ZAsEiqBqgRv",
-  shortCode: "174379", 
+  shortCode: process.env.MPESA_SHORTCODE || "174379",
   storeNumber: "1200280",
-  passkey: "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919", 
-  environment: "sandbox"
+  passkey: process.env.MPESA_PASSKEY || "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919",
+  environment: process.env.MPESA_ENV || "sandbox"
 };
 
 const MPESA_BASE_URL = MPESA_CONFIG.environment === "production"
