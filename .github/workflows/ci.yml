@@ -10,21 +10,24 @@ jobs:
   build-and-verify:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [18.x, 20.x, 22.x, 24.x]
+        node-version: [18.x, 20.x, 22.x, 24.x, 26.x]
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout Sovereign Repository
       uses: actions/checkout@v4
 
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Initialize Node.js Environment ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
 
-    - name: Install Dependencies
-      run: npm install
+    - name: Clear npm Cache & Install Dependencies
+      run: |
+        npm cache clean --force
+        npm install
 
-    - name: Verify Server Syntax and Test Suite
+    - name: Execute Bank-Grade Test Suite & Verification
       run: npm test
