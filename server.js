@@ -19,13 +19,16 @@ const io = new Server(server, {
   }
 });
 
+// Expose io globally so endpoints can emit socket events
+global.io = io;
+
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 
 const COMMISSION_RATE = 0.05; 
 const TAX_RATE = 0.16;        
-const BASE_FARE = 100;       
-const RATE_PER_KM = 50;      
+const BASE_FARE = 100;        
+const RATE_PER_KM = 50;       
 
 function calculateFare(distanceKm) {
   const km = num(distanceKm) > 0 ? num(distanceKm) : 10;
@@ -121,6 +124,48 @@ const saveDB = async () => {
 };
 
 app.get("/health", (req, res) => ok(res, { status: "HEALTHY", time: Date.now() }));
+
+// ================= AUTOMATED DRIVER DISPATCH ENGINE =================
+app.post('/api/dispatch/auto', async (req, res) => {
+    const { orderId, dropoffLocation } = req.body;
+
+    const availableDrivers = data.drivers.filter(d => d.status === 'ONLINE' || d.status === 'available');
+    
+    if (availableDrivers.length === 0) {
+        return res.status(404).json({ success: false, error: "No active drivers available for dispatch." });
+    }
+
+    let nearestDriver = availableDrivers[0];
+    let minDistance = Infinity;
+
+    availableDrivers.forEach(driver => {
+        if (driver.location && typeof driver.location.lat === 'number') {
+            const dx = driver.location.lat - (dropoffLocation?.lat || -1.286389);
+            const dy = driver.location.lng - (dropoffLocation?.lng || 36.817223);
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < minDistance) {
+                minDistance = dist;
+                nearestDriver = driver;
+            }
+        }
+    });
+
+    nearestDriver.status = 'BUSY';
+    
+    const order = data.orders.find(o => o.id === orderId);
+    if (order) {
+        order.driverId = nearestDriver.id;
+        order.status = 'DISPATCHED';
+    }
+
+    await saveDB();
+
+    if (global.io) {
+        global.io.emit('orderDispatched', { orderId, driverId: nearestDriver.id });
+    }
+
+    res.json({ success: true, dispatchedDriver: nearestDriver });
+});
 
 const stkPushHandler = async (req, res) => {
   try {
