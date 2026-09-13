@@ -1,4 +1,3 @@
-
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -47,9 +46,9 @@ function processTrip(distanceKm, overrideAmount = null) {
 const MPESA_CONFIG = {
   consumerKey: process.env.MPESA_CONSUMER_KEY || "1gUiUGRcrNGP7GEplYsE62mNKqAnItctwfteNSPPklSop61w",
   consumerSecret: process.env.MPESA_CONSUMER_SECRET || "wF4tdktQCUIATJr3DNqW9wtIjtImd7bNGGyYhYa5k3LNesW20xRG1ZAsEiqBqgRv",
-  shortCode: "174379", // Safaricom Universal Sandbox Test Shortcode
+  shortCode: "174379", 
   storeNumber: "1200280",
-  passkey: "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919", // Safaricom Universal Sandbox Passkey
+  passkey: "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919", 
   environment: "sandbox"
 };
 
@@ -147,7 +146,7 @@ const stkPushHandler = async (req, res) => {
       PartyA: formattedPhone,
       PartyB: MPESA_CONFIG.shortCode,
       PhoneNumber: formattedPhone,
-      CallBackURL: "https://mydomain.com/mpesa/callback",
+      CallBackURL: "https://example.com/api/v1/checkout-webhook-listener",
       AccountReference: "RDS",
       TransactionDesc: "RDS Payment"
     };
@@ -190,6 +189,40 @@ const stkPushHandler = async (req, res) => {
 };
 
 app.post("/mpesa/stkpush", stkPushHandler);
+
+app.post("/mpesa/callback", async (req, res) => {
+  try {
+    const result = req.body?.Body?.stkCallback;
+    if (!result) return res.json({ success: false });
+
+    const order = data.orders.find(o => o.checkoutRequestId === result.CheckoutRequestID);
+    if (!order) return res.json({ success: false });
+
+    if (result.ResultCode === 0) {
+      order.status = "PAID";
+      const breakdown = processTrip(null, order.total);
+      data.ledger.push({
+        id: id("LEDGER"),
+        orderId: order.id,
+        ...breakdown
+      });
+
+      let wallet = data.wallets.find(w => w.driverId === "driver_1");
+      if (!wallet) {
+        wallet = { driverId: "driver_1", balance: 0 };
+        data.wallets.push(wallet);
+      }
+      wallet.balance += breakdown.driverAmount;
+    } else {
+      order.status = "FAILED";
+    }
+
+    await saveDB();
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false });
+  }
+});
 
 app.use((req, res) => res.status(200).json({ success: true, autoHealed: true }));
 
