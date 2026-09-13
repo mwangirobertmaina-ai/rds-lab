@@ -1,4 +1,4 @@
-// ================= RDS STAGE 51: WORLD-BANK-GRADE SOVEREIGN MATHEMATICAL ENGINE =================
+// ================= RDS STAGE 51+: WORLD-BANK-GRADE SOVEREIGN FINANCIAL & DISPATCH ENGINE =================
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -201,6 +201,56 @@ const saveDB = async () => {
 
 app.get("/health", (req, res) => ok(res, { status: "STAGE_51_BANK_GRADE_ONLINE", time: Date.now() }));
 
+// ================= DATA API ENDPOINTS FOR COMMAND CENTER =================
+app.get('/drivers', (req, res) => {
+  ensureState();
+  ok(res, { drivers: data.drivers });
+});
+
+app.get('/orders', (req, res) => {
+  ensureState();
+  ok(res, { orders: data.orders });
+});
+
+app.get('/ledger', (req, res) => {
+  ensureState();
+  ok(res, { ledger: data.ledger });
+});
+
+app.get('/api/products', (req, res) => {
+  ensureState();
+  ok(res, { products: data.products });
+});
+
+app.post('/api/products', async (req, res) => {
+  try {
+    ensureState();
+    const { businessId, name, price, stock } = req.body;
+    const safeName = sanitizeString(name);
+    const itemPrice = num(price);
+    const itemStock = num(stock);
+
+    if (!safeName || itemPrice <= 0) return fail(res, "Invalid product details", 400);
+
+    const product = {
+      id: id("PROD"),
+      businessId: sanitizeString(businessId) || "BIZ-001",
+      name: safeName,
+      price: itemPrice,
+      stock: itemStock,
+      createdAt: Date.now()
+    };
+    data.products.push(product);
+    await saveDB();
+
+    if (global.io) global.io.emit('productAdded', product);
+    return ok(res, { message: "Product published successfully", product });
+  } catch (err) {
+    return fail(res, "Product addition failed: " + err.message, 500);
+  }
+});
+
+// ================= AUTHENTICATION =================
 app.post('/api/auth/register', async (req, res) => {
     try {
         ensureState();
@@ -220,6 +270,8 @@ app.post('/api/auth/register', async (req, res) => {
             name: safeName,
             phone: safePhone,
             role: role || 'CUSTOMER',
+            status: 'ONLINE',
+            location: { lat: -1.286389, lng: 36.817223 },
             passwordHash: crypto.createHmac('sha256', 'RDS_STAGE_51_AUTH').update(password).digest('hex'),
             createdAt: Date.now()
         };
@@ -294,6 +346,100 @@ app.post('/api/payouts/b2c', async (req, res) => {
     }
 });
 
+// ================= MERCHANT-FIRST ESCROW RELEASE & DISPATCH WORKFLOW =================
+app.post('/api/merchant/dispatch-release', async (req, res) => {
+  try {
+    ensureState();
+    const { orderId, businessId } = req.body;
+    const safeOrderId = sanitizeString(orderId);
+    const safeBusinessId = sanitizeString(businessId);
+
+    if (!safeOrderId || !safeBusinessId) {
+      return fail(res, "Missing order ID or business ID for merchant release", 400);
+    }
+
+    const order = data.orders.find(o => o.id === safeOrderId);
+    if (!order) return fail(res, "Order not found in sovereign matrix", 404);
+
+    if (order.status !== "STAGE_51_PAID") {
+      return fail(res, "Order escrow has not been fully funded via M-Pesa", 400);
+    }
+
+    if (order.merchantReleased) {
+      return fail(res, "Merchant release has already been executed for this order", 400);
+    }
+
+    order.merchantReleased = true;
+    order.status = "STAGE_51_MERCHANT_DISPATCHED";
+
+    const merchantPayoutRecord = {
+      id: id("MERCH_PAY51"),
+      orderId: order.id,
+      businessId: safeBusinessId,
+      amount: order.split.baseGross,
+      status: "MERCHANT_FUND_RELEASED",
+      timestamp: Date.now()
+    };
+    
+    if (!Array.isArray(data.payouts)) data.payouts = [];
+    data.payouts.push(merchantPayoutRecord);
+    await saveDB();
+
+    if (global.io) {
+      global.io.emit('merchantDispatched', { orderId: order.id, businessId: safeBusinessId });
+      global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
+    }
+
+    return ok(res, { 
+      message: "Merchant item funds successfully released upon physical handoff confirmation.", 
+      merchantPayoutRecord 
+    });
+  } catch (err) {
+    return fail(res, "Merchant Release Execution Failure: " + err.message, 500);
+  }
+});
+
+app.post('/api/rider/complete-delivery', async (req, res) => {
+  try {
+    ensureState();
+    const { orderId, driverId } = req.body;
+    const safeOrderId = sanitizeString(orderId);
+    const safeDriverId = sanitizeString(driverId);
+
+    if (!safeOrderId || !safeDriverId) {
+      return fail(res, "Missing order ID or driver ID for final delivery confirmation", 400);
+    }
+
+    const order = data.orders.find(o => o.id === safeOrderId);
+    if (!order) return fail(res, "Order not found", 404);
+
+    if (!order.merchantReleased) {
+      return fail(res, "Cannot complete delivery before merchant has confirmed item handoff", 400);
+    }
+
+    order.status = "STAGE_51_DELIVERED";
+
+    let wallet = data.wallets.find(w => w.driverId === safeDriverId);
+    if (!wallet) {
+      wallet = { driverId: safeDriverId, balance: 0 };
+      data.wallets.push(wallet);
+    }
+    wallet.balance = currency(wallet.balance).add(order.split.driverAmount).value;
+
+    await saveDB();
+
+    if (global.io) {
+      global.io.emit('orderCompleted', { orderId: order.id, driverId: safeDriverId });
+      global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
+    }
+
+    return ok(res, { message: "Delivery confirmed and driver wallet credited successfully." });
+  } catch (err) {
+    return fail(res, "Delivery Completion Failure: " + err.message, 500);
+  }
+});
+
+// ================= KRA COMPLIANCE VAULT =================
 app.get('/api/compliance/kra-vault', (req, res) => {
     try {
         ensureState();
@@ -305,7 +451,8 @@ app.get('/api/compliance/kra-vault', (req, res) => {
             kraReport: {
                 vaultStatus: "BANK_GRADE_CRYPTOGRAPHIC_LOCKED",
                 pinRegistered: "P051XXXXXXF",
-                metrics: { grossVolume, taxableCommission, vatLiability },
+                compliancePeriod: "2026-Q3",
+                metrics: { grossVolume, taxableCommission, vatLiability, withholdingTax: currency(vatLiability).multiply(0.05).value },
                 transactionsLogged: data.ledger.length,
                 integrity: "100_PERCENT_VERIFIED"
             }
@@ -315,10 +462,11 @@ app.get('/api/compliance/kra-vault', (req, res) => {
     }
 });
 
+// ================= M-PESA STK GATEWAY =================
 app.post("/mpesa/stkpush", async (req, res) => {
   try {
     ensureState();
-    const { phone, amount, distanceKm, demandMultiplier, trafficIndex, businessId } = req.body;
+    const { phone, amount, distanceKm, demandMultiplier, trafficIndex, businessId, driverId } = req.body;
     const formattedPhone = validateKenyanPhone(phone);
     if (!formattedPhone) return fail(res, "Invalid Kenyan phone number", 400);
 
@@ -352,12 +500,14 @@ app.post("/mpesa/stkpush", async (req, res) => {
 
     const order = {
       id: id("ORD51"),
-      businessId: sanitizeString(businessId) || "SYSTEM",
+      businessId: sanitizeString(businessId) || "BIZ-001",
+      driverId: sanitizeString(driverId) || "driver_1",
       customerPhone: formattedPhone,
       total: financialSplit.gross,
       split: financialSplit,
       status: "STAGE_51_PENDING_STK",
       checkoutRequestId: darajaResponse.CheckoutRequestID,
+      merchantReleased: false,
       createdAt: Date.now()
     };
     data.orders.push(order);
@@ -394,13 +544,6 @@ app.post("/api/v1/webhook-listener", async (req, res) => {
       
       ledgerEntry.merkleProof = generateStage51MerkleProof(ledgerEntry);
       data.ledger.push(ledgerEntry);
-
-      let wallet = data.wallets.find(w => w.driverId === (order.driverId || "driver_1"));
-      if (!wallet) {
-        wallet = { driverId: order.driverId || "driver_1", balance: 0 };
-        data.wallets.push(wallet);
-      }
-      wallet.balance = currency(wallet.balance).add(order.split.driverAmount).value;
     } else {
       order.status = "STAGE_51_FAILED";
     }
