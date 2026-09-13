@@ -355,7 +355,7 @@ app.post("/mpesa/stkpush", async (req, res) => {
       PartyA: formattedPhone,
       PartyB: MPESA_CONFIG.shortCode,
       PhoneNumber: formattedPhone,
-      CallBackURL: "https://daraja.safaricom.co.ke/callback",
+      CallBackURL: "https://sandbox.safaricom.co.ke/callback",
       AccountReference: "RDS51",
       TransactionDesc: "Bank-Grade Sovereign Escrow"
     };
@@ -385,7 +385,8 @@ app.post("/mpesa/stkpush", async (req, res) => {
 
     ok(res, { message: "STK Push initiated successfully.", CheckoutRequestID: darajaResponse.CheckoutRequestID, financialSplit });
   } catch (err) {
-    fail(res, "Gateway Execution Failure", 502);
+    const errDetails = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+    fail(res, "Gateway Execution Failure: " + errDetails, 502);
   }
 });
 
