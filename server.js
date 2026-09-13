@@ -1,3 +1,4 @@
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -146,7 +147,7 @@ const stkPushHandler = async (req, res) => {
       PartyA: formattedPhone,
       PartyB: MPESA_CONFIG.shortCode,
       PhoneNumber: formattedPhone,
-      CallBackURL: "https://example.com/api/v1/checkout-webhook-listener",
+      CallBackURL: "https://webhook.site/00000000-0000-0000-0000-000000000000",
       AccountReference: "RDS",
       TransactionDesc: "RDS Payment"
     };
