@@ -145,7 +145,7 @@ const stkPushHandler = async (req, res) => {
       PartyA: formattedPhone,
       PartyB: MPESA_CONFIG.shortCode,
       PhoneNumber: formattedPhone,
-      CallBackURL: "https://mydomain.co.ke/api/v1/webhook-listener",
+      CallBackURL: "https://daraja.safaricom.co.ke/callback",
       AccountReference: "RDS",
       TransactionDesc: "RDS Payment"
     };
