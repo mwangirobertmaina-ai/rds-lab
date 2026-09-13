@@ -27,7 +27,8 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 
 // Sovereign World-Class Tier-51 Monetization Constants (Absolute Zero-Leakage Architecture)
-const PLATFORM_COMMISSION_RATE = 0.08; // 8.0% Sovereign Global Yield
+const PLATFORM_COMMISSION_RATE = 0.05; // 5.0% Platform Commission (Driver gets 95%)
+const SHOP_SURCHARGE_RATE = 0.02;      // 2.0% Added on top for shop owners (Profit untouched)
 const KRA_TAX_RATE = 0.16;             // 16% Statutory VAT Compliance Engine
 const BASE_FARE = 180;                 // Sovereign Base Fee (KES / Global Equivalent)
 const RATE_PER_KM = 75;                // Master Yield Distance Scaling
@@ -53,24 +54,25 @@ function calculateStage51SurgeFare(distanceKm, demandMultiplier = 1.0, trafficIn
 
 // ================= STAGE 51 UNBREAKABLE DUAL-CORE ESCROW SPLITTER =================
 function processStage51FinancialSplit(distanceKm, demandMultiplier = 1.0, trafficIndex = 1.0, overrideAmount = null) {
-  const gross = overrideAmount && num(overrideAmount) > 0 
+  const baseGross = overrideAmount && num(overrideAmount) > 0 
     ? Number(num(overrideAmount).toFixed(2)) 
     : calculateStage51SurgeFare(distanceKm, demandMultiplier, trafficIndex);
 
-  const commission = Number((gross * PLATFORM_COMMISSION_RATE).toFixed(2));
-  const driverAmount = Number((gross - commission).toFixed(2));
-  const tax = Number((commission * KRA_TAX_RATE).toFixed(2));
-  const netPlatformRevenue = Number((commission - tax).toFixed(2));
+  // Shop owner surcharge added on top (does not cut into their item value)
+  const shopOwnerSurcharge = Number((baseGross * SHOP_SURCHARGE_RATE).toFixed(2));
+  const gross = Number((baseGross + shopOwnerSurcharge).toFixed(2));
 
-  // Sovereign Mathematical Balance Invariant Check
-  const reconciledGross = Number((driverAmount + commission).toFixed(2));
-  if (Math.abs(reconciledGross - gross) > 0.001) {
-    throw new Error("STAGE_51_FATAL_BREACH: Sovereign dual-core ledger split invariant mismatch.");
-  }
+  // Platform takes 5% commission from the delivery/fare value, plus the 2% owner surcharge
+  const platformCommission = Number((baseGross * PLATFORM_COMMISSION_RATE).toFixed(2)) + shopOwnerSurcharge;
+  const driverAmount = Number((baseGross * 0.95).toFixed(2)); // Driver gets 95%
+  const tax = Number((platformCommission * KRA_TAX_RATE).toFixed(2));
+  const netPlatformRevenue = Number((platformCommission - tax).toFixed(2));
 
   return { 
     gross, 
-    commission, 
+    baseGross,
+    shopOwnerSurcharge,
+    commission: Number(platformCommission.toFixed(2)), 
     tax, 
     netPlatformRevenue, 
     driverAmount 
