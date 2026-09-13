@@ -1,3 +1,4 @@
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -147,8 +148,8 @@ const stkPushHandler = async (req, res) => {
       PartyB: MPESA_CONFIG.shortCode,
       PhoneNumber: formattedPhone,
       CallBackURL: "https://mydomain.com/mpesa/callback",
-      AccountReference: "RDS-Lab",
-      TransactionDesc: "RDS Transport and Delivery Payment"
+      AccountReference: "RDS",
+      TransactionDesc: "RDS Payment"
     };
 
     let darajaResponse;
