@@ -1,479 +1,467 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RDS SUPER-ADMIN CONTROL CENTER | STAGE 50 PRO</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDS STAGE 50 ENTERPRISE COMMAND CENTER</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root {
+            --neon-green: #00ff88;
+            --dark-bg: #0b0f19;
+            --panel-bg: #111827;
+            --card-bg: #181818;
+            --text-dim: #9ca3af;
+            --alert-red: #ff3366;
+            --gold: #ffd700;
+            --cyan: #38bdf8;
+        }
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
 
-  <style>
-    :root {
-      --neon-green: #00ff88;
-      --dark-bg: #000000;
-      --panel-bg: #111111;
-      --card-bg: #181818;
-      --text-dim: #888888;
-      --alert-red: #ff3366;
-      --gold: #ffd700;
-      --cyan: #00e5ff;
-    }
+        body {
+            background-color: var(--dark-bg);
+            color: var(--neon-green);
+            padding: 20px;
+        }
 
-    * { box-sizing: border-box; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--neon-green);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
 
-    body {
-      background: var(--dark-bg);
-      color: var(--neon-green);
-      font-family: monospace;
-      padding: 15px;
-      margin: 0;
-    }
+        h1 { font-size: 1.2rem; letter-spacing: 2px; color: var(--neon-green); }
+        h2 { font-size: 0.9rem; margin-bottom: 10px; border-bottom: 1px dashed var(--neon-green); padding-bottom: 5px; color: var(--neon-green); text-transform: uppercase; }
 
-    h2, h3, h4 { margin: 0 0 10px 0; text-transform: uppercase; color: var(--neon-green); }
+        .badge {
+            background: var(--neon-green);
+            color: var(--dark-bg);
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            border-radius: 4px;
+        }
 
-    button {
-      padding: 8px 12px;
-      background: var(--neon-green);
-      color: #000;
-      font-weight: bold;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-family: monospace;
-      transition: opacity 0.2s;
-    }
+        .grid-top {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
 
-    button:hover { opacity: 0.85; }
+        @media (max-width: 900px) {
+            .grid-top { grid-template-columns: repeat(2, 1fr); }
+        }
 
-    .btn-danger { background: var(--alert-red); color: #fff; }
-    .btn-warn { background: var(--gold); color: #000; }
-    .btn-cyan { background: var(--cyan); color: #000; }
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--neon-green);
+            border-radius: 6px;
+            padding: 15px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
 
-    input, select {
-      padding: 8px;
-      background: #111;
-      color: var(--neon-green);
-      border: 1px solid var(--neon-green);
-      font-family: monospace;
-      border-radius: 4px;
-      margin-right: 5px;
-      margin-bottom: 5px;
-      width: 100%;
-      box-sizing: border-box;
-    }
+        .card-title { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        .card-value { font-size: 1.5rem; font-weight: bold; color: var(--cyan); margin-top: 4px; }
 
-    .box {
-      border: 1px solid var(--neon-green);
-      border-radius: 6px;
-      padding: 12px;
-      margin-bottom: 12px;
-      background: var(--panel-bg);
-    }
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 20px;
+        }
 
-    .kpi-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 10px;
-      margin-bottom: 12px;
-    }
+        @media (max-width: 900px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
 
-    .kpi-card {
-      background: var(--card-bg);
-      border: 1px solid #333;
-      padding: 12px;
-      text-align: center;
-      border-radius: 4px;
-    }
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--neon-green);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
 
-    .kpi-val { font-size: 22px; font-weight: bold; color: var(--gold); margin-top: 4px; }
+        input, select {
+            width: 100%;
+            background: var(--dark-bg);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
 
-    .grid-2 { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px; }
+        button {
+            background: var(--neon-green);
+            color: var(--dark-bg);
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-family: monospace;
+            transition: opacity 0.2s;
+        }
 
-    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+        button:hover { opacity: 0.85; }
 
-    #adminMap {
-      height: 350px;
-      width: 100%;
-      border: 1px solid var(--neon-green);
-      border-radius: 4px;
-      background: #080808;
-    }
+        .btn-danger { background: var(--alert-red); color: #fff; width: auto; padding: 4px 8px; font-size: 0.75rem; }
+        .btn-cyan { background: var(--cyan); color: var(--dark-bg); }
 
-    pre {
-      white-space: pre-wrap;
-      word-break: break-all;
-      max-height: 120px;
-      overflow-y: auto;
-      background: #050505;
-      padding: 8px;
-      border: 1px solid #222;
-      color: #00ff88;
-      font-size: 0.8rem;
-    }
+        #map {
+            height: 250px;
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid var(--neon-green);
+            background: #000;
+        }
 
-    .item-card {
-      padding: 8px;
-      border: 1px solid #333;
-      margin-bottom: 6px;
-      background: var(--card-bg);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-radius: 4px;
-    }
+        .console {
+            background: #000;
+            padding: 10px;
+            border: 1px solid var(--neon-green);
+            height: 120px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            color: var(--neon-green);
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
 
-    .small { font-size: 0.75rem; color: var(--text-dim); }
-  </style>
+        table { width: 100%; font-size: 0.8rem; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 6px; border-bottom: 1px solid #1f2937; }
+        th { color: var(--cyan); }
+
+        .item-card {
+            padding: 8px;
+            border: 1px solid #333;
+            margin-bottom: 6px;
+            background: var(--card-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 4px;
+        }
+
+        .small { font-size: 0.75rem; color: var(--text-dim); }
+    </style>
 </head>
 <body>
 
-<h2>⚙️ RDS STAGE 50 CONTROL & CHECKOUT CENTER</h2>
+    <header>
+        <h1>⚡ RDS STAGE 50 ENTERPRISE COMMAND CENTER</h1>
+        <div class="badge" id="systemStatus">SYSTEM_ONLINE</div>
+    </header>
 
-<!-- SUMMARY METRICS -->
-<div class="kpi-row">
-  <div class="kpi-card">
-    <div style="font-size:11px; color:#888;">GROSS VOLUME</div>
-    <div id="kpiVolume" class="kpi-val">$0.00</div>
-  </div>
-  <div class="kpi-card">
-    <div style="font-size:11px; color:#888;">ACTIVE DRIVERS</div>
-    <div id="kpiDrivers" class="kpi-val">0</div>
-  </div>
-  <div class="kpi-card">
-    <div style="font-size:11px; color:#888;">GLOBAL ORDERS</div>
-    <div id="kpiOrders" class="kpi-val">0</div>
-  </div>
-  <div class="kpi-card">
-    <div style="font-size:11px; color:#888;">MERCHANTS</div>
-    <div id="kpiMerchants" class="kpi-val">0</div>
-  </div>
-</div>
-
-<div class="grid-2">
-  <!-- LEFT COLUMN: LIVE MAP & M-PESA CHECKOUT -->
-  <div>
-    <!-- INTEGRATED M-PESA CHECKOUT PANEL -->
-    <div class="box">
-      <h3>M-Pesa STK Push Checkout</h3>
-      <p class="small">Initiate live Daraja STK Push & trigger automatic delivery dispatch.</p>
-      
-      <label for="phone">M-Pesa Phone Number:</label>
-      <input type="text" id="phone" value="254708374149" placeholder="2547XXXXXXXX">
-
-      <label for="distance">Trip Distance (Km) / Amount:</label>
-      <input type="number" id="distance" value="5" placeholder="5">
-
-      <button onclick="triggerStkPush()" class="btn-cyan">PAY WITH M-PESA STK PUSH</button>
-      
-      <div id="status" style="margin-top: 10px; font-weight: bold;"></div>
-    </div>
-
-    <div class="box">
-      <h3>MAP: Live Fleet Tracking Map</h3>
-      <div id="adminMap"></div>
-    </div>
-
-    <div class="box">
-      <h3>STORE: Merchant Portfolio Management</h3>
-      <div style="margin-bottom:10px;">
-        <input type="text" id="bizNameInput" placeholder="Shop Name..." style="margin-bottom:6px;" />
-        <input type="text" id="bizCatInput" placeholder="Category" value="Retail" style="margin-bottom:6px;" />
-        <button onclick="registerMerchant()" class="btn-cyan">ADD MERCHANT</button>
-      </div>
-      <div id="merchantList"><em>Loading merchant portfolio...</em></div>
-    </div>
-  </div>
-
-  <!-- RIGHT COLUMN: LEDGER & DRIVER ROSTER -->
-  <div>
-    <div class="box">
-      <h3>LOG: Double-Entry System Ledger</h3>
-      <div id="ledgerFeed"><em>Loading system ledger...</em></div>
-    </div>
-
-    <div class="box">
-      <h3>FLEET: Fleet Driver Roster</h3>
-      <div id="driverRoster"><em>Loading roster...</em></div>
-    </div>
-  </div>
-</div>
-
-<!-- SYSTEM CONSOLE LOG -->
-<div class="box">
-  <h4>CONSOLE: System Stream Console Log</h4>
-  <pre id="adminLog">Stage 50 enterprise control active.</pre>
-</div>
-
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script src="/socket.io/socket.io.js"></script>
-
-<script>
-const LOCAL_API = "http://localhost:3000";
-const CLOUD_API = "https://rds-lab.onrender.com";
-let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
-
-let map = null;
-let driverMarkers = {};
-let activeTileLayer = null;
-
-const socket = io();
-socket.on('connect', () => {
-  sysLog("Connected to RDS Realtime Socket Server");
-});
-
-function sysLog(msg) {
-  const el = document.getElementById("adminLog");
-  const time = new Date().toLocaleTimeString();
-  el.innerText = `[${time}] ${typeof msg === 'object' ? JSON.stringify(msg) : msg}\n` + el.innerText;
-}
-
-async function apiFetch(endpoints, options = {}) {
-  const targetEndpoints = Array.isArray(endpoints) ? endpoints : [endpoints];
-  for (const ep of targetEndpoints) {
-    try {
-      const res = await fetch(`${API_BASE}${ep}`, {
-        ...options,
-        headers: { "Content-Type": "application/json", ...(options.headers || {}) }
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
-  }
-  return null;
-}
-
-/* ================= M-PESA STK PUSH FUNCTIONALITY ================= */
-async function triggerStkPush() {
-  const phone = document.getElementById('phone').value;
-  const distanceKm = document.getElementById('distance').value;
-  const statusDiv = document.getElementById('status');
-
-  statusDiv.style.color = "var(--cyan)";
-  statusDiv.innerText = "Sending M-Pesa prompt to phone...";
-
-  try {
-    const response = await fetch(`${API_BASE}/mpesa/stkpush`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, distanceKm, businessId: "SYSTEM" })
-    });
-
-    const result = await response.json();
-    if (result.success) {
-      statusDiv.style.color = "var(--gold)";
-      statusDiv.innerText = "STK Push sent successfully! Check your phone & enter PIN.";
-      sysLog(`STK Push initiated for ${phone}`);
-      refreshDashboard();
-    } else {
-      statusDiv.style.color = "var(--alert-red)";
-      statusDiv.innerText = "Error: " + (result.error || "Failed to initiate payment");
-    }
-  } catch (err) {
-    statusDiv.style.color = "var(--alert-red)";
-    statusDiv.innerText = "Network Error: " + err.message;
-  }
-}
-
-/* ================= AUTO-HEALING PUBLIC TILE ENGINE ================= */
-function initAdminMap() {
-  if (map) return;
-
-  map = L.map("adminMap", {
-    tap: true,
-    touchZoom: true,
-    dragging: true
-  }).setView([-1.286389, 36.817223], 13);
-
-  const tileProviders = [
-    {
-      url: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
-      subdomains: ["a", "b", "c", "d"],
-      maxZoom: 19
-    },
-    {
-      url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-      subdomains: [],
-      maxZoom: 16
-    },
-    {
-      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      subdomains: ["a", "b", "c"],
-      maxZoom: 19
-    }
-  ];
-
-  let providerIndex = 0;
-
-  function loadLayer() {
-    if (activeTileLayer && map.hasLayer(activeTileLayer)) {
-      map.removeLayer(activeTileLayer);
-    }
-
-    const provider = tileProviders[providerIndex];
-    activeTileLayer = L.tileLayer(provider.url, {
-      subdomains: provider.subdomains,
-      maxZoom: provider.maxZoom,
-      crossOrigin: true
-    });
-
-    activeTileLayer.on("tileerror", () => {
-      providerIndex = (providerIndex + 1) % tileProviders.length;
-      loadLayer();
-    });
-
-    activeTileLayer.addTo(map);
-  }
-
-  loadLayer();
-
-  setTimeout(() => { map.invalidateSize(); }, 500);
-}
-
-/* ================= MERCHANT MANAGEMENT ================= */
-async function registerMerchant() {
-  const nameInput = document.getElementById("bizNameInput");
-  const catInput = document.getElementById("bizCatInput");
-  const name = nameInput.value.trim();
-  const category = catInput.value.trim() || "Retail";
-
-  if (!name) return alert("Enter merchant name.");
-
-  const res = await apiFetch(["/addBusiness", "/business/add"], {
-    method: "POST",
-    body: JSON.stringify({ name, category })
-  });
-
-  if (res && res.success) {
-    nameInput.value = "";
-    sysLog(`Merchant created: ${name}`);
-    refreshDashboard();
-  }
-}
-
-async function deleteMerchant(id) {
-  if (!confirm("Are you sure you want to delete this merchant profile?")) return;
-  const res = await apiFetch("/deleteBusiness", {
-    method: "POST",
-    body: JSON.stringify({ id })
-  });
-  if (res && res.success) {
-    sysLog(`Merchant ${id} removed.`);
-    refreshDashboard();
-  }
-}
-
-/* ================= REAL-TIME DASHBOARD DATA ================= */
-async function refreshDashboard() {
-  const [statsData, ordersData, driversData, ledgerData, bizData] = await Promise.all([
-    apiFetch("/system/stats"),
-    apiFetch(["/orders"]),
-    apiFetch(["/drivers", "/drivers/live"]),
-    apiFetch(["/ledger", "/transactions"]),
-    apiFetch(["/businesses", "/shops"])
-  ]);
-
-  const allOrders = (ordersData && (ordersData.orders || ordersData.data)) || [];
-  const drivers = (driversData && (driversData.drivers || driversData.data)) || [];
-  const ledger = (ledgerData && (ledgerData.ledger || ledgerData.transactions)) || [];
-  const businesses = (bizData && (bizData.businesses || bizData.shops)) || [];
-
-  // 1. KPI Summaries
-  let grossVolume = 0;
-  allOrders.forEach(o => { grossVolume += Number(o.total || o.amount || 0); });
-
-  if (statsData && statsData.stats) {
-    document.getElementById("kpiVolume").innerText = `$${(statsData.stats.grossVolume || grossVolume).toFixed(2)}`;
-    document.getElementById("kpiDrivers").innerText = statsData.stats.activeDrivers || drivers.length;
-    document.getElementById("kpiOrders").innerText = statsData.stats.orders || allOrders.length;
-    document.getElementById("kpiMerchants").innerText = statsData.stats.businesses || businesses.length;
-  } else {
-    document.getElementById("kpiVolume").innerText = `$${grossVolume.toFixed(2)}`;
-    document.getElementById("kpiDrivers").innerText = drivers.length;
-    document.getElementById("kpiOrders").innerText = allOrders.length;
-    document.getElementById("kpiMerchants").innerText = businesses.length;
-  }
-
-  // 2. Merchant Portfolio
-  const merchantContainer = document.getElementById("merchantList");
-  if (businesses.length === 0) {
-    merchantContainer.innerHTML = "<p class='small'>No merchant stores registered.</p>";
-  } else {
-    let mHtml = "";
-    businesses.forEach(b => {
-      mHtml += `
-        <div class="item-card">
-          <div>
-            <b>${b.name}</b> (${b.category || 'Retail'})<br>
-            <span class="small">ID: ${b.id}</span>
-          </div>
-          <button onclick="deleteMerchant('${b.id}')" class="btn-danger">DELETE</button>
+    <!-- TOP KPI SUMMARY ROW -->
+    <div class="grid-top">
+        <div class="card">
+            <div class="card-title">Gross Platform Volume</div>
+            <div class="card-value" id="statGross">KES 0</div>
         </div>
-      `;
-    });
-    merchantContainer.innerHTML = mHtml;
-  }
-
-  // 3. Driver Fleet Roster & Map Markers
-  const roster = document.getElementById("driverRoster");
-  if (drivers.length === 0) {
-    roster.innerHTML = "<p class='small'>No active drivers registered.</p>";
-  } else {
-    let dHtml = "";
-    drivers.forEach(d => {
-      dHtml += `
-        <div class="item-card">
-          <div>
-            <b>${d.name}</b> - <span style="color:var(--cyan)">${(d.status || 'OFFLINE').toUpperCase()}</span><br>
-            <span class="small">Earnings: $${Number(d.earnings || 0).toFixed(2)}</span>
-          </div>
+        <div class="card">
+            <div class="card-title">Active Fleet Drivers</div>
+            <div class="card-value" id="statDrivers">0</div>
         </div>
-      `;
+        <div class="card">
+            <div class="card-title">KRA VAT Liability</div>
+            <div class="card-value" id="statVat">KES 0</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Secured Vault Status</div>
+            <div class="card-value" style="font-size: 1.1rem; color: var(--neon-green);" id="statVault">LOCKED</div>
+        </div>
+    </div>
 
-      if (d.location && typeof d.location.lat === 'number' && typeof d.location.lng === 'number') {
-        if (driverMarkers[d.id]) {
-          driverMarkers[d.id].setLatLng([d.location.lat, d.location.lng]);
-        } else {
-          driverMarkers[d.id] = L.marker([d.location.lat, d.location.lng]).addTo(map)
-            .bindPopup(`<b>${d.name}</b><br>Status: ${d.status}`);
+    <!-- MAIN TWO-COLUMN DASHBOARD GRID -->
+    <div class="main-grid">
+        <div>
+            <!-- STK Gateway Panel -->
+            <div class="panel">
+                <h2>STAGE 50 HIGH-SPEED STK GATEWAY</h2>
+                <input type="text" id="stkPhone" value="254708374149" placeholder="Recipient Phone (2547XXXXXXXX)">
+                <input type="number" id="stkAmount" value="5" placeholder="Settlement Amount (KES)">
+                <button onclick="executeStkPush()" class="btn-cyan">Execute Live STK Push</button>
+                <div id="stkStatus" style="margin-top: 8px; font-weight: bold; font-size: 0.85rem;"></div>
+            </div>
+
+            <!-- Live Map Panel -->
+            <div class="panel">
+                <h2>MAP: LIVE FLEET & DISPATCH TELEMETRY</h2>
+                <div id="map"></div>
+            </div>
+
+            <!-- Product Management Panel -->
+            <div class="panel">
+                <h2>MERCHANT PRODUCT & INVENTORY CATALOG</h2>
+                <input type="text" id="prodBusinessId" placeholder="Business ID (e.g. BIZ-001)" value="BIZ-001">
+                <input type="text" id="prodName" placeholder="Product Name">
+                <input type="number" id="prodPrice" placeholder="Price (KES)">
+                <input type="number" id="prodStock" placeholder="Initial Stock">
+                <button onclick="addProduct()">Publish Product</button>
+                <div style="max-height: 180px; overflow-y: auto;">
+                    <table id="productTable">
+                        <thead><tr><th>Product</th><th>Price</th><th>Stock</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <!-- Ledger Log Panel -->
+            <div class="panel">
+                <h2>AUDITED DOUBLE-ENTRY LEDGER</h2>
+                <div style="max-height: 220px; overflow-y: auto;">
+                    <table id="ledgerTable">
+                        <thead><tr><th>ID</th><th>Gross</th><th>Tax</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Fleet Driver Roster Panel -->
+            <div class="panel">
+                <h2>FLEET: ACTIVE DRIVER ROSTER</h2>
+                <div id="driverRoster" style="max-height: 180px; overflow-y: auto;">
+                    <span class="small">Loading roster telemetry...</span>
+                </div>
+            </div>
+
+            <!-- KRA Vault Detail Panel -->
+            <div class="panel">
+                <h2>KRA TAX COMPLIANCE VAULT</h2>
+                <div id="kraDetails" style="font-size: 0.8rem; line-height: 1.5; color: var(--cyan);">
+                    Loading compliance metrics...
+                </div>
+            </div>
+
+            <!-- Console Log -->
+            <div class="panel">
+                <h2>CONSOLE STREAM</h2>
+                <div class="console" id="consoleLog">Stage 50 enterprise control active.<br></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const logBox = document.getElementById('consoleLog');
+
+        function logMsg(msg) {
+            const time = new Date().toLocaleTimeString();
+            logBox.innerHTML += `[${time}] ${typeof msg === 'object' ? JSON.stringify(msg) : msg}<br>`;
+            logBox.scrollTop = logBox.scrollHeight;
         }
-      }
-    });
-    roster.innerHTML = dHtml;
-  }
 
-  // 4. Double-Entry System Ledger
-  const feed = document.getElementById("ledgerFeed");
-  if (ledger.length === 0) {
-    feed.innerHTML = "<p class='small'>No journal entries generated.</p>";
-  } else {
-    let lHtml = "";
-    ledger.slice(-6).reverse().forEach(l => {
-      const typeLabel = l.type || l.transactionType || "ORDER";
-      const refId = l.orderId || l.id || 'N/A';
-      const amountVal = Number(l.amount || l.total || 0).toFixed(2);
+        // Initialize Map centered on Nairobi
+        const map = L.map('map', {
+            tap: true,
+            touchZoom: true,
+            dragging: true
+        }).setView([-1.286389, 36.817223], 13);
 
-      lHtml += `
-        <div class="item-card">
-          <div>
-            <b style="color:var(--neon-green)">${typeLabel.toUpperCase()}</b>: 
-            <span style="color:var(--gold)">$${amountVal}</span><br>
-            <span class="small">Ref: ${refId}</span>
-          </div>
-        </div>
-      `;
-    });
-    feed.innerHTML = lHtml;
-  }
-}
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            subdomains: ['a', 'b', 'c', 'd']
+        }).addTo(map);
 
-setInterval(refreshDashboard, 3000);
+        let driverMarkers = {};
 
-window.onload = async () => {
-  initAdminMap();
-  await refreshDashboard();
-  sysLog("Stage 50 Control Center fully linked & operational.");
-};
-</script>
+        socket.on('connect', () => {
+            logMsg("Connected to Stage 50 Realtime Socket Matrix");
+        });
+
+        socket.on('orderDispatched', (data) => {
+            logMsg(`Order ${data.orderId} auto-dispatched to driver ${data.driverId}`);
+            refreshDashboard();
+        });
+
+        socket.on('productAdded', (prod) => {
+            logMsg(`New product published: ${prod.name} (KES ${prod.price})`);
+            fetchProducts();
+        });
+
+        async function executeStkPush() {
+            const phone = document.getElementById('stkPhone').value;
+            const amount = document.getElementById('stkAmount').value;
+            const statusDiv = document.getElementById('stkStatus');
+
+            if (!phone || !amount) {
+                alert("Please provide both phone number and amount.");
+                return;
+            }
+
+            statusDiv.style.color = "var(--cyan)";
+            statusDiv.innerText = "Initiating high-speed STK Push to Daraja sandbox...";
+            logMsg(`Initiating STK push to ${phone} for KES ${amount}...`);
+
+            try {
+                const res = await fetch('/mpesa/stkpush', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, amount, distanceKm: 5 })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    statusDiv.style.color = "var(--gold)";
+                    statusDiv.innerText = `STK Sent! Request ID: ${data.CheckoutRequestID}`;
+                    logMsg(`STK Sent Successfully! CheckoutRequestID: ${data.CheckoutRequestID}`);
+                    refreshDashboard();
+                } else {
+                    statusDiv.style.color = "var(--alert-red)";
+                    statusDiv.innerText = `Error: ${data.error || "Failed to initiate payment"}`;
+                    logMsg(`STK Failed: ${data.error}`);
+                }
+            } catch (err) {
+                statusDiv.style.color = "var(--alert-red)";
+                statusDiv.innerText = `Network Error: ${err.message}`;
+                logMsg(`Gateway error: ${err.message}`);
+            }
+        }
+
+        async function addProduct() {
+            const businessId = document.getElementById('prodBusinessId').value;
+            const name = document.getElementById('prodName').value;
+            const price = document.getElementById('prodPrice').value;
+            const stock = document.getElementById('prodStock').value;
+
+            if (!businessId || !name || !price) {
+                alert("Missing required product fields.");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ businessId, name, price, stock })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    logMsg(`Product created: ${name}`);
+                    document.getElementById('prodName').value = '';
+                    document.getElementById('prodPrice').value = '';
+                    document.getElementById('prodStock').value = '';
+                    fetchProducts();
+                } else {
+                    logMsg(`Error adding product: ${data.error}`);
+                }
+            } catch (err) {
+                logMsg(`Product API error: ${err.message}`);
+            }
+        }
+
+        async function fetchProducts() {
+            try {
+                const res = await fetch('/api/products');
+                const data = await res.json();
+                if (data.success) {
+                    const tbody = document.querySelector('#productTable tbody');
+                    tbody.innerHTML = '';
+                    data.products.forEach(p => {
+                        tbody.innerHTML += `<tr><td>${p.name}</td><td>KES ${p.price}</td><td>${p.stock}</td></tr>`;
+                    });
+                }
+            } catch (err) {}
+        }
+
+        async function refreshDashboard() {
+            try {
+                // Fetch KRA Vault Metrics
+                const kraRes = await fetch('/api/compliance/kra-vault');
+                const kraData = await kraRes.json();
+                if (kraData.success) {
+                    const rep = kraData.kraReport;
+                    document.getElementById('statGross').innerText = `KES ${rep.metrics.grossVolume}`;
+                    document.getElementById('statVat').innerText = `KES ${rep.metrics.vatLiability}`;
+                    document.getElementById('statVault').innerText = rep.vaultStatus;
+                    document.getElementById('kraDetails').innerHTML = `
+                        PIN: ${rep.pinRegistered}<br>
+                        Period: ${rep.compliancePeriod}<br>
+                        Taxable Comm: KES ${rep.metrics.taxableCommission}<br>
+                        Withholding Tax: KES ${rep.metrics.withholdingTax}<br>
+                        Transactions Logged: ${rep.transactionsLogged}
+                    `;
+                }
+
+                // Fetch Drivers Roster & Telemetry
+                const driversRes = await fetch('/drivers');
+                const driversData = await driversRes.json();
+                const drivers = driversData.drivers || driversData || [];
+                document.getElementById('statDrivers').innerText = drivers.length;
+
+                const roster = document.getElementById('driverRoster');
+                if (drivers.length === 0) {
+                    roster.innerHTML = "<span class='small'>No active drivers registered.</span>";
+                } else {
+                    let dHtml = "";
+                    drivers.forEach(d => {
+                        dHtml += `
+                            <div class="item-card">
+                                <div>
+                                    <b>${d.name || 'Driver'}</b> - <span style="color:var(--cyan)">${(d.status || 'ONLINE').toUpperCase()}</span><br>
+                                    <span class="small">ID: ${d.id}</span>
+                                </div>
+                            </div>
+                        `;
+                        if (d.location && typeof d.location.lat === 'number' && typeof d.location.lng === 'number') {
+                            if (driverMarkers[d.id]) {
+                                driverMarkers[d.id].setLatLng([d.location.lat, d.location.lng]);
+                            } else {
+                                driverMarkers[d.id] = L.marker([d.location.lat, d.location.lng]).addTo(map)
+                                    .bindPopup(`<b>${d.name || 'Driver'}</b><br>Status: ${d.status}`);
+                            }
+                        }
+                    });
+                    roster.innerHTML = dHtml;
+                }
+
+                // Fetch Orders & Ledger Logs
+                const ordersRes = await fetch('/orders');
+                const ordersData = await ordersRes.json();
+                const orders = ordersData.orders || ordersData || [];
+                document.getElementById('kpiOrders').innerText = orders.length;
+
+                const ledgerRes = await fetch('/ledger');
+                const ledgerData = await ledgerRes.json();
+                const ledger = ledgerData.ledger || ledgerData || [];
+
+                const lTable = document.querySelector('#ledgerTable tbody');
+                if (ledger.length === 0) {
+                    lTable.innerHTML = `<tr><td colspan="3" class="small">No audited ledger records.</td></tr>`;
+                } else {
+                    let lHtml = "";
+                    ledger.slice(-6).reverse().forEach(l => {
+                        lHtml += `<tr><td>${l.id.slice(0, 10)}...</td><td>KES ${Number(l.gross || l.amount || 0).toFixed(2)}</td><td>KES ${Number(l.tax || 0).toFixed(2)}</td></tr>`;
+                    });
+                    lTable.innerHTML = lHtml;
+                }
+
+            } catch (err) {
+                // Silently handle polling errors during restart
+            }
+        }
+
+        setTimeout(() => { map.invalidateSize(); }, 500);
+        setInterval(refreshDashboard, 4000);
+        fetchProducts();
+        refreshDashboard();
+    </script>
 </body>
 </html>
