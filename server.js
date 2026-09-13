@@ -7,7 +7,7 @@ const fsPromises = require("fs").promises;
 const cors = require("cors");
 const path = require("path");
 const axios = require("axios");
-const currency = require("currency.js"); // Ensures zero-floating-point discrepancy (Cent-precise)
+const currency = require("currency.js"); 
 const crypto = require("crypto");
 
 const app = express();
@@ -27,11 +27,10 @@ global.io = io;
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 
-// Sovereign World-Class Tier-51 Monetization Constants (Bank-Grade Invariants)
-const DRIVER_SHARE_RATE = 0.95;        // 95.0% Guaranteed Driver Remuneration
-const PLATFORM_COMMISSION_RATE = 0.05; // 5.0% Platform Yield
-const SHOP_SURCHARGE_RATE = 0.02;      // 2.0% Non-Intrusive External Top-Up Surcharge (Shop Owner Margins Fully Protected)
-const KRA_TAX_RATE = 0.16;             // 16% Statutory VAT Compliance Engine on Platform Earnings
+const DRIVER_SHARE_RATE = 0.95;        
+const PLATFORM_COMMISSION_RATE = 0.05; 
+const SHOP_SURCHARGE_RATE = 0.02;      
+const KRA_TAX_RATE = 0.16;             
 
 const BASE_FARE = 180;                 
 const RATE_PER_KM = 75;                
@@ -41,13 +40,11 @@ function num(v) {
   return isNaN(parsed) ? 0 : parsed;
 }
 
-// ================= CRYPTOGRAPHIC MERKLE-PROOF AUDITING =================
 function generateStage51MerkleProof(record) {
   const payload = `${record.id}:${record.orderId}:${record.gross}:${record.driverAmount}:${record.netPlatformRevenue}:${record.timestamp}`;
   return crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_51_MASTER_KEY').update(payload).digest('hex');
 }
 
-// ================= CENT-PRECISE FINANCIAL INVARIANT SPLITTER =================
 function processStage51FinancialSplit(distanceKm, demandMultiplier = 1.0, trafficIndex = 1.0, overrideAmount = null) {
   const km = num(distanceKm) > 0 ? num(distanceKm) : 10;
   const multiplier = Math.max(1.0, num(demandMultiplier)) * Math.max(1.0, num(trafficIndex));
@@ -57,24 +54,14 @@ function processStage51FinancialSplit(distanceKm, demandMultiplier = 1.0, traffi
     : (BASE_FARE + (km * RATE_PER_KM)) * multiplier;
 
   const baseGross = currency(rawBaseFare);
-  
-  // 1. External Shop Surcharge added on top (Protected Margin)
   const shopOwnerSurcharge = baseGross.multiply(SHOP_SURCHARGE_RATE);
-  
-  // 2. Total Gross charged to consumer
   const gross = baseGross.add(shopOwnerSurcharge);
 
-  // 3. Driver receives exactly 95% of base service fee
   const driverAmount = baseGross.multiply(DRIVER_SHARE_RATE);
-
-  // 4. Platform commission is 5% of base + 100% of the external shop surcharge
   const platformCommission = baseGross.multiply(PLATFORM_COMMISSION_RATE).add(shopOwnerSurcharge);
-
-  // 5. Statutory VAT (16%) on platform revenue
   const tax = platformCommission.multiply(KRA_TAX_RATE);
   const netPlatformRevenue = platformCommission.subtract(tax);
 
-  // 6. World-Bank Mathematical Proof Invariant: Driver + Platform Commission MUST equal Total Gross
   const totalReconciled = driverAmount.add(platformCommission);
   if (
     totalReconciled.intValue !== gross.intValue &&
@@ -99,7 +86,8 @@ const MPESA_CONFIG = {
   consumerSecret: process.env.MPESA_CONSUMER_SECRET || "wF4tdktQCUIATJr3DNqW9wtIjtImd7bNGGyYhYa5k3LNesW20xRG1ZAsEiqBqgRv",
   shortCode: process.env.MPESA_SHORTCODE || "174379",
   passkey: process.env.MPESA_PASSKEY || "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919",
-  environment: process.env.MPESA_ENV || "sandbox"
+  environment: process.env.MPESA_ENV || "sandbox",
+  callbackUrl: process.env.MPESA_CALLBACK_URL || "https://sandbox.safaricom.co.ke/callback"
 };
 
 const MPESA_BASE_URL = MPESA_CONFIG.environment === "production"
@@ -187,7 +175,6 @@ function fail(res, msg = "Error", statusCode = 400) {
   return res.status(statusCode).json({ success: false, error: msg });
 }
 
-// ================= ZERO-LOSS ATOMIC FILE PERSISTENCE =================
 if (fs.existsSync(DB_FILE)) {
   try {
     const fileContent = fs.readFileSync(DB_FILE, "utf-8");
@@ -214,7 +201,6 @@ const saveDB = async () => {
 
 app.get("/health", (req, res) => ok(res, { status: "STAGE_51_BANK_GRADE_ONLINE", time: Date.now() }));
 
-// ================= USER & DRIVER AUTHENTICATION =================
 app.post('/api/auth/register', async (req, res) => {
     try {
         ensureState();
@@ -267,7 +253,6 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// ================= FARE & SURCHARGE CALCULATION API =================
 app.post('/api/calculate-fare', (req, res) => {
     try {
         const { distanceKm, demandMultiplier, trafficIndex } = req.body;
@@ -278,7 +263,6 @@ app.post('/api/calculate-fare', (req, res) => {
     }
 });
 
-// ================= DRIVER B2C LIQUIDITY SETTLEMENT =================
 app.post('/api/payouts/b2c', async (req, res) => {
     try {
         ensureState();
@@ -310,7 +294,6 @@ app.post('/api/payouts/b2c', async (req, res) => {
     }
 });
 
-// ================= KRA COMPLIANCE VAULT =================
 app.get('/api/compliance/kra-vault', (req, res) => {
     try {
         ensureState();
@@ -332,7 +315,6 @@ app.get('/api/compliance/kra-vault', (req, res) => {
     }
 });
 
-// ================= M-PESA STK GATEWAY =================
 app.post("/mpesa/stkpush", async (req, res) => {
   try {
     ensureState();
@@ -355,7 +337,7 @@ app.post("/mpesa/stkpush", async (req, res) => {
       PartyA: formattedPhone,
       PartyB: MPESA_CONFIG.shortCode,
       PhoneNumber: formattedPhone,
-      CallBackURL: "https://sandbox.safaricom.co.ke/callback",
+      CallBackURL: MPESA_CONFIG.callbackUrl,
       AccountReference: "RDS51",
       TransactionDesc: "Bank-Grade Sovereign Escrow"
     };
@@ -383,14 +365,13 @@ app.post("/mpesa/stkpush", async (req, res) => {
 
     if (global.io) global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
 
-    ok(res, { message: "STK Push initiated successfully.", CheckoutRequestID: darajaResponse.CheckoutRequestID, financialSplit });
+    return ok(res, { message: "STK Push initiated successfully.", CheckoutRequestID: darajaResponse.CheckoutRequestID, financialSplit });
   } catch (err) {
     const errDetails = err.response?.data ? JSON.stringify(err.response.data) : err.message;
-    fail(res, "Gateway Execution Failure: " + errDetails, 502);
+    return fail(res, "Gateway Execution Failure: " + errDetails, 502);
   }
 });
 
-// ================= WEBHOOK RECONCILIATION =================
 app.post("/api/v1/webhook-listener", async (req, res) => {
   try {
     ensureState();
@@ -426,14 +407,18 @@ app.post("/api/v1/webhook-listener", async (req, res) => {
 
     await saveDB();
     if (global.io) global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
-    res.json({ success: false });
+    return res.json({ success: false });
   }
 });
 
 app.use((req, res) => res.status(200).json({ success: true, bankGradeActive: true }));
 
-server.listen(PORT, () => {
-  log("SYSTEM", `🚀 BANK-GRADE SOVEREIGN FINANCIAL ENGINE ACTIVE ON PORT ${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    log("SYSTEM", `🚀 BANK-GRADE SOVEREIGN FINANCIAL ENGINE ACTIVE ON PORT ${PORT}`);
+  });
+}
+
+module.exports = { app, server, processStage51FinancialSplit };
