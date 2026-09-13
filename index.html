@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RDS SUPER-ADMIN CONTROL CENTER | PRO</title>
+  <title>RDS SUPER-ADMIN CONTROL CENTER | STAGE 50 PRO</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
@@ -60,6 +59,8 @@
       border-radius: 4px;
       margin-right: 5px;
       margin-bottom: 5px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .box {
@@ -127,7 +128,7 @@
 </head>
 <body>
 
-<h2>⚙️ RDS SUPER-ADMIN CONTROL CENTER</h2>
+<h2>⚙️ RDS STAGE 50 CONTROL & CHECKOUT CENTER</h2>
 
 <!-- SUMMARY METRICS -->
 <div class="kpi-row">
@@ -150,8 +151,24 @@
 </div>
 
 <div class="grid-2">
-  <!-- LEFT COLUMN: LIVE MAP & MERCHANT MANAGEMENT -->
+  <!-- LEFT COLUMN: LIVE MAP & M-PESA CHECKOUT -->
   <div>
+    <!-- INTEGRATED M-PESA CHECKOUT PANEL -->
+    <div class="box">
+      <h3>M-Pesa STK Push Checkout</h3>
+      <p class="small">Initiate live Daraja STK Push & trigger automatic delivery dispatch.</p>
+      
+      <label for="phone">M-Pesa Phone Number:</label>
+      <input type="text" id="phone" value="254708374149" placeholder="2547XXXXXXXX">
+
+      <label for="distance">Trip Distance (Km) / Amount:</label>
+      <input type="number" id="distance" value="5" placeholder="5">
+
+      <button onclick="triggerStkPush()" class="btn-cyan">PAY WITH M-PESA STK PUSH</button>
+      
+      <div id="status" style="margin-top: 10px; font-weight: bold;"></div>
+    </div>
+
     <div class="box">
       <h3>MAP: Live Fleet Tracking Map</h3>
       <div id="adminMap"></div>
@@ -160,8 +177,8 @@
     <div class="box">
       <h3>STORE: Merchant Portfolio Management</h3>
       <div style="margin-bottom:10px;">
-        <input type="text" id="bizNameInput" placeholder="Shop Name..." />
-        <input type="text" id="bizCatInput" placeholder="Category" value="Retail" />
+        <input type="text" id="bizNameInput" placeholder="Shop Name..." style="margin-bottom:6px;" />
+        <input type="text" id="bizCatInput" placeholder="Category" value="Retail" style="margin-bottom:6px;" />
         <button onclick="registerMerchant()" class="btn-cyan">ADD MERCHANT</button>
       </div>
       <div id="merchantList"><em>Loading merchant portfolio...</em></div>
@@ -185,11 +202,12 @@
 <!-- SYSTEM CONSOLE LOG -->
 <div class="box">
   <h4>CONSOLE: System Stream Console Log</h4>
-  <pre id="adminLog">Admin control active.</pre>
+  <pre id="adminLog">Stage 50 enterprise control active.</pre>
 </div>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="/socket.io/socket.io.js"></script>
 
 <script>
 const LOCAL_API = "http://localhost:3000";
@@ -199,6 +217,11 @@ let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_
 let map = null;
 let driverMarkers = {};
 let activeTileLayer = null;
+
+const socket = io();
+socket.on('connect', () => {
+  sysLog("Connected to RDS Realtime Socket Server");
+});
 
 function sysLog(msg) {
   const el = document.getElementById("adminLog");
@@ -218,6 +241,38 @@ async function apiFetch(endpoints, options = {}) {
     } catch (e) {}
   }
   return null;
+}
+
+/* ================= M-PESA STK PUSH FUNCTIONALITY ================= */
+async function triggerStkPush() {
+  const phone = document.getElementById('phone').value;
+  const distanceKm = document.getElementById('distance').value;
+  const statusDiv = document.getElementById('status');
+
+  statusDiv.style.color = "var(--cyan)";
+  statusDiv.innerText = "Sending M-Pesa prompt to phone...";
+
+  try {
+    const response = await fetch(`${API_BASE}/mpesa/stkpush`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, distanceKm, businessId: "SYSTEM" })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      statusDiv.style.color = "var(--gold)";
+      statusDiv.innerText = "STK Push sent successfully! Check your phone & enter PIN.";
+      sysLog(`STK Push initiated for ${phone}`);
+      refreshDashboard();
+    } else {
+      statusDiv.style.color = "var(--alert-red)";
+      statusDiv.innerText = "Error: " + (result.error || "Failed to initiate payment");
+    }
+  } catch (err) {
+    statusDiv.style.color = "var(--alert-red)";
+    statusDiv.innerText = "Network Error: " + err.message;
+  }
 }
 
 /* ================= AUTO-HEALING PUBLIC TILE ENGINE ================= */
@@ -342,7 +397,7 @@ async function refreshDashboard() {
   // 2. Merchant Portfolio
   const merchantContainer = document.getElementById("merchantList");
   if (businesses.length === 0) {
-    merchantContainer.innerHTML = "<p>No merchant stores registered.</p>";
+    merchantContainer.innerHTML = "<p class='small'>No merchant stores registered.</p>";
   } else {
     let mHtml = "";
     businesses.forEach(b => {
@@ -362,7 +417,7 @@ async function refreshDashboard() {
   // 3. Driver Fleet Roster & Map Markers
   const roster = document.getElementById("driverRoster");
   if (drivers.length === 0) {
-    roster.innerHTML = "<p>No active drivers registered.</p>";
+    roster.innerHTML = "<p class='small'>No active drivers registered.</p>";
   } else {
     let dHtml = "";
     drivers.forEach(d => {
@@ -390,7 +445,7 @@ async function refreshDashboard() {
   // 4. Double-Entry System Ledger
   const feed = document.getElementById("ledgerFeed");
   if (ledger.length === 0) {
-    feed.innerHTML = "<p>No journal entries generated.</p>";
+    feed.innerHTML = "<p class='small'>No journal entries generated.</p>";
   } else {
     let lHtml = "";
     ledger.slice(-6).reverse().forEach(l => {
@@ -417,7 +472,7 @@ setInterval(refreshDashboard, 3000);
 window.onload = async () => {
   initAdminMap();
   await refreshDashboard();
-  sysLog("Admin Control Center linked to cluster.");
+  sysLog("Stage 50 Control Center fully linked & operational.");
 };
 </script>
 </body>
