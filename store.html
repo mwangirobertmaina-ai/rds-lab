@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#0b0f19">
   <title>RDS STAGE 51 | SOVEREIGN STOREFRONT</title>
 
+  <!-- Socket.io Client -->
+  <script src="/socket.io/socket.io.js"></script>
+
   <style>
     :root {
       --neon-green: #00ff88;
@@ -197,6 +200,26 @@
         <button onclick="triggerStkCheckout()" class="btn-cyan">Pay via M-Pesa STK Push</button>
     </div>
 
+    <!-- LIVE ORDER LIFECYCLE TRACKER -->
+    <div class="checkout-panel">
+        <h2>Live Order Status</h2>
+        <div id="orderLifecycleTracker" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 10px;">
+            Status: <span id="lifecycleStatus" style="color: var(--cyan); font-weight: bold;">STANDBY</span>
+        </div>
+        <div style="display: flex; gap: 5px; height: 6px; background: #000; border-radius: 3px; overflow: hidden; border: 1px solid var(--neon-green);">
+            <div id="progPaid" style="flex: 1; background: var(--dark-bg); transition: background 0.3s;"></div>
+            <div id="progAccepted" style="flex: 1; background: var(--dark-bg); transition: background 0.3s;"></div>
+            <div id="progTransit" style="flex: 1; background: var(--dark-bg); transition: background 0.3s;"></div>
+            <div id="progDelivered" style="flex: 1; background: var(--dark-bg); transition: background 0.3s;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--text-dim); margin-top: 4px;">
+            <span>PAID</span>
+            <span>ACCEPTED</span>
+            <span>TRANSIT</span>
+            <span>DELIVERED</span>
+        </div>
+    </div>
+
     <!-- AUDIT LOGS -->
     <div class="panel" style="background:var(--panel-bg); border:1px solid var(--neon-green); border-radius:8px; padding:15px; animation: fadeIn 0.9s ease-out;">
         <h2 style="font-size:0.95rem; margin-bottom:10px; color:var(--cyan); text-transform:uppercase;">Transaction Stream</h2>
@@ -296,6 +319,47 @@
             } catch (err) {
                 logStore("Network request executed successfully in sovereign mock mode.");
                 alert("M-Pesa request processed successfully!");
+            }
+        }
+
+        // Live Order Lifecycle Socket Integration
+        try {
+            const socket = io();
+            socket.on('connect', () => {
+                logStore("Connected to live tracking telemetry stream.");
+            });
+            
+            socket.on('orderStatusUpdate', (data) => {
+                logStore(`Order ${data.orderId} status: ${data.status}`);
+                updateLifecycleUI(data.status);
+            });
+        } catch (e) {
+            logStore("Socket telemetry running in standby mode.");
+        }
+
+        function updateLifecycleUI(status) {
+            const statusEl = document.getElementById('lifecycleStatus');
+            statusEl.innerText = status;
+
+            document.getElementById('progPaid').style.background = 'var(--dark-bg)';
+            document.getElementById('progAccepted').style.background = 'var(--dark-bg)';
+            document.getElementById('progTransit').style.background = 'var(--dark-bg)';
+            document.getElementById('progDelivered').style.background = 'var(--dark-bg)';
+
+            if (status === 'PAID') {
+                document.getElementById('progPaid').style.background = 'var(--neon-green)';
+            } else if (status === 'ACCEPTED') {
+                document.getElementById('progPaid').style.background = 'var(--neon-green)';
+                document.getElementById('progAccepted').style.background = 'var(--neon-green)';
+            } else if (status === 'IN_TRANSIT') {
+                document.getElementById('progPaid').style.background = 'var(--neon-green)';
+                document.getElementById('progAccepted').style.background = 'var(--neon-green)';
+                document.getElementById('progTransit').style.background = 'var(--cyan)';
+            } else if (status === 'DELIVERED') {
+                document.getElementById('progPaid').style.background = 'var(--neon-green)';
+                document.getElementById('progAccepted').style.background = 'var(--neon-green)';
+                document.getElementById('progTransit').style.background = 'var(--cyan)';
+                document.getElementById('progDelivered').style.background = 'var(--neon-green)';
             }
         }
 
