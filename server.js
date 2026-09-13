@@ -1,13 +1,14 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const fs = require("fs");
 const fsPromises = require("fs").promises;
 const cors = require("cors");
 const path = require("path");
 const axios = require("axios");
 
 const app = express();
+app.use(express.json());
+app.use(cors());
 app.set("trust proxy", 1);
 
 const server = http.createServer(app);
@@ -21,6 +22,11 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
+
+function num(val) {
+  const parsed = parseFloat(val);
+  return isNaN(parsed) ? 0 : parsed;
+}
 
 const COMMISSION_RATE = 0.05; 
 const TAX_RATE = 0.16;        
@@ -48,12 +54,32 @@ const MPESA_CONFIG = {
   shortCode: "174379", 
   storeNumber: "1200280",
   passkey: "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919", 
-  environment: "sandbox"
+  environment: "sandbox",
+  callbackUrl: process.env.MPESA_CALLBACK_URL || "https://mydomain.co.ke/api/v1/webhook-listener"
 };
 
 const MPESA_BASE_URL = MPESA_CONFIG.environment === "production"
   ? "https://api.safaricom.co.ke"
   : "https://sandbox.safaricom.co.ke";
+
+async function initDb() {
+  try {
+    await fsPromises.access(DB_FILE);
+  } catch {
+    const initialStructure = { trips: [], payments: [] };
+    await fsPromises.writeFile(DB_FILE, JSON.stringify(initialStructure, null, 2), "utf8");
+  }
+}
+
+async function readDb() {
+  await initDb();
+  const data = await fsPromises.readFile(DB_FILE, "utf8");
+  return JSON.parse(data);
+}
+
+async function writeDb(data) {
+  await fsPromises.writeFile(DB_FILE, JSON.stringify(data, null, 2), "utf8");
+}
 
 async function getMpesaAccessToken() {
   try {
@@ -63,168 +89,148 @@ async function getMpesaAccessToken() {
       timeout: 10000
     });
     return response.data.access_token;
-  } catch (err) {
-    log("MPESA_AUTH_ERROR", err.response?.data ? JSON.stringify(err.response.data) : err.message);
-    throw new Error("Failed to authenticate with M-Pesa Daraja API");
+  } catch (error) {
+    console.error("Error generating M-Pesa access token:", error.response?.data || error.message);
+    throw new Error("Failed to authenticate with M-Pesa API");
   }
 }
 
-app.use(cors({ origin: "*", credentials: true }));
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
-app.use(express.static("."));
-
-function log(type, msg) {
-  console.log(`[${new Date().toISOString()}] [STAGE-50-ENTERPRISE] [${type}] ${msg}`);
+function getMpesaTimestamp() {
+  const date = new Date();
+  return date.getFullYear() +
+    String(date.getMonth() + 1).padStart(2, '0') +
+    String(date.getDate()).padStart(2, '0') +
+    String(date.getHours()).padStart(2, '0') +
+    String(date.getMinutes()).padStart(2, '0') +
+    String(date.getSeconds()).padStart(2, '0');
 }
 
-app.use((req, res, next) => {
-  log("REQ", `${req.method} ${req.url}`);
-  next();
-});
+app.post("/api/mpesa/stkpush", async (req, res) => {
+  const { phoneNumber, distanceKm, overrideAmount, accountReference } = req.body;
 
-function defaultDB() {
-  return { businesses: [], products: [], orders: [], drivers: [], ledger: [], wallets: [] };
-}
-
-let data = defaultDB();
-
-function id(prefix = "SYS") {
-  return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 99999)}`;
-}
-
-function num(v) {
-  const parsed = Number(v);
-  return isNaN(parsed) ? 0 : parsed;
-}
-
-function ok(res, payload = {}) {
-  return res.status(200).json({ success: true, ...payload });
-}
-
-function fail(res, msg = "Error", statusCode = 400) {
-  return res.status(statusCode).json({ success: false, error: msg });
-}
-
-if (fs.existsSync(DB_FILE)) {
-  try {
-    data = { ...defaultDB(), ...JSON.parse(fs.readFileSync(DB_FILE, "utf-8")) };
-  } catch (err) {
-    data = defaultDB();
+  if (!phoneNumber) {
+    return res.status(400).json({ success: false, error: "Phone number is required" });
   }
-}
 
-const saveDB = async () => {
+  const financialBreakdown = processTrip(distanceKm, overrideAmount);
+  let formattedPhone = phoneNumber.toString().replace("+", "").trim();
+  if (formattedPhone.startsWith("0")) formattedPhone = "254" + formattedPhone.substring(1);
+
   try {
-    await fsPromises.writeFile(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
-  } catch (err) {}
-};
-
-app.get("/health", (req, res) => ok(res, { status: "HEALTHY", time: Date.now() }));
-
-const stkPushHandler = async (req, res) => {
-  try {
-    const { phone, amount, distanceKm, businessId } = req.body;
-    if (!phone || (!amount && !distanceKm)) return fail(res, "Missing phone or amount", 400);
-
-    let formattedPhone = phone.toString().replace("+", "").trim();
-    if (formattedPhone.startsWith("0")) formattedPhone = "254" + formattedPhone.substring(1);
-
-    const result = processTrip(distanceKm, amount);
     const accessToken = await getMpesaAccessToken();
-
-    const timestamp = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14);
+    const timestamp = getMpesaTimestamp();
     const password = Buffer.from(`${MPESA_CONFIG.shortCode}${MPESA_CONFIG.passkey}${timestamp}`).toString("base64");
 
-    const payload = {
+    const requestBody = {
       BusinessShortCode: MPESA_CONFIG.shortCode,
       Password: password,
       Timestamp: timestamp,
       TransactionType: "CustomerPayBillOnline",
-      Amount: Math.round(result.gross),
+      Amount: Math.round(financialBreakdown.fare),
       PartyA: formattedPhone,
       PartyB: MPESA_CONFIG.shortCode,
       PhoneNumber: formattedPhone,
-      CallBackURL: "https://mydomain.co.ke/api/v1/webhook-listener",
-      AccountReference: "RDS",
-      TransactionDesc: "RDS Payment"
+      CallBackURL: MPESA_CONFIG.callbackUrl,
+      AccountReference: accountReference || "TaxiTrip",
+      TransactionDesc: `Fare payment for distance ${distanceKm || 10}km`
     };
 
-    let darajaResponse;
-    try {
-      const response = await axios.post(`${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`, payload, {
+    const response = await axios.post(
+      `${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`,
+      requestBody,
+      {
         headers: { Authorization: `Bearer ${accessToken}` },
         timeout: 10000
-      });
-      darajaResponse = response.data;
-    } catch (apiErr) {
-      const errDetails = apiErr.response?.data ? JSON.stringify(apiErr.response.data) : apiErr.message;
-      log("DARAJA_API_ERROR_FULL", errDetails);
-      return fail(res, `M-Pesa Daraja Rejected: ${errDetails}`, 502);
-    }
-
-    const order = {
-      id: id("ORD"),
-      businessId: businessId || "SYSTEM",
-      customerPhone: formattedPhone,
-      total: result.gross,
-      status: "PENDING_STK",
-      checkoutRequestId: darajaResponse.CheckoutRequestID,
-      createdAt: Date.now()
-    };
-    data.orders.push(order);
-    await saveDB();
-
-    ok(res, {
-      message: "Live M-Pesa STK Push sent successfully",
-      CheckoutRequestID: darajaResponse.CheckoutRequestID,
-      CustomerPhone: formattedPhone,
-      Amount: result.gross,
-      status: "PENDING"
-    });
-  } catch (err) {
-    fail(res, "M-Pesa Live Gateway Failure: " + err.message, 500);
-  }
-};
-
-app.post("/mpesa/stkpush", stkPushHandler);
-
-app.post("/api/v1/webhook-listener", async (req, res) => {
-  try {
-    const result = req.body?.Body?.stkCallback;
-    if (!result) return res.json({ success: false });
-
-    const order = data.orders.find(o => o.checkoutRequestId === result.CheckoutRequestID);
-    if (!order) return res.json({ success: false });
-
-    if (result.ResultCode === 0) {
-      order.status = "PAID";
-      const breakdown = processTrip(null, order.total);
-      data.ledger.push({
-        id: id("LEDGER"),
-        orderId: order.id,
-        ...breakdown
-      });
-
-      let wallet = data.wallets.find(w => w.driverId === "driver_1");
-      if (!wallet) {
-        wallet = { driverId: "driver_1", balance: 0 };
-        data.wallets.push(wallet);
       }
-      wallet.balance += breakdown.driverAmount;
-    } else {
-      order.status = "FAILED";
-    }
+    );
 
-    await saveDB();
-    res.json({ success: true });
-  } catch (err) {
-    res.json({ success: false });
+    const db = await readDb();
+    const pendingPayment = {
+      checkoutRequestId: response.data.CheckoutRequestID,
+      merchantRequestId: response.data.MerchantRequestID,
+      phoneNumber: formattedPhone,
+      status: "PENDING",
+      financials: financialBreakdown,
+      createdAt: new Date().toISOString()
+    };
+    db.payments.push(pendingPayment);
+    await writeDb(db);
+
+    res.status(200).json({ success: true, data: response.data });
+  } catch (error) {
+    const errDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+    console.error("STK Push Error:", errDetails);
+    res.status(500).json({ success: false, error: error.response?.data || error.message });
   }
 });
 
-app.use((req, res) => res.status(200).json({ success: true, autoHealed: true }));
+app.post("/api/v1/webhook-listener", async (req, res) => {
+  const { Body } = req.body;
+  if (!Body || !Body.stkCallback) {
+    return res.status(400).send("Invalid callback payload format");
+  }
 
-server.listen(PORT, () => {
-  log("SYSTEM", `🚀 STAGE 50 ENTERPRISE CORE ACTIVE ON PORT ${PORT}`);
+  const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = Body.stkCallback;
+  const db = await readDb();
+  
+  const paymentIndex = db.payments.findIndex(p => p.checkoutRequestId === CheckoutRequestID);
+  let updatedPaymentData = null;
+
+  if (ResultCode === 0 && CallbackMetadata) {
+    const items = CallbackMetadata.Item || [];
+    const mpesaReceiptNumber = items.find(i => i.Name === "MpesaReceiptNumber")?.Value;
+    const actualAmountPaid = items.find(i => i.Name === "Amount")?.Value;
+
+    updatedPaymentData = {
+      status: "COMPLETED",
+      receipt: mpesaReceiptNumber,
+      amountPaid: actualAmountPaid,
+      completedAt: new Date().toISOString()
+    };
+
+    if (paymentIndex !== -1) {
+      db.payments[paymentIndex] = { ...db.payments[paymentIndex], ...updatedPaymentData };
+      
+      const completedTrip = {
+        tripId: `TRIP-${Date.now()}`,
+        checkoutRequestId: CheckoutRequestID,
+        receipt: mpesaReceiptNumber,
+        ...db.payments[paymentIndex].financials,
+        timestamp: new Date().toISOString()
+      };
+      db.trips.push(completedTrip);
+    }
+
+    io.emit("paymentStatus", { status: "SUCCESS", checkoutRequestId: CheckoutRequestID, receipt: mpesaReceiptNumber });
+  } else {
+    updatedPaymentData = {
+      status: "FAILED",
+      reason: ResultDesc,
+      completedAt: new Date().toISOString()
+    };
+
+    if (paymentIndex !== -1) {
+      db.payments[paymentIndex] = { ...db.payments[paymentIndex], ...updatedPaymentData };
+    }
+
+    io.emit("paymentStatus", { status: "FAILED", checkoutRequestId: CheckoutRequestID, reason: ResultDesc });
+  }
+
+  await writeDb(db);
+  res.status(200).json({ ResultCode: 0, ResultDescription: "Success" });
+});
+
+app.get("/api/ledger", async (req, res) => {
+  try {
+    const db = await readDb();
+    res.status(200).json(db);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+initDb().then(() => {
+  server.listen(PORT, () => {
+    console.log(`Unified service securely active on port ${PORT}`);
+  });
 });
