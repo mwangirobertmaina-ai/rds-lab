@@ -252,7 +252,6 @@ app.post('/api/auth/login', async (req, res) => {
             return fail(res, "Incorrect password.", 401);
         }
 
-        // Generate a secure session token
         const token = crypto.randomBytes(32).toString('hex');
 
         return ok(res, { 
@@ -316,6 +315,21 @@ app.post('/api/v1/external/webhook/:provider', async (req, res) => {
         return res.status(200).json({ received: true, provider, status: "RECONCILED" });
     } catch (err) {
         return res.status(500).json({ received: false, error: err.message });
+    }
+});
+
+// ================= DYNAMIC DISTANCE-BASED SURGE PRICING & FARE SPLIT API =================
+app.post('/api/calculate-fare', (req, res) => {
+    try {
+        const { distanceKm, demandMultiplier, trafficIndex } = req.body;
+        const financialSplit = processStage51FinancialSplit(distanceKm, demandMultiplier, trafficIndex);
+        return ok(res, {
+            success: true,
+            distanceKm: num(distanceKm) > 0 ? num(distanceKm) : 10,
+            ...financialSplit
+        });
+    } catch (err) {
+        return fail(res, "Fare calculation error: " + err.message, 400);
     }
 });
 
@@ -442,6 +456,11 @@ app.post("/mpesa/stkpush", async (req, res) => {
     data.orders.push(order);
     await saveDB();
 
+    // Broadcast initial order state via WebSockets
+    if (global.io) {
+        global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
+    }
+
     ok(res, {
       message: "Stage 51 sovereign STK push initiated with unbreakable escrow split.",
       CheckoutRequestID: darajaResponse.CheckoutRequestID,
@@ -490,6 +509,11 @@ app.post("/api/v1/webhook-listener", async (req, res) => {
     }
 
     await saveDB();
+
+    if (global.io) {
+        global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.json({ success: false });
