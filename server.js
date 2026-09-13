@@ -1,4 +1,4 @@
-// ================= RDS STAGE 51: ULTIMATE SOVEREIGN BULLETPROOF ENGINE =================
+// ================= RDS STAGE 51: ULTIMATE SOVEREIGN BULLETPROOF ENGINE + AUTH =================
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -196,6 +196,74 @@ const saveDB = async () => {
 };
 
 app.get("/health", (req, res) => ok(res, { status: "STAGE_51_SOVEREIGN_STABLE_ONLINE", time: Date.now() }));
+
+// ================= USER & DRIVER AUTHENTICATION ENDPOINTS =================
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        ensureState();
+        const { name, phone, role, password } = req.body;
+        const safePhone = validateKenyanPhone(phone);
+        const safeName = sanitizeString(name);
+        
+        if (!safePhone || !safeName || !password) {
+            return fail(res, "Missing or invalid registration fields (name, phone, password)", 400);
+        }
+
+        const existingUser = data.drivers.find(d => d.phone === safePhone);
+        if (existingUser) {
+            return fail(res, "User or driver with this phone number already exists.", 400);
+        }
+
+        const newUser = {
+            id: id(role === 'DRIVER' ? 'DRV' : 'USR'),
+            name: safeName,
+            phone: safePhone,
+            role: role || 'CUSTOMER',
+            passwordHash: crypto.createHmac('sha256', 'RDS_STAGE_51_AUTH').update(password).digest('hex'),
+            createdAt: Date.now()
+        };
+
+        data.drivers.push(newUser);
+        await saveDB();
+
+        return ok(res, { message: "Registration successful", userId: newUser.id });
+    } catch (err) {
+        return fail(res, "Registration Error: " + err.message, 500);
+    }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        ensureState();
+        const { phone, password } = req.body;
+        const safePhone = validateKenyanPhone(phone);
+
+        if (!safePhone || !password) {
+            return fail(res, "Missing phone or password", 400);
+        }
+
+        const user = data.drivers.find(d => d.phone === safePhone);
+        if (!user) {
+            return fail(res, "Invalid phone number or user not found.", 404);
+        }
+
+        const hashedInput = crypto.createHmac('sha256', 'RDS_STAGE_51_AUTH').update(password).digest('hex');
+        if (user.passwordHash !== hashedInput) {
+            return fail(res, "Incorrect password.", 401);
+        }
+
+        // Generate a secure session token
+        const token = crypto.randomBytes(32).toString('hex');
+
+        return ok(res, { 
+            message: "Login successful", 
+            token, 
+            user: { id: user.id, name: user.name, phone: user.phone, role: user.role } 
+        });
+    } catch (err) {
+        return fail(res, "Login Error: " + err.message, 500);
+    }
+});
 
 // ================= UNIVERSAL PLUG-AND-PLAY EXTERNAL API CONNECTOR =================
 app.post('/api/v1/external/connect', async (req, res) => {
@@ -445,5 +513,5 @@ app.use((err, req, res, next) => {
 });
 
 server.listen(PORT, () => {
-  log("SYSTEM", `🚀 RDS STAGE 51 ULTIMATE SOVEREIGN STABLE ENGINE ACTIVE ON PORT ${PORT}`);
+  log("SYSTEM", `🚀 RDS STAGE 51 ULTIMATE SOVEREIGN STABLE ENGINE + AUTH ACTIVE ON PORT ${PORT}`);
 });
