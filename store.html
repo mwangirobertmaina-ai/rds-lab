@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDS STAGE 50 | MERCHANT STOREFRONT</title>
+    <style>
+        :root {
+            --neon-green: #00ff88;
+            --dark-bg: #0b0f19;
+            --panel-bg: #111827;
+            --card-bg: #181818;
+            --text-dim: #9ca3af;
+            --cyan: #38bdf8;
+            --alert-red: #ff3366;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--neon-green);
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--neon-green);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        h1 { font-size: 1.3rem; letter-spacing: 2px; color: var(--neon-green); }
+        .badge { background: var(--cyan); color: #000; padding: 5px 10px; font-weight: bold; font-size: 0.8rem; border-radius: 4px; }
+
+        .store-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .product-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--neon-green);
+            border-radius: 6px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .product-title { font-size: 1rem; font-weight: bold; color: var(--cyan); margin-bottom: 5px; }
+        .product-price { font-size: 1.2rem; color: var(--neon-green); margin-bottom: 10px; font-weight: bold; }
+        .product-stock { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 15px; }
+
+        input, select {
+            width: 100%;
+            background: var(--dark-bg);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        button {
+            background: var(--neon-green);
+            color: var(--dark-bg);
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-family: monospace;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.85; }
+        .btn-cyan { background: var(--cyan); color: #000; }
+
+        .checkout-box {
+            background: var(--panel-bg);
+            border: 1px solid var(--neon-green);
+            border-radius: 6px;
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .checkout-box h2 { font-size: 1rem; margin-bottom: 15px; border-bottom: 1px dashed var(--neon-green); padding-bottom: 5px; text-transform: uppercase; }
+        .status-msg { margin-top: 10px; font-weight: bold; font-size: 0.85rem; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🛒 RDS STAGE 50 LIVE STOREFRONT</h1>
+        <div class="badge">SECURE_GATEWAY</div>
+    </header>
+
+    <!-- PRODUCT CATALOG -->
+    <h2>Available Multi-Vendor Catalog</h2>
+    <div class="store-grid" id="storeCatalog">
+        <div class="product-card">
+            <div>
+                <div class="product-title">Loading Store Inventory...</div>
+                <div class="product-stock">Please ensure backend server is running.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHECKOUT PANEL -->
+    <div class="checkout-box">
+        <h2>Instant M-Pesa Checkout</h2>
+        <label for="checkoutPhone">Customer Phone Number:</label>
+        <input type="text" id="checkoutPhone" value="254708374149" placeholder="2547XXXXXXXX">
+
+        <label for="checkoutAmount">Total Settlement Amount (KES):</label>
+        <input type="number" id="checkoutAmount" value="500" placeholder="Amount">
+
+        <button onclick="submitStoreCheckout()" class="btn-cyan">PAY NOW VIA STK PUSH</button>
+        <div class="status-msg" id="checkoutStatus"></div>
+    </div>
+
+    <script>
+        async function fetchStoreProducts() {
+            try {
+                const res = await fetch('/api/products');
+                const data = await res.json();
+                if (data.success && data.products.length > 0) {
+                    const catalog = document.getElementById('storeCatalog');
+                    catalog.innerHTML = '';
+                    data.products.forEach(p => {
+                        catalog.innerHTML += `
+                            <div class="product-card">
+                                <div>
+                                    <div class="product-title">${p.name}</div>
+                                    <div class="product-price">KES ${p.price}</div>
+                                    <div class="product-stock">Stock Available: ${p.stock} units</div>
+                                </div>
+                                <button onclick="selectProduct('${p.name}', ${p.price})">Quick Buy</button>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to load storefront catalog");
+            }
+        }
+
+        function selectProduct(name, price) {
+            document.getElementById('checkoutAmount').value = price;
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        async function submitStoreCheckout() {
+            const phone = document.getElementById('checkoutPhone').value;
+            const amount = document.getElementById('checkoutAmount').value;
+            const statusDiv = document.getElementById('checkoutStatus');
+
+            if (!phone || !amount) {
+                alert("Please provide phone number and amount.");
+                return;
+            }
+
+            statusDiv.style.color = "var(--cyan)";
+            statusDiv.innerText = "Transmitting STK Push request to Safaricom Daraja...";
+
+            try {
+                const res = await fetch('/mpesa/stkpush', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, amount, distanceKm: 5, businessId: 'STOREFRONT' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    statusDiv.style.color = "var(--neon-green)";
+                    statusDiv.innerText = `STK Prompt Sent! Request ID: ${data.CheckoutRequestID}`;
+                } else {
+                    statusDiv.style.color = "var(--alert-red)";
+                    statusDiv.innerText = `Rejected: ${data.error}`;
+                }
+            } catch (err) {
+                statusDiv.style.color = "var(--alert-red)";
+                statusDiv.innerText = `Network Error: ${err.message}`;
+            }
+        }
+
+        fetchStoreProducts();
+        setInterval(fetchStoreProducts, 6000);
+    </script>
+</body>
+</html>
