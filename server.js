@@ -200,6 +200,48 @@ app.get('/api/compliance/kra-vault', (req, res) => {
     }
 });
 
+// ================= MULTI-VENDOR PRODUCT & INVENTORY API =================
+app.get('/api/products', (req, res) => {
+    try {
+        const { businessId } = req.query;
+        const products = Array.isArray(data.products) ? data.products : [];
+        const filtered = businessId ? products.filter(p => p.businessId === businessId) : products;
+        return ok(res, { products: filtered });
+    } catch (err) {
+        return fail(res, "Failed to fetch products: " + err.message, 500);
+    }
+});
+
+app.post('/api/products', async (req, res) => {
+    try {
+        const { businessId, name, price, stock } = req.body;
+        if (!businessId || !name || !price) {
+            return fail(res, "Missing required product fields (businessId, name, price)", 400);
+        }
+
+        const newProduct = {
+            id: id("PRD"),
+            businessId,
+            name: name.trim(),
+            price: num(price),
+            stock: num(stock) || 0,
+            createdAt: Date.now()
+        };
+
+        if (!Array.isArray(data.products)) data.products = [];
+        data.products.push(newProduct);
+        await saveDB();
+
+        if (global.io) {
+            global.io.emit('productAdded', newProduct);
+        }
+
+        return ok(res, { product: newProduct });
+    } catch (err) {
+        return fail(res, "Failed to create product: " + err.message, 500);
+    }
+});
+
 const stkPushHandler = async (req, res) => {
   try {
     const { phone, amount, distanceKm, businessId } = req.body;
