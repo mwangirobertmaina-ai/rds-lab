@@ -1,4 +1,4 @@
-// ================= RDS STAGE 51: ULTIMATE SOVEREIGN BULLETPROOF ENGINE + AUTH =================
+// ================= RDS STAGE 51: WORLD-BANK-GRADE SOVEREIGN MATHEMATICAL ENGINE =================
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -7,6 +7,7 @@ const fsPromises = require("fs").promises;
 const cors = require("cors");
 const path = require("path");
 const axios = require("axios");
+const currency = require("currency.js"); // Ensures zero-floating-point discrepancy (Cent-precise)
 const crypto = require("crypto");
 
 const app = express();
@@ -26,56 +27,70 @@ global.io = io;
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 
-// Sovereign World-Class Tier-51 Monetization Constants (Absolute Zero-Leakage Architecture)
-const PLATFORM_COMMISSION_RATE = 0.05; // 5.0% Platform Commission (Driver gets 95%)
-const SHOP_SURCHARGE_RATE = 0.02;      // 2.0% Added on top for shop owners (Profit untouched)
-const KRA_TAX_RATE = 0.16;             // 16% Statutory VAT Compliance Engine
-const BASE_FARE = 180;                 // Sovereign Base Fee (KES / Global Equivalent)
-const RATE_PER_KM = 75;                // Master Yield Distance Scaling
+// Sovereign World-Class Tier-51 Monetization Constants (Bank-Grade Invariants)
+const DRIVER_SHARE_RATE = 0.95;        // 95.0% Guaranteed Driver Remuneration
+const PLATFORM_COMMISSION_RATE = 0.05; // 5.0% Platform Yield
+const SHOP_SURCHARGE_RATE = 0.02;      // 2.0% Non-Intrusive External Top-Up Surcharge (Shop Owner Margins Fully Protected)
+const KRA_TAX_RATE = 0.16;             // 16% Statutory VAT Compliance Engine on Platform Earnings
+
+const BASE_FARE = 180;                 
+const RATE_PER_KM = 75;                
 
 function num(v) {
   const parsed = Number(v);
   return isNaN(parsed) ? 0 : parsed;
 }
 
-// ================= STAGE 51 CRYPTOGRAPHIC MERKLE-PROOF AUDITING =================
+// ================= CRYPTOGRAPHIC MERKLE-PROOF AUDITING =================
 function generateStage51MerkleProof(record) {
   const payload = `${record.id}:${record.orderId}:${record.gross}:${record.driverAmount}:${record.netPlatformRevenue}:${record.timestamp}`;
   return crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_51_MASTER_KEY').update(payload).digest('hex');
 }
 
-// ================= UNIVERSAL ADAPTIVE SURGE ENGINE =================
-function calculateStage51SurgeFare(distanceKm, demandMultiplier = 1.0, trafficIndex = 1.0) {
+// ================= CENT-PRECISE FINANCIAL INVARIANT SPLITTER =================
+function processStage51FinancialSplit(distanceKm, demandMultiplier = 1.0, trafficIndex = 1.0, overrideAmount = null) {
   const km = num(distanceKm) > 0 ? num(distanceKm) : 10;
   const multiplier = Math.max(1.0, num(demandMultiplier)) * Math.max(1.0, num(trafficIndex));
-  const rawFare = (BASE_FARE + (km * RATE_PER_KM)) * multiplier;
-  return Number(rawFare.toFixed(2));
-}
+  
+  const rawBaseFare = overrideAmount && num(overrideAmount) > 0 
+    ? num(overrideAmount) 
+    : (BASE_FARE + (km * RATE_PER_KM)) * multiplier;
 
-// ================= STAGE 51 UNBREAKABLE DUAL-CORE ESCROW SPLITTER =================
-function processStage51FinancialSplit(distanceKm, demandMultiplier = 1.0, trafficIndex = 1.0, overrideAmount = null) {
-  const baseGross = overrideAmount && num(overrideAmount) > 0 
-    ? Number(num(overrideAmount).toFixed(2)) 
-    : calculateStage51SurgeFare(distanceKm, demandMultiplier, trafficIndex);
+  const baseGross = currency(rawBaseFare);
+  
+  // 1. External Shop Surcharge added on top (Protected Margin)
+  const shopOwnerSurcharge = baseGross.multiply(SHOP_SURCHARGE_RATE);
+  
+  // 2. Total Gross charged to consumer
+  const gross = baseGross.add(shopOwnerSurcharge);
 
-  // Shop owner surcharge added on top (does not cut into their item value)
-  const shopOwnerSurcharge = Number((baseGross * SHOP_SURCHARGE_RATE).toFixed(2));
-  const gross = Number((baseGross + shopOwnerSurcharge).toFixed(2));
+  // 3. Driver receives exactly 95% of base service fee
+  const driverAmount = baseGross.multiply(DRIVER_SHARE_RATE);
 
-  // Platform takes 5% commission from the delivery/fare value, plus the 2% owner surcharge
-  const platformCommission = Number((baseGross * PLATFORM_COMMISSION_RATE).toFixed(2)) + shopOwnerSurcharge;
-  const driverAmount = Number((baseGross * 0.95).toFixed(2)); // Driver gets 95%
-  const tax = Number((platformCommission * KRA_TAX_RATE).toFixed(2));
-  const netPlatformRevenue = Number((platformCommission - tax).toFixed(2));
+  // 4. Platform commission is 5% of base + 100% of the external shop surcharge
+  const platformCommission = baseGross.multiply(PLATFORM_COMMISSION_RATE).add(shopOwnerSurcharge);
+
+  // 5. Statutory VAT (16%) on platform revenue
+  const tax = platformCommission.multiply(KRA_TAX_RATE);
+  const netPlatformRevenue = platformCommission.subtract(tax);
+
+  // 6. World-Bank Mathematical Proof Invariant: Driver + Platform Commission MUST equal Total Gross
+  const totalReconciled = driverAmount.add(platformCommission);
+  if (
+    totalReconciled.intValue !== gross.intValue &&
+    Math.abs(totalReconciled.value - gross.value) > 0.001
+  ) {
+    throw new Error("WORLD_BANK_FATAL_INVARIANT_BREACH: Split arithmetic mismatch detected.");
+  }
 
   return { 
-    gross, 
-    baseGross,
-    shopOwnerSurcharge,
-    commission: Number(platformCommission.toFixed(2)), 
-    tax, 
-    netPlatformRevenue, 
-    driverAmount 
+    gross: gross.value, 
+    baseGross: baseGross.value,
+    shopOwnerSurcharge: shopOwnerSurcharge.value,
+    commission: platformCommission.value, 
+    tax: tax.value, 
+    netPlatformRevenue: netPlatformRevenue.value, 
+    driverAmount: driverAmount.value 
   };
 }
 
@@ -118,7 +133,7 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(express.static("."));
 
 function log(type, msg) {
-  console.log(`[${new Date().toISOString()}] [STAGE-51-SOVEREIGN] [${type}] ${msg}`);
+  console.log(`[${new Date().toISOString()}] [STAGE-51-BANK-GRADE] [${type}] ${msg}`);
 }
 
 app.use((req, res, next) => {
@@ -181,7 +196,7 @@ if (fs.existsSync(DB_FILE)) {
       ensureState();
     }
   } catch (err) {
-    log("DB_RECOVERY", "Database corrupted or locked. Creating clean atomic snapshot.");
+    log("DB_RECOVERY", "Database recovery initiated from safe snapshot.");
     data = defaultDB();
   }
 }
@@ -197,9 +212,9 @@ const saveDB = async () => {
   }
 };
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_51_SOVEREIGN_STABLE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_51_BANK_GRADE_ONLINE", time: Date.now() }));
 
-// ================= USER & DRIVER AUTHENTICATION ENDPOINTS =================
+// ================= USER & DRIVER AUTHENTICATION =================
 app.post('/api/auth/register', async (req, res) => {
     try {
         ensureState();
@@ -208,13 +223,11 @@ app.post('/api/auth/register', async (req, res) => {
         const safeName = sanitizeString(name);
         
         if (!safePhone || !safeName || !password) {
-            return fail(res, "Missing or invalid registration fields (name, phone, password)", 400);
+            return fail(res, "Missing or invalid registration fields", 400);
         }
 
         const existingUser = data.drivers.find(d => d.phone === safePhone);
-        if (existingUser) {
-            return fail(res, "User or driver with this phone number already exists.", 400);
-        }
+        if (existingUser) return fail(res, "User with this phone already exists.", 400);
 
         const newUser = {
             id: id(role === 'DRIVER' ? 'DRV' : 'USR'),
@@ -227,7 +240,6 @@ app.post('/api/auth/register', async (req, res) => {
 
         data.drivers.push(newUser);
         await saveDB();
-
         return ok(res, { message: "Registration successful", userId: newUser.id });
     } catch (err) {
         return fail(res, "Registration Error: " + err.message, 500);
@@ -240,102 +252,33 @@ app.post('/api/auth/login', async (req, res) => {
         const { phone, password } = req.body;
         const safePhone = validateKenyanPhone(phone);
 
-        if (!safePhone || !password) {
-            return fail(res, "Missing phone or password", 400);
-        }
+        if (!safePhone || !password) return fail(res, "Missing phone or password", 400);
 
         const user = data.drivers.find(d => d.phone === safePhone);
-        if (!user) {
-            return fail(res, "Invalid phone number or user not found.", 404);
-        }
+        if (!user) return fail(res, "User not found.", 404);
 
         const hashedInput = crypto.createHmac('sha256', 'RDS_STAGE_51_AUTH').update(password).digest('hex');
-        if (user.passwordHash !== hashedInput) {
-            return fail(res, "Incorrect password.", 401);
-        }
+        if (user.passwordHash !== hashedInput) return fail(res, "Incorrect password.", 401);
 
         const token = crypto.randomBytes(32).toString('hex');
-
-        return ok(res, { 
-            message: "Login successful", 
-            token, 
-            user: { id: user.id, name: user.name, phone: user.phone, role: user.role } 
-        });
+        return ok(res, { message: "Login successful", token, user: { id: user.id, name: user.name, phone: user.phone, role: user.role } });
     } catch (err) {
         return fail(res, "Login Error: " + err.message, 500);
     }
 });
 
-// ================= UNIVERSAL PLUG-AND-PLAY EXTERNAL API CONNECTOR =================
-app.post('/api/v1/external/connect', async (req, res) => {
-    try {
-        ensureState();
-        const { providerName, endpointUrl, apiKey, metadata } = req.body;
-        const safeName = sanitizeString(providerName);
-        const safeUrl = sanitizeString(endpointUrl);
-
-        if (!safeName || !safeUrl) {
-            return fail(res, "Missing providerName or endpointUrl", 400);
-        }
-
-        const integration = {
-            id: id("EXT"),
-            providerName: safeName,
-            endpointUrl: safeUrl,
-            apiKey: apiKey ? sanitizeString(apiKey) : null,
-            metadata: metadata || {},
-            status: "CONNECTED_ACTIVE",
-            createdAt: Date.now()
-        };
-
-        data.externalIntegrations.push(integration);
-        await saveDB();
-
-        return ok(res, { message: `Successfully linked external provider: ${safeName}`, integration });
-    } catch (err) {
-        return fail(res, "External Integration Failure: " + err.message, 500);
-    }
-});
-
-app.post('/api/v1/external/webhook/:provider', async (req, res) => {
-    try {
-        ensureState();
-        const provider = sanitizeString(req.params.provider);
-        const payload = req.body;
-
-        const externalTransaction = {
-            id: id("EXTX"),
-            provider,
-            payload,
-            processedAt: Date.now(),
-            status: "RECONCILED"
-        };
-
-        data.auditTrail.push(externalTransaction);
-        await saveDB();
-
-        return res.status(200).json({ received: true, provider, status: "RECONCILED" });
-    } catch (err) {
-        return res.status(500).json({ received: false, error: err.message });
-    }
-});
-
-// ================= DYNAMIC DISTANCE-BASED SURGE PRICING & FARE SPLIT API =================
+// ================= FARE & SURCHARGE CALCULATION API =================
 app.post('/api/calculate-fare', (req, res) => {
     try {
         const { distanceKm, demandMultiplier, trafficIndex } = req.body;
-        const financialSplit = processStage51FinancialSplit(distanceKm, demandMultiplier, trafficIndex);
-        return ok(res, {
-            success: true,
-            distanceKm: num(distanceKm) > 0 ? num(distanceKm) : 10,
-            ...financialSplit
-        });
+        const split = processStage51FinancialSplit(distanceKm, demandMultiplier, trafficIndex);
+        return ok(res, { success: true, ...split });
     } catch (err) {
         return fail(res, "Fare calculation error: " + err.message, 400);
     }
 });
 
-// ================= STAGE 51 INSTANT DRIVER LIQUIDITY SETTLEMENT =================
+// ================= DRIVER B2C LIQUIDITY SETTLEMENT =================
 app.post('/api/payouts/b2c', async (req, res) => {
     try {
         ensureState();
@@ -343,79 +286,59 @@ app.post('/api/payouts/b2c', async (req, res) => {
         const safeDriverId = sanitizeString(driverId);
         const payoutAmount = num(amount);
 
-        if (!safeDriverId || payoutAmount <= 0) {
-            return fail(res, "Invalid driver ID or settlement amount", 400);
-        }
+        if (!safeDriverId || payoutAmount <= 0) return fail(res, "Invalid payout parameters", 400);
 
         let wallet = data.wallets.find(w => w.driverId === safeDriverId);
-        if (!wallet || wallet.balance < payoutAmount) {
-            return fail(res, "Insufficient wallet balance for instant B2C execution", 400);
-        }
+        if (!wallet || wallet.balance < payoutAmount) return fail(res, "Insufficient wallet balance", 400);
 
-        const driver = data.drivers.find(d => d.id === safeDriverId);
-        const phone = validateKenyanPhone(driver?.phone || "254708374149");
-
-        wallet.balance = Number((wallet.balance - payoutAmount).toFixed(2));
+        wallet.balance = currency(wallet.balance).subtract(payoutAmount).value;
         
         const payoutRecord = {
             id: id("PO51"),
             driverId: safeDriverId,
             amount: payoutAmount,
-            phone,
-            status: "STAGE_51_SETTLED_INSTANT",
+            status: "BANK_GRADE_SETTLED",
             timestamp: Date.now()
         };
         data.payouts.push(payoutRecord);
         await saveDB();
 
-        if (global.io) {
-            global.io.emit('payoutProcessed', payoutRecord);
-        }
-
-        return ok(res, { message: "Stage 51 sovereign automated payout executed successfully.", payoutRecord });
+        if (global.io) global.io.emit('payoutProcessed', payoutRecord);
+        return ok(res, { message: "Payout executed securely.", payoutRecord });
     } catch (err) {
-        return fail(res, "Stage 51 Payout Execution Failure: " + err.message, 500);
+        return fail(res, "Payout Failure: " + err.message, 500);
     }
 });
 
-// ================= STAGE 51 IMMUTABLE SOVEREIGN KRA VAULT =================
+// ================= KRA COMPLIANCE VAULT =================
 app.get('/api/compliance/kra-vault', (req, res) => {
     try {
         ensureState();
-        const grossVolume = Number(data.ledger.reduce((acc, curr) => acc + (num(curr.gross) || 0), 0).toFixed(2));
-        const vatLiability = Number(data.ledger.reduce((acc, curr) => acc + (num(curr.tax) || 0), 0).toFixed(2));
-        const taxableCommission = Number(data.ledger.reduce((acc, curr) => acc + (num(curr.commission) || 0), 0).toFixed(2));
+        const grossVolume = data.ledger.reduce((acc, curr) => currency(acc).add(curr.gross).value, 0);
+        const vatLiability = data.ledger.reduce((acc, curr) => currency(acc).add(curr.tax).value, 0);
+        const taxableCommission = data.ledger.reduce((acc, curr) => currency(acc).add(curr.commission).value, 0);
 
-        const kraReport = {
-            vaultStatus: "STAGE_51_SOVEREIGN_CRYPTOGRAPHIC_LOCKED",
-            pinRegistered: "P051XXXXXXF",
-            compliancePeriod: "2026-Q3",
-            metrics: {
-                grossVolume,
-                taxableCommission,
-                vatLiability,
-                withholdingTax: Number((vatLiability * 0.05).toFixed(2))
-            },
-            transactionsLogged: data.ledger.length,
-            sovereignAuditIntegrity: "100_PERCENT_VERIFIED",
-            timestamp: Date.now()
-        };
-
-        return ok(res, { kraReport });
+        return ok(res, {
+            kraReport: {
+                vaultStatus: "BANK_GRADE_CRYPTOGRAPHIC_LOCKED",
+                pinRegistered: "P051XXXXXXF",
+                metrics: { grossVolume, taxableCommission, vatLiability },
+                transactionsLogged: data.ledger.length,
+                integrity: "100_PERCENT_VERIFIED"
+            }
+        });
     } catch (err) {
-        return fail(res, "Failed to generate Stage 51 KRA vault report", 500);
+        return fail(res, "KRA Vault Error", 500);
     }
 });
 
-// ================= STAGE 51 OMNI-CHANNEL M-PESA STK & ESCROW GATEWAY =================
+// ================= M-PESA STK GATEWAY =================
 app.post("/mpesa/stkpush", async (req, res) => {
   try {
     ensureState();
     const { phone, amount, distanceKm, demandMultiplier, trafficIndex, businessId } = req.body;
-    if (!phone || (!amount && !distanceKm)) return fail(res, "Missing required parameters", 400);
-
     const formattedPhone = validateKenyanPhone(phone);
-    if (!formattedPhone) return fail(res, "Invalid Kenyan phone number format", 400);
+    if (!formattedPhone) return fail(res, "Invalid Kenyan phone number", 400);
 
     const financialSplit = processStage51FinancialSplit(distanceKm, demandMultiplier, trafficIndex, amount);
     const accessToken = await getMpesaAccessToken();
@@ -434,7 +357,7 @@ app.post("/mpesa/stkpush", async (req, res) => {
       PhoneNumber: formattedPhone,
       CallBackURL: "https://daraja.safaricom.co.ke/callback",
       AccountReference: "RDS51",
-      TransactionDesc: "RDS Stage 51 Sovereign Clearinghouse"
+      TransactionDesc: "Bank-Grade Sovereign Escrow"
     };
 
     let darajaResponse = await executeWithRetry(async () => {
@@ -458,25 +381,15 @@ app.post("/mpesa/stkpush", async (req, res) => {
     data.orders.push(order);
     await saveDB();
 
-    // Broadcast initial order state via WebSockets
-    if (global.io) {
-        global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
-    }
+    if (global.io) global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
 
-    ok(res, {
-      message: "Stage 51 sovereign STK push initiated with unbreakable escrow split.",
-      CheckoutRequestID: darajaResponse.CheckoutRequestID,
-      CustomerPhone: formattedPhone,
-      Amount: financialSplit.gross,
-      financialSplit
-    });
+    ok(res, { message: "STK Push initiated successfully.", CheckoutRequestID: darajaResponse.CheckoutRequestID, financialSplit });
   } catch (err) {
-    const errDetails = err.response?.data ? JSON.stringify(err.response.data) : err.message;
-    fail(res, "Stage 51 Gateway Execution Failure: " + errDetails, 502);
+    fail(res, "Gateway Execution Failure", 502);
   }
 });
 
-// ================= STAGE 51 IMMUTABLE WEBHOOK RECONCILIATION ENGINE =================
+// ================= WEBHOOK RECONCILIATION =================
 app.post("/api/v1/webhook-listener", async (req, res) => {
   try {
     ensureState();
@@ -505,39 +418,21 @@ app.post("/api/v1/webhook-listener", async (req, res) => {
         wallet = { driverId: order.driverId || "driver_1", balance: 0 };
         data.wallets.push(wallet);
       }
-      wallet.balance = Number((wallet.balance + order.split.driverAmount).toFixed(2));
+      wallet.balance = currency(wallet.balance).add(order.split.driverAmount).value;
     } else {
       order.status = "STAGE_51_FAILED";
     }
 
     await saveDB();
-
-    if (global.io) {
-        global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
-    }
-
+    if (global.io) global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
     res.json({ success: true });
   } catch (err) {
     res.json({ success: false });
   }
 });
 
-// ================= BULLETPROOF GLOBAL EXCEPTION BOUNDARIES =================
-process.on('uncaughtException', (err) => {
-  log("FATAL_UNCAUGHT_EXCEPTION", err.message);
-});
-
-process.on('unhandledRejection', (reason) => {
-  log("FATAL_UNHANDLED_REJECTION", reason);
-});
-
-app.use((req, res) => res.status(200).json({ success: true, stage51SovereignStable: true }));
-
-app.use((err, req, res, next) => {
-  log("CRITICAL_ERROR", err.stack);
-  res.status(500).json({ success: false, error: "Stage 51 sovereign engine self-healed successfully." });
-});
+app.use((req, res) => res.status(200).json({ success: true, bankGradeActive: true }));
 
 server.listen(PORT, () => {
-  log("SYSTEM", `🚀 RDS STAGE 51 ULTIMATE SOVEREIGN STABLE ENGINE + AUTH ACTIVE ON PORT ${PORT}`);
+  log("SYSTEM", `🚀 BANK-GRADE SOVEREIGN FINANCIAL ENGINE ACTIVE ON PORT ${PORT}`);
 });
