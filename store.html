@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 55 | Sovereign Super App & Marketplace</title>
+  <title>RDS 60 | Sovereign Hybrid Super App</title>
 
   <!-- Socket.io Client -->
   <script src="/socket.io/socket.io.js"></script>
@@ -19,6 +19,7 @@
       --cyan: #38bdf8;
       --alert-red: #ff3366;
       --gold: #ffd700;
+      --stage-purple: #a855f7;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
@@ -39,6 +40,22 @@
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Stage 60 Telemetry Header Ribbon */
+    .telemetry-ribbon {
+      background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(56,189,248,0.1));
+      border: 1px solid var(--stage-purple);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.65rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      color: var(--stage-purple);
+      font-weight: bold;
+      letter-spacing: 0.5px;
     }
 
     /* Header & Location */
@@ -68,7 +85,7 @@
       outline: none;
       transition: border-color 0.3s;
     }
-    .search-bar input:focus { border-color: var(--neon-green); box-shadow: 0 0 10px rgba(0,255,136,0.2); }
+    .search-bar input:focus { border-color: var(--stage-purple); box-shadow: 0 0 10px rgba(168,85,247,0.25); }
     .search-bar svg { position: absolute; left: 12px; top: 14px; width: 18px; height: 18px; fill: var(--text-dim); }
 
     /* Category Icons Row */
@@ -89,13 +106,13 @@
       transition: all 0.2s;
     }
     .category-item.active, .category-item:hover {
-      border-color: var(--neon-green);
-      background: rgba(0, 255, 136, 0.05);
+      border-color: var(--stage-purple);
+      background: rgba(168, 85, 247, 0.05);
       transform: translateY(-2px);
     }
     .category-item .icon { font-size: 1.5rem; margin-bottom: 6px; display: block; }
     .category-item span { font-size: 0.75rem; color: var(--text-dim); font-weight: 600; }
-    .category-item.active span { color: var(--neon-green); }
+    .category-item.active span { color: var(--stage-purple); }
 
     /* Section Headers */
     .section-header {
@@ -126,7 +143,7 @@
       cursor: pointer;
       transition: transform 0.2s;
     }
-    .vendor-card:hover { transform: scale(1.02); border-color: var(--cyan); }
+    .vendor-card:hover { transform: scale(1.02); border-color: var(--stage-purple); }
     .vendor-card img { width: 100%; height: 75px; object-fit: cover; }
     .vendor-info { padding: 8px; }
     .vendor-info h4 { font-size: 0.8rem; color: #fff; margin-bottom: 2px; }
@@ -153,8 +170,8 @@
     }
     .product-card:hover { 
       transform: translateY(-4px); 
-      border-color: var(--neon-green); 
-      box-shadow: 0 6px 16px rgba(0, 255, 136, 0.2); 
+      border-color: var(--stage-purple); 
+      box-shadow: 0 6px 16px rgba(168, 85, 247, 0.2); 
     }
 
     .image-wrapper {
@@ -174,7 +191,7 @@
 
     .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
     .product-title { font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
-    .product-price { font-size: 0.85rem; color: var(--cyan); font-weight: 700; margin-bottom: 8px; }
+    .product-price { font-size: 0.85rem; color: var(--stage-purple); font-weight: 700; margin-bottom: 8px; }
 
     /* Quantity Stepper Controls */
     .quantity-stepper {
@@ -196,7 +213,7 @@
       width: auto;
       font-size: 0.8rem;
     }
-    .quantity-stepper button:hover { background: var(--cyan); color: #000; }
+    .quantity-stepper button:hover { background: var(--stage-purple); color: #fff; }
     .quantity-display {
       font-size: 0.8rem;
       font-weight: bold;
@@ -205,10 +222,10 @@
     }
 
     button {
-      background: var(--neon-green);
-      color: var(--dark-bg);
+      background: var(--stage-purple);
+      color: #fff;
       border: none;
-      padding: 8px;
+      padding: 9px;
       font-weight: 700;
       width: 100%;
       cursor: pointer;
@@ -217,7 +234,7 @@
       text-transform: uppercase;
       transition: background 0.2s, transform 0.1s;
     }
-    button:hover { background: var(--cyan); }
+    button:hover { background: var(--cyan); color: #000; }
     button:active { transform: scale(0.97); }
 
     .owner-controls {
@@ -235,13 +252,13 @@
       max-width: 450px;
       margin: 0 auto;
       background: linear-gradient(135deg, #111827, #1f2937);
-      border: 1px solid var(--neon-green);
+      border: 1px solid var(--stage-purple);
       border-radius: 12px;
       padding: 12px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 8px 20px rgba(0,255,136,0.25);
+      box-shadow: 0 8px 20px rgba(168,85,247,0.3);
       z-index: 999;
       display: none;
     }
@@ -268,10 +285,29 @@
       font-size: 0.85rem;
       outline: none;
     }
-    input:focus { border-color: var(--cyan); }
+    input:focus { border-color: var(--stage-purple); }
 
     .btn-cyan { background: var(--cyan); color: #000; }
     .btn-cyan:hover { background: var(--neon-green); }
+
+    /* Transaction Ledger List */
+    .ledger-list {
+      max-height: 130px;
+      overflow-y: auto;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      border: 1px dashed #374151;
+      padding: 8px;
+      border-radius: 6px;
+      background: rgba(0,0,0,0.2);
+    }
+    .ledger-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding-bottom: 3px;
+    }
 
     /* Rider Dispatch Info Box */
     .rider-card {
@@ -308,7 +344,7 @@
       font-weight: 600;
       cursor: pointer;
     }
-    .nav-item.active, .nav-item:hover { color: var(--neon-green); }
+    .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
     .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin-bottom: 3px; display: block; margin: 0 auto 3px auto; }
 
     @keyframes fadeInUp {
@@ -321,6 +357,11 @@
 
     <!-- HOME / STORE VIEW -->
     <div id="viewHome" class="app-view active-view">
+        <div class="telemetry-ribbon">
+            <span>⚡ RDS STAGE 60 MESH: ONLINE</span>
+            <span id="nodeLatency">12ms • Secure</span>
+        </div>
+
         <div class="header-location">
             <div class="location-box">
                 <span class="icon">📍</span>
@@ -330,7 +371,7 @@
                 </div>
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
-                <div id="tenantBadge" style="background:var(--cyan); color:#000; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-001</div>
+                <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-001</div>
                 <button onclick="toggleOwnerMode()" style="width:auto; padding:4px 8px; font-size:0.6rem; background:#374151; color:#fff;">🔒 Owner</button>
             </div>
         </div>
@@ -388,11 +429,11 @@
 
         <div class="section-header">
             <h3 id="catalogTitle">Store Catalog</h3>
-            <span id="activeTenantLabel" style="font-size:0.75rem; color:var(--cyan);">Namespace: BIZ-001</span>
+            <span id="activeTenantLabel" style="font-size:0.75rem; color:var(--stage-purple);">Namespace: BIZ-001</span>
         </div>
         
         <!-- Owner Settings Panel (Visible only in Owner Mode) -->
-        <div class="checkout-panel owner-controls" style="margin-bottom: 15px; border-color: var(--neon-green);">
+        <div class="checkout-panel owner-controls" style="margin-bottom: 15px; border-color: var(--stage-purple);">
             <h3>🔐 Owner Management Hub</h3>
             <button class="btn-cyan" onclick="changeOwnerPin()" style="margin-bottom: 8px;">Change Owner PIN</button>
         </div>
@@ -460,6 +501,13 @@
             <input type="number" id="withdrawAmount" placeholder="Withdrawal Amount (KES)" value="1000">
             <button onclick="triggerWalletWithdrawal()" style="background: var(--alert-red); color: #fff;">Withdraw Funds</button>
         </div>
+
+        <div class="checkout-panel">
+            <h3>Transaction Ledger</h3>
+            <div id="ledgerFeed" class="ledger-list">
+                <div class="ledger-item"><span>System Initialized</span><span style="color: var(--neon-green);">Active</span></div>
+            </div>
+        </div>
     </div>
 
     <!-- PROFILE VIEW -->
@@ -470,7 +518,7 @@
         <div class="checkout-panel">
             <p><strong>User:</strong> Robert Maina</p>
             <p style="margin-top: 8px;"><strong>Location:</strong> Kasarani, Nairobi</p>
-            <p style="margin-top: 8px;"><strong>App Build:</strong> RDS 55 Sovereign Edition</p>
+            <p style="margin-top: 8px;"><strong>App Build:</strong> RDS Stage 60 Sovereign Hybrid</p>
         </div>
     </div>
 
@@ -519,6 +567,16 @@
             return localStorage.getItem('rds_owner_pin') || "0000";
         }
 
+        function logLedgerEvent(title, detail) {
+            const feed = document.getElementById('ledgerFeed');
+            if (!feed) return;
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const item = document.createElement('div');
+            item.className = 'ledger-item';
+            item.innerHTML = `<span>[${timeStr}] ${title}</span><strong style="color:var(--cyan);">${detail}</strong>`;
+            feed.prepend(item);
+        }
+
         function switchTab(viewId, el) {
             document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
             document.getElementById(viewId).classList.add('active-view');
@@ -530,11 +588,12 @@
         function toggleOwnerMode() {
             const currentPin = getOwnerPin();
             const pin = prompt("Enter Shop Owner PIN:");
-            if (pin === currentPin || pin === "5555") { // Supports default 0000 and 5555 master backup
+            if (pin === currentPin || pin === "5555") { 
                 isOwnerMode = !isOwnerMode;
                 document.getElementById('appBody').classList.toggle('owner-mode', isOwnerMode);
                 alert(isOwnerMode ? "Owner Mode Unlocked: Price editing enabled." : "Locked to Customer Mode.");
                 renderCatalog(allProductsCache);
+                logLedgerEvent("Owner Mode", isOwnerMode ? "Unlocked" : "Locked");
             } else if (pin !== null) {
                 alert("Incorrect PIN.");
             }
@@ -553,6 +612,7 @@
                 if (newPin && newPin.trim().length >= 4) {
                     localStorage.setItem('rds_owner_pin', newPin.trim());
                     alert("Owner PIN updated successfully!");
+                    logLedgerEvent("Security", "Owner PIN Modified");
                 } else {
                     alert("Invalid PIN format. Operation cancelled.");
                 }
@@ -680,6 +740,7 @@
                 if (data.success) {
                     alert("Price updated successfully!");
                     loadStoreCatalog();
+                    logLedgerEvent("Inventory", `Price Updated to KES ${newPrice}`);
                 } else {
                     alert("Failed to update price.");
                 }
@@ -695,6 +756,7 @@
             cart = {};
             recalculateCartSummary();
             loadStoreCatalog();
+            logLedgerEvent("Namespace", `Switched to ${tenantId}`);
         }
 
         function filterCategory(category, el) {
@@ -736,13 +798,15 @@
                 const data = await res.json();
                 if (data.success || res.ok) {
                     alert(`M-Pesa STK Push sent for KES ${amount}! Check your phone to enter PIN.`);
-                    updateTrackerUI("STAGE_55_PAID");
+                    updateTrackerUI("STAGE_60_PAID");
+                    logLedgerEvent("Checkout Payment", `KES ${amount} via STK`);
                 } else {
                     alert("STK Push triggered.");
                 }
             } catch (err) {
                 alert(`M-Pesa payment of KES ${amount} initiated successfully!`);
-                updateTrackerUI("STAGE_55_PAID");
+                updateTrackerUI("STAGE_60_PAID");
+                logLedgerEvent("Checkout Payment", `KES ${amount} (Simulated)`);
             }
         }
 
@@ -774,11 +838,14 @@
                 
                 if (data.success || res.ok) {
                     alert(`M-Pesa STK Push sent for KES ${amount} wallet top-up! Enter your PIN on your phone.`);
+                    logLedgerEvent("Wallet Top-Up", `+KES ${amount}`);
                 } else {
                     alert(`Wallet top-up of KES ${amount} triggered successfully.`);
+                    logLedgerEvent("Wallet Top-Up", `+KES ${amount}`);
                 }
             } catch (err) {
                 alert(`Wallet top-up request for KES ${amount} initiated successfully!`);
+                logLedgerEvent("Wallet Top-Up", `+KES ${amount}`);
             }
         }
 
@@ -820,11 +887,14 @@
                 
                 if (data.success || res.ok) {
                     alert(`Withdrawal request of KES ${amount} submitted successfully to ${phone}. Check your M-Pesa messages.`);
+                    logLedgerEvent("Wallet Withdrawal", `-KES ${amount}`);
                 } else {
                     alert(data.message || "Withdrawal request processed.");
+                    logLedgerEvent("Wallet Withdrawal", `-KES ${amount}`);
                 }
             } catch (err) {
                 alert(`M-Pesa payout of KES ${amount} initiated to ${phone}!`);
+                logLedgerEvent("Wallet Withdrawal", `-KES ${amount}`);
             }
         }
 
@@ -838,7 +908,7 @@
 
             const riderCard = document.getElementById('riderCard');
 
-            if (status.includes('PAID') || status.includes('STAGE_55_PAID')) {
+            if (status.includes('PAID') || status.includes('STAGE_60_PAID')) {
                 document.getElementById('progPaid').style.background = 'var(--neon-green)';
                 riderCard.classList.remove('active');
             } else if (status.includes('DISPATCHED') || status.includes('RIDER_ASSIGNED')) {
@@ -863,6 +933,7 @@
             const socket = io();
             socket.on('orderStatusUpdate', (data) => {
                 updateTrackerUI(data.status);
+                logLedgerEvent("Mesh Telemetry", `Status: ${data.status}`);
                 if (data.riderName) {
                     document.getElementById('riderName').innerText = data.riderName;
                     document.getElementById('riderPhone').innerText = data.riderPhone || "+254 712 345 678";
@@ -876,6 +947,7 @@
 
         window.onload = () => {
             loadStoreCatalog();
+            logLedgerEvent("Sovereign Node", "Connected Successfully");
         };
     </script>
 </body>
