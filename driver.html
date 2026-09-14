@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS STAGE 51+ SOVEREIGN DRIVER TERMINAL</title>
+  <title>RDS STAGE 55 SOVEREIGN MULTI-TENANT SUPER APP DRIVER TERMINAL</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
@@ -39,8 +39,8 @@
       margin-bottom: 12px;
     }
 
-    h1 { font-size: 1rem; letter-spacing: 2px; color: var(--neon-green); }
-    .badge { background: var(--neon-green); color: var(--dark-bg); padding: 4px 8px; font-weight: bold; font-size: 0.75rem; border-radius: 4px; letter-spacing: 1px; }
+    h1 { font-size: 0.95rem; letter-spacing: 1px; color: var(--neon-green); }
+    .badge { background: var(--neon-green); color: var(--dark-bg); padding: 4px 8px; font-weight: bold; font-size: 0.7rem; border-radius: 4px; letter-spacing: 1px; }
 
     .terminal-grid {
       display: grid;
@@ -135,7 +135,7 @@
       background: var(--panel-bg);
       border: 2px solid var(--neon-green);
       padding: 20px;
-      width: 300px;
+      width: 320px;
       border-radius: 8px;
     }
 
@@ -154,40 +154,40 @@
 </head>
 <body>
 
-    <!-- AUTHENTICATION OVERLAY -->
+    <!-- STAGE 55 AUTHENTICATION & MULTI-TENANT NAMESPACE OVERLAY -->
     <div class="auth-overlay" id="authOverlay">
         <div class="auth-card">
-            <h2 style="color:var(--neon-green); margin-bottom: 10px; border-bottom:1px dashed var(--neon-green); padding-bottom:4px;">STAGE 51+ DRIVER AUTH</h2>
+            <h2 style="color:var(--neon-green); margin-bottom: 10px; border-bottom:1px dashed var(--neon-green); padding-bottom:4px;">STAGE 55 SUPER APP AUTH</h2>
             <input type="text" id="authPhone" placeholder="Phone (2547XXXXXXXX)" value="254708374149">
-            <input type="password" id="authPassword" placeholder="Password" value="secret123">
-            <button onclick="authenticateDriver()">Authenticate Matrix</button>
+            <input type="password" id="authPassword" placeholder="Password" value="securepassword123">
+            <button onclick="authenticateDriver()">Connect Sovereign Matrix</button>
             <div id="authMsg" style="margin-top: 6px; font-size: 0.75rem; text-align: center; color: var(--cyan);"></div>
         </div>
     </div>
 
     <header>
-        <h1>🏍️ RDS STAGE 51+ DRIVER TERMINAL</h1>
-        <div class="badge" id="netBadge">ONLINE_STABLE</div>
+        <h1>⚡ RDS STAGE 55 SUPER APP TERMINAL</h1>
+        <div class="badge" id="netBadge">TENANT_ISOLATED_ONLINE</div>
     </header>
 
     <div class="terminal-grid">
-        <!-- WALLET & B2C LIQUIDITY -->
+        <!-- MULTI-WALLET & B2C LIQUIDITY -->
         <div class="panel">
-            <h2>Sovereign Wallet & B2C Payout</h2>
-            <div class="stat-label">Available Wallet Balance</div>
+            <h2>Multi-Wallet & Instant B2C</h2>
+            <div class="stat-label">Available Active Balance</div>
             <div class="stat-display" id="walletBalance">KES 0.00</div>
-            <input type="text" id="payoutDriverId" placeholder="Driver ID (e.g. driver_1)" value="driver_1">
+            <input type="text" id="payoutOwnerId" placeholder="Owner ID (e.g. DRV_... or BIZ_...)" value="DRV_001">
             <input type="number" id="payoutAmount" placeholder="Amount to Withdraw (KES)" value="500">
-            <button onclick="triggerB2CPayout()" class="btn-gold">Execute Instant B2C Payout</button>
+            <button onclick="triggerB2CPayout()" class="btn-gold">Execute Bank-Grade B2C</button>
         </div>
 
         <!-- HYBRID TELEMETRY & STATUS -->
         <div class="panel">
-            <h2>Hybrid Fleet Telemetry</h2>
+            <h2>Tenant Fleet Telemetry</h2>
             <label for="statusSelect" class="small">Operational Status:</label>
             <select id="statusSelect" onchange="updateDriverStatus()">
-                <option value="ONLINE">ONLINE (Active Dispatch)</option>
-                <option value="BUSY">BUSY (On Active Delivery)</option>
+                <option value="ONLINE">ONLINE (Active Spatial Sync)</option>
+                <option value="BUSY">BUSY (Secured in Transit)</option>
                 <option value="OFFLINE">OFFLINE</option>
             </select>
             <div class="flex-row">
@@ -199,9 +199,9 @@
 
         <!-- ACTIVE DISPATCHES & HANDOFF COMPLETION -->
         <div class="panel">
-            <h2>Assigned Active Deliveries</h2>
+            <h2>Tenant Scoped Dispatches</h2>
             <div id="driver-orders-list" style="max-height: 160px; overflow-y: auto;">
-                <span class="small">Scanning matrix for assigned dispatches...</span>
+                <span class="small">Scanning multi-tenant matrix for orders...</span>
             </div>
         </div>
     </div>
@@ -215,8 +215,8 @@
 
     <!-- AUDIT STREAM LOG -->
     <div class="panel">
-        <h2>📡 Sovereign Audit Stream</h2>
-        <div class="log-box" id="logBox">[SYSTEM] Stage 51+ Driver Terminal initialized successfully.</div>
+        <h2>📡 Stage 55 Immutable Audit Stream</h2>
+        <div class="log-box" id="logBox">[SYSTEM] Stage 55 Super App Driver Terminal initialized successfully.</div>
     </div>
 
     <!-- Leaflet JS -->
@@ -227,15 +227,16 @@
         const CLOUD_API = "https://rds-lab.onrender.com";
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
-        let driverId = localStorage.getItem('rds_driver_id') || 'driver_1';
+        let currentOwnerId = localStorage.getItem('rds_owner_id') || 'DRV_001';
         let authToken = localStorage.getItem('rds_token') || '';
+        let businessId = localStorage.getItem('rds_business_id') || 'BIZ-001';
         let map = null;
         let marker = null;
         let gpsWatch = null;
         let lastLat = -1.286389;
         let lastLng = 36.817223;
 
-        document.getElementById('payoutDriverId').value = driverId;
+        document.getElementById('payoutOwnerId').value = currentOwnerId;
 
         if (authToken) {
             document.getElementById('authOverlay').style.display = 'none';
@@ -255,23 +256,23 @@
                 const data = await res.json();
                 if (data.success) {
                     authToken = data.token;
-                    driverId = data.user.id;
+                    currentOwnerId = data.user.id;
                     localStorage.setItem('rds_token', authToken);
-                    localStorage.setItem('rds_driver_id', driverId);
-                    document.getElementById('payoutDriverId').value = driverId;
+                    localStorage.setItem('rds_owner_id', currentOwnerId);
+                    document.getElementById('payoutOwnerId').value = currentOwnerId;
                     document.getElementById('authOverlay').style.display = 'none';
-                    appendLog(`Authenticated successfully: ${data.user.name}`);
+                    appendLog(`Authenticated successfully: ${data.user.name} (${data.user.role})`);
                     initTerminal();
                     return;
                 }
             } catch (err) {
-                // Fallback offline sovereign bypass if network fails
+                // Fallback offline sovereign bypass
             }
 
             localStorage.setItem('rds_token', 'offline_sovereign_token');
-            localStorage.setItem('rds_driver_id', 'driver_1');
+            localStorage.setItem('rds_owner_id', 'DRV_001');
             document.getElementById('authOverlay').style.display = 'none';
-            appendLog("Fallback Mode: Sovereign session initialized locally.");
+            appendLog("Fallback Mode: Stage 55 local session initialized.");
             initTerminal();
         }
 
@@ -302,7 +303,7 @@
                 keepBuffer: 1
             }).addTo(map);
 
-            marker = L.marker([lastLat, lastLng]).addTo(map).bindPopup("<b>Driver Fleet Location</b>");
+            marker = L.marker([lastLat, lastLng]).addTo(map).bindPopup("<b>Super App Fleet Vector</b>");
             setTimeout(() => map.invalidateSize(), 100);
         }
 
@@ -320,13 +321,13 @@
 
             try {
                 const socket = io();
-                socket.on('connect', () => appendLog("WebSocket telemetry stream connected."));
+                socket.on('connect', () => appendLog("Stage 55 WebSocket telemetry matrix connected."));
                 socket.on('orderStatusUpdate', (data) => {
                     appendLog(`Order ${data.orderId} updated to: ${data.status}`);
                     refreshDriverOrders();
                 });
                 socket.on('payoutProcessed', (data) => {
-                    if (data.driverId === driverId) {
+                    if (data.ownerId === currentOwnerId) {
                         appendLog(`💸 Instant B2C Payout settled for KES ${data.amount}`);
                         refreshDriverOrders();
                     }
@@ -340,7 +341,11 @@
             try {
                 const res = await fetch(`${API_BASE}${endpoint}`, {
                     ...options,
-                    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+                    headers: { 
+                        "Content-Type": "application/json", 
+                        "x-business-id": businessId,
+                        ...(options.headers || {}) 
+                    }
                 });
                 if (res.ok) return await res.json();
             } catch (err) {}
@@ -348,32 +353,32 @@
         }
 
         async function refreshDriverOrders() {
-            const activeDriverId = document.getElementById('payoutDriverId').value.trim() || driverId;
+            const activeOwnerId = document.getElementById('payoutOwnerId').value.trim() || currentOwnerId;
             const data = await apiFetch('/orders');
             const orders = (data && (data.orders || data.data)) || [];
             
-            const assignedOrders = orders.filter(o => o.driverId === activeDriverId || !o.driverId);
+            const assignedOrders = orders.filter(o => o.driverId === activeOwnerId || !o.driverId);
             const container = document.getElementById('driver-orders-list');
 
             if (assignedOrders.length === 0) {
-                container.innerHTML = `<span class="small">No active dispatches found for ${activeDriverId}.</span>`;
+                container.innerHTML = `<span class="small">No active tenant dispatches found for ${activeOwnerId}.</span>`;
             } else {
                 let html = "";
                 assignedOrders.forEach(o => {
                     const isMerchantReleased = o.merchantReleased;
-                    const isDelivered = o.status === "STAGE_51_DELIVERED";
+                    const isDelivered = o.status.includes("DELIVERED");
                     
-                    let actionButton = `<span class="small" style="color:var(--cyan);">Waiting Merchant Handoff Release</span>`;
+                    let actionButton = `<span class="small" style="color:var(--cyan);">Waiting Handoff Verification</span>`;
                     if (isMerchantReleased && !isDelivered) {
-                        actionButton = `<button class="btn-gold" onclick="completeDelivery('${o.id}', '${activeDriverId}')">Complete Delivery & Earn</button>`;
+                        actionButton = `<button class="btn-gold" onclick="completeDelivery('${o.id}', '${activeOwnerId}')">Complete Delivery & Earn</button>`;
                     } else if (isDelivered) {
-                        actionButton = `<span style="color:var(--neon-green); font-weight:bold;">Delivered & Remuneration Credited ✓</span>`;
+                        actionButton = `<span style="color:var(--neon-green); font-weight:bold;">Escrow Settled ✓</span>`;
                     }
 
                     html += `
                         <div class="dispatch-card">
                             <b>Order: ${o.id}</b><br>
-                            <span class="small">Status: <b>${o.status}</b> | Merchant Handoff: ${isMerchantReleased ? 'VERIFIED' : 'PENDING'}</span><br>
+                            <span class="small">Status: <b>${o.status}</b> | Namespace: ${o.businessId || 'BIZ-001'}</span><br>
                             <div style="margin-top: 6px;">${actionButton}</div>
                         </div>
                     `;
@@ -381,13 +386,21 @@
                 container.innerHTML = html;
             }
 
-            // Simulate / fetch wallet balance state update
-            document.getElementById('walletBalance').innerText = `KES 4,750.00`;
+            // Fetch live wallet balances from backend endpoint
+            const walletData = await apiFetch('/wallets');
+            if (walletData && walletData.wallets) {
+                const w = walletData.wallets.find(item => item.ownerId === activeOwnerId);
+                if (w) {
+                    document.getElementById('walletBalance').innerText = `KES ${Number(w.balance).toFixed(2)}`;
+                } else {
+                    document.getElementById('walletBalance').innerText = `KES 0.00`;
+                }
+            }
         }
 
         async function completeDelivery(orderId, currentDriverId) {
-            appendLog(`Confirming final dropoff and unlocking earnings for order ${orderId}...`);
-            const res = await apiFetch('/api/rider/complete-delivery', {
+            appendLog(`Confirming dropoff and releasing escrow for order ${orderId}...`);
+            const res = await apiFetch('/complete-delivery', {
                 method: 'POST',
                 body: JSON.stringify({ orderId, driverId: currentDriverId })
             });
@@ -395,7 +408,7 @@
                 appendLog(`Success! Delivery confirmed and driver wallet credited.`);
                 refreshDriverOrders();
             } else {
-                appendLog(`Delivery completion error: ${res?.error || 'Unknown failure'}`);
+                appendLog(`Completion error: ${res?.error || 'Unknown failure'}`);
             }
         }
 
@@ -412,13 +425,18 @@
                         marker.setLatLng([lastLat, lastLng]);
                         map.setView([lastLat, lastLng], map.getZoom(), { animate: false });
                     }
+                    // Emit real-time spatial socket telemetry
+                    try {
+                        const socket = io();
+                        socket.emit('driver_location_update', { driverId: currentOwnerId, lat: lastLat, lng: lastLng });
+                    } catch(e) {}
                 },
                 (err) => {
                     appendLog("GPS signal standby. Using Nairobi coordinate vector.");
                 },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
             );
-            appendLog("High-precision GPS tracking active.");
+            appendLog("Stage 55 Hyper-GPS telemetry tracking active.");
         }
 
         function stopGPS() {
@@ -432,23 +450,23 @@
 
         function updateDriverStatus() {
             const status = document.getElementById('statusSelect').value;
-            appendLog(`Operational status updated: ${status}`);
+            appendLog(`Tenant operational status updated: ${status}`);
         }
 
         async function triggerB2CPayout() {
-            const targetDriverId = document.getElementById('payoutDriverId').value.trim() || driverId;
+            const targetOwnerId = document.getElementById('payoutOwnerId').value.trim() || currentOwnerId;
             const amount = document.getElementById('payoutAmount').value;
 
-            if (!targetDriverId || !amount) {
-                alert("Provide valid Driver ID and payout amount.");
+            if (!targetOwnerId || !amount) {
+                alert("Provide valid Owner ID and payout amount.");
                 return;
             }
 
-            appendLog(`Initiating instant M-Pesa B2C payout for KES ${amount}...`);
+            appendLog(`Initiating Stage 55 instant B2C payout for KES ${amount}...`);
 
             const res = await apiFetch('/api/payouts/b2c', {
                 method: 'POST',
-                body: JSON.stringify({ driverId: targetDriverId, amount: Number(amount) })
+                body: JSON.stringify({ ownerId: targetOwnerId, amount: Number(amount) })
             });
 
             if (res && res.success) {
