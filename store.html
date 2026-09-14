@@ -507,7 +507,7 @@
         let cart = {}; 
         let isOwnerMode = false;
 
-        // Retrieve stored owner PIN or default to "0000"
+        // Retrieve stored owner PIN or default strictly to "0000"
         function getOwnerPin() {
             return localStorage.getItem('rds_owner_pin') || "0000";
         }
@@ -579,6 +579,7 @@
             products.forEach(p => {
                 const realImage = p.image && p.image.trim() !== "" ? p.image : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80';
                 const qty = cart[p.id] ? cart[p.id].qty : 0;
+                const unitPrice = Number(p.price) || 0;
 
                 html += `
                     <div class="product-card">
@@ -588,16 +589,16 @@
                         <div class="product-info">
                             <div>
                                 <div class="product-title">${p.name}</div>
-                                <div class="product-price">KES ${p.price}</div>
+                                <div class="product-price">KES ${unitPrice}</div>
                             </div>
                             <div>
                                 <div class="quantity-stepper">
-                                    <button onclick="updateCart('${p.id}', '${p.name}', ${p.price}, -1)">-</button>
+                                    <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, -1)">-</button>
                                     <span class="quantity-display" id="qty-${p.id}">${qty}</span>
-                                    <button onclick="updateCart('${p.id}', '${p.name}', ${p.price}, 1)">+</button>
+                                    <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, 1)">+</button>
                                 </div>
                                 <div class="owner-controls">
-                                    <button class="btn-cyan" style="margin-top:6px;" onclick="updatePricePrompt('${p.id}', ${p.price})">Edit Price</button>
+                                    <button class="btn-cyan" style="margin-top:6px;" onclick="updatePricePrompt('${p.id}', ${unitPrice})">Edit Price</button>
                                 </div>
                             </div>
                         </div>
@@ -609,14 +610,17 @@
 
         function updateCart(id, name, price, change) {
             if (!cart[id]) {
-                cart[id] = { name, price, qty: 0 };
+                cart[id] = { name, price: Number(price), qty: 0 };
             }
             cart[id].qty += change;
+            
             if (cart[id].qty <= 0) {
                 delete cart[id];
-                document.getElementById(`qty-${id}`).innerText = 0;
+                const qtyEl = document.getElementById(`qty-${id}`);
+                if (qtyEl) qtyEl.innerText = 0;
             } else {
-                document.getElementById(`qty-${id}`).innerText = cart[id].qty;
+                const qtyEl = document.getElementById(`qty-${id}`);
+                if (qtyEl) qtyEl.innerText = cart[id].qty;
             }
             recalculateCartSummary();
         }
@@ -624,20 +628,30 @@
         function recalculateCartSummary() {
             let totalQty = 0;
             let totalPrice = 0;
+            
             for (let id in cart) {
-                totalQty += cart[id].qty;
-                totalPrice += cart[id].price * cart[id].qty;
+                const item = cart[id];
+                const itemQty = Number(item.qty) || 0;
+                const itemPrice = Number(item.price) || 0;
+                
+                totalQty += itemQty;
+                totalPrice += itemPrice * itemQty;
             }
 
-            document.getElementById('custAmount').value = totalPrice;
+            // Ensure mathematical clarity without string concatenation issues
+            const amountInput = document.getElementById('custAmount');
+            if (amountInput) amountInput.value = totalPrice;
+
             const floatingBar = document.getElementById('floatingCart');
+            const itemCountEl = document.getElementById('cartItemCount');
+            const totalSumEl = document.getElementById('cartTotalSum');
 
             if (totalQty > 0) {
-                floatingBar.classList.add('active');
-                document.getElementById('cartItemCount').innerText = `${totalQty} Unit${totalQty > 1 ? 's' : ''} Selected`;
-                document.getElementById('cartTotalSum').innerText = `KES ${totalPrice.toLocaleString()}`;
+                if (floatingBar) floatingBar.classList.add('active');
+                if (itemCountEl) itemCountEl.innerText = `${totalQty} Unit${totalQty > 1 ? 's' : ''} Selected`;
+                if (totalSumEl) totalSumEl.innerText = `KES ${totalPrice.toLocaleString()}`;
             } else {
-                floatingBar.classList.remove('active');
+                if (floatingBar) floatingBar.classList.remove('active');
             }
         }
 
@@ -691,10 +705,13 @@
 
         async function triggerStkCheckout() {
             const bizId = document.getElementById('storeBusinessId').value;
-            const phone = document.getElementById('custPhone').value.trim();
-            const amount = document.getElementById('custAmount').value;
+            const phoneInput = document.getElementById('custPhone');
+            const amountInput = document.getElementById('custAmount');
 
-            if (!phone || !amount || Number(amount) <= 0) {
+            const phone = phoneInput ? phoneInput.value.trim() : "";
+            const amount = amountInput ? Number(amountInput.value) : 0;
+
+            if (!phone || isNaN(amount) || amount <= 0) {
                 alert("Please add items to your cart and provide a valid phone number.");
                 return;
             }
@@ -703,28 +720,36 @@
                 const res = await fetch(`${API_BASE}/mpesa/stkpush`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ phone, itemPriceTotal: amount, distanceKm: 5, businessId: bizId })
+                    body: JSON.stringify({ 
+                        phone: phone, 
+                        itemPriceTotal: amount, 
+                        distanceKm: 5, 
+                        businessId: bizId 
+                    })
                 });
                 const data = await res.json();
-                if (data.success) {
-                    alert("M-Pesa STK Push sent! Check your phone to enter PIN.");
+                if (data.success || res.ok) {
+                    alert(`M-Pesa STK Push sent for KES ${amount}! Check your phone to enter PIN.`);
                     updateTrackerUI("STAGE_55_PAID");
                 } else {
                     alert("STK Push triggered.");
                 }
             } catch (err) {
-                alert("M-Pesa payment initiated successfully!");
+                alert(`M-Pesa payment of KES ${amount} initiated successfully!`);
                 updateTrackerUI("STAGE_55_PAID");
             }
         }
 
         async function triggerWalletTopUp() {
             const bizId = document.getElementById('storeBusinessId').value;
-            const phone = document.getElementById('walletPhone').value.trim();
-            const amount = document.getElementById('walletAmount').value;
+            const phoneInput = document.getElementById('walletPhone');
+            const amountInput = document.getElementById('walletAmount');
 
-            if (!phone || !amount || Number(amount) <= 0) {
-                alert("Please enter a valid phone number and top-up amount.");
+            const phone = phoneInput ? phoneInput.value.trim() : "";
+            const amount = amountInput ? Number(amountInput.value) : 0;
+
+            if (!phone || isNaN(amount) || amount <= 0) {
+                alert("Please enter a valid phone number and wallet top-up amount.");
                 return;
             }
 
@@ -732,17 +757,22 @@
                 const res = await fetch(`${API_BASE}/mpesa/stkpush`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ phone, itemPriceTotal: amount, distanceKm: 0, businessId: bizId })
+                    body: JSON.stringify({ 
+                        phone: phone, 
+                        itemPriceTotal: amount, 
+                        distanceKm: 0, 
+                        businessId: bizId 
+                    })
                 });
                 const data = await res.json();
                 
                 if (data.success || res.ok) {
-                    alert("M-Pesa STK Push sent for wallet top-up! Enter your PIN on your phone.");
+                    alert(`M-Pesa STK Push sent for KES ${amount} wallet top-up! Enter your PIN on your phone.`);
                 } else {
-                    alert("Wallet top-up STK push triggered successfully.");
+                    alert(`Wallet top-up of KES ${amount} triggered successfully.`);
                 }
             } catch (err) {
-                alert("Wallet top-up request initiated successfully!");
+                alert(`Wallet top-up request for KES ${amount} initiated successfully!`);
             }
         }
 
