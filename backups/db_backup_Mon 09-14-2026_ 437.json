@@ -1,0 +1,288 @@
+{
+  "businesses": [
+    {
+      "id": "B_1788923915150_88524",
+      "name": "caro",
+      "createdAt": 1788923915150
+    },
+    {
+      "id": "BIZ_1788934394576_9413",
+      "name": "quick",
+      "category": "supermarket",
+      "address": "Nairobi, Kenya",
+      "phone": "0700000000",
+      "balance": 0,
+      "createdAt": 1788934394576
+    }
+  ],
+  "products": [
+    {
+      "id": "P_1788923930157_83294",
+      "name": "rice",
+      "price": 800,
+      "businessId": "B_1788923915150_88524",
+      "createdAt": 1788923930157,
+      "stock": 0
+    },
+    {
+      "id": "PROD_1788937039819_28273",
+      "businessId": "B_1788923915150_88524",
+      "name": "sugur",
+      "price": 180,
+      "stock": 50,
+      "category": "General",
+      "createdAt": 1788937039819
+    },
+    {
+      "id": "PROD_1788938016535_28405",
+      "businessId": "B_1788923915150_88524",
+      "name": "sugure",
+      "price": 170,
+      "stock": 50,
+      "category": "General",
+      "createdAt": 1788938016535
+    }
+  ],
+  "orders": [
+    {
+      "id": "O_1788924010236_75810",
+      "items": [
+        {
+          "productId": "P_1788923930157_83294",
+          "name": "rice",
+          "price": 800,
+          "qty": 1,
+          "subtotal": 800
+        }
+      ],
+      "total": 800,
+      "commission": 40,
+      "status": "DISPATCHED",
+      "createdAt": 1788924010237,
+      "updatedAt": 1788924010238,
+      "driverId": "D_1788917494728_60043"
+    },
+    {
+      "id": "O_1788924400968_34729",
+      "items": [
+        {
+          "productId": "P_1788923930157_83294",
+          "name": "rice",
+          "price": 800,
+          "qty": 1,
+          "subtotal": 800
+        }
+      ],
+      "total": 800,
+      "commission": 40,
+      "status": "PAID",
+      "createdAt": 1788924400968,
+      "updatedAt": 1788924400968,
+      "driverId": "D_1788934424495_92753"
+    },
+    {
+      "id": "ORD_1788932182240_30065",
+      "customerName": "Guest Customer",
+      "customerPhone": "0700000000",
+      "deliveryAddress": "Nairobi CBD, Kenya",
+      "targetLocation": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "items": [
+        {
+          "productId": "P_1788923930157_83294",
+          "name": "rice",
+          "price": 800,
+          "quantity": 1
+        }
+      ],
+      "total": 800,
+      "status": "PLACED",
+      "createdAt": 1788932182240,
+      "driverId": "D_1788917494728_60043"
+    },
+    {
+      "id": "ORD_1788933857516_27173",
+      "customerName": "Robert (Valued Customer)",
+      "customerPhone": "0700000000",
+      "deliveryAddress": "Nairobi CBD, Kenya",
+      "targetLocation": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "items": [
+        {
+          "productId": "P_1788923930157_83294",
+          "name": "rice",
+          "price": 800,
+          "quantity": 8
+        }
+      ],
+      "total": 6400,
+      "status": "PLACED",
+      "createdAt": 1788933857517,
+      "driverId": "D_1788934424495_92753"
+    },
+    {
+      "id": "ORD_1788933961695_78001",
+      "customerName": "Admin Dispatch Simulation",
+      "customerPhone": "0722000111",
+      "deliveryAddress": "Nairobi CBD",
+      "targetLocation": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "items": [
+        {
+          "productId": "PROD_DISPATCH_TEST",
+          "name": "Simulated Market Item",
+          "price": 40,
+          "quantity": 1
+        }
+      ],
+      "total": 40,
+      "status": "DISPATCHED",
+      "createdAt": 1788933961695,
+      "driverId": "D_1788917494728_60043"
+    }
+  ],
+  "drivers": [
+    {
+      "id": "D_1788917494728_60043",
+      "name": "kamau",
+      "phone": "0700000000",
+      "status": "online",
+      "earnings": 1558,
+      "walletBalance": 1558,
+      "location": {
+        "lat": 0,
+        "lng": 0
+      },
+      "lastSeen": 1789221738883
+    },
+    {
+      "id": "D_1788934424495_92753",
+      "name": "robert",
+      "phone": "254722123456",
+      "status": "online",
+      "earnings": 6840,
+      "walletBalance": 6840,
+      "location": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "lastSeen": 1789221738883
+    }
+  ],
+  "deliveries": [
+    {
+      "id": "DL_1788924010238_6174",
+      "orderId": "O_1788924010236_75810",
+      "driverId": "D_1788917494728_60043",
+      "status": "ASSIGNED",
+      "createdAt": 1788924010238,
+      "updatedAt": 1788924010238
+    },
+    {
+      "id": "DEL_1788933961695_94310",
+      "orderId": "ORD_1788933961695_78001",
+      "driverId": "D_1788917494728_60043",
+      "status": "ASSIGNED",
+      "createdAt": 1788933961695,
+      "updatedAt": 1788933961695
+    }
+  ],
+  "ledger": [
+    {
+      "id": "L_1788924010237_89404",
+      "orderId": "O_1788924010236_75810",
+      "entries": [
+        {
+          "account": "CASH",
+          "debit": 800,
+          "credit": 0
+        },
+        {
+          "account": "BUSINESS_PAYABLE",
+          "businessId": "B_1788923915150_88524",
+          "debit": 0,
+          "credit": 760
+        },
+        {
+          "account": "PLATFORM_REVENUE",
+          "debit": 0,
+          "credit": 40
+        }
+      ],
+      "total": 800,
+      "commission": 40,
+      "createdAt": 1788924010237
+    },
+    {
+      "id": "L_1788924400968_72027",
+      "orderId": "O_1788924400968_34729",
+      "entries": [
+        {
+          "account": "CASH",
+          "debit": 800,
+          "credit": 0
+        },
+        {
+          "account": "BUSINESS_PAYABLE",
+          "businessId": "B_1788923915150_88524",
+          "debit": 0,
+          "credit": 760
+        },
+        {
+          "account": "PLATFORM_REVENUE",
+          "debit": 0,
+          "credit": 40
+        }
+      ],
+      "total": 800,
+      "commission": 40,
+      "createdAt": 1788924400968
+    },
+    {
+      "id": "TX_1788932182240_87312",
+      "orderId": "ORD_1788932182240_30065",
+      "type": "ORDER_PAYMENT",
+      "amount": 800,
+      "timestamp": 1788932182240
+    },
+    {
+      "id": "TX_1788933857517_96205",
+      "orderId": "ORD_1788933857516_27173",
+      "type": "ORDER_PAYMENT",
+      "amount": 6400,
+      "timestamp": 1788933857517
+    },
+    {
+      "id": "TX_1788933961695_20137",
+      "orderId": "ORD_1788933961695_78001",
+      "type": "ORDER_PAYMENT",
+      "amount": 40,
+      "timestamp": 1788933961695
+    }
+  ],
+  "wallets": [
+    {
+      "id": "wal_1789251853672_57042",
+      "businessId": "B_1788923915150_88524",
+      "balance": 0
+    },
+    {
+      "id": "wal_1789251853689_92002",
+      "businessId": "BIZ_1788934394576_9413",
+      "balance": 0
+    }
+  ],
+  "escrow": [],
+  "system": {
+    "stage": 20,
+    "mode": "HYBRID_ZERO_ERROR",
+    "createdAt": 1789221738882,
+    "lastCheck": 1789221738882
+  }
+}
