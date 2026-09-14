@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 54 MASTER SOVEREIGN & HYBRID ARCHITECTURE ENGINE
-// Production-Grade Escrow, Immutable Merkle Ledgers, Explicit Multi-Wallet Ledger, 
-// Real-Time Socket.IO Telemetry, & Automated KRA Tax Compliance Vault
+// RDS - STAGE 55 MULTI-TENANT SOVEREIGN ENGINE
+// Production-Grade Escrow, Immutable Merkle Ledgers, Explicit Multi-Wallet,
+// Real-Time Socket.IO Telemetry, KRA Vault, & Scoped Tenant Isolation
 // ==========================================
 
 const express = require("express");
@@ -23,7 +23,7 @@ const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-api-key"]
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-api-key", "x-business-id"]
   }
 });
 
@@ -33,7 +33,7 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 
 // System-wide economic constants
-const DRIVER_SHARE_RATE = 0.95;         
+const DRIVER_SHARE_RATE = 0.95;          
 const PLATFORM_COMMISSION_RATE = 0.05; 
 const SHOP_SURCHARGE_RATE = 0.02;      
 const KRA_TAX_RATE = 0.16;             
@@ -49,17 +49,15 @@ function num(v) {
 /**
  * Generates an immutable cryptographic Merkle receipt proof for auditing and ledger integrity.
  */
-function generateStage54MerkleProof(record) {
-  const payload = `${record.id}:${record.orderId}:${record.gross}:${record.driverAmount}:${record.netPlatformRevenue}:${record.timestamp}`;
-  return crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_54_MASTER_KEY').update(payload).digest('hex');
+function generateStage55MerkleProof(record) {
+  const payload = `${record.id}:${record.businessId || 'GLOBAL'}:${record.orderId}:${record.gross}:${record.driverAmount}:${record.netPlatformRevenue}:${record.timestamp}`;
+  return crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_55_MASTER_KEY').update(payload).digest('hex');
 }
 
 /**
- * Stage 54 Hybrid Financial Split Matrix
- * Reconciles item value, distance delivery fare, shop surcharge,
- * driver payout share, platform commission, and exact VAT tax liability.
+ * Stage 55 Hybrid Financial Split Matrix
  */
-function processStage54FinancialSplit(itemPriceTotal, distanceKm, demandMultiplier = 1.0, trafficIndex = 1.0, overrideDeliveryAmount = null) {
+function processStage55FinancialSplit(itemPriceTotal, distanceKm, demandMultiplier = 1.0, trafficIndex = 1.0, overrideDeliveryAmount = null) {
   const itemsGross = currency(num(itemPriceTotal));
   const km = num(distanceKm) > 0 ? num(distanceKm) : 10;
   const multiplier = Math.max(1.0, num(demandMultiplier)) * Math.max(1.0, num(trafficIndex));
@@ -71,9 +69,7 @@ function processStage54FinancialSplit(itemPriceTotal, distanceKm, demandMultipli
   const baseDeliveryFare = currency(rawDeliveryFare);
   const shopOwnerSurcharge = baseDeliveryFare.multiply(SHOP_SURCHARGE_RATE);
   
-  // Gross collection = Items Value + Base Delivery Fare + Shop Surcharge
   const gross = itemsGross.add(baseDeliveryFare).add(shopOwnerSurcharge);
-
   const driverAmount = baseDeliveryFare.multiply(DRIVER_SHARE_RATE);
   const platformCommissionFromDelivery = baseDeliveryFare.multiply(PLATFORM_COMMISSION_RATE).add(shopOwnerSurcharge);
   const totalPlatformCommission = platformCommissionFromDelivery; 
@@ -140,7 +136,7 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(express.static("."));
 
 function log(type, msg) {
-  console.log(`[${new Date().toISOString()}] [STAGE-54-MASTER] [${type}] ${msg}`);
+  console.log(`[${new Date().toISOString()}] [STAGE-55-MASTER] [${type}] ${msg}`);
 }
 
 app.use((req, res, next) => {
@@ -276,6 +272,29 @@ function releaseReservedBalance(ownerId, amount, convertToCredit = true) {
   return wallet.balance;
 }
 
+/**
+ * STAGE 55: Multi-Tenant Authorization Middleware
+ */
+function enforceTenantIsolation(req, res, next) {
+    const businessId = req.headers['x-business-id'] || req.query.businessId || req.body.businessId;
+    const isSystemAdmin = req.headers['x-api-key'] === (process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_55_MASTER_KEY');
+    
+    if (isSystemAdmin) return next();
+
+    if (!businessId) {
+        return res.status(403).json({ success: false, error: "STAGE_55_SECURITY_BREACH: Missing tenant business identifier." });
+    }
+
+    ensureState();
+    const tenantExists = data.businesses.some(b => b.id === businessId) || businessId === "BIZ-001";
+    if (!tenantExists && data.businesses.length > 0 && businessId !== "BIZ-001") {
+        return res.status(403).json({ success: false, error: "STAGE_55_SECURITY_BREACH: Unauthorized cross-tenant data access attempt." });
+    }
+
+    req.tenantId = businessId;
+    next();
+}
+
 // ================= REAL-TIME SOCKET.IO TELEMETRY =================
 io.on("connection", (socket) => {
   log("SOCKET", `Client connected: ${socket.id}`);
@@ -295,7 +314,7 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_54_MASTER_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_55_MASTER_ENGINE_ONLINE", time: Date.now() }));
 
 // ================= CORE DATA ENDPOINTS =================
 app.get('/drivers', (req, res) => {
@@ -303,14 +322,16 @@ app.get('/drivers', (req, res) => {
   ok(res, { drivers: data.drivers });
 });
 
-app.get('/orders', (req, res) => {
+app.get('/orders', enforceTenantIsolation, (req, res) => {
   ensureState();
-  ok(res, { orders: data.orders });
+  const scopedOrders = data.orders.filter(o => o.businessId === req.tenantId || req.tenantId === "BIZ-001");
+  ok(res, { businessId: req.tenantId, orders: scopedOrders });
 });
 
-app.get('/ledger', (req, res) => {
+app.get('/ledger', enforceTenantIsolation, (req, res) => {
   ensureState();
-  ok(res, { ledger: data.ledger });
+  const scopedLedger = data.ledger.filter(l => l.businessId === req.tenantId || req.tenantId === "BIZ-001");
+  ok(res, { businessId: req.tenantId, ledger: scopedLedger });
 });
 
 app.get('/wallets', (req, res) => {
@@ -318,15 +339,17 @@ app.get('/wallets', (req, res) => {
   ok(res, { wallets: data.wallets });
 });
 
-app.get('/api/products', (req, res) => {
+app.get('/api/products', enforceTenantIsolation, (req, res) => {
   ensureState();
-  ok(res, { products: data.products });
+  const scopedProducts = data.products.filter(p => p.businessId === req.tenantId || req.tenantId === "BIZ-001");
+  ok(res, { businessId: req.tenantId, products: scopedProducts });
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', enforceTenantIsolation, async (req, res) => {
   try {
     ensureState();
-    const { businessId, name, price, stock } = req.body;
+    const { name, price, stock } = req.body;
+    const businessId = req.tenantId;
     const safeName = sanitizeString(name);
     const itemPrice = num(price);
     const itemStock = num(stock);
@@ -335,7 +358,7 @@ app.post('/api/products', async (req, res) => {
 
     const product = {
       id: id("PROD"),
-      businessId: sanitizeString(businessId) || "BIZ-001",
+      businessId: businessId,
       name: safeName,
       price: itemPrice,
       stock: itemStock,
@@ -345,13 +368,51 @@ app.post('/api/products', async (req, res) => {
     await saveDB();
 
     if (global.io) global.io.emit('productAdded', product);
-    return ok(res, { message: "Product published successfully", product });
+    return ok(res, { message: "Product published successfully under tenant namespace", product });
   } catch (err) {
     return fail(res, "Product addition failed: " + err.message, 500);
   }
 });
 
-// ================= AUTHENTICATION ENDPOINTS =================
+// ================= STAGE 55: MULTI-TENANT REGISTRATION & AUTH =================
+app.post('/api/tenants/register', async (req, res) => {
+    try {
+        ensureState();
+        const { name, ownerPhone, taxPin, password } = req.body;
+        const safeName = sanitizeString(name);
+        const safePhone = validateKenyanPhone(ownerPhone);
+        const safePin = sanitizeString(taxPin) || "P055" + Math.floor(Math.random() * 900000 + 100000) + "Z";
+
+        if (!safeName || !safePhone || !password) {
+            return fail(res, "Missing required tenant registration fields", 400);
+        }
+
+        const existingTenant = data.businesses.find(b => b.ownerPhone === safePhone);
+        if (existingTenant) return fail(res, "Tenant with this phone already exists.", 400);
+
+        const newBusiness = {
+            id: id("BIZ"),
+            name: safeName,
+            ownerPhone: safePhone,
+            taxPin: safePin,
+            passwordHash: crypto.createHmac('sha256', 'RDS_STAGE_55_AUTH').update(password).digest('hex'),
+            apiKey: crypto.randomBytes(24).toString('hex'),
+            createdAt: Date.now()
+        };
+
+        data.businesses.push(newBusiness);
+        updateWalletBalance(newBusiness.id, 0, "SHOP");
+        await saveDB();
+
+        return ok(res, { 
+            message: "Multi-tenant business namespace successfully provisioned.", 
+            business: { id: newBusiness.id, name: newBusiness.name, taxPin: newBusiness.taxPin, apiKey: newBusiness.apiKey } 
+        });
+    } catch (err) {
+        return fail(res, "Tenant Registration Error: " + err.message, 500);
+    }
+});
+
 app.post('/api/auth/register', async (req, res) => {
     try {
         ensureState();
@@ -373,7 +434,7 @@ app.post('/api/auth/register', async (req, res) => {
             role: role || 'CUSTOMER',
             status: 'ONLINE',
             location: { lat: -1.286389, lng: 36.817223 },
-            passwordHash: crypto.createHmac('sha256', 'RDS_STAGE_54_AUTH').update(password).digest('hex'),
+            passwordHash: crypto.createHmac('sha256', 'RDS_STAGE_55_AUTH').update(password).digest('hex'),
             createdAt: Date.now()
         };
 
@@ -394,14 +455,18 @@ app.post('/api/auth/login', async (req, res) => {
 
         if (!safePhone || !password) return fail(res, "Missing phone or password", 400);
 
-        const user = data.drivers.find(d => d.phone === safePhone);
+        const user = data.drivers.find(d => d.phone === safePhone) || data.businesses.find(b => b.ownerPhone === safePhone);
         if (!user) return fail(res, "User not found.", 404);
 
-        const hashedInput = crypto.createHmac('sha256', 'RDS_STAGE_54_AUTH').update(password).digest('hex');
+        const hashedInput = crypto.createHmac('sha256', 'RDS_STAGE_55_AUTH').update(password).digest('hex');
         if (user.passwordHash !== hashedInput) return fail(res, "Incorrect password.", 401);
 
         const token = crypto.randomBytes(32).toString('hex');
-        return ok(res, { message: "Login successful", token, user: { id: user.id, name: user.name, phone: user.phone, role: user.role } });
+        return ok(res, { 
+            message: "Login successful", 
+            token, 
+            user: { id: user.id, name: user.name, phone: user.phone || user.ownerPhone, role: user.role || 'MERCHANT' } 
+        });
     } catch (err) {
         return fail(res, "Login Error: " + err.message, 500);
     }
@@ -410,7 +475,7 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/calculate-fare', (req, res) => {
     try {
         const { itemPriceTotal, distanceKm, demandMultiplier, trafficIndex } = req.body;
-        const split = processStage54FinancialSplit(itemPriceTotal, distanceKm, demandMultiplier, trafficIndex);
+        const split = processStage55FinancialSplit(itemPriceTotal, distanceKm, demandMultiplier, trafficIndex);
         return ok(res, { success: true, ...split });
     } catch (err) {
         return fail(res, "Fare calculation error: " + err.message, 400);
@@ -432,7 +497,7 @@ app.post('/api/payouts/b2c', async (req, res) => {
         wallet.balance = currency(wallet.balance).subtract(payoutAmount).value;
         
         const payoutRecord = {
-            id: id("PO54"),
+            id: id("PO55"),
             ownerId: safeOwnerId,
             amount: payoutAmount,
             status: "BANK_GRADE_SETTLED",
@@ -448,14 +513,14 @@ app.post('/api/payouts/b2c', async (req, res) => {
     }
 });
 
-// ================= STAGE 54: MERCHANT DISPATCH & ESCROW SETTLEMENT =================
-app.post('/dispatch-order', async (req, res) => {
-  const { orderId, businessId } = req.body;
+// ================= STAGE 55: MERCHANT DISPATCH & ESCROW SETTLEMENT =================
+app.post('/dispatch-order', enforceTenantIsolation, async (req, res) => {
+  const { orderId } = req.body;
   const safeOrderId = sanitizeString(orderId);
-  const safeBusinessId = sanitizeString(businessId);
+  const safeBusinessId = req.tenantId;
 
-  if (!safeOrderId || !safeBusinessId) {
-    return fail(res, "Missing orderId or businessId", 400);
+  if (!safeOrderId) {
+    return fail(res, "Missing orderId", 400);
   }
 
   try {
@@ -463,7 +528,11 @@ app.post('/dispatch-order', async (req, res) => {
       const order = data.orders.find(o => o.id === safeOrderId);
       if (!order) throw new Error("Order not found in sovereign matrix");
 
-      if (order.status !== "STAGE_54_PAID" && order.status !== "STAGE_53_PAID") {
+      if (order.businessId !== safeBusinessId && safeBusinessId !== "BIZ-001") {
+        throw new Error("Tenant isolation breach: Order belongs to another merchant");
+      }
+
+      if (order.status !== "STAGE_55_PAID" && order.status !== "STAGE_54_PAID" && order.status !== "STAGE_53_PAID") {
         throw new Error("Order escrow has not been fully funded via M-Pesa");
       }
 
@@ -480,20 +549,15 @@ app.post('/dispatch-order', async (req, res) => {
       const driverAmount = order.split.driverAmount;
       const assignedDriverId = order.driverId || "driver_pending";
 
-      // 1. Pay Merchant instantly for product value
-      updateWalletBalance(safeBusinessId, shopProductValue, "CREDIT");
-
-      // 2. Capture Platform Revenue & KRA Tax immediately
+      updateWalletBalance(order.businessId, shopProductValue, "CREDIT");
       updateWalletBalance("SYSTEM_PLATFORM", netPlatformRevenue, "CREDIT");
       updateWalletBalance("SYSTEM_KRA_TAX", kraTaxLiability, "CREDIT");
-
-      // 3. Reserve driver payout safely in escrow until delivery completion
       reserveWalletBalance(assignedDriverId, driverAmount);
 
       const merchantPayoutRecord = {
-        id: id("MERCH_PAY54"),
+        id: id("MERCH_PAY55"),
         orderId: order.id,
-        businessId: safeBusinessId,
+        businessId: order.businessId,
         amount: shopProductValue,
         status: "MERCHANT_FUND_RELEASED",
         timestamp: Date.now()
@@ -562,7 +626,7 @@ app.post('/assign-rider', async (req, res) => {
   }
 });
 
-// ================= STAGE 54: RIDER COMPLETION & FINAL ESCROW SETTLEMENT =================
+// ================= STAGE 55: RIDER COMPLETION & FINAL ESCROW SETTLEMENT =================
 app.post('/complete-delivery', async (req, res) => {
   const { orderId, driverId } = req.body;
   const safeOrderId = sanitizeString(orderId);
@@ -581,10 +645,9 @@ app.post('/complete-delivery', async (req, res) => {
         throw new Error("Cannot complete delivery before merchant has confirmed item handoff");
       }
 
-      order.status = "STAGE_54_DELIVERED";
+      order.status = "STAGE_55_DELIVERED";
       const driverShare = order.split.driverAmount;
 
-      // Release reserved escrow funds directly into the driver's active balance
       releaseReservedBalance(safeDriverId, driverShare, true);
 
       return {
@@ -598,7 +661,7 @@ app.post('/complete-delivery', async (req, res) => {
 
     if (global.io) {
       global.io.emit('orderCompleted', { orderId: safeOrderId, driverId: safeDriverId });
-      global.io.emit('orderStatusUpdate', { orderId: safeOrderId, status: 'STAGE_54_DELIVERED' });
+      global.io.emit('orderStatusUpdate', { orderId: safeOrderId, status: 'STAGE_55_DELIVERED' });
     }
 
     return res.status(200).json(finalSettlement);
@@ -617,20 +680,25 @@ app.post('/api/rider/complete-delivery', (req, res) => {
 });
 
 // ================= KRA COMPLIANCE VAULT =================
-app.get('/api/compliance/kra-vault', (req, res) => {
+app.get('/api/compliance/kra-vault', enforceTenantIsolation, (req, res) => {
     try {
         ensureState();
-        const grossVolume = data.ledger.reduce((acc, curr) => currency(acc).add(curr.gross).value, 0);
-        const vatLiability = data.ledger.reduce((acc, curr) => currency(acc).add(curr.tax).value, 0);
-        const taxableCommission = data.ledger.reduce((acc, curr) => currency(acc).add(curr.commission).value, 0);
+        const tenantId = req.tenantId;
+        const scopedLedger = tenantId === "BIZ-001" 
+            ? data.ledger 
+            : data.ledger.filter(l => l.businessId === tenantId);
+
+        const grossVolume = scopedLedger.reduce((acc, curr) => currency(acc).add(curr.gross).value, 0);
+        const vatLiability = scopedLedger.reduce((acc, curr) => currency(acc).add(curr.tax).value, 0);
+        const taxableCommission = scopedLedger.reduce((acc, curr) => currency(acc).add(curr.commission).value, 0);
 
         return ok(res, {
             kraReport: {
                 vaultStatus: "BANK_GRADE_CRYPTOGRAPHIC_LOCKED",
-                pinRegistered: "P054XXXXXXF",
+                pinRegistered: "P055XXXXXXF",
                 compliancePeriod: "2026-Q3",
                 metrics: { grossVolume, taxableCommission, vatLiability, withholdingTax: currency(vatLiability).multiply(0.05).value },
-                transactionsLogged: data.ledger.length,
+                transactionsLogged: scopedLedger.length,
                 integrity: "100_PERCENT_VERIFIED"
             }
         });
@@ -647,7 +715,7 @@ app.post("/mpesa/stkpush", async (req, res) => {
     const formattedPhone = validateKenyanPhone(phone);
     if (!formattedPhone) return fail(res, "Invalid Kenyan phone number", 400);
 
-    const financialSplit = processStage54FinancialSplit(itemPriceTotal, distanceKm, demandMultiplier, trafficIndex);
+    const financialSplit = processStage55FinancialSplit(itemPriceTotal, distanceKm, demandMultiplier, trafficIndex);
     const accessToken = await getMpesaAccessToken();
 
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14);
@@ -663,8 +731,8 @@ app.post("/mpesa/stkpush", async (req, res) => {
       PartyB: MPESA_CONFIG.shortCode,
       PhoneNumber: formattedPhone,
       CallBackURL: MPESA_CONFIG.callbackUrl,
-      AccountReference: "RDS54",
-      TransactionDesc: "Bank-Grade Hybrid Escrow"
+      AccountReference: "RDS55",
+      TransactionDesc: "Multi-Tenant Hybrid Escrow"
     };
 
     let darajaResponse = await executeWithRetry(async () => {
@@ -676,13 +744,13 @@ app.post("/mpesa/stkpush", async (req, res) => {
     });
 
     const order = {
-      id: id("ORD54"),
+      id: id("ORD55"),
       businessId: sanitizeString(businessId) || "BIZ-001",
       driverId: sanitizeString(driverId) || "driver_1",
       customerPhone: formattedPhone,
       total: financialSplit.gross,
       split: financialSplit,
-      status: "STAGE_54_PENDING_STK",
+      status: "STAGE_55_PENDING_STK",
       checkoutRequestId: darajaResponse.CheckoutRequestID,
       merchantReleased: false,
       createdAt: Date.now()
@@ -709,20 +777,21 @@ app.post("/api/v1/webhook-listener", async (req, res) => {
     if (!order) return res.json({ success: false });
 
     if (result.ResultCode === 0) {
-      order.status = "STAGE_54_PAID";
+      order.status = "STAGE_55_PAID";
       
       const ledgerEntry = {
-        id: id("LEDGER54"),
+        id: id("LEDGER55"),
+        businessId: order.businessId,
         orderId: order.id,
         ...order.split,
         reconciled: true,
         timestamp: Date.now()
       };
       
-      ledgerEntry.merkleProof = generateStage54MerkleProof(ledgerEntry);
+      ledgerEntry.merkleProof = generateStage55MerkleProof(ledgerEntry);
       data.ledger.push(ledgerEntry);
     } else {
-      order.status = "STAGE_54_FAILED";
+      order.status = "STAGE_55_FAILED";
     }
 
     await saveDB();
@@ -733,12 +802,12 @@ app.post("/api/v1/webhook-listener", async (req, res) => {
   }
 });
 
-app.use((req, res) => res.status(200).json({ success: true, bankGradeActive: true }));
+app.use((req, res) => res.status(200).json({ success: true, stage55MultiTenantActive: true }));
 
 if (require.main === module) {
   server.listen(PORT, () => {
-    log("SYSTEM", `🚀 STAGE-54 MASTER SOVEREIGN & HYBRID ENGINE ACTIVE ON PORT ${PORT}`);
+    log("SYSTEM", `🚀 STAGE-55 MULTI-TENANT SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
   });
 }
 
-module.exports = { app, server, processStage54FinancialSplit };
+module.exports = { app, server, processStage55FinancialSplit };
