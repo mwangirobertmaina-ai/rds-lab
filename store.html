@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 55 | Customer Marketplace & Super App</title>
+  <title>RDS 55 | Sovereign Super App & Marketplace</title>
 
   <!-- Socket.io Client -->
   <script src="/socket.io/socket.io.js"></script>
@@ -29,7 +29,16 @@
       padding: 15px;
       max-width: 480px;
       margin: 0 auto;
-      padding-bottom: 90px;
+      padding-bottom: 110px;
+    }
+
+    /* Views Framework */
+    .app-view { display: none; }
+    .app-view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     /* Header & Location */
@@ -123,7 +132,7 @@
     .vendor-info h4 { font-size: 0.8rem; color: #fff; margin-bottom: 2px; }
     .vendor-info p { font-size: 0.7rem; color: var(--text-dim); }
 
-    /* Product Catalog Grid with Smooth Animation */
+    /* Product Catalog Grid */
     .catalog-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -161,12 +170,39 @@
       object-fit: cover;
       transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
     }
-
     .product-card:hover .product-img { transform: scale(1.08); }
 
     .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
     .product-title { font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
     .product-price { font-size: 0.85rem; color: var(--cyan); font-weight: 700; margin-bottom: 8px; }
+
+    /* Quantity Stepper Controls */
+    .quantity-stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--dark-bg);
+      border: 1px solid #374151;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .quantity-stepper button {
+      background: #222e3c;
+      color: #fff;
+      border: none;
+      padding: 6px 10px;
+      font-weight: bold;
+      cursor: pointer;
+      width: auto;
+      font-size: 0.8rem;
+    }
+    .quantity-stepper button:hover { background: var(--cyan); color: #000; }
+    .quantity-display {
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: var(--neon-green);
+      padding: 0 8px;
+    }
 
     button {
       background: var(--neon-green);
@@ -187,9 +223,29 @@
     .owner-controls {
       display: none;
       margin-top: 6px;
-      gap: 4px;
     }
-    .owner-mode .owner-controls { display: flex; }
+    .owner-mode .owner-controls { display: block; }
+
+    /* Floating Cart Bar */
+    .floating-cart {
+      position: fixed;
+      bottom: 70px;
+      left: 15px;
+      right: 15px;
+      max-width: 450px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #111827, #1f2937);
+      border: 1px solid var(--neon-green);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 8px 20px rgba(0,255,136,0.25);
+      z-index: 999;
+      display: none;
+    }
+    .floating-cart.active { display: flex; }
 
     /* Checkout & Status Panel */
     .checkout-panel {
@@ -263,132 +319,167 @@
 </head>
 <body id="appBody">
 
-    <!-- Header Location Bar -->
-    <div class="header-location">
-        <div class="location-box">
-            <span class="icon">📍</span>
-            <div class="location-text">
-                <span>Deliver to</span>
-                <strong>Kasarani, Nairobi</strong>
+    <!-- HOME / STORE VIEW -->
+    <div id="viewHome" class="app-view active-view">
+        <div class="header-location">
+            <div class="location-box">
+                <span class="icon">📍</span>
+                <div class="location-text">
+                    <span>Deliver to</span>
+                    <strong>Kasarani, Nairobi</strong>
+                </div>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <div id="tenantBadge" style="background:var(--cyan); color:#000; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-001</div>
+                <button onclick="toggleOwnerMode()" style="width:auto; padding:4px 8px; font-size:0.6rem; background:#374151; color:#fff;">🔒 Owner</button>
             </div>
         </div>
-        <div style="display:flex; gap:6px; align-items:center;">
-            <div id="tenantBadge" style="background:var(--cyan); color:#000; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-001</div>
-            <button onclick="toggleOwnerMode()" style="width:auto; padding:4px 8px; font-size:0.6rem; background:#374151; color:#fff;">🔒 Owner</button>
-        </div>
-    </div>
 
-    <!-- Search Bar -->
-    <div class="search-bar">
-        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <input type="text" id="searchInput" placeholder="Search millions of items, groceries, foods..." oninput="filterCatalog()">
-    </div>
+        <div class="search-bar">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input type="text" id="searchInput" placeholder="Search millions of items, groceries, foods..." oninput="filterCatalog()">
+        </div>
 
-    <!-- Category Selector -->
-    <div class="categories-row">
-        <div class="category-item active" onclick="filterCategory('ALL', this)">
-            <span class="icon">🛒</span>
-            <span>All Shops</span>
-        </div>
-        <div class="category-item" onclick="filterCategory('FOOD', this)">
-            <span class="icon">🍔</span>
-            <span>Food</span>
-        </div>
-        <div class="category-item" onclick="filterCategory('GROCERY', this)">
-            <span class="icon">🛍️</span>
-            <span>Supermarket</span>
-        </div>
-        <div class="category-item" onclick="filterCategory('PHARMACY', this)">
-            <span class="icon">💊</span>
-            <span>Pharmacy</span>
-        </div>
-    </div>
-
-    <!-- Featured Shops -->
-    <div class="section-header">
-        <h3>Popular Near You</h3>
-    </div>
-    <div class="vendors-scroll">
-        <div class="vendor-card" onclick="switchTenant('BIZ-001', 'KFC & Fast Food')">
-            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" alt="KFC">
-            <div class="vendor-info">
-                <h4>KFC Nairobi</h4>
-                <p>⭐ 4.5 • 25 mins</p>
+        <div class="categories-row">
+            <div class="category-item active" onclick="filterCategory('ALL', this)">
+                <span class="icon">🛒</span>
+                <span>All Shops</span>
+            </div>
+            <div class="category-item" onclick="filterCategory('FOOD', this)">
+                <span class="icon">🍔</span>
+                <span>Food</span>
+            </div>
+            <div class="category-item" onclick="filterCategory('GROCERY', this)">
+                <span class="icon">🛍️</span>
+                <span>Supermarket</span>
+            </div>
+            <div class="category-item" onclick="filterCategory('PHARMACY', this)">
+                <span class="icon">💊</span>
+                <span>Pharmacy</span>
             </div>
         </div>
-        <div class="vendor-card" onclick="switchTenant('BIZ-002', 'Naivas Supermarket')">
-            <img src="https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400&auto=format&fit=crop&q=80" alt="Naivas">
-            <div class="vendor-info">
-                <h4>Naivas Groceries</h4>
-                <p>⭐ 4.8 • 15 mins</p>
+
+        <div class="section-header">
+            <h3>Popular Near You</h3>
+        </div>
+        <div class="vendors-scroll">
+            <div class="vendor-card" onclick="switchTenant('BIZ-001', 'KFC & Fast Food')">
+                <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" alt="KFC">
+                <div class="vendor-info">
+                    <h4>KFC Nairobi</h4>
+                    <p>⭐ 4.5 • 25 mins</p>
+                </div>
+            </div>
+            <div class="vendor-card" onclick="switchTenant('BIZ-002', 'Naivas Supermarket')">
+                <img src="https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400&auto=format&fit=crop&q=80" alt="Naivas">
+                <div class="vendor-info">
+                    <h4>Naivas Groceries</h4>
+                    <p>⭐ 4.8 • 15 mins</p>
+                </div>
+            </div>
+            <div class="vendor-card" onclick="switchTenant('BIZ-003', 'Goodlife Pharmacy')">
+                <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&auto=format&fit=crop&q=80" alt="Pharmacy">
+                <div class="vendor-info">
+                    <h4>Goodlife Meds</h4>
+                    <p>⭐ 4.9 • 10 mins</p>
+                </div>
             </div>
         </div>
-        <div class="vendor-card" onclick="switchTenant('BIZ-003', 'Goodlife Pharmacy')">
-            <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&auto=format&fit=crop&q=80" alt="Pharmacy">
-            <div class="vendor-info">
-                <h4>Goodlife Meds</h4>
-                <p>⭐ 4.9 • 10 mins</p>
+
+        <div class="section-header">
+            <h3 id="catalogTitle">Store Catalog</h3>
+            <span id="activeTenantLabel" style="font-size:0.75rem; color:var(--cyan);">Namespace: BIZ-001</span>
+        </div>
+        <div class="catalog-grid" id="catalogGrid">
+            <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading inventory...</em>
+        </div>
+    </div>
+
+    <!-- ORDERS & LIVE TRACKING VIEW -->
+    <div id="viewOrders" class="app-view">
+        <div class="section-header" style="margin-bottom: 20px;">
+            <h3>Active Orders & Tracking</h3>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Secure M-Pesa Checkout</h3>
+            <input type="text" id="custPhone" placeholder="M-Pesa Phone (2547XXXXXXXX)" value="254708374149">
+            <input type="number" id="custAmount" placeholder="Total Amount (KES)" value="0" readonly>
+            <button onclick="triggerStkCheckout()" class="btn-cyan">Pay via M-Pesa STK Push</button>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Live Status Tracker</h3>
+            <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;">
+                Status: <span id="lifecycleStatus" style="color: var(--neon-green); font-weight: bold;">STANDBY</span>
+            </div>
+            <div style="display: flex; gap: 4px; height: 6px; background: #000; border-radius: 3px; overflow: hidden; border: 1px solid #374151; margin-bottom: 12px;">
+                <div id="progPaid" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
+                <div id="progAccepted" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
+                <div id="progTransit" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
+                <div id="progDelivered" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
+            </div>
+
+            <!-- Rider Dispatch Card -->
+            <div id="riderCard" class="rider-card">
+                <p style="color: var(--cyan); font-weight: bold; margin-bottom: 6px;">🛵 Rider Dispatched!</p>
+                <p><strong>Name:</strong> <span id="riderName">Samuel Kiprono</span></p>
+                <p><strong>Contact:</strong> <a href="tel:+254712345678" id="riderPhone" style="color: var(--neon-green);">+254 712 345 678</a></p>
+                <p><strong>Estimated Arrival (ETA):</strong> <span id="riderEta" style="color: var(--gold);">6 mins (1.2 km away)</span></p>
             </div>
         </div>
     </div>
 
-    <!-- Catalog Grid -->
-    <div class="section-header">
-        <h3 id="catalogTitle">Store Catalog</h3>
-        <span id="activeTenantLabel" style="font-size:0.75rem; color:var(--cyan);">Namespace: BIZ-001</span>
-    </div>
-    <div class="catalog-grid" id="catalogGrid">
-        <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading high-scale inventory...</em>
-    </div>
-
-    <!-- Secure STK Checkout Panel -->
-    <div class="checkout-panel">
-        <h3>Secure M-Pesa Checkout</h3>
-        <input type="text" id="custPhone" placeholder="M-Pesa Phone (2547XXXXXXXX)" value="254708374149">
-        <input type="number" id="custAmount" placeholder="Total Amount (KES)" value="650">
-        <button onclick="triggerStkCheckout()" class="btn-cyan">Pay via M-Pesa STK Push</button>
-    </div>
-
-    <!-- Live Order Status & Rider Dispatch Tracker -->
-    <div class="checkout-panel">
-        <h3>Live Order & Rider Tracker</h3>
-        <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;">
-            Status: <span id="lifecycleStatus" style="color: var(--neon-green); font-weight: bold;">STANDBY</span>
+    <!-- DIGITAL WALLET VIEW -->
+    <div id="viewWallet" class="app-view">
+        <div class="section-header" style="margin-bottom: 20px;">
+            <h3>Sovereign Wallet</h3>
         </div>
-        <div style="display: flex; gap: 4px; height: 6px; background: #000; border-radius: 3px; overflow: hidden; border: 1px solid #374151; margin-bottom: 12px;">
-            <div id="progPaid" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
-            <div id="progAccepted" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
-            <div id="progTransit" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
-            <div id="progDelivered" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
-        </div>
-
-        <!-- Rider Dispatch Card -->
-        <div id="riderCard" class="rider-card">
-            <p style="color: var(--cyan); font-weight: bold; margin-bottom: 6px;">🛵 Rider Dispatched!</p>
-            <p><strong>Name:</strong> <span id="riderName">Samuel Kiprono</span></p>
-            <p><strong>Contact:</strong> <a href="tel:+254712345678" id="riderPhone" style="color: var(--neon-green);">+254 712 345 678</a></p>
-            <p><strong>Estimated Arrival (ETA):</strong> <span id="riderEta" style="color: var(--gold);">6 mins (1.2 km away)</span></p>
+        <div class="checkout-panel" style="text-align: center; padding: 30px 15px;">
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;">AVAILABLE BALANCE</p>
+            <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 15px;">KES 12,450.00</h2>
+            <button class="btn-cyan" onclick="alert('Top-up gateway ready.')">Top Up via M-Pesa</button>
         </div>
     </div>
 
-    <!-- Hidden Tenant Input -->
+    <!-- PROFILE VIEW -->
+    <div id="viewProfile" class="app-view">
+        <div class="section-header" style="margin-bottom: 20px;">
+            <h3>Super App Account</h3>
+        </div>
+        <div class="checkout-panel">
+            <p><strong>User:</strong> Robert Maina</p>
+            <p style="margin-top: 8px;"><strong>Location:</strong> Kasarani, Nairobi</p>
+            <p style="margin-top: 8px;"><strong>App Build:</strong> RDS 55 Sovereign Edition</p>
+        </div>
+    </div>
+
+    <!-- Floating Cart Summary Bar -->
+    <div id="floatingCart" class="floating-cart" onclick="switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1])">
+        <div>
+            <strong id="cartItemCount" style="color: var(--neon-green); display: block; font-size: 0.85rem;">0 Items Selected</strong>
+            <span id="cartTotalSum" style="font-size: 0.75rem; color: var(--text-dim);">KES 0</span>
+        </div>
+        <button style="width: auto; padding: 6px 14px; font-size: 0.75rem;">View Checkout ➔</button>
+    </div>
+
     <input type="hidden" id="storeBusinessId" value="BIZ-001">
 
     <!-- Bottom Navigation Bar -->
     <div class="bottom-nav">
-        <a class="nav-item active" onclick="switchNav(this)">
+        <a class="nav-item active" onclick="switchTab('viewHome', this)">
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             Home
         </a>
-        <a class="nav-item" onclick="switchNav(this)">
+        <a class="nav-item" onclick="switchTab('viewOrders', this)">
             <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
             Orders
         </a>
-        <a class="nav-item" onclick="switchNav(this)">
+        <a class="nav-item" onclick="switchTab('viewWallet', this)">
             <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
             Wallet
         </a>
-        <a class="nav-item" onclick="switchNav(this)">
+        <a class="nav-item" onclick="switchTab('viewProfile', this)">
             <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
             Profile
         </a>
@@ -400,17 +491,26 @@
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
         let allProductsCache = [];
+        let cart = {}; 
         let isOwnerMode = false;
 
+        function switchTab(viewId, el) {
+            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
+            document.getElementById(viewId).classList.add('active-view');
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
+            if(el) el.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
         function toggleOwnerMode() {
-            const pin = prompt("Enter Shop Owner PIN to modify prices:");
+            const pin = prompt("Enter Shop Owner PIN to modify inventory prices:");
             if (pin === "2026" || pin === "5555") {
                 isOwnerMode = !isOwnerMode;
                 document.getElementById('appBody').classList.toggle('owner-mode', isOwnerMode);
-                alert(isOwnerMode ? "Owner Mode Unlocked: You can now update prices." : "Locked to Customer Mode.");
+                alert(isOwnerMode ? "Owner Mode Unlocked: Price editing enabled." : "Locked to Customer Mode.");
                 renderCatalog(allProductsCache);
             } else if (pin !== null) {
-                alert("Incorrect Owner PIN.");
+                alert("Incorrect PIN.");
             }
         }
 
@@ -438,6 +538,8 @@
             let html = '';
             products.forEach(p => {
                 const realImage = p.image && p.image.trim() !== "" ? p.image : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80';
+                const qty = cart[p.id] ? cart[p.id].qty : 0;
+
                 html += `
                     <div class="product-card">
                         <div class="image-wrapper">
@@ -449,9 +551,13 @@
                                 <div class="product-price">KES ${p.price}</div>
                             </div>
                             <div>
-                                <button onclick="selectProduct('${p.name}', ${p.price})">Order Now</button>
+                                <div class="quantity-stepper">
+                                    <button onclick="updateCart('${p.id}', '${p.name}', ${p.price}, -1)">-</button>
+                                    <span class="quantity-display" id="qty-${p.id}">${qty}</span>
+                                    <button onclick="updateCart('${p.id}', '${p.name}', ${p.price}, 1)">+</button>
+                                </div>
                                 <div class="owner-controls">
-                                    <button class="btn-cyan" onclick="updatePricePrompt('${p.id}', ${p.price})">Edit Price</button>
+                                    <button class="btn-cyan" style="margin-top:6px;" onclick="updatePricePrompt('${p.id}', ${p.price})">Edit Price</button>
                                 </div>
                             </div>
                         </div>
@@ -461,9 +567,43 @@
             grid.innerHTML = html;
         }
 
+        function updateCart(id, name, price, change) {
+            if (!cart[id]) {
+                cart[id] = { name, price, qty: 0 };
+            }
+            cart[id].qty += change;
+            if (cart[id].qty <= 0) {
+                delete cart[id];
+                document.getElementById(`qty-${id}`).innerText = 0;
+            } else {
+                document.getElementById(`qty-${id}`).innerText = cart[id].qty;
+            }
+            recalculateCartSummary();
+        }
+
+        function recalculateCartSummary() {
+            let totalQty = 0;
+            let totalPrice = 0;
+            for (let id in cart) {
+                totalQty += cart[id].qty;
+                totalPrice += cart[id].price * cart[id].qty;
+            }
+
+            document.getElementById('custAmount').value = totalPrice;
+            const floatingBar = document.getElementById('floatingCart');
+
+            if (totalQty > 0) {
+                floatingBar.classList.add('active');
+                document.getElementById('cartItemCount').innerText = `${totalQty} Unit${totalQty > 1 ? 's' : ''} Selected`;
+                document.getElementById('cartTotalSum').innerText = `KES ${totalPrice.toLocaleString()}`;
+            } else {
+                floatingBar.classList.remove('active');
+            }
+        }
+
         async function updatePricePrompt(id, currentPrice) {
             if (!isOwnerMode) {
-                alert("Restricted: Only the verified shop owner can change product prices.");
+                alert("Restricted: Owner authorization required.");
                 return;
             }
             const newPrice = prompt("Enter fixed price (KES):", currentPrice);
@@ -478,7 +618,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert("Price updated successfully across the sovereign ledger!");
+                    alert("Price updated successfully!");
                     loadStoreCatalog();
                 } else {
                     alert("Failed to update price.");
@@ -492,6 +632,8 @@
             document.getElementById('storeBusinessId').value = tenantId;
             document.getElementById('tenantBadge').innerText = tenantId;
             document.getElementById('activeTenantLabel').innerText = `Namespace: ${tenantId} (${shopName})`;
+            cart = {};
+            recalculateCartSummary();
             loadStoreCatalog();
         }
 
@@ -507,18 +649,13 @@
             renderCatalog(filtered);
         }
 
-        function selectProduct(name, price) {
-            document.getElementById('custAmount').value = price;
-            alert(`Selected: ${name} (KES ${price}). Proceed to M-Pesa checkout below.`);
-        }
-
         async function triggerStkCheckout() {
             const bizId = document.getElementById('storeBusinessId').value;
             const phone = document.getElementById('custPhone').value.trim();
             const amount = document.getElementById('custAmount').value;
 
-            if (!phone || !amount) {
-                alert("Please enter phone number and amount.");
+            if (!phone || !amount || Number(amount) <= 0) {
+                alert("Please add items to your cart and provide a valid phone number.");
                 return;
             }
 
@@ -530,10 +667,10 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert("M-Pesa STK Push sent! Check your phone to enter your PIN.");
+                    alert("M-Pesa STK Push sent! Check your phone to enter PIN.");
                     updateTrackerUI("STAGE_55_PAID");
                 } else {
-                    alert("STK Triggered successfully.");
+                    alert("STK Push triggered.");
                 }
             } catch (err) {
                 alert("M-Pesa payment initiated successfully!");
@@ -544,7 +681,6 @@
         function updateTrackerUI(status) {
             document.getElementById('lifecycleStatus').innerText = status;
             
-            // Progress bars
             document.getElementById('progPaid').style.background = '#222e3c';
             document.getElementById('progAccepted').style.background = '#222e3c';
             document.getElementById('progTransit').style.background = '#222e3c';
@@ -558,7 +694,7 @@
             } else if (status.includes('DISPATCHED') || status.includes('RIDER_ASSIGNED')) {
                 document.getElementById('progPaid').style.background = 'var(--neon-green)';
                 document.getElementById('progAccepted').style.background = 'var(--neon-green)';
-                riderCard.classList.add('active'); // Show rider contact and ETA!
+                riderCard.classList.add('active');
             } else if (status.includes('TRANSIT')) {
                 document.getElementById('progPaid').style.background = 'var(--neon-green)';
                 document.getElementById('progAccepted').style.background = 'var(--neon-green)';
@@ -571,11 +707,6 @@
                 document.getElementById('progDelivered').style.background = 'var(--neon-green)';
                 riderCard.classList.remove('active');
             }
-        }
-
-        function switchNav(el) {
-            document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
-            el.classList.add('active');
         }
 
         try {
