@@ -36,7 +36,7 @@ const DB_FILE = path.join(__dirname, "db.json");
 const DRIVER_SHARE_RATE = 0.95;          
 const PLATFORM_COMMISSION_RATE = 0.05; 
 const SHOP_SURCHARGE_RATE = 0.02;      
-const KRA_TAX_RATE = 0.16;               
+const KRA_TAX_RATE = 0.16;                
 
 const BASE_FARE = 180;                 
 const RATE_PER_KM = 75;                
@@ -133,6 +133,12 @@ async function getMpesaAccessToken() {
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+// Serve the customer storefront by default at the root URL
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "store.html"));
+});
+
 app.use(express.static("."));
 
 function log(type, msg) {
