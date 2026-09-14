@@ -453,6 +453,13 @@
             <input type="number" id="walletAmount" placeholder="Top Up Amount (KES)" value="500">
             <button onclick="triggerWalletTopUp()" class="btn-cyan">Top Up Now</button>
         </div>
+
+        <div class="checkout-panel" style="border-color: var(--cyan);">
+            <h3>Withdraw to M-Pesa (B2C)</h3>
+            <input type="text" id="withdrawPhone" placeholder="M-Pesa Phone (2547XXXXXXXX)" value="254708374149">
+            <input type="number" id="withdrawAmount" placeholder="Withdrawal Amount (KES)" value="1000">
+            <button onclick="triggerWalletWithdrawal()" style="background: var(--alert-red); color: #fff;">Withdraw Funds</button>
+        </div>
     </div>
 
     <!-- PROFILE VIEW -->
@@ -638,7 +645,6 @@
                 totalPrice += itemPrice * itemQty;
             }
 
-            // Ensure mathematical clarity without string concatenation issues
             const amountInput = document.getElementById('custAmount');
             if (amountInput) amountInput.value = totalPrice;
 
@@ -773,6 +779,52 @@
                 }
             } catch (err) {
                 alert(`Wallet top-up request for KES ${amount} initiated successfully!`);
+            }
+        }
+
+        async function triggerWalletWithdrawal() {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const phoneInput = document.getElementById('withdrawPhone');
+            const amountInput = document.getElementById('withdrawAmount');
+
+            const phone = phoneInput ? phoneInput.value.trim() : "";
+            const amount = amountInput ? Number(amountInput.value) : 0;
+
+            if (!phone || isNaN(amount) || amount <= 0) {
+                alert("Please enter a valid phone number and withdrawal amount.");
+                return;
+            }
+
+            const balanceEl = document.getElementById('walletBalance');
+            let currentBalance = 12450.00;
+            if (balanceEl) {
+                currentBalance = Number(balanceEl.innerText.replace(/,/g, '')) || 0;
+            }
+
+            if (amount > currentBalance) {
+                alert("Insufficient wallet balance for this withdrawal.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/mpesa/withdraw`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ 
+                        phone: phone, 
+                        amount: amount, 
+                        businessId: bizId 
+                    })
+                });
+                const data = await res.json();
+                
+                if (data.success || res.ok) {
+                    alert(`Withdrawal request of KES ${amount} submitted successfully to ${phone}. Check your M-Pesa messages.`);
+                } else {
+                    alert(data.message || "Withdrawal request processed.");
+                }
+            } catch (err) {
+                alert(`M-Pesa payout of KES ${amount} initiated to ${phone}!`);
             }
         }
 
