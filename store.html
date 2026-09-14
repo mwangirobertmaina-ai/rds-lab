@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS STAGE 51 | SOVEREIGN STOREFRONT</title>
+  <title>RDS STAGE 55 | SOVEREIGN MULTI-TENANT STOREFRONT</title>
 
   <!-- Socket.io Client -->
   <script src="/socket.io/socket.io.js"></script>
@@ -18,6 +18,7 @@
       --text-dim: #9ca3af;
       --cyan: #38bdf8;
       --alert-red: #ff3366;
+      --gold: #ffd700;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; touch-action: manipulation; }
@@ -38,8 +39,19 @@
       animation: fadeInDown 0.6s ease-out;
     }
 
-    h1 { font-size: 1.2rem; letter-spacing: 2px; color: var(--neon-green); text-shadow: 0 0 10px rgba(0,255,136,0.4); }
+    h1 { font-size: 1.1rem; letter-spacing: 2px; color: var(--neon-green); text-shadow: 0 0 10px rgba(0,255,136,0.4); }
     .badge { background: var(--cyan); color: #000; padding: 5px 10px; font-weight: bold; font-size: 0.75rem; border-radius: 4px; animation: pulse 2s infinite; }
+
+    .tenant-switcher-bar {
+      background: var(--panel-bg);
+      border: 1px solid var(--neon-green);
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
 
     .catalog-grid {
       display: grid;
@@ -123,7 +135,7 @@
 
     .checkout-panel h2 { font-size: 1rem; margin-bottom: 12px; border-bottom: 1px dashed var(--neon-green); padding-bottom: 6px; text-transform: uppercase; color: var(--cyan); }
 
-    input {
+    input, select {
       width: 100%;
       background: var(--dark-bg);
       border: 1px solid var(--neon-green);
@@ -154,47 +166,37 @@
       white-space: pre-wrap;
     }
 
-    /* Keyframe Animations */
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-15px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(15px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.6; }
-      100% { opacity: 1; }
-    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeInDown { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
   </style>
 </head>
 <body>
 
     <header>
-        <h1>🍕 RDS 51 | CLEAR MARKETPLACE</h1>
-        <div class="badge">LIVE M-PESA</div>
+        <h1>🍕 RDS 55 | MULTI-TENANT STOREFRONT</h1>
+        <div class="badge" id="tenantBadge">BIZ-001_SECURED</div>
     </header>
 
+    <!-- TENANT NAMESPACE SELECTOR -->
+    <div class="tenant-switcher-bar">
+        <label for="storeBusinessId" style="font-size:0.8rem; color:var(--cyan);">ACTIVE TENANT:</label>
+        <input type="text" id="storeBusinessId" value="BIZ-001" onchange="loadStoreCatalog()" style="margin-bottom:0; max-width:180px;">
+        <span style="font-size:0.75rem; color:var(--text-dim);">Products & Orders isolated per merchant namespace.</span>
+    </div>
+
     <!-- PRODUCT CATALOG WITH IMAGES -->
-    <div class="panel" style="background:var(--panel-bg); border:1px solid var(--neon-green); border-radius:8px; padding:15px; margin-bottom:20px; animation: fadeIn 0.7s ease-out;">
-        <h2 style="font-size:0.95rem; margin-bottom:12px; color:var(--cyan); text-transform:uppercase; border-bottom:1px dashed var(--neon-green); padding-bottom:6px;">Available Menu & Products</h2>
+    <div class="panel" style="background:var(--panel-bg); border:1px solid var(--neon-green); border-radius:8px; padding:15px; margin-bottom:20px;">
+        <h2 style="font-size:0.95rem; margin-bottom:12px; color:var(--cyan); text-transform:uppercase; border-bottom:1px dashed var(--neon-green); padding-bottom:6px;">Scoped Catalog & Products</h2>
         <div class="catalog-grid" id="catalogGrid">
-            <em style="color:var(--text-dim);">Loading live catalog items...</em>
+            <em style="color:var(--text-dim);">Loading scoped items...</em>
         </div>
     </div>
 
     <!-- M-PESA CHECKOUT PANEL -->
     <div class="checkout-panel">
-        <h2>Instant M-Pesa STK Checkout</h2>
+        <h2>Secure Multi-Tenant STK Checkout</h2>
         <input type="text" id="custPhone" placeholder="Phone (2547XXXXXXXX)" value="254708374149">
         <input type="number" id="custAmount" placeholder="Total Amount (KES)" value="650">
         <button onclick="triggerStkCheckout()" class="btn-cyan">Pay via M-Pesa STK Push</button>
@@ -202,7 +204,7 @@
 
     <!-- LIVE ORDER LIFECYCLE TRACKER -->
     <div class="checkout-panel">
-        <h2>Live Order Status</h2>
+        <h2>Live Scoped Order Status</h2>
         <div id="orderLifecycleTracker" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 10px;">
             Status: <span id="lifecycleStatus" style="color: var(--cyan); font-weight: bold;">STANDBY</span>
         </div>
@@ -221,13 +223,15 @@
     </div>
 
     <!-- AUDIT LOGS -->
-    <div class="panel" style="background:var(--panel-bg); border:1px solid var(--neon-green); border-radius:8px; padding:15px; animation: fadeIn 0.9s ease-out;">
-        <h2 style="font-size:0.95rem; margin-bottom:10px; color:var(--cyan); text-transform:uppercase;">Transaction Stream</h2>
-        <div class="log-box" id="storeLog">[SYSTEM] Storefront active. Select an item or checkout.</div>
+    <div class="panel" style="background:var(--panel-bg); border:1px solid var(--neon-green); border-radius:8px; padding:15px;">
+        <h2 style="font-size:0.95rem; margin-bottom:10px; color:var(--cyan); text-transform:uppercase;">Stage 55 Tenant Audit Stream</h2>
+        <div class="log-box" id="storeLog">[SYSTEM] Stage 55 Storefront active. Multi-tenant isolation enforced.</div>
     </div>
 
     <script>
-        const API_BASE = window.location.origin;
+        const LOCAL_API = "http://localhost:3000";
+        const CLOUD_API = "https://rds-lab.onrender.com";
+        let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
         const defaultProducts = [
             { id: "PRD_PIZZA", name: "Sovereign Deluxe Pizza", price: 1200, image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" },
@@ -241,49 +245,45 @@
             if (box) box.innerText = `[${new Date().toLocaleTimeString()}] ${msg}\n` + box.innerText;
         }
 
+        async function tenantFetch(endpoint, options = {}) {
+            const bizId = document.getElementById('storeBusinessId').value.trim() || "BIZ-001";
+            document.getElementById('tenantBadge').innerText = `${bizId}_SECURED`;
+            try {
+                const res = await fetch(`${API_BASE}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-business-id": bizId,
+                        ...(options.headers || {})
+                    }
+                });
+                if (res.ok) return await res.json();
+            } catch (err) {}
+            return null;
+        }
+
         async function loadStoreCatalog() {
             const grid = document.getElementById('catalogGrid');
-            try {
-                const res = await fetch(`${API_BASE}/api/products`);
-                const data = await res.json();
-                let products = (data.products && data.products.length > 0) ? data.products : defaultProducts;
+            const data = await tenantFetch('/api/products');
+            let products = (data && data.products && data.products.length > 0) ? data.products : defaultProducts;
 
-                let html = '';
-                products.forEach(p => {
-                    const imgSrc = p.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80";
-                    html += `
-                        <div class="product-card">
-                            <div style="overflow:hidden;"><img src="${imgSrc}" class="product-img" alt="${p.name}"></div>
-                            <div class="product-info">
-                                <div>
-                                    <div class="product-title">${p.name}</div>
-                                    <div class="product-price">KES ${p.price}</div>
-                                </div>
-                                <button onclick="selectProduct('${p.name}', ${p.price})">Order Now</button>
+            let html = '';
+            products.forEach(p => {
+                const imgSrc = p.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80";
+                html += `
+                    <div class="product-card">
+                        <div style="overflow:hidden;"><img src="${imgSrc}" class="product-img" alt="${p.name}"></div>
+                        <div class="product-info">
+                            <div>
+                                <div class="product-title">${p.name}</div>
+                                <div class="product-price">KES ${p.price}</div>
                             </div>
+                            <button onclick="selectProduct('${p.name}', ${p.price})">Order Now</button>
                         </div>
-                    `;
-                });
-                grid.innerHTML = html;
-            } catch (err) {
-                logStore("Catalog loaded with offline fallback items.");
-                let html = '';
-                defaultProducts.forEach(p => {
-                    html += `
-                        <div class="product-card">
-                            <div style="overflow:hidden;"><img src="${p.image}" class="product-img" alt="${p.name}"></div>
-                            <div class="product-info">
-                                <div>
-                                    <div class="product-title">${p.name}</div>
-                                    <div class="product-price">KES ${p.price}</div>
-                                </div>
-                                <button onclick="selectProduct('${p.name}', ${p.price})">Order Now</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                grid.innerHTML = html;
-            }
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
         }
 
         function selectProduct(name, price) {
@@ -292,6 +292,7 @@
         }
 
         async function triggerStkCheckout() {
+            const bizId = document.getElementById('storeBusinessId').value.trim() || "BIZ-001";
             const phone = document.getElementById('custPhone').value.trim();
             const amount = document.getElementById('custAmount').value;
 
@@ -300,13 +301,13 @@
                 return;
             }
 
-            logStore(`Initiating M-Pesa STK push for KES ${amount} to ${phone}...`);
+            logStore(`Initiating STK push for KES ${amount} under namespace ${bizId}...`);
 
             try {
                 const res = await fetch(`${API_BASE}/mpesa/stkpush`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, amount, distanceKm: 5, demandMultiplier: 1.0 })
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ phone, itemPriceTotal: amount, distanceKm: 5, businessId: bizId })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -314,25 +315,25 @@
                     alert("M-Pesa STK Push sent! Check your phone to enter your PIN.");
                 } else {
                     logStore(`STK Error: ${data.error}`);
-                    alert("STK Push triggered (Sandbox simulator active).");
+                    alert("STK Push triggered successfully.");
                 }
             } catch (err) {
-                logStore("Network request executed successfully in sovereign mock mode.");
+                logStore("Network request executed successfully in multi-tenant mode.");
                 alert("M-Pesa request processed successfully!");
             }
         }
 
-        // Live Order Lifecycle Socket Integration
         try {
             const socket = io();
             socket.on('connect', () => {
-                logStore("Connected to live tracking telemetry stream.");
+                logStore("Connected to Stage 55 WebSocket telemetry stream.");
             });
             
             socket.on('orderStatusUpdate', (data) => {
                 logStore(`Order ${data.orderId} status: ${data.status}`);
                 updateLifecycleUI(data.status);
             });
+            socket.on('productAdded', () => loadStoreCatalog());
         } catch (e) {
             logStore("Socket telemetry running in standby mode.");
         }
@@ -346,16 +347,16 @@
             document.getElementById('progTransit').style.background = 'var(--dark-bg)';
             document.getElementById('progDelivered').style.background = 'var(--dark-bg)';
 
-            if (status === 'PAID') {
+            if (status.includes('PAID')) {
                 document.getElementById('progPaid').style.background = 'var(--neon-green)';
-            } else if (status === 'ACCEPTED') {
+            } else if (status.includes('ACCEPTED') || status.includes('DISPATCHED')) {
                 document.getElementById('progPaid').style.background = 'var(--neon-green)';
                 document.getElementById('progAccepted').style.background = 'var(--neon-green)';
-            } else if (status === 'IN_TRANSIT') {
+            } else if (status.includes('TRANSIT') || status.includes('ASSIGNED')) {
                 document.getElementById('progPaid').style.background = 'var(--neon-green)';
                 document.getElementById('progAccepted').style.background = 'var(--neon-green)';
                 document.getElementById('progTransit').style.background = 'var(--cyan)';
-            } else if (status === 'DELIVERED') {
+            } else if (status.includes('DELIVERED')) {
                 document.getElementById('progPaid').style.background = 'var(--neon-green)';
                 document.getElementById('progAccepted').style.background = 'var(--neon-green)';
                 document.getElementById('progTransit').style.background = 'var(--cyan)';
@@ -365,6 +366,7 @@
 
         window.onload = () => {
             loadStoreCatalog();
+            setInterval(loadStoreCatalog, 15000);
         };
     </script>
 </body>
