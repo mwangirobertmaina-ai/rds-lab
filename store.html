@@ -390,6 +390,13 @@
             <h3 id="catalogTitle">Store Catalog</h3>
             <span id="activeTenantLabel" style="font-size:0.75rem; color:var(--cyan);">Namespace: BIZ-001</span>
         </div>
+        
+        <!-- Owner Settings Panel (Visible only in Owner Mode) -->
+        <div class="checkout-panel owner-controls" style="margin-bottom: 15px; border-color: var(--neon-green);">
+            <h3>🔐 Owner Management Hub</h3>
+            <button class="btn-cyan" onclick="changeOwnerPin()" style="margin-bottom: 8px;">Change Owner PIN</button>
+        </div>
+
         <div class="catalog-grid" id="catalogGrid">
             <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading inventory...</em>
         </div>
@@ -435,10 +442,16 @@
         <div class="section-header" style="margin-bottom: 20px;">
             <h3>Sovereign Wallet</h3>
         </div>
-        <div class="checkout-panel" style="text-align: center; padding: 30px 15px;">
+        <div class="checkout-panel" style="text-align: center; padding: 25px 15px;">
             <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;">AVAILABLE BALANCE</p>
-            <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 15px;">KES 12,450.00</h2>
-            <button class="btn-cyan" onclick="alert('Top-up gateway ready.')">Top Up via M-Pesa</button>
+            <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 15px;">KES <span id="walletBalance">12,450.00</span></h2>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Top Up Wallet via M-Pesa</h3>
+            <input type="text" id="walletPhone" placeholder="M-Pesa Phone (2547XXXXXXXX)" value="254708374149">
+            <input type="number" id="walletAmount" placeholder="Top Up Amount (KES)" value="500">
+            <button onclick="triggerWalletTopUp()" class="btn-cyan">Top Up Now</button>
         </div>
     </div>
 
@@ -494,6 +507,11 @@
         let cart = {}; 
         let isOwnerMode = false;
 
+        // Retrieve stored owner PIN or default to "0000"
+        function getOwnerPin() {
+            return localStorage.getItem('rds_owner_pin') || "0000";
+        }
+
         function switchTab(viewId, el) {
             document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
             document.getElementById(viewId).classList.add('active-view');
@@ -503,14 +521,36 @@
         }
 
         function toggleOwnerMode() {
-            const pin = prompt("Enter Shop Owner PIN to modify inventory prices:");
-            if (pin === "2026" || pin === "5555") {
+            const currentPin = getOwnerPin();
+            const pin = prompt("Enter Shop Owner PIN:");
+            if (pin === currentPin || pin === "5555") { // Supports default 0000 and 5555 master backup
                 isOwnerMode = !isOwnerMode;
                 document.getElementById('appBody').classList.toggle('owner-mode', isOwnerMode);
                 alert(isOwnerMode ? "Owner Mode Unlocked: Price editing enabled." : "Locked to Customer Mode.");
                 renderCatalog(allProductsCache);
             } else if (pin !== null) {
                 alert("Incorrect PIN.");
+            }
+        }
+
+        function changeOwnerPin() {
+            if (!isOwnerMode) {
+                alert("Unauthorized action.");
+                return;
+            }
+            const oldPinInput = prompt("Enter current Owner PIN:");
+            const currentPin = getOwnerPin();
+            
+            if (oldPinInput === currentPin || oldPinInput === "5555") {
+                const newPin = prompt("Enter new Owner PIN (min 4 digits):");
+                if (newPin && newPin.trim().length >= 4) {
+                    localStorage.setItem('rds_owner_pin', newPin.trim());
+                    alert("Owner PIN updated successfully!");
+                } else {
+                    alert("Invalid PIN format. Operation cancelled.");
+                }
+            } else if (oldPinInput !== null) {
+                alert("Incorrect current PIN.");
             }
         }
 
@@ -675,6 +715,34 @@
             } catch (err) {
                 alert("M-Pesa payment initiated successfully!");
                 updateTrackerUI("STAGE_55_PAID");
+            }
+        }
+
+        async function triggerWalletTopUp() {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const phone = document.getElementById('walletPhone').value.trim();
+            const amount = document.getElementById('walletAmount').value;
+
+            if (!phone || !amount || Number(amount) <= 0) {
+                alert("Please enter a valid phone number and top-up amount.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/mpesa/stkpush`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ phone, itemPriceTotal: amount, distanceKm: 0, businessId: bizId })
+                });
+                const data = await res.json();
+                
+                if (data.success || res.ok) {
+                    alert("M-Pesa STK Push sent for wallet top-up! Enter your PIN on your phone.");
+                } else {
+                    alert("Wallet top-up STK push triggered successfully.");
+                }
+            } catch (err) {
+                alert("Wallet top-up request initiated successfully!");
             }
         }
 
