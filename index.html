@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS STAGE 54+ SOVEREIGN ENTERPRISE COMMAND CENTER</title>
+    <title>RDS STAGE 55 SOVEREIGN MULTI-TENANT COMMAND CENTER</title>
     <!-- Leaflet CSS & JS for Real-Time Spatial Telemetry -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -37,7 +37,7 @@
             margin-bottom: 20px;
         }
 
-        h1 { font-size: 1.4rem; letter-spacing: 2px; color: var(--neon-green); }
+        h1 { font-size: 1.3rem; letter-spacing: 2px; color: var(--neon-green); }
         h2 { font-size: 0.95rem; border-bottom: 1px dashed var(--neon-green); padding-bottom: 6px; margin-bottom: 12px; color: var(--neon-green); text-transform: uppercase; }
 
         .badge {
@@ -154,8 +154,8 @@
 <body>
 
     <header>
-        <h1>⚡ RDS STAGE 54+ SOVEREIGN COMMAND CENTER</h1>
-        <div class="badge" id="system-status">ONLINE_EVENT_DRIVEN</div>
+        <h1>⚡ RDS STAGE 55 MULTI-TENANT COMMAND CENTER</h1>
+        <div class="badge" id="system-status">TENANT_ISOLATED</div>
     </header>
 
     <!-- TOP KPI METRICS ROW -->
@@ -181,12 +181,19 @@
     <!-- MAIN TWO-COLUMN DASHBOARD LAYOUT -->
     <div class="main-grid">
         <div>
+            <!-- Tenant Context Switcher Panel -->
+            <div class="panel">
+                <h2>STAGE 55 TENANT NAMESPACE SWITCHER</h2>
+                <input type="text" id="active-tenant-id" placeholder="Active Business ID (e.g. BIZ-001)" value="BIZ-001" onchange="refreshDashboard()">
+                <div class="small-text">Scoped isolation active: Queries automatically append tenant headers.</div>
+            </div>
+
             <!-- STK Gateway Panel -->
             <div class="panel">
-                <h2>STAGE 54 HIGH-SPEED STK GATEWAY</h2>
+                <h2>STAGE 55 HIGH-SPEED STK GATEWAY</h2>
                 <input type="text" id="stk-phone" placeholder="Customer Phone (e.g. 2547XXXXXXXX)" value="254708374149">
                 <input type="number" id="stk-amount" placeholder="Override Amount (KES - Optional)">
-                <button onclick="executeStkPush()" class="btn-cyan">Execute Live STK Push</button>
+                <button onclick="executeStkPush()" class="btn-cyan">Execute Multi-Tenant STK Push</button>
                 <div class="status-msg" id="stk-status"></div>
             </div>
 
@@ -199,11 +206,10 @@
             <!-- Merchant Inventory Panel -->
             <div class="panel">
                 <h2>MERCHANT PRODUCT & INVENTORY CATALOG</h2>
-                <input type="text" id="prod-biz" placeholder="Business ID (e.g. BIZ-001)" value="BIZ-001">
                 <input type="text" id="prod-name" placeholder="Product Name">
                 <input type="number" id="prod-price" placeholder="Price (KES)">
                 <input type="number" id="prod-stock" placeholder="Initial Stock">
-                <button onclick="publishProduct()">Publish Product</button>
+                <button onclick="publishProduct()">Publish Scoped Product</button>
                 <div style="max-height: 160px; overflow-y: auto;">
                     <table>
                         <thead>
@@ -220,7 +226,7 @@
         <div>
             <!-- Audited Ledger Panel -->
             <div class="panel">
-                <h2>AUDITED DOUBLE-ENTRY LEDGER</h2>
+                <h2>AUDITED TENANT LEDGER</h2>
                 <div style="max-height: 200px; overflow-y: auto;">
                     <table>
                         <thead>
@@ -253,13 +259,17 @@
             <div class="panel">
                 <h2>CONSOLE STREAM</h2>
                 <div class="console-box" id="console-stream">
-                    [SYSTEM] Stage 54+ Sovereign Command Center active (Event-Driven Socket Mode).<br>
+                    [SYSTEM] Stage 55 Multi-Tenant Sovereign Command Center active.<br>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        const LOCAL_API = "http://localhost:3000";
+        const CLOUD_API = "https://rds-lab.onrender.com";
+        let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
+
         const socket = io();
 
         function logConsole(msg) {
@@ -283,10 +293,9 @@
 
         let driverMarkers = {};
 
-        // WebSocket Event Subscriptions (Zero Polling Overhead)
         socket.on('connect', () => {
-            logConsole("WebSocket matrix link established successfully.");
-            refreshDashboard(); // Fetch state once upon successful connection
+            logConsole("Stage 55 WebSocket telemetry link established.");
+            refreshDashboard();
         });
 
         socket.on('orderStatusUpdate', (data) => {
@@ -295,7 +304,7 @@
         });
 
         socket.on('payoutProcessed', (data) => {
-            logConsole(`Instant B2C Payout settled for driver ${data.driverId}: KES ${data.amount}`);
+            logConsole(`Instant B2C Payout settled for owner ${data.ownerId}: KES ${data.amount}`);
             refreshDashboard();
         });
 
@@ -313,9 +322,26 @@
             }
         });
 
+        async function tenantFetch(endpoint, options = {}) {
+            const currentBiz = document.getElementById('active-tenant-id').value.trim() || "BIZ-001";
+            try {
+                const res = await fetch(`${API_BASE}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-business-id": currentBiz,
+                        ...(options.headers || {})
+                    }
+                });
+                if (res.ok) return await res.json();
+            } catch (err) {}
+            return null;
+        }
+
         async function executeStkPush() {
             const phone = document.getElementById('stk-phone').value;
             const amount = document.getElementById('stk-amount').value;
+            const businessId = document.getElementById('active-tenant-id').value.trim() || "BIZ-001";
             const statusDiv = document.getElementById('stk-status');
 
             if (!phone) {
@@ -325,13 +351,13 @@
 
             statusDiv.style.color = "var(--cyan)";
             statusDiv.innerText = "Dispatching high-speed STK Push to Daraja gateway...";
-            logConsole(`Initiating STK Push for ${phone}...`);
+            logConsole(`Initiating STK Push for ${phone} under namespace ${businessId}...`);
 
             try {
-                const res = await fetch('/mpesa/stkpush', {
+                const res = await fetch(`${API_BASE}/mpesa/stkpush`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, amount: amount ? Number(amount) : null, distanceKm: 5 })
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': businessId },
+                    body: JSON.stringify({ phone, amount: amount ? Number(amount) : null, distanceKm: 5, businessId })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -352,7 +378,7 @@
         }
 
         async function publishProduct() {
-            const businessId = document.getElementById('prod-biz').value;
+            const businessId = document.getElementById('active-tenant-id').value.trim() || "BIZ-001";
             const name = document.getElementById('prod-name').value;
             const price = document.getElementById('prod-price').value;
             const stock = document.getElementById('prod-stock').value;
@@ -362,29 +388,27 @@
                 return;
             }
 
-            try {
-                const res = await fetch('/api/products', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ businessId, name, price, stock })
-                });
-                const data = await res.json();
-                logConsole(`Published product successfully: ${name} (KES ${price})`);
+            const res = await tenantFetch('/api/products', {
+                method: 'POST',
+                body: JSON.stringify({ businessId, name, price, stock })
+            });
+
+            if (res && res.success) {
+                logConsole(`Published product successfully under ${businessId}: ${name} (KES ${price})`);
                 document.getElementById('prod-name').value = '';
                 document.getElementById('prod-price').value = '';
                 document.getElementById('prod-stock').value = '';
                 refreshDashboard();
-            } catch (err) {
-                logConsole(`Product publishing error: ${err.message}`);
+            } else {
+                logConsole(`Product publishing error: ${res?.error || 'Unauthorized'}`);
             }
         }
 
         async function refreshDashboard() {
             try {
-                // 1. Fetch KRA Compliance Vault
-                const kraRes = await fetch('/api/compliance/kra-vault');
-                const kraData = await kraRes.json();
-                if (kraData.success && kraData.kraReport) {
+                // 1. Fetch Scoped KRA Compliance Vault
+                const kraData = await tenantFetch('/api/compliance/kra-vault');
+                if (kraData && kraData.success && kraData.kraReport) {
                     const rep = kraData.kraReport;
                     document.getElementById('metric-volume').innerText = `KES ${rep.metrics.grossVolume.toLocaleString()}`;
                     document.getElementById('metric-vat').innerText = `KES ${rep.metrics.vatLiability.toLocaleString()}`;
@@ -399,7 +423,7 @@
                 }
 
                 // 2. Fetch Drivers / Fleet Telemetry
-                const driversRes = await fetch('/drivers');
+                const driversRes = await fetch(`${API_BASE}/drivers`);
                 const driversData = await driversRes.json();
                 const drivers = driversData.drivers || driversData || [];
                 document.getElementById('metric-drivers').innerText = drivers.length;
@@ -428,13 +452,12 @@
                     roster.innerHTML = dHtml;
                 }
 
-                // 3. Fetch Products
-                const prodRes = await fetch('/api/products');
-                const prodData = await prodRes.json();
-                const products = prodData.products || [];
+                // 3. Fetch Scoped Products
+                const prodData = await tenantFetch('/api/products');
+                const products = (prodData && prodData.products) || [];
                 const pTable = document.querySelector('#product-table-body');
                 if (products.length === 0) {
-                    pTable.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No products registered yet.</td></tr>`;
+                    pTable.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No products found for this tenant.</td></tr>`;
                 } else {
                     let pHtml = "";
                     products.forEach(p => {
@@ -443,13 +466,12 @@
                     pTable.innerHTML = pHtml;
                 }
 
-                // 4. Fetch Audited Ledger
-                const ledgerRes = await fetch('/ledger');
-                const ledgerData = await ledgerRes.json();
-                const ledger = ledgerData.ledger || ledgerData || [];
+                // 4. Fetch Scoped Ledger
+                const ledgerData = await tenantFetch('/ledger');
+                const ledger = (ledgerData && ledgerData.ledger) || [];
                 const lTable = document.querySelector('#ledger-table-body');
                 if (ledger.length === 0) {
-                    lTable.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No audited ledger records found.</td></tr>`;
+                    lTable.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No audited ledger records found for tenant.</td></tr>`;
                 } else {
                     let lHtml = "";
                     ledger.slice(-8).reverse().forEach(l => {
@@ -458,12 +480,9 @@
                     lTable.innerHTML = lHtml;
                 }
 
-            } catch (err) {
-                // Silently handle connection drops
-            }
+            } catch (err) {}
         }
 
-        // Initialize Leaflet map size and load initial state once (NO POLLING LOOPS)
         setTimeout(() => { map.invalidateSize(); }, 500);
         refreshDashboard();
     </script>
