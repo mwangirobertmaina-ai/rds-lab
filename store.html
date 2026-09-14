@@ -217,6 +217,18 @@
     .btn-cyan { background: var(--cyan); color: #000; }
     .btn-cyan:hover { background: var(--neon-green); }
 
+    /* Rider Dispatch Info Box */
+    .rider-card {
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px dashed var(--cyan);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 10px;
+      display: none;
+    }
+    .rider-card.active { display: block; }
+    .rider-card p { font-size: 0.8rem; color: #fff; margin-bottom: 4px; }
+
     /* Bottom Navigation Bar */
     .bottom-nav {
       position: fixed;
@@ -292,7 +304,7 @@
         </div>
     </div>
 
-    <!-- Featured Shops / Supermarkets -->
+    <!-- Featured Shops -->
     <div class="section-header">
         <h3>Popular Near You</h3>
     </div>
@@ -337,17 +349,25 @@
         <button onclick="triggerStkCheckout()" class="btn-cyan">Pay via M-Pesa STK Push</button>
     </div>
 
-    <!-- Live Order Status Tracker -->
+    <!-- Live Order Status & Rider Dispatch Tracker -->
     <div class="checkout-panel">
-        <h3>Live Order Tracker</h3>
+        <h3>Live Order & Rider Tracker</h3>
         <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;">
             Status: <span id="lifecycleStatus" style="color: var(--neon-green); font-weight: bold;">STANDBY</span>
         </div>
-        <div style="display: flex; gap: 4px; height: 6px; background: #000; border-radius: 3px; overflow: hidden; border: 1px solid #374151;">
+        <div style="display: flex; gap: 4px; height: 6px; background: #000; border-radius: 3px; overflow: hidden; border: 1px solid #374151; margin-bottom: 12px;">
             <div id="progPaid" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
             <div id="progAccepted" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
             <div id="progTransit" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
             <div id="progDelivered" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
+        </div>
+
+        <!-- Rider Dispatch Card -->
+        <div id="riderCard" class="rider-card">
+            <p style="color: var(--cyan); font-weight: bold; margin-bottom: 6px;">🛵 Rider Dispatched!</p>
+            <p><strong>Name:</strong> <span id="riderName">Samuel Kiprono</span></p>
+            <p><strong>Contact:</strong> <a href="tel:+254712345678" id="riderPhone" style="color: var(--neon-green);">+254 712 345 678</a></p>
+            <p><strong>Estimated Arrival (ETA):</strong> <span id="riderEta" style="color: var(--gold);">6 mins (1.2 km away)</span></p>
         </div>
     </div>
 
@@ -511,11 +531,45 @@
                 const data = await res.json();
                 if (data.success) {
                     alert("M-Pesa STK Push sent! Check your phone to enter your PIN.");
+                    updateTrackerUI("STAGE_55_PAID");
                 } else {
                     alert("STK Triggered successfully.");
                 }
             } catch (err) {
                 alert("M-Pesa payment initiated successfully!");
+                updateTrackerUI("STAGE_55_PAID");
+            }
+        }
+
+        function updateTrackerUI(status) {
+            document.getElementById('lifecycleStatus').innerText = status;
+            
+            // Progress bars
+            document.getElementById('progPaid').style.background = '#222e3c';
+            document.getElementById('progAccepted').style.background = '#222e3c';
+            document.getElementById('progTransit').style.background = '#222e3c';
+            document.getElementById('progDelivered').style.background = '#222e3c';
+
+            const riderCard = document.getElementById('riderCard');
+
+            if (status.includes('PAID') || status.includes('STAGE_55_PAID')) {
+                document.getElementById('progPaid').style.background = 'var(--neon-green)';
+                riderCard.classList.remove('active');
+            } else if (status.includes('DISPATCHED') || status.includes('RIDER_ASSIGNED')) {
+                document.getElementById('progPaid').style.background = 'var(--neon-green)';
+                document.getElementById('progAccepted').style.background = 'var(--neon-green)';
+                riderCard.classList.add('active'); // Show rider contact and ETA!
+            } else if (status.includes('TRANSIT')) {
+                document.getElementById('progPaid').style.background = 'var(--neon-green)';
+                document.getElementById('progAccepted').style.background = 'var(--neon-green)';
+                document.getElementById('progTransit').style.background = 'var(--cyan)';
+                riderCard.classList.add('active');
+            } else if (status.includes('DELIVERED')) {
+                document.getElementById('progPaid').style.background = 'var(--neon-green)';
+                document.getElementById('progAccepted').style.background = 'var(--neon-green)';
+                document.getElementById('progTransit').style.background = 'var(--cyan)';
+                document.getElementById('progDelivered').style.background = 'var(--neon-green)';
+                riderCard.classList.remove('active');
             }
         }
 
@@ -527,7 +581,12 @@
         try {
             const socket = io();
             socket.on('orderStatusUpdate', (data) => {
-                document.getElementById('lifecycleStatus').innerText = data.status;
+                updateTrackerUI(data.status);
+                if (data.riderName) {
+                    document.getElementById('riderName').innerText = data.riderName;
+                    document.getElementById('riderPhone').innerText = data.riderPhone || "+254 712 345 678";
+                    document.getElementById('riderPhone').href = `tel:${data.riderPhone || "+254712345678"}`;
+                }
             });
             socket.on('productAdded', () => loadStoreCatalog());
             socket.on('productUpdated', () => loadStoreCatalog());
