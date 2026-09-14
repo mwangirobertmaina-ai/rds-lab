@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS STAGE 51+ SOVEREIGN ENTERPRISE COMMAND CENTER</title>
+    <title>RDS STAGE 54+ SOVEREIGN ENTERPRISE COMMAND CENTER</title>
     <!-- Leaflet CSS & JS for Real-Time Spatial Telemetry -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -154,8 +154,8 @@
 <body>
 
     <header>
-        <h1>⚡ RDS STAGE 51+ SOVEREIGN COMMAND CENTER</h1>
-        <div class="badge" id="system-status">ONLINE_STABLE</div>
+        <h1>⚡ RDS STAGE 54+ SOVEREIGN COMMAND CENTER</h1>
+        <div class="badge" id="system-status">ONLINE_EVENT_DRIVEN</div>
     </header>
 
     <!-- TOP KPI METRICS ROW -->
@@ -174,7 +174,7 @@
         </div>
         <div class="card">
             <h3>Secured Vault Status</h3>
-            <div class="value" style="color: var(--neon-green);" id="metric-vault">CRYPTOGRAPHIC_LOCKED</div>
+            <div class="value" style="color: var(--neon-green);" id="metric-vault">BANK_GRADE_CRYPTOGRAPHIC_LOCKED</div>
         </div>
     </div>
 
@@ -183,7 +183,7 @@
         <div>
             <!-- STK Gateway Panel -->
             <div class="panel">
-                <h2>STAGE 51 HIGH-SPEED STK GATEWAY</h2>
+                <h2>STAGE 54 HIGH-SPEED STK GATEWAY</h2>
                 <input type="text" id="stk-phone" placeholder="Customer Phone (e.g. 2547XXXXXXXX)" value="254708374149">
                 <input type="number" id="stk-amount" placeholder="Override Amount (KES - Optional)">
                 <button onclick="executeStkPush()" class="btn-cyan">Execute Live STK Push</button>
@@ -253,7 +253,7 @@
             <div class="panel">
                 <h2>CONSOLE STREAM</h2>
                 <div class="console-box" id="console-stream">
-                    [SYSTEM] Stage 51+ Sovereign Command Center active.<br>
+                    [SYSTEM] Stage 54+ Sovereign Command Center active (Event-Driven Socket Mode).<br>
                 </div>
             </div>
         </div>
@@ -283,9 +283,10 @@
 
         let driverMarkers = {};
 
+        // WebSocket Event Subscriptions (Zero Polling Overhead)
         socket.on('connect', () => {
             logConsole("WebSocket matrix link established successfully.");
-            refreshDashboard();
+            refreshDashboard(); // Fetch state once upon successful connection
         });
 
         socket.on('orderStatusUpdate', (data) => {
@@ -296,6 +297,20 @@
         socket.on('payoutProcessed', (data) => {
             logConsole(`Instant B2C Payout settled for driver ${data.driverId}: KES ${data.amount}`);
             refreshDashboard();
+        });
+
+        socket.on('productAdded', (data) => {
+            logConsole(`Product broadcast received: ${data.name}`);
+            refreshDashboard();
+        });
+
+        socket.on('driver_location_broadcast', (data) => {
+            if (driverMarkers[data.driverId]) {
+                driverMarkers[data.driverId].setLatLng([data.lat, data.lng]);
+            } else {
+                driverMarkers[data.driverId] = L.marker([data.lat, data.lng]).addTo(map)
+                    .bindPopup(`<b>Driver ${data.driverId}</b><br>Status: ONLINE`);
+            }
         });
 
         async function executeStkPush() {
@@ -354,14 +369,11 @@
                     body: JSON.stringify({ businessId, name, price, stock })
                 });
                 const data = await res.json();
-                // Even if custom endpoint differs, handle gracefully with UI sync
-                const tbody = document.getElementById('product-table-body');
-                if (tbody.innerHTML.includes('No products')) tbody.innerHTML = '';
-                tbody.innerHTML += `<tr><td>${name}</td><td>KES ${price}</td><td>${stock || 0}</td></tr>`;
                 logConsole(`Published product successfully: ${name} (KES ${price})`);
                 document.getElementById('prod-name').value = '';
                 document.getElementById('prod-price').value = '';
                 document.getElementById('prod-stock').value = '';
+                refreshDashboard();
             } catch (err) {
                 logConsole(`Product publishing error: ${err.message}`);
             }
@@ -416,7 +428,22 @@
                     roster.innerHTML = dHtml;
                 }
 
-                // 3. Fetch Audited Ledger
+                // 3. Fetch Products
+                const prodRes = await fetch('/api/products');
+                const prodData = await prodRes.json();
+                const products = prodData.products || [];
+                const pTable = document.querySelector('#product-table-body');
+                if (products.length === 0) {
+                    pTable.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No products registered yet.</td></tr>`;
+                } else {
+                    let pHtml = "";
+                    products.forEach(p => {
+                        pHtml += `<tr><td>${p.name}</td><td>KES ${p.price}</td><td>${p.stock || 0}</td></tr>`;
+                    });
+                    pTable.innerHTML = pHtml;
+                }
+
+                // 4. Fetch Audited Ledger
                 const ledgerRes = await fetch('/ledger');
                 const ledgerData = await ledgerRes.json();
                 const ledger = ledgerData.ledger || ledgerData || [];
@@ -432,13 +459,12 @@
                 }
 
             } catch (err) {
-                // Silently handle polling reconnect cycles
+                // Silently handle connection drops
             }
         }
 
-        // Initialize Leaflet map size and start telemetry poll
+        // Initialize Leaflet map size and load initial state once (NO POLLING LOOPS)
         setTimeout(() => { map.invalidateSize(); }, 500);
-        setInterval(refreshDashboard, 5000);
         refreshDashboard();
     </script>
 </body>
