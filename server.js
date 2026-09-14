@@ -36,7 +36,7 @@ const DB_FILE = path.join(__dirname, "db.json");
 const DRIVER_SHARE_RATE = 0.95;          
 const PLATFORM_COMMISSION_RATE = 0.05; 
 const SHOP_SURCHARGE_RATE = 0.02;      
-const KRA_TAX_RATE = 0.16;             
+const KRA_TAX_RATE = 0.16;               
 
 const BASE_FARE = 180;                 
 const RATE_PER_KM = 75;                
@@ -348,11 +348,12 @@ app.get('/api/products', enforceTenantIsolation, (req, res) => {
 app.post('/api/products', enforceTenantIsolation, async (req, res) => {
   try {
     ensureState();
-    const { name, price, stock } = req.body;
+    const { name, price, stock, image } = req.body;
     const businessId = req.tenantId;
     const safeName = sanitizeString(name);
     const itemPrice = num(price);
     const itemStock = num(stock);
+    const safeImage = sanitizeString(image);
 
     if (!safeName || itemPrice <= 0) return fail(res, "Invalid product details", 400);
 
@@ -362,6 +363,7 @@ app.post('/api/products', enforceTenantIsolation, async (req, res) => {
       name: safeName,
       price: itemPrice,
       stock: itemStock,
+      image: safeImage || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80",
       createdAt: Date.now()
     };
     data.products.push(product);
@@ -371,6 +373,56 @@ app.post('/api/products', enforceTenantIsolation, async (req, res) => {
     return ok(res, { message: "Product published successfully under tenant namespace", product });
   } catch (err) {
     return fail(res, "Product addition failed: " + err.message, 500);
+  }
+});
+
+// ================= PRODUCT MANAGEMENT (UPDATE & DELETE) =================
+app.put('/api/products/:id', enforceTenantIsolation, async (req, res) => {
+  try {
+    ensureState();
+    const productId = req.params.id;
+    const { price, stock, name, image } = req.body;
+
+    const product = data.products.find(p => p.id === productId);
+    if (!product) return fail(res, "Product not found", 404);
+
+    if (product.businessId !== req.tenantId && req.tenantId !== "BIZ-001") {
+      return fail(res, "Tenant isolation breach: Cannot modify another merchant's product", 403);
+    }
+
+    if (price !== undefined) product.price = num(price);
+    if (stock !== undefined) product.stock = num(stock);
+    if (name !== undefined) product.name = sanitizeString(name);
+    if (image !== undefined) product.image = sanitizeString(image);
+
+    await saveDB();
+    if (global.io) global.io.emit('productUpdated', product);
+    return ok(res, { message: "Product updated successfully", product });
+  } catch (err) {
+    return fail(res, "Product update failed: " + err.message, 500);
+  }
+});
+
+app.delete('/api/products/:id', enforceTenantIsolation, async (req, res) => {
+  try {
+    ensureState();
+    const productId = req.params.id;
+    const index = data.products.findIndex(p => p.id === productId);
+
+    if (index === -1) return fail(res, "Product not found", 404);
+
+    const product = data.products[index];
+    if (product.businessId !== req.tenantId && req.tenantId !== "BIZ-001") {
+      return fail(res, "Tenant isolation breach: Cannot delete another merchant's product", 403);
+    }
+
+    data.products.splice(index, 1);
+    await saveDB();
+
+    if (global.io) global.io.emit('productDeleted', { id: productId });
+    return ok(res, { message: "Product removed from matrix successfully", id: productId });
+  } catch (err) {
+    return fail(res, "Product deletion failed: " + err.message, 500);
   }
 });
 

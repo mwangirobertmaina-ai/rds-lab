@@ -186,7 +186,7 @@
         <span style="font-size:0.75rem; color:var(--text-dim);">Products & Orders isolated per merchant namespace.</span>
     </div>
 
-    <!-- PRODUCT CATALOG WITH IMAGES -->
+    <!-- PRODUCT CATALOG WITH IMAGES & MERCHANT MANAGEMENT -->
     <div class="panel" style="background:var(--panel-bg); border:1px solid var(--neon-green); border-radius:8px; padding:15px; margin-bottom:20px;">
         <h2 style="font-size:0.95rem; margin-bottom:12px; color:var(--cyan); text-transform:uppercase; border-bottom:1px dashed var(--neon-green); padding-bottom:6px;">Scoped Catalog & Products</h2>
         <div class="catalog-grid" id="catalogGrid">
@@ -234,10 +234,10 @@
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
         const defaultProducts = [
-            { id: "PRD_PIZZA", name: "Sovereign Deluxe Pizza", price: 1200, image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" },
-            { id: "PRD_CHIPS", name: "Crispy Golden Chips", price: 250, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&auto=format&fit=crop&q=80" },
-            { id: "PRD_CHICKEN", name: "Fried Sovereign Chicken", price: 650, image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400&auto=format&fit=crop&q=80" },
-            { id: "PRD_MILK", name: "Fresh Farm Milk (1L)", price: 120, image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&auto=format&fit=crop&q=80" }
+            { id: "PRD_PIZZA", name: "Sovereign Deluxe Pizza", price: 1200, stock: 10, image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" },
+            { id: "PRD_CHIPS", name: "Crispy Golden Chips", price: 250, stock: 25, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&auto=format&fit=crop&q=80" },
+            { id: "PRD_CHICKEN", name: "Fried Sovereign Chicken", price: 650, stock: 15, image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400&auto=format&fit=crop&q=80" },
+            { id: "PRD_MILK", name: "Fresh Farm Milk (1L)", price: 120, stock: 30, image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&auto=format&fit=crop&q=80" }
         ];
 
         function logStore(msg) {
@@ -269,16 +269,29 @@
 
             let html = '';
             products.forEach(p => {
+                const isOutOfStock = p.stock <= 0;
                 const imgSrc = p.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80";
+                
                 html += `
-                    <div class="product-card">
+                    <div class="product-card" style="${isOutOfStock ? 'opacity: 0.5;' : ''}">
                         <div style="overflow:hidden;"><img src="${imgSrc}" class="product-img" alt="${p.name}"></div>
                         <div class="product-info">
                             <div>
                                 <div class="product-title">${p.name}</div>
                                 <div class="product-price">KES ${p.price}</div>
+                                <div class="small" style="color: ${isOutOfStock ? 'var(--alert-red)' : 'var(--neon-green)'}; font-size:0.7rem; margin-bottom:6px;">
+                                    Stock: ${isOutOfStock ? 'OUT OF STOCK' : p.stock}
+                                </div>
                             </div>
-                            <button onclick="selectProduct('${p.name}', ${p.price})">Order Now</button>
+                            <div style="display:flex; flex-direction:column; gap:4px;">
+                                <button ${isOutOfStock ? 'disabled style="background:gray;"' : ''} onclick="selectProduct('${p.name}', ${p.price})">
+                                    ${isOutOfStock ? 'Unavailable' : 'Order Now'}
+                                </button>
+                                <div style="display:flex; gap:4px;">
+                                    <button class="btn-cyan" style="font-size:0.65rem; padding:6px;" onclick="updateProductPrompt('${p.id}', ${p.price}, ${p.stock})">Edit</button>
+                                    <button style="background:var(--alert-red); color:#fff; font-size:0.65rem; padding:6px;" onclick="deleteProduct('${p.id}')">Del</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -289,6 +302,40 @@
         function selectProduct(name, price) {
             document.getElementById('custAmount').value = price;
             logStore(`Selected: ${name} (KES ${price})`);
+        }
+
+        async function updateProductPrompt(id, currentPrice, currentStock) {
+            const newPrice = prompt("Enter new price (KES):", currentPrice);
+            const newStock = prompt("Enter new stock level:", currentStock);
+
+            if (newPrice === null || newStock === null) return;
+
+            const res = await tenantFetch(`/api/products/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ price: Number(newPrice), stock: Number(newStock) })
+            });
+
+            if (res && res.success) {
+                logStore(`Product ${id} updated successfully.`);
+                loadStoreCatalog();
+            } else {
+                alert(`Update failed: ${res?.error || 'Unauthorized'}`);
+            }
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm("Are you sure you want to permanently delete this product?")) return;
+
+            const res = await tenantFetch(`/api/products/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (res && res.success) {
+                logStore(`Product ${id} deleted.`);
+                loadStoreCatalog();
+            } else {
+                alert(`Deletion failed: ${res?.error || 'Unauthorized'}`);
+            }
         }
 
         async function triggerStkCheckout() {
@@ -334,6 +381,8 @@
                 updateLifecycleUI(data.status);
             });
             socket.on('productAdded', () => loadStoreCatalog());
+            socket.on('productUpdated', () => loadStoreCatalog());
+            socket.on('productDeleted', () => loadStoreCatalog());
         } catch (e) {
             logStore("Socket telemetry running in standby mode.");
         }
