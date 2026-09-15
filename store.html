@@ -4,10 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 60 | Sovereign Hybrid Super App</title>
+  <title>RDS 61 | Global Sovereign Multi-Region Super App</title>
 
   <!-- Socket.io Client -->
   <script src="/socket.io/socket.io.js"></script>
+  <!-- Stripe.js for International Checkouts (UK, Spain, Canada) -->
+  <script src="https://js.stripe.com/v3/"></script>
 
   <style>
     :root {
@@ -84,30 +86,29 @@
     .search-bar input:focus { border-color: var(--stage-purple); box-shadow: 0 0 10px rgba(168,85,247,0.25); }
     .search-bar svg { position: absolute; left: 12px; top: 14px; width: 18px; height: 18px; fill: var(--text-dim); }
 
-    .categories-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 25px;
-      gap: 10px;
+    .corridor-selector {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
     }
-    .category-item {
-      flex: 1;
+    .corridor-btn {
       background: var(--panel-bg);
-      border: 1px solid #222c3d;
-      border-radius: 12px;
-      padding: 12px 8px;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 8px 4px;
       text-align: center;
       cursor: pointer;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-weight: 700;
       transition: all 0.2s;
     }
-    .category-item.active, .category-item:hover {
+    .corridor-btn.active, .corridor-btn:hover {
       border-color: var(--stage-purple);
-      background: rgba(168, 85, 247, 0.05);
-      transform: translateY(-2px);
+      background: rgba(168, 85, 247, 0.1);
+      color: #fff;
     }
-    .category-item .icon { font-size: 1.5rem; margin-bottom: 6px; display: block; }
-    .category-item span { font-size: 0.75rem; color: var(--text-dim); font-weight: 600; }
-    .category-item.active span { color: var(--stage-purple); }
 
     .section-header {
       display: flex;
@@ -116,31 +117,6 @@
       margin-bottom: 12px;
     }
     .section-header h3 { font-size: 1rem; color: #fff; font-weight: 700; }
-
-    .vendors-scroll {
-      display: flex;
-      gap: 12px;
-      overflow-x: auto;
-      padding-bottom: 10px;
-      margin-bottom: 25px;
-      scrollbar-width: none;
-    }
-    .vendors-scroll::-webkit-scrollbar { display: none; }
-    
-    .vendor-card {
-      min-width: 130px;
-      background: var(--panel-bg);
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid #222c3d;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    .vendor-card:hover { transform: scale(1.02); border-color: var(--stage-purple); }
-    .vendor-card img { width: 100%; height: 75px; object-fit: cover; }
-    .vendor-info { padding: 8px; }
-    .vendor-info h4 { font-size: 0.8rem; color: #fff; margin-bottom: 2px; }
-    .vendor-info p { font-size: 0.7rem; color: var(--text-dim); }
 
     .catalog-grid {
       display: grid;
@@ -158,18 +134,7 @@
       flex-direction: column;
       justify-content: space-between;
       transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s ease, border-color 0.3s ease;
-      animation: productSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      opacity: 0;
-      transform: translateY(15px);
     }
-
-    @keyframes productSlideUp {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
     .product-card:hover { 
       transform: translateY(-4px); 
       border-color: var(--stage-purple); 
@@ -187,7 +152,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+      transition: transform 0.5s;
     }
     .product-card:hover .product-img { transform: scale(1.08); }
 
@@ -212,10 +177,8 @@
       padding: 6px 10px;
       font-weight: bold;
       cursor: pointer;
-      width: auto;
       font-size: 0.8rem;
     }
-    .quantity-stepper button:hover { background: var(--stage-purple); color: #fff; }
     .quantity-display {
       font-size: 0.8rem;
       font-weight: bold;
@@ -234,16 +197,9 @@
       border-radius: 6px;
       font-size: 0.75rem;
       text-transform: uppercase;
-      transition: background 0.2s, transform 0.1s;
+      transition: background 0.2s;
     }
     button:hover { background: var(--cyan); color: #000; }
-    button:active { transform: scale(0.97); }
-
-    .owner-controls {
-      display: none;
-      margin-top: 6px;
-    }
-    .owner-mode .owner-controls { display: block; }
 
     .floating-cart {
       position: fixed;
@@ -308,17 +264,6 @@
       padding-bottom: 3px;
     }
 
-    .rider-card {
-      background: rgba(56, 189, 248, 0.08);
-      border: 1px dashed var(--cyan);
-      border-radius: 8px;
-      padding: 12px;
-      margin-top: 10px;
-      display: none;
-    }
-    .rider-card.active { display: block; }
-    .rider-card p { font-size: 0.8rem; color: #fff; margin-bottom: 4px; }
-
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -342,7 +287,7 @@
       cursor: pointer;
     }
     .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
-    .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin-bottom: 3px; display: block; margin: 0 auto 3px auto; }
+    .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
   </style>
 </head>
 <body id="appBody">
@@ -350,111 +295,59 @@
     <!-- HOME / STORE VIEW -->
     <div id="viewHome" class="app-view active-view">
         <div class="telemetry-ribbon">
-            <span>⚡ RDS STAGE 60 MESH: ONLINE</span>
-            <span id="nodeLatency">12ms • Secure</span>
+            <span>🌐 RDS STAGE 61 GLOBAL MESH: ONLINE</span>
+            <span id="nodeLatency">10ms • Secured</span>
         </div>
 
         <div class="header-location">
             <div class="location-box">
                 <span class="icon">📍</span>
                 <div class="location-text">
-                    <span>Deliver to</span>
-                    <strong>Kasarani, Nairobi</strong>
+                    <span>Active Corridor</span>
+                    <strong id="corridorLabel">Nairobi, Kenya (KES)</strong>
                 </div>
             </div>
-            <div style="display:flex; gap:6px; align-items:center;">
-                <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-001</div>
-                <button onclick="toggleOwnerMode()" style="width:auto; padding:4px 8px; font-size:0.6rem; background:#374151; color:#fff;">🔒 Owner</button>
-            </div>
+            <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
+        </div>
+
+        <!-- Global Corridor Selector -->
+        <div class="corridor-selector">
+            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE (KES)</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK (GBP)</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-ES', 'Madrid, Spain', 'EUR', this)">🇪🇸 ES (EUR)</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-CA', 'Toronto, Canada', 'CAD', this)">🇨🇦 CA (CAD)</div>
         </div>
 
         <div class="search-bar">
             <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-            <input type="text" id="searchInput" placeholder="Search millions of items, groceries, foods..." oninput="filterCatalog()">
-        </div>
-
-        <div class="categories-row">
-            <div class="category-item active" onclick="filterCategory('ALL', this)">
-                <span class="icon">🛒</span>
-                <span>All Shops</span>
-            </div>
-            <div class="category-item" onclick="filterCategory('FOOD', this)">
-                <span class="icon">🍔</span>
-                <span>Food</span>
-            </div>
-            <div class="category-item" onclick="filterCategory('GROCERY', this)">
-                <span class="icon">🛍️</span>
-                <span>Supermarket</span>
-            </div>
-            <div class="category-item" onclick="filterCategory('PHARMACY', this)">
-                <span class="icon">💊</span>
-                <span>Pharmacy</span>
-            </div>
+            <input type="text" id="searchInput" placeholder="Search global catalog items..." oninput="filterCatalog()">
         </div>
 
         <div class="section-header">
-            <h3>Popular Near You</h3>
-        </div>
-        <div class="vendors-scroll">
-            <div class="vendor-card" onclick="switchTenant('BIZ-001', 'KFC & Fast Food')">
-                <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" alt="KFC">
-                <div class="vendor-info">
-                    <h4>KFC Nairobi</h4>
-                    <p>⭐ 4.5 • 25 mins</p>
-                </div>
-            </div>
-            <div class="vendor-card" onclick="switchTenant('BIZ-002', 'Naivas Supermarket')">
-                <img src="https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400&auto=format&fit=crop&q=80" alt="Naivas">
-                <div class="vendor-info">
-                    <h4>Naivas Groceries</h4>
-                    <p>⭐ 4.8 • 15 mins</p>
-                </div>
-            </div>
-            <div class="vendor-card" onclick="switchTenant('BIZ-003', 'Goodlife Pharmacy')">
-                <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&auto=format&fit=crop&q=80" alt="Pharmacy">
-                <div class="vendor-info">
-                    <h4>Goodlife Meds</h4>
-                    <p>⭐ 4.9 • 10 mins</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="section-header">
-            <h3 id="catalogTitle">Store Catalog</h3>
-            <span id="activeTenantLabel" style="font-size:0.75rem; color:var(--stage-purple);">Namespace: BIZ-001</span>
-        </div>
-        
-        <!-- Owner Settings Panel (Visible only in Owner Mode) -->
-        <div class="checkout-panel owner-controls" style="margin-bottom: 15px; border-color: var(--stage-purple);">
-            <h3>🔐 Owner Management Hub</h3>
-            <button class="btn-cyan" onclick="changeOwnerPin()" style="margin-bottom: 8px;">Change Owner PIN</button>
-            <button class="btn-cyan" onclick="downloadCatalogJSON()" style="margin-bottom: 12px; background: var(--neon-green); color: #000;">📥 Download Catalog (JSON)</button>
-            
-            <div style="border-top: 1px dashed #374151; padding-top: 10px;">
-                <h4 style="font-size: 0.8rem; color: var(--neon-green); margin-bottom: 8px;">➕ Add New Catalog Item</h4>
-                <input type="text" id="newProdName" placeholder="Product Name (e.g. Burger Combo)">
-                <input type="number" id="newProdPrice" placeholder="Price (KES)">
-                <input type="text" id="newProdImage" placeholder="Image URL (Optional Unsplash link)">
-                <button class="btn-cyan" onclick="addNewProduct()">Publish Item</button>
-            </div>
+            <h3 id="catalogTitle">Regional Storefront Catalog</h3>
+            <span id="activeCurrencyLabel" style="font-size:0.75rem; color:var(--stage-purple);">KES</span>
         </div>
 
         <div class="catalog-grid" id="catalogGrid">
-            <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading inventory...</em>
+            <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading regional inventory...</em>
         </div>
     </div>
 
-    <!-- ORDERS & LIVE TRACKING VIEW -->
+    <!-- ORDERS & CHECKOUT VIEW -->
     <div id="viewOrders" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Active Orders & Tracking</h3>
+            <h3>International Secure Checkout</h3>
         </div>
 
         <div class="checkout-panel">
-            <h3>Secure M-Pesa Checkout</h3>
-            <input type="text" id="custPhone" placeholder="M-Pesa Phone (2547XXXXXXXX)" value="254721862397">
-            <input type="number" id="custAmount" placeholder="Total Amount (KES)" value="0" readonly>
-            <button onclick="triggerStkCheckout()" class="btn-cyan">Pay via M-Pesa STK Push</button>
+            <h3 id="gatewayTitle">Payment Gateway</h3>
+            <div id="mpesaFieldGroup">
+                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">M-Pesa Phone Number</label>
+                <input type="text" id="custPhone" placeholder="2547XXXXXXXX" value="254721862397">
+            </div>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Total Amount</label>
+            <input type="number" id="custAmount" placeholder="0" readonly>
+            <button onclick="triggerGlobalCheckout()" class="btn-cyan" id="checkoutBtn">Authorize Payment</button>
         </div>
 
         <div class="checkout-panel">
@@ -462,51 +355,23 @@
             <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;">
                 Status: <span id="lifecycleStatus" style="color: var(--neon-green); font-weight: bold;">STANDBY</span>
             </div>
-            <div style="display: flex; gap: 4px; height: 6px; background: #000; border-radius: 3px; overflow: hidden; border: 1px solid #374151; margin-bottom: 12px;">
-                <div id="progPaid" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
-                <div id="progAccepted" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
-                <div id="progTransit" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
-                <div id="progDelivered" style="flex: 1; background: #222e3c; transition: background 0.3s;"></div>
-            </div>
-
-            <!-- Rider Dispatch Card -->
-            <div id="riderCard" class="rider-card active">
-                <p style="color: var(--cyan); font-weight: bold; margin-bottom: 6px;">🛵 Rider Dispatched!</p>
-                <p><strong>Name:</strong> <span id="riderName">Samuel Kiprono</span></p>
-                <p><strong>Contact:</strong> <a href="tel:+254712345678" id="riderPhone" style="color: var(--neon-green);">+254 712 345 678</a></p>
-                <p><strong>Estimated Arrival (ETA):</strong> <span id="riderEta" style="color: var(--gold);">6 mins (1.2 km away)</span></p>
-            </div>
         </div>
     </div>
 
     <!-- DIGITAL WALLET VIEW -->
     <div id="viewWallet" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Sovereign Wallet</h3>
+            <h3>Multi-Currency Sovereign Wallets</h3>
         </div>
         <div class="checkout-panel" style="text-align: center; padding: 25px 15px;">
-            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;">AVAILABLE BALANCE</p>
-            <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 15px;">KES <span id="walletBalance">12,450.00</span></h2>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;" id="walletCurrencyLabel">AVAILABLE BALANCE (KES)</p>
+            <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 15px;"><span id="walletBalance">0.00</span></h2>
         </div>
 
         <div class="checkout-panel">
-            <h3>Top Up Wallet via M-Pesa</h3>
-            <input type="text" id="walletPhone" placeholder="M-Pesa Phone (2547XXXXXXXX)" value="254721862397">
-            <input type="number" id="walletAmount" placeholder="Top Up Amount (KES)" value="50">
-            <button onclick="triggerWalletTopUp()" class="btn-cyan">Top Up Now</button>
-        </div>
-
-        <div class="checkout-panel" style="border-color: var(--cyan);">
-            <h3>Withdraw to M-Pesa (B2C)</h3>
-            <input type="text" id="withdrawPhone" placeholder="M-Pesa Phone (2547XXXXXXXX)" value="254721862397">
-            <input type="number" id="withdrawAmount" placeholder="Withdrawal Amount (KES)" value="1000">
-            <button onclick="triggerWalletWithdrawal()" style="background: var(--alert-red); color: #fff;">Withdraw Funds</button>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>Transaction Ledger</h3>
+            <h3>Transaction Ledger & Merkle Proofs</h3>
             <div id="ledgerFeed" class="ledger-list">
-                <div class="ledger-item"><span>System Initialized</span><span style="color: var(--neon-green);">Active</span></div>
+                <div class="ledger-item"><span>Engine Initialized</span><span style="color: var(--neon-green);">Zero Fake Money</span></div>
             </div>
         </div>
     </div>
@@ -518,8 +383,8 @@
         </div>
         <div class="checkout-panel">
             <p><strong>User:</strong> Robert Maina</p>
-            <p style="margin-top: 8px;"><strong>Location:</strong> Kasarani, Nairobi</p>
-            <p style="margin-top: 8px;"><strong>App Build:</strong> RDS Stage 60 Sovereign Hybrid</p>
+            <p style="margin-top: 8px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
+            <p style="margin-top: 8px;"><strong>Engine Build:</strong> RDS Stage 61 Global Sovereign Hybrid</p>
         </div>
     </div>
 
@@ -527,12 +392,13 @@
     <div id="floatingCart" class="floating-cart" onclick="switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1])">
         <div>
             <strong id="cartItemCount" style="color: var(--neon-green); display: block; font-size: 0.85rem;">0 Items Selected</strong>
-            <span id="cartTotalSum" style="font-size: 0.75rem; color: var(--text-dim);">KES 0</span>
+            <span id="cartTotalSum" style="font-size: 0.75rem; color: var(--text-dim);">0</span>
         </div>
-        <button style="width: auto; padding: 6px 14px; font-size: 0.75rem;">View Checkout ➔</button>
+        <button style="width: auto; padding: 6px 14px; font-size: 0.75rem;">Proceed ➔</button>
     </div>
 
-    <input type="hidden" id="storeBusinessId" value="BIZ-001">
+    <input type="hidden" id="storeBusinessId" value="BIZ-KE">
+    <input type="hidden" id="storeCurrency" value="KES">
 
     <!-- Bottom Navigation Bar -->
     <div class="bottom-nav">
@@ -542,11 +408,11 @@
         </a>
         <a class="nav-item" onclick="switchTab('viewOrders', this)">
             <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-            Orders
+            Checkout
         </a>
         <a class="nav-item" onclick="switchTab('viewWallet', this)">
             <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-            Wallet
+            Wallets
         </a>
         <a class="nav-item" onclick="switchTab('viewProfile', this)">
             <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
@@ -560,17 +426,13 @@
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
         let allProductsCache = [];
+        let walletsCache = [];
         let cart = {}; 
-        let isOwnerMode = false;
-
-        function getOwnerPin() {
-            return localStorage.getItem('rds_owner_pin') || "0000";
-        }
 
         function logLedgerEvent(title, detail) {
             const feed = document.getElementById('ledgerFeed');
             if (!feed) return;
-            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const timeStr = new Date().toLocaleTimeString();
             const item = document.createElement('div');
             item.className = 'ledger-item';
             item.innerHTML = `<span>[${timeStr}] ${title}</span><strong style="color:var(--cyan);">${detail}</strong>`;
@@ -585,58 +447,6 @@
             window.scrollTo(0, 0);
         }
 
-        function toggleOwnerMode() {
-            const currentPin = getOwnerPin();
-            const pin = prompt("Enter Shop Owner PIN:");
-            if (pin === currentPin || pin === "5555") { 
-                isOwnerMode = !isOwnerMode;
-                document.getElementById('appBody').classList.toggle('owner-mode', isOwnerMode);
-                alert(isOwnerMode ? "Owner Mode Unlocked: Catalog editing enabled." : "Locked to Customer Mode.");
-                renderCatalog(allProductsCache);
-                logLedgerEvent("Owner Mode", isOwnerMode ? "Unlocked" : "Locked");
-            } else if (pin !== null) {
-                alert("Incorrect PIN.");
-            }
-        }
-
-        function changeOwnerPin() {
-            if (!isOwnerMode) {
-                alert("Unauthorized action.");
-                return;
-            }
-            const oldPinInput = prompt("Enter current Owner PIN:");
-            const currentPin = getOwnerPin();
-            
-            if (oldPinInput === currentPin || oldPinInput === "5555") {
-                const newPin = prompt("Enter new Owner PIN (min 4 digits):");
-                if (newPin && newPin.trim().length >= 4) {
-                    localStorage.setItem('rds_owner_pin', newPin.trim());
-                    alert("Owner PIN updated successfully!");
-                    logLedgerEvent("Security", "Owner PIN Modified");
-                } else {
-                    alert("Invalid PIN format. Operation cancelled.");
-                }
-            } else if (oldPinInput !== null) {
-                alert("Incorrect current PIN.");
-            }
-        }
-
-        function downloadCatalogJSON() {
-            if (!isOwnerMode) {
-                alert("Restricted: Owner mode required.");
-                return;
-            }
-            const bizId = document.getElementById('storeBusinessId').value;
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allProductsCache, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `RDS_Catalog_${bizId}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-            logLedgerEvent("Catalog Export", `Downloaded JSON for ${bizId}`);
-        }
-
         async function loadStoreCatalog() {
             const bizId = document.getElementById('storeBusinessId').value;
             try {
@@ -645,45 +455,65 @@
                 });
                 const data = await res.json();
                 allProductsCache = (data && data.products) ? data.products : [];
+                document.getElementById('activeCurrencyLabel').innerText = data.currency || "KES";
+                document.getElementById('storeCurrency').value = data.currency || "KES";
                 renderCatalog(allProductsCache);
+                loadWallets();
             } catch (err) {
                 console.error("Catalog load error", err);
             }
         }
 
+        async function loadWallets() {
+            try {
+                const res = await fetch(`${API_BASE}/wallets`);
+                const data = await res.json();
+                walletsCache = data.wallets || [];
+                updateActiveWalletDisplay();
+            } catch (err) {
+                console.error("Wallet load error", err);
+            }
+        }
+
+        function updateActiveWalletDisplay() {
+            const currentBiz = document.getElementById('storeBusinessId').value;
+            const currentCurr = document.getElementById('storeCurrency').value;
+            const wallet = walletsCache.find(w => w.ownerId === currentBiz && w.currency === currentCurr);
+            const balance = wallet ? wallet.balance : 0;
+            
+            document.getElementById('walletCurrencyLabel').innerText = `AVAILABLE BALANCE (${currentCurr})`;
+            document.getElementById('walletBalance').innerText = Number(balance).toLocaleString(undefined, {minimumFractionDigits: 2});
+        }
+
         function renderCatalog(products) {
             const grid = document.getElementById('catalogGrid');
             if (!products || products.length === 0) {
-                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No inventory found in this namespace.</em>';
+                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No items found.</em>';
                 return;
             }
 
             let html = '';
-            products.forEach((p, index) => {
-                const realImage = p.image && p.image.trim() !== "" ? p.image : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80';
+            const curr = document.getElementById('storeCurrency').value;
+            products.forEach(p => {
+                const realImage = p.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80';
                 const qty = cart[p.id] ? cart[p.id].qty : 0;
                 const unitPrice = Number(p.price) || 0;
-                const animationDelay = (index * 0.05) + 's';
 
                 html += `
-                    <div class="product-card" style="animation-delay: ${animationDelay};">
+                    <div class="product-card">
                         <div class="image-wrapper">
                             <img src="${realImage}" class="product-img" alt="${p.name}">
                         </div>
                         <div class="product-info">
                             <div>
                                 <div class="product-title">${p.name}</div>
-                                <div class="product-price">KES ${unitPrice}</div>
+                                <div class="product-price">${curr} ${unitPrice.toFixed(2)}</div>
                             </div>
                             <div>
                                 <div class="quantity-stepper">
                                     <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, -1)">-</button>
                                     <span class="quantity-display" id="qty-${p.id}">${qty}</span>
                                     <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, 1)">+</button>
-                                </div>
-                                <div class="owner-controls">
-                                    <button class="btn-cyan" style="margin-bottom:4px;" onclick="updatePricePrompt('${p.id}', ${unitPrice})">Edit Price</button>
-                                    <button style="background:var(--alert-red);" onclick="deleteProductPrompt('${p.id}', '${p.name}')">Delete Item</button>
                                 </div>
                             </div>
                         </div>
@@ -693,104 +523,15 @@
             grid.innerHTML = html;
         }
 
-        async function addNewProduct() {
-            if (!isOwnerMode) {
-                alert("Restricted: Owner mode required.");
-                return;
-            }
-            const nameInput = document.getElementById('newProdName');
-            const priceInput = document.getElementById('newProdPrice');
-            const imageInput = document.getElementById('newProdImage');
-
-            const name = nameInput ? nameInput.value.trim() : "";
-            const price = priceInput ? Number(priceInput.value) : 0;
-            const image = imageInput ? imageInput.value.trim() : "";
-
-            if (!name || price <= 0) {
-                alert("Please provide a valid product name and price.");
-                return;
-            }
-
-            const bizId = document.getElementById('storeBusinessId').value;
-            try {
-                const res = await fetch(`${API_BASE}/api/products`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ name, price, image, businessId: bizId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert("Product published successfully!");
-                    nameInput.value = "";
-                    priceInput.value = "";
-                    imageInput.value = "";
-                    loadStoreCatalog();
-                    logLedgerEvent("Inventory", `Added Product: ${name}`);
-                } else {
-                    alert(data.error || "Failed to publish product.");
-                }
-            } catch (err) {
-                alert("Network error publishing product.");
-            }
-        }
-
-        async function updatePricePrompt(id, currentPrice) {
-            if (!isOwnerMode) return;
-            const newPrice = prompt("Enter new fixed price (KES):", currentPrice);
-            if (newPrice === null || isNaN(newPrice)) return;
-
-            const bizId = document.getElementById('storeBusinessId').value;
-            try {
-                const res = await fetch(`${API_BASE}/api/products/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ price: Number(newPrice) })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert("Price updated successfully!");
-                    loadStoreCatalog();
-                    logLedgerEvent("Inventory", `Price Updated to KES ${newPrice}`);
-                }
-            } catch (err) {
-                alert("Network error updating price.");
-            }
-        }
-
-        async function deleteProductPrompt(id, name) {
-            if (!isOwnerMode) return;
-            if (!confirm(`Are you sure you want to delete '${name}' from your catalog?`)) return;
-
-            const bizId = document.getElementById('storeBusinessId').value;
-            try {
-                const res = await fetch(`${API_BASE}/api/products/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'x-business-id': bizId }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert("Product deleted successfully!");
-                    loadStoreCatalog();
-                    logLedgerEvent("Inventory", `Deleted Product: ${name}`);
-                }
-            } catch (err) {
-                alert("Network error deleting product.");
-            }
-        }
-
         function updateCart(id, name, price, change) {
-            if (!cart[id]) {
-                cart[id] = { name, price: Number(price), qty: 0 };
-            }
+            if (!cart[id]) cart[id] = { name, price: Number(price), qty: 0 };
             cart[id].qty += change;
             
             if (cart[id].qty <= 0) {
                 delete cart[id];
-                const qtyEl = document.getElementById(`qty-${id}`);
-                if (qtyEl) qtyEl.innerText = 0;
+                document.getElementById(`qty-${id}`).innerText = 0;
             } else {
-                const qtyEl = document.getElementById(`qty-${id}`);
-                if (qtyEl) qtyEl.innerText = cart[id].qty;
+                document.getElementById(`qty-${id}`).innerText = cart[id].qty;
             }
             recalculateCartSummary();
         }
@@ -798,157 +539,100 @@
         function recalculateCartSummary() {
             let totalQty = 0;
             let totalPrice = 0;
+            const curr = document.getElementById('storeCurrency').value;
             
             for (let id in cart) {
-                const item = cart[id];
-                totalQty += Number(item.qty) || 0;
-                totalPrice += (Number(item.price) || 0) * (Number(item.qty) || 0);
+                totalQty += cart[id].qty;
+                totalPrice += cart[id].price * cart[id].qty;
             }
 
-            const amountInput = document.getElementById('custAmount');
-            if (amountInput) amountInput.value = totalPrice;
-
+            document.getElementById('custAmount').value = totalPrice.toFixed(2);
             const floatingBar = document.getElementById('floatingCart');
-            const itemCountEl = document.getElementById('cartItemCount');
-            const totalSumEl = document.getElementById('cartTotalSum');
 
             if (totalQty > 0) {
-                if (floatingBar) floatingBar.classList.add('active');
-                if (itemCountEl) itemCountEl.innerText = `${totalQty} Unit${totalQty > 1 ? 's' : ''} Selected`;
-                if (totalSumEl) totalSumEl.innerText = `KES ${totalPrice.toLocaleString()}`;
+                floatingBar.classList.add('active');
+                document.getElementById('cartItemCount').innerText = `${totalQty} Item(s) Selected`;
+                document.getElementById('cartTotalSum').innerText = `${curr} ${totalPrice.toFixed(2)}`;
             } else {
-                if (floatingBar) floatingBar.classList.remove('active');
+                floatingBar.classList.remove('active');
             }
         }
 
-        function switchTenant(tenantId, shopName) {
+        function switchCorridor(tenantId, locationName, currencyCode, el) {
+            document.querySelectorAll('.corridor-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+
             document.getElementById('storeBusinessId').value = tenantId;
+            document.getElementById('storeCurrency').value = currencyCode;
             document.getElementById('tenantBadge').innerText = tenantId;
-            document.getElementById('activeTenantLabel').innerText = `Namespace: ${tenantId} (${shopName})`;
+            document.getElementById('corridorLabel').innerText = locationName;
+            document.getElementById('profileCorridor').innerText = `${locationName} (${currencyCode})`;
+
+            const mpesaBox = document.getElementById('mpesaFieldGroup');
+            const gatewayTitle = document.getElementById('gatewayTitle');
+            if (currencyCode === 'KES') {
+                mpesaBox.style.display = 'block';
+                gatewayTitle.innerText = "M-Pesa Express Checkout";
+            } else {
+                mpesaBox.style.display = 'none';
+                gatewayTitle.innerText = `Stripe Secure Checkout (${currencyCode})`;
+            }
+
             cart = {};
             recalculateCartSummary();
             loadStoreCatalog();
-            logLedgerEvent("Namespace", `Switched to ${tenantId}`);
+            logLedgerEvent("Corridor Switch", `Switched to ${tenantId} (${currencyCode})`);
         }
 
-        function filterCategory(category, el) {
-            document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
-            el.classList.add('active');
-            loadStoreCatalog();
-        }
-
-        function filterCatalog() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allProductsCache.filter(p => p.name.toLowerCase().includes(query));
-            renderCatalog(filtered);
-        }
-
-        async function triggerStkCheckout() {
+        async function triggerGlobalCheckout() {
             const bizId = document.getElementById('storeBusinessId').value;
+            const curr = document.getElementById('storeCurrency').value;
             const phone = document.getElementById('custPhone').value.trim();
             const amount = Number(document.getElementById('custAmount').value) || 0;
 
-            if (!phone || amount <= 0) {
-                alert("Please add items to your cart and provide a valid phone number.");
+            if (amount <= 0) {
+                alert("Please add items to your cart before checking out.");
                 return;
             }
 
             try {
-                const res = await fetch(`${API_BASE}/mpesa/stkpush`, {
+                const res = await fetch(`${API_BASE}/api/checkout`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
                     body: JSON.stringify({ phone, itemPriceTotal: amount, businessId: bizId })
                 });
                 const data = await res.json();
-                if (data.success || res.ok) {
-                    alert(`M-Pesa payment of KES ${amount} completed and credited successfully!`);
-                    updateTrackerUI("STAGE_60_PAID");
-                    logLedgerEvent("Checkout Payment", `KES ${amount} Paid`);
-                }
-            } catch (err) {
-                alert(`Payment processing failed.`);
-            }
-        }
 
-        async function triggerWalletTopUp() {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const phone = document.getElementById('walletPhone').value.trim();
-            const amount = Number(document.getElementById('walletAmount').value) || 0;
-
-            if (!phone || amount <= 0) {
-                alert("Please enter a valid phone number and top-up amount.");
-                return;
-            }
-
-            try {
-                const res = await fetch(`${API_BASE}/mpesa/stkpush`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ phone, itemPriceTotal: amount, businessId: bizId })
-                });
-                const data = await res.json();
-                if (data.success || res.ok) {
-                    alert(`Wallet successfully topped up with KES ${amount}!`);
-                    logLedgerEvent("Wallet Top-Up", `+KES ${amount}`);
-                }
-            } catch (err) {
-                alert("Top-up failed.");
-            }
-        }
-
-        async function triggerWalletWithdrawal() {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const phone = document.getElementById('withdrawPhone').value.trim();
-            const amount = Number(document.getElementById('withdrawAmount').value) || 0;
-
-            if (!phone || amount <= 0) {
-                alert("Please enter a valid phone number and withdrawal amount.");
-                return;
-            }
-
-            try {
-                const res = await fetch(`${API_BASE}/mpesa/withdraw`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ phone, amount, businessId: bizId })
-                });
-                const data = await res.json();
-                if (data.success || res.ok) {
-                    alert(`Withdrawal of KES ${amount} processed successfully to ${phone}.`);
-                    logLedgerEvent("Wallet Withdrawal", `-KES ${amount}`);
-                    if (data.remainingBalance !== undefined) {
-                        document.getElementById('walletBalance').innerText = Number(data.remainingBalance).toLocaleString();
+                if (data.success) {
+                    if (data.gateway === "M-PESA") {
+                        alert(`M-Pesa STK Push sent successfully for KES ${amount}! Check your device.`);
+                        document.getElementById('lifecycleStatus').innerText = "PENDING_M_PESA_PIN";
+                    } else if (data.gateway === "STRIPE") {
+                        alert(`Stripe Payment Intent created successfully for ${curr} ${amount}! Gateway ready.`);
+                        document.getElementById('lifecycleStatus').innerText = "STRIPE_INTENT_CREATED";
                     }
+                    logLedgerEvent("Checkout Init", `${curr} ${amount} via ${data.gateway}`);
                 } else {
-                    alert(data.error || "Withdrawal failed.");
+                    alert(data.error || "Checkout failed.");
                 }
             } catch (err) {
-                alert("Withdrawal network error.");
+                alert("Network error processing international checkout.");
             }
-        }
-
-        function updateTrackerUI(status) {
-            document.getElementById('lifecycleStatus').innerText = status;
-            document.getElementById('progPaid').style.background = 'var(--neon-green)';
         }
 
         try {
             const socket = io();
-            socket.on('orderStatusUpdate', (data) => updateTrackerUI(data.status));
-            socket.on('productAdded', () => loadStoreCatalog());
-            socket.on('productUpdated', () => loadStoreCatalog());
-            socket.on('productDeleted', () => loadStoreCatalog());
+            socket.on('orderStatusUpdate', (data) => {
+                document.getElementById('lifecycleStatus').innerText = data.status;
+            });
             socket.on('walletUpdated', (data) => {
-                const currentBiz = document.getElementById('storeBusinessId').value;
-                if (data.businessId === currentBiz || data.ownerId === currentBiz) {
-                    document.getElementById('walletBalance').innerText = Number(data.balance).toLocaleString();
-                }
+                loadWallets();
             });
         } catch(e) {}
 
         window.onload = () => {
             loadStoreCatalog();
-            logLedgerEvent("Sovereign Node", "Connected Successfully");
+            logLedgerEvent("Global Node", "Connected Successfully");
         };
     </script>
 </body>
