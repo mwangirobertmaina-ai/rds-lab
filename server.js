@@ -1,5 +1,5 @@
 // ==========================================
-// RDS - STAGE 60 SOVEREIGN HYBRID ENGINE (LIVE B2B & TILL PRODUCTION)
+// RDS - STAGE 60 SOVEREIGN HYBRID ENGINE (SANDBOX TEST MODE)
 // Production-Grade Escrow, Immutable Merkle Ledgers, Explicit Multi-Wallet,
 // Real-Time Socket.IO Telemetry, KRA Vault, & Scoped Tenant Isolation
 // ==========================================
@@ -96,18 +96,17 @@ function processStage60FinancialSplit(itemPriceTotal, distanceKm, demandMultipli
   };
 }
 
-// ================= LIVE PRODUCTION M-PESA CONFIG (TILL 1672064 & SHORTCODE 1200280) =================
+// ================= M-PESA SANDBOX CONFIG (MATCHING YOUR DARAJA PORTAL APP) =================
 const MPESA_CONFIG = {
   consumerKey: "1gUiUGRcrNGP7GEplYsE62mNKqAnItctwfteNSPPklSop61w",
   consumerSecret: "wF4tdktQCUIATJr3DNqW9wtIjtImd7bNGGyYhYa5k3LNesW20xRG1ZAsEiqBqgRv",
-  shortCode: "1200280",      // Store Shortcode / Passkey Holder
-  tillNumber: "1672064",     // Buy Goods Till Number (PartyB)
-  passkey: "4862",
-  environment: "production",
-  callbackUrl: process.env.MPESA_CALLBACK_URL || "https://rds-lab.onrender.com/mpesa/callback"
+  shortCode: "174379",      // Safaricom Sandbox Test Shortcode
+  passkey: "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919", // Standard Sandbox Passkey
+  environment: "sandbox",
+  callbackUrl: process.env.MPESA_CALLBACK_URL || "https://sandbox.safaricom.co.ke/callback"
 };
 
-const MPESA_BASE_URL = "https://api.safaricom.co.ke";
+const MPESA_BASE_URL = "https://sandbox.safaricom.co.ke";
 
 async function executeWithRetry(fn, retries = 5, delay = 1000) {
   try {
@@ -142,7 +141,7 @@ app.get("/", (req, res) => {
 app.use(express.static("."));
 
 function log(type, msg) {
-  console.log(`[${new Date().toISOString()}] [STAGE-60-LIVE-PRODUCTION] [${type}] ${msg}`);
+  console.log(`[${new Date().toISOString()}] [STAGE-60-SANDBOX] [${type}] ${msg}`);
 }
 
 app.use((req, res, next) => {
@@ -390,7 +389,7 @@ app.get('/wallets', (req, res) => {
   ok(res, { wallets: data.wallets });
 });
 
-// ================= REAL LIVE PRODUCTION M-PESA STK GATEWAY (TILL 1672064) =================
+// ================= REAL M-PESA STK GATEWAY (SANDBOX) =================
 app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -404,10 +403,10 @@ app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
 
         const activeBizId = businessId || req.tenantId || "BIZ-001";
         
-        // 1. Get Live Production OAuth Token from Safaricom
+        // 1. Get Sandbox OAuth Token from Safaricom
         const accessToken = await getMpesaAccessToken();
 
-        // 2. Generate Timestamp and Password using your shortcode 1200280 and passkey 4862
+        // 2. Generate Timestamp and Password using sandbox shortcode 174379 and passkey
         const date = new Date();
         const timestamp = date.getFullYear() +
             String(date.getMonth() + 1).padStart(2, '0') +
@@ -430,21 +429,21 @@ app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
         data.orders.push(order);
         await saveDB();
 
-        // 3. Send Live STK Push Request targeting Buy Goods Till Number (1672064)
+        // 3. Send Sandbox STK Push Request
         const stkResponse = await axios.post(
             `${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`,
             {
                 BusinessShortCode: MPESA_CONFIG.shortCode,
                 Password: password,
                 Timestamp: timestamp,
-                TransactionType: "CustomerBuyGoodsOnline", // Correct transaction type for Till
+                TransactionType: "CustomerPayBillOnline",
                 Amount: amount,
                 PartyA: sanitizedPhone,
-                PartyB: MPESA_CONFIG.tillNumber,           // Till Number 1672064
+                PartyB: MPESA_CONFIG.shortCode,
                 PhoneNumber: sanitizedPhone,
                 CallBackURL: MPESA_CONFIG.callbackUrl,
-                AccountReference: `Till 1672064`,
-                TransactionDesc: "Sovereign Super App Checkout"
+                AccountReference: `RDS Sovereign Lab`,
+                TransactionDesc: "Sandbox Super App Checkout"
             },
             { headers: { Authorization: `Bearer ${accessToken}` } }
         );
@@ -454,18 +453,18 @@ app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
             await saveDB();
         }
 
-        log("STK_LIVE", `Live Till STK Push sent to ${sanitizedPhone} for KES ${amount}. CheckoutRequestID: ${order.checkoutRequestId}`);
+        log("STK_SANDBOX", `Sandbox STK Push sent to ${sanitizedPhone} for KES ${amount}. CheckoutRequestID: ${order.checkoutRequestId}`);
         if (global.io) global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
 
         return res.json({ success: true, darajaResponse: stkResponse.data });
 
     } catch (err) {
-        console.error("Live Daraja Error:", err.response?.data || err.message);
+        console.error("Sandbox Daraja Error:", err.response?.data || err.message);
         return res.status(500).json({ success: false, error: err.response?.data?.errorMessage || err.message });
     }
 });
 
-// ================= LIVE M-PESA DARAJA CALLBACK ENDPOINT =================
+// ================= M-PESA DARAJA CALLBACK ENDPOINT =================
 app.post("/mpesa/callback", async (req, res) => {
     try {
         ensureState();
@@ -484,7 +483,6 @@ app.post("/mpesa/callback", async (req, res) => {
         }
 
         if (resultCode === 0) {
-            // Real money payment completed successfully by user on phone!
             order.status = "STAGE_60_PAID";
             const activeBizId = order.businessId;
             const amountPaid = order.total;
@@ -507,7 +505,7 @@ app.post("/mpesa/callback", async (req, res) => {
                 global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'STAGE_60_PAID' });
                 global.io.emit('walletUpdated', { businessId: activeBizId, ownerId: activeBizId, balance: currentBalance });
             }
-            log("LIVE_PAYMENT_CONFIRMED", `Real funds received via Till 1672064: KES ${amountPaid}. Wallet updated for ${activeBizId}`);
+            log("SANDBOX_PAYMENT_CONFIRMED", `Funds received: KES ${amountPaid}. Wallet updated for ${activeBizId}`);
         } else {
             order.status = "STAGE_60_FAILED";
             await saveDB();
@@ -570,7 +568,7 @@ app.use((req, res) => res.status(200).json({ success: true, stage60SovereignHybr
 
 if (require.main === module) {
   server.listen(PORT, () => {
-    log("SYSTEM", `🚀 STAGE-60 LIVE PRODUCTION ENGINE ACTIVE ON PORT ${PORT}`);
+    log("SYSTEM", `🚀 STAGE-60 SANDBOX ENGINE ACTIVE ON PORT ${PORT}`);
   });
 }
 
