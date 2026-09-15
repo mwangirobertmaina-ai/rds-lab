@@ -1,7 +1,7 @@
 // ==========================================
 // RDS - STAGE 61 GLOBAL SOVEREIGN HYBRID ENGINE (ZERO-FAKE-MONEY PRODUCTION)
 // International Multi-Gateway (M-Pesa + Stripe UK/Spain/Canada/Global),
-// Immutable Merkle Ledgers, Explicit Multi-Wallet, & Scoped Tenant Isolation
+// Immutable Merkle Ledgers, Explicit Multi-Wallet, & Scalable Multi-Vendor Catalog
 // ==========================================
 
 const express = require("express");
@@ -141,14 +141,28 @@ function defaultDB() {
       { id: "BIZ-CA", name: "RDS Toronto (Stripe Canada)", region: "CA", currency: "CAD", ownerPhone: "14165550198", taxPin: "CA123456789RT" }
     ], 
     products: [
-      { id: "p1", businessId: "BIZ-KE", name: "2pc Chicken Meal (KES)", price: 650, currency: "KES", image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80" },
-      { id: "p2", businessId: "BIZ-UK", name: "Fish & Chips Combo (GBP)", price: 12.50, currency: "GBP", image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80" },
-      { id: "p3", businessId: "BIZ-ES", name: "Iberian Tapas Menu (EUR)", price: 15.00, currency: "EUR", image: "https://images.unsplash.com/photo-1515443961218-a51367888e4b?w=400&auto=format&fit=crop&q=80" },
-      { id: "p4", businessId: "BIZ-CA", name: "Maple Glazed Poutine (CAD)", price: 18.00, currency: "CAD", image: "https://images.unsplash.com/photo-1585109649139-366815a0d713?w=400&auto=format&fit=crop&q=80" }
+      // KENNEDY / NAIROBI CORRIDOR (BIZ-KE)
+      { id: "p1", businessId: "BIZ-KE", category: "RESTAURANT", merchant: "Nairobi Grill & Chicken", name: "2pc Chicken Meal (KES)", price: 650, currency: "KES", image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80" },
+      { id: "p5", businessId: "BIZ-KE", category: "HOTEL", merchant: "Serena Luxury Suites", name: "Executive Suite Booking (1 Night)", price: 12500, currency: "KES", image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&auto=format&fit=crop&q=80" },
+      { id: "p6", businessId: "BIZ-KE", category: "RETAIL", merchant: "Naivas Supermarket Express", name: "Organic Fresh Basket", price: 2100, currency: "KES", image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80" },
+      { id: "p7", businessId: "BIZ-KE", category: "RESTAURANT", merchant: "Java House Cafe", name: "Artisan Coffee & Pastry", price: 450, currency: "KES", image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&auto=format&fit=crop&q=80" },
+
+      // LONDON CORRIDOR (BIZ-UK)
+      { id: "p2", businessId: "BIZ-UK", category: "RESTAURANT", merchant: "Soho Fish & Pub", name: "Fish & Chips Combo (GBP)", price: 12.50, currency: "GBP", image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80" },
+      { id: "p8", businessId: "BIZ-UK", category: "HOTEL", merchant: "The Savoy London", name: "Deluxe Thames View Room", price: 280.00, currency: "GBP", image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&auto=format&fit=crop&q=80" },
+      { id: "p9", businessId: "BIZ-UK", category: "RETAIL", merchant: "Harrods Vaults", name: "Designer Gift Hamper", price: 95.00, currency: "GBP", image: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=400&auto=format&fit=crop&q=80" },
+
+      // MADRID CORRIDOR (BIZ-ES)
+      { id: "p3", businessId: "BIZ-ES", category: "RESTAURANT", merchant: "Madrid Tapas Bar", name: "Iberian Tapas Menu (EUR)", price: 15.00, currency: "EUR", image: "https://images.unsplash.com/photo-1515443961218-a51367888e4b?w=400&auto=format&fit=crop&q=80" },
+      { id: "p10", businessId: "BIZ-ES", category: "HOTEL", merchant: "Gran Hotel Palacio", name: "Historic Suite Experience", price: 190.00, currency: "EUR", image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&auto=format&fit=crop&q=80" },
+
+      // TORONTO CORRIDOR (BIZ-CA)
+      { id: "p4", businessId: "BIZ-CA", category: "RESTAURANT", merchant: "Maple Diner & Grill", name: "Maple Glazed Poutine (CAD)", price: 18.00, currency: "CAD", image: "https://images.unsplash.com/photo-1585109649139-366815a0d713?w=400&auto=format&fit=crop&q=80" },
+      { id: "p11", businessId: "BIZ-CA", category: "HOTEL", merchant: "CN Tower Grand View Hotel", name: "Skyline Suite Stay", price: 240.00, currency: "CAD", image: "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=400&auto=format&fit=crop&q=80" }
     ], 
     orders: [], 
     drivers: [], 
-    ledger_entries: [], // Immutable accounting ledger
+    ledger_entries: [], 
     payouts: [], 
     auditTrail: [] 
   };
@@ -242,26 +256,42 @@ io.on("connection", (socket) => {
 
 app.get("/health", (req, res) => ok(res, { status: "GLOBAL_SOVEREIGN_ENGINE_ONLINE", regions: ["KE", "UK", "ES", "CA"], time: Date.now() }));
 
-// ================= PRODUCT CATALOG ENDPOINTS =================
+// ================= PRODUCT & MERCHANT CATALOG ENDPOINTS =================
 app.get('/api/products', enforceTenantIsolation, (req, res) => {
   ensureState();
-  const scopedProducts = data.products.filter(p => p.businessId === req.tenantId);
-  ok(res, { success: true, businessId: req.tenantId, storeName: req.tenantObj.name, currency: req.tenantObj.currency, products: scopedProducts });
+  const { category } = req.query;
+  let scopedProducts = data.products.filter(p => p.businessId === req.tenantId);
+  
+  if (category && category !== 'ALL') {
+    scopedProducts = scopedProducts.filter(p => p.category === category);
+  }
+
+  ok(res, { 
+    success: true, 
+    businessId: req.tenantId, 
+    storeName: req.tenantObj.name, 
+    currency: req.tenantObj.currency, 
+    products: scopedProducts 
+  });
 });
 
 app.post('/api/products', enforceTenantIsolation, async (req, res) => {
   try {
     ensureState();
-    const { name, price, image } = req.body;
+    const { name, price, image, category, merchant } = req.body;
     const safeName = sanitizeString(name);
     const itemPrice = num(price);
     const safeImage = sanitizeString(image) || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80";
+    const safeCategory = sanitizeString(category) || "RETAIL";
+    const safeMerchant = sanitizeString(merchant) || req.tenantObj.name;
 
     if (!safeName || itemPrice <= 0) return fail(res, "Invalid product name or price.", 400);
 
     const newProduct = {
       id: id("PROD"),
       businessId: req.tenantId,
+      category: safeCategory.toUpperCase(),
+      merchant: safeMerchant,
       name: safeName,
       price: itemPrice,
       currency: req.tenantObj.currency,
@@ -285,7 +315,6 @@ app.get('/wallets/:ownerId/balance', async (req, res) => {
 
     try {
         ensureState();
-        // Compute mathematical truth exclusively from settled immutable ledger entries
         const entries = data.ledger_entries.filter(e => e.owner_id === ownerId && e.status === 'SETTLED');
 
         const balance = entries.reduce((acc, entry) => {
@@ -309,7 +338,6 @@ app.get('/wallets/:ownerId/balance', async (req, res) => {
     }
 });
 
-// Legacy fallback endpoint matching old dashboard arrays if needed
 app.get('/wallets', (req, res) => {
     ensureState();
     const wallets = data.businesses.map(tenant => {

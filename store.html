@@ -70,7 +70,7 @@
 
     .search-bar {
       position: relative;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
     .search-bar input {
       width: 100%;
@@ -90,7 +90,7 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
     .corridor-btn {
       background: var(--panel-bg);
@@ -107,6 +107,34 @@
     .corridor-btn.active, .corridor-btn:hover {
       border-color: var(--stage-purple);
       background: rgba(168, 85, 247, 0.1);
+      color: #fff;
+    }
+
+    /* Category Filter Bar for Hotels, Restaurants, Retail */
+    .category-filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .category-filter-bar::-webkit-scrollbar { display: none; }
+    .cat-btn {
+      background: var(--panel-bg);
+      border: 1px solid #374151;
+      color: var(--text-dim);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .cat-btn.active, .cat-btn:hover {
+      background: var(--stage-purple);
+      border-color: var(--stage-purple);
       color: #fff;
     }
 
@@ -143,9 +171,22 @@
 
     .image-wrapper {
       width: 100%;
-      height: 120px;
+      height: 110px;
       overflow: hidden;
       background: #000;
+      position: relative;
+    }
+
+    .merchant-badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: rgba(0,0,0,0.75);
+      color: var(--cyan);
+      font-size: 0.6rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
     }
 
     .product-img {
@@ -157,7 +198,8 @@
     .product-card:hover .product-img { transform: scale(1.08); }
 
     .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
-    .product-title { font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
+    .product-title { font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 2px; }
+    .product-merchant { font-size: 0.65rem; color: var(--text-dim); margin-bottom: 6px; }
     .product-price { font-size: 0.85rem; color: var(--stage-purple); font-weight: 700; margin-bottom: 8px; }
 
     .quantity-stepper {
@@ -318,9 +360,17 @@
             <div class="corridor-btn" onclick="switchCorridor('BIZ-CA', 'Toronto, Canada', 'CAD', this)">🇨🇦 CA (CAD)</div>
         </div>
 
+        <!-- Category Filter Bar (Hotels, Restaurants, Shops) -->
+        <div class="category-filter-bar">
+            <button class="cat-btn active" onclick="filterCategory('ALL', this)">🛒 All Vendors</button>
+            <button class="cat-btn" onclick="filterCategory('RESTAURANT', this)">🍽️ Restaurants</button>
+            <button class="cat-btn" onclick="filterCategory('HOTEL', this)">🏨 Hotels & Suites</button>
+            <button class="cat-btn" onclick="filterCategory('RETAIL', this)">🛍️ Retail Shops</button>
+        </div>
+
         <div class="search-bar">
             <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-            <input type="text" id="searchInput" placeholder="Search global catalog items..." oninput="filterCatalog()">
+            <input type="text" id="searchInput" placeholder="Search millions of shops, hotels..." oninput="handleSearchInput()">
         </div>
 
         <div class="section-header">
@@ -372,7 +422,6 @@
         <div class="checkout-panel">
             <h3>RECONCILED TRANSACTION LEDGER</h3>
             <div id="ledgerFeed" class="ledger-list">
-                <!-- Dynamically populated from database rows -->
                 <div class="ledger-item">
                     <span>[SETTLED] System Initialized</span>
                     <span style="color:var(--neon-green);">Verified</span>
@@ -431,6 +480,7 @@
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
         let allProductsCache = [];
+        let activeCategory = 'ALL';
         let cart = {}; 
 
         function logLedgerEvent(title, detail, isPositive = true) {
@@ -458,7 +508,7 @@
         async function loadStoreCatalog() {
             const bizId = document.getElementById('storeBusinessId').value;
             try {
-                const res = await fetch(`${API_BASE}/api/products`, {
+                const res = await fetch(`${API_BASE}/api/products?category=${activeCategory}`, {
                     headers: { "x-business-id": bizId }
                 });
                 const data = await res.json();
@@ -470,6 +520,22 @@
             } catch (err) {
                 console.error("Catalog load error", err);
             }
+        }
+
+        function filterCategory(category, el) {
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            if(el) el.classList.add('active');
+            activeCategory = category;
+            loadStoreCatalog();
+        }
+
+        function handleSearchInput() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allProductsCache.filter(p => 
+                p.name.toLowerCase().includes(query) || 
+                (p.merchant && p.merchant.toLowerCase().includes(query))
+            );
+            renderCatalog(filtered);
         }
 
         async function fetchSovereignBalance() {
@@ -491,7 +557,7 @@
         function renderCatalog(products) {
             const grid = document.getElementById('catalogGrid');
             if (!products || products.length === 0) {
-                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No items found.</em>';
+                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No vendors or items found.</em>';
                 return;
             }
 
@@ -499,17 +565,20 @@
             const curr = document.getElementById('storeCurrency').value;
             products.forEach(p => {
                 const realImage = p.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80';
+                const merchantName = p.merchant || 'RDS Vendor';
                 const qty = cart[p.id] ? cart[p.id].qty : 0;
                 const unitPrice = Number(p.price) || 0;
 
                 html += `
                     <div class="product-card">
                         <div class="image-wrapper">
+                            <span class="merchant-badge">${merchantName}</span>
                             <img src="${realImage}" class="product-img" alt="${p.name}">
                         </div>
                         <div class="product-info">
                             <div>
                                 <div class="product-title">${p.name}</div>
+                                <div class="product-merchant">${p.category || 'STORE'}</div>
                                 <div class="product-price">${curr} ${unitPrice.toFixed(2)}</div>
                             </div>
                             <div>
@@ -532,9 +601,11 @@
             
             if (cart[id].qty <= 0) {
                 delete cart[id];
-                document.getElementById(`qty-${id}`).innerText = 0;
+                const qEl = document.getElementById(`qty-${id}`);
+                if(qEl) qEl.innerText = 0;
             } else {
-                document.getElementById(`qty-${id}`).innerText = cart[id].qty;
+                const qEl = document.getElementById(`qty-${id}`);
+                if(qEl) qEl.innerText = cart[id].qty;
             }
             recalculateCartSummary();
         }
