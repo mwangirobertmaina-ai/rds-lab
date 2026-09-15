@@ -110,7 +110,6 @@
       color: #fff;
     }
 
-    /* Category Filter Bar for Hotels, Restaurants, Supermarkets, Hypermarkets, Retail */
     .category-filter-bar {
       display: flex;
       gap: 8px;
@@ -352,7 +351,6 @@
             <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
         </div>
 
-        <!-- Global Corridor Selector -->
         <div class="corridor-selector">
             <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE (KES)</div>
             <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK (GBP)</div>
@@ -360,7 +358,6 @@
             <div class="corridor-btn" onclick="switchCorridor('BIZ-CA', 'Toronto, Canada', 'CAD', this)">🇨🇦 CA (CAD)</div>
         </div>
 
-        <!-- Category Filter Bar -->
         <div class="category-filter-bar">
             <button class="cat-btn active" onclick="filterCategory('ALL', this)">🛒 All</button>
             <button class="cat-btn" onclick="filterCategory('RESTAURANT', this)">🍽️ Restaurants</button>
@@ -745,7 +742,7 @@
                     alert(data.message);
                     document.getElementById('depositAmountInput').value = "";
                     fetchSovereignBalance();
-                    logLedgerEvent("Deposit (" + source + ")", `Credited successfully`, true);
+                    logLedgerEvent("Deposit (" + source + ")", `Initiated successfully`, true);
                 } else {
                     alert(data.error || "Deposit failed.");
                 }
@@ -772,7 +769,7 @@
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
                     body: JSON.stringify({ amount, destination, phone, accountNumber, businessId: bizId })
                 });
-                const data = await res.json();
+                const data =آور res.json();
 
                 if (data.success) {
                     alert(data.message);

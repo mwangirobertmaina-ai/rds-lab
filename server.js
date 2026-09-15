@@ -352,7 +352,7 @@ app.get('/wallets', (req, res) => {
     ok(res, { wallets });
 });
 
-// ================= MULTI-SOURCE DEPOSIT ROUTE =================
+// ================= MULTI-SOURCE LIVE WALLET DEPOSIT ROUTE =================
 app.post("/api/wallet/deposit", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -362,38 +362,65 @@ app.post("/api/wallet/deposit", enforceTenantIsolation, async (req, res) => {
         const currencyCode = tenant.currency;
 
         if (depositAmount <= 0) return fail(res, "Invalid deposit amount", 400);
-
         const referenceId = id("DEP_" + source);
 
-        if (source === "MPESA") {
-            const sanitizedPhone = validateKenyanPhone(phone);
-            if (!sanitizedPhone) return fail(res, "Invalid M-Pesa phone number", 400);
-        } else if (source === "BANK") {
-            if (!accountNumber) return fail(res, "Bank account number is required", 400);
+        if (source === "MPESA" || currencyCode === "KES") {
+            const sanitizedPhone = validateKenyanPhone(phone || tenant.ownerPhone);
+            if (!sanitizedPhone) return fail(res, "Invalid Kenyan phone number for M-Pesa top-up", 400);
+
+            const accessToken = await getMpesaAccessToken();
+            const date = new Date();
+            const timestamp = date.getFullYear() +
+                String(date.getMonth() + 1).padStart(2, '0') +
+                String(date.getDate()).padStart(2, '0') +
+                String(date.getHours()).padStart(2, '0') +
+                String(date.getMinutes()).padStart(2, '0') +
+                String(date.getSeconds()).padStart(2, '0');
+
+            const password = Buffer.from(`${MPESA_CONFIG.shortCode}${MPESA_CONFIG.passkey}${timestamp}`).toString('base64');
+
+            const stkResponse = await axios.post(
+                `${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`,
+                {
+                    BusinessShortCode: MPESA_CONFIG.shortCode,
+                    Password: password,
+                    Timestamp: timestamp,
+                    TransactionType: "CustomerPayBillOnline",
+                    Amount: depositAmount,
+                    PartyA: sanitizedPhone,
+                    PartyB: MPESA_CONFIG.shortCode,
+                    PhoneNumber: sanitizedPhone,
+                    CallBackURL: MPESA_CONFIG.callbackUrl,
+                    AccountReference: `RDS Wallet ${tenant.id}`,
+                    TransactionDesc: `Wallet Topup (${currencyCode})`
+                },
+                { headers: { Authorization: `Bearer ${accessToken}` } }
+            );
+
+            return ok(res, { 
+                success: true, 
+                gateway: "M-PESA", 
+                darajaResponse: stkResponse.data, 
+                message: `M-Pesa STK push sent to ${sanitizedPhone}. Enter your PIN to complete deposit.` 
+            });
+        } else {
+            const stripeAmount = Math.round(depositAmount * 100);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: stripeAmount,
+                currency: currencyCode.toLowerCase(),
+                metadata: { type: "WALLET_DEPOSIT", businessId: tenant.id, region: tenant.region }
+            });
+
+            return ok(res, {
+                success: true,
+                gateway: "STRIPE",
+                clientSecret: paymentIntent.client_secret,
+                paymentIntentId: paymentIntent.id,
+                message: `Stripe Payment Intent created for ${currencyCode} ${depositAmount}. Complete authorization to fund wallet.`
+            });
         }
-
-        const ledgerEntry = {
-            id: id("LEDGER"),
-            owner_id: tenant.id,
-            orderId: referenceId,
-            amount: depositAmount,
-            entry_type: "CREDIT",
-            currency: currencyCode,
-            reference_id: referenceId,
-            source: source,
-            status: "SETTLED",
-            timestamp: Date.now()
-        };
-        ledgerEntry.merkleProof = generateStage61MerkleProof(ledgerEntry);
-        data.ledger_entries.push(ledgerEntry);
-        await saveDB();
-
-        if (global.io) {
-            global.io.emit('walletUpdated', { businessId: tenant.id, currency: currencyCode });
-        }
-
-        return ok(res, { success: true, message: `Successfully deposited ${currencyCode} ${depositAmount} via ${source}`, balance: depositAmount });
     } catch (err) {
+        console.error("Deposit Error:", err.response?.data || err.message);
         return fail(res, err.message, 500);
     }
 });
