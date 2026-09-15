@@ -272,7 +272,7 @@
     }
     .checkout-panel h3 { font-size: 0.9rem; margin-bottom: 12px; color: var(--cyan); text-transform: uppercase; }
 
-    input {
+    input, select {
       width: 100%;
       background: var(--dark-bg);
       border: 1px solid #374151;
@@ -283,7 +283,7 @@
       font-size: 0.85rem;
       outline: none;
     }
-    input:focus { border-color: var(--stage-purple); }
+    input:focus, select:focus { border-color: var(--stage-purple); }
 
     .btn-cyan { background: var(--cyan); color: #000; }
     .btn-cyan:hover { background: var(--neon-green); }
@@ -421,12 +421,53 @@
             <div style="font-size: 0.65rem; color: var(--text-dim);" id="auditStatus">Synced & Reconciled</div>
         </div>
 
-        <!-- Wallet Deposit Panel -->
+        <!-- Deposit Panel with Source Selection -->
         <div class="checkout-panel">
-            <h3>Top Up Wallet</h3>
+            <h3>Top Up Wallet (Deposit)</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Select Payment Source</label>
+            <select id="depositSource" onchange="toggleDepositFields()">
+                <option value="MPESA">M-Pesa (Mobile Money)</option>
+                <option value="BANK">Bank Transfer</option>
+                <option value="STRIPE">Stripe / Credit Card</option>
+            </select>
+
+            <div id="depPhoneGroup">
+                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">M-Pesa Phone Number</label>
+                <input type="text" id="depPhone" placeholder="2547XXXXXXXX" value="254721862397">
+            </div>
+
+            <div id="depBankGroup" style="display:none;">
+                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Bank Account Number</label>
+                <input type="text" id="depAccount" placeholder="Enter bank account">
+            </div>
+
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Deposit Amount</label>
             <input type="number" id="depositAmountInput" placeholder="Enter amount">
-            <button onclick="triggerWalletDeposit()" class="btn-cyan">Fund Wallet Now</button>
+            <button onclick="triggerWalletDeposit()" class="btn-cyan">Fund Wallet via Selected Source</button>
+        </div>
+
+        <!-- Withdrawal Panel -->
+        <div class="checkout-panel">
+            <h3>Withdraw Funds</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Withdraw Destination</label>
+            <select id="withdrawDestination" onchange="toggleWithdrawFields()">
+                <option value="MPESA">M-Pesa</option>
+                <option value="BANK">Bank Account</option>
+            </select>
+
+            <div id="wthPhoneGroup">
+                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Recipient Phone Number</label>
+                <input type="text" id="wthPhone" placeholder="2547XXXXXXXX" value="254721862397">
+            </div>
+
+            <div id="wthBankGroup" style="display:none;">
+                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Recipient Bank Account</label>
+                <input type="text" id="wthAccount" placeholder="Enter bank account">
+            </div>
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Withdraw Amount</label>
+            <input type="number" id="withdrawAmountInput" placeholder="Enter amount">
+            <button onclick="triggerWalletWithdrawal()" style="background: var(--alert-red);">Withdraw Funds</button>
         </div>
 
         <div class="checkout-panel">
@@ -668,6 +709,84 @@
             logLedgerEvent("Corridor Switch", `Switched to ${tenantId}`, false);
         }
 
+        function toggleDepositFields() {
+            const source = document.getElementById('depositSource').value;
+            document.getElementById('depPhoneGroup').style.display = source === 'MPESA' ? 'block' : 'none';
+            document.getElementById('depBankGroup').style.display = source === 'BANK' ? 'block' : 'none';
+        }
+
+        function toggleWithdrawFields() {
+            const dest = document.getElementById('withdrawDestination').value;
+            document.getElementById('wthPhoneGroup').style.display = dest === 'MPESA' ? 'block' : 'none';
+            document.getElementById('wthBankGroup').style.display = dest === 'BANK' ? 'block' : 'none';
+        }
+
+        async function triggerWalletDeposit() {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const source = document.getElementById('depositSource').value;
+            const amount = Number(document.getElementById('depositAmountInput').value) || 0;
+            const phone = document.getElementById('depPhone').value.trim();
+            const accountNumber = document.getElementById('depAccount').value.trim();
+
+            if (amount <= 0) {
+                alert("Please enter a valid deposit amount.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/wallet/deposit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ amount, source, phone, accountNumber, businessId: bizId })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('depositAmountInput').value = "";
+                    fetchSovereignBalance();
+                    logLedgerEvent("Deposit (" + source + ")", `Credited successfully`, true);
+                } else {
+                    alert(data.error || "Deposit failed.");
+                }
+            } catch (err) {
+                alert("Network error processing deposit.");
+            }
+        }
+
+        async function triggerWalletWithdrawal() {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const destination = document.getElementById('withdrawDestination').value;
+            const amount = Number(document.getElementById('withdrawAmountInput').value) || 0;
+            const phone = document.getElementById('wthPhone').value.trim();
+            const accountNumber = document.getElementById('wthAccount').value.trim();
+
+            if (amount <= 0) {
+                alert("Please enter a valid withdrawal amount.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/wallet/withdraw`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ amount, destination, phone, accountNumber, businessId: bizId })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('withdrawAmountInput').value = "";
+                    fetchSovereignBalance();
+                    logLedgerEvent("Withdrawal (" + destination + ")", `Debited successfully`, false);
+                } else {
+                    alert(data.error || "Withdrawal failed.");
+                }
+            } catch (err) {
+                alert("Network error processing withdrawal.");
+            }
+        }
+
         async function triggerGlobalCheckout() {
             const bizId = document.getElementById('storeBusinessId').value;
             const curr = document.getElementById('storeCurrency').value;
@@ -701,37 +820,6 @@
                 }
             } catch (err) {
                 alert("Network error processing international checkout.");
-            }
-        }
-
-        async function triggerWalletDeposit() {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const amount = Number(document.getElementById('depositAmountInput').value) || 0;
-            const phone = document.getElementById('custPhone') ? document.getElementById('custPhone').value : "";
-
-            if (amount <= 0) {
-                alert("Please enter a valid deposit amount.");
-                return;
-            }
-
-            try {
-                const res = await fetch(`${API_BASE}/api/wallet/deposit`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ amount, phone, businessId: bizId })
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('depositAmountInput').value = "";
-                    fetchSovereignBalance();
-                    logLedgerEvent("Wallet Deposit", `Credited successfully`, true);
-                } else {
-                    alert(data.error || "Deposit failed.");
-                }
-            } catch (err) {
-                alert("Network error processing wallet deposit.");
             }
         }
 

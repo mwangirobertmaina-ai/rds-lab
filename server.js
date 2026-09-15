@@ -352,32 +352,35 @@ app.get('/wallets', (req, res) => {
     ok(res, { wallets });
 });
 
-// ================= DIRECT WALLET DEPOSIT ROUTE =================
+// ================= MULTI-SOURCE DEPOSIT ROUTE =================
 app.post("/api/wallet/deposit", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
-        const { amount, phone } = req.body;
+        const { amount, source, phone, accountNumber } = req.body;
         const depositAmount = Number(amount);
         const tenant = req.tenantObj;
         const currencyCode = tenant.currency;
 
         if (depositAmount <= 0) return fail(res, "Invalid deposit amount", 400);
 
-        const referenceId = id("DEP");
+        const referenceId = id("DEP_" + source);
 
-        if (currencyCode === "KES") {
+        if (source === "MPESA") {
             const sanitizedPhone = validateKenyanPhone(phone);
-            if (!sanitizedPhone) return fail(res, "Invalid Kenyan phone number for M-Pesa deposit", 400);
+            if (!sanitizedPhone) return fail(res, "Invalid M-Pesa phone number", 400);
+        } else if (source === "BANK") {
+            if (!accountNumber) return fail(res, "Bank account number is required", 400);
         }
 
         const ledgerEntry = {
-            id: id("LEDGER_DEP"),
+            id: id("LEDGER"),
             owner_id: tenant.id,
             orderId: referenceId,
             amount: depositAmount,
             entry_type: "CREDIT",
             currency: currencyCode,
             reference_id: referenceId,
+            source: source,
             status: "SETTLED",
             timestamp: Date.now()
         };
@@ -389,7 +392,53 @@ app.post("/api/wallet/deposit", enforceTenantIsolation, async (req, res) => {
             global.io.emit('walletUpdated', { businessId: tenant.id, currency: currencyCode });
         }
 
-        return ok(res, { success: true, message: `Successfully deposited ${currencyCode} ${depositAmount}`, balance: depositAmount });
+        return ok(res, { success: true, message: `Successfully deposited ${currencyCode} ${depositAmount} via ${source}`, balance: depositAmount });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+// ================= WITHDRAWAL / PAYOUT ROUTE =================
+app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
+    try {
+        ensureState();
+        const { amount, destination, phone, accountNumber } = req.body;
+        const withdrawAmount = Number(amount);
+        const tenant = req.tenantObj;
+        const currencyCode = tenant.currency;
+
+        if (withdrawAmount <= 0) return fail(res, "Invalid withdrawal amount", 400);
+
+        const entries = data.ledger_entries.filter(e => e.owner_id === tenant.id && e.status === 'SETTLED');
+        const currentBalance = entries.reduce((acc, entry) => entry.entry_type === 'CREDIT' ? acc + entry.amount : acc - entry.amount, 0);
+
+        if (withdrawAmount > currentBalance) {
+            return fail(res, "Insufficient wallet balance for withdrawal", 400);
+        }
+
+        const referenceId = id("WTH_" + destination);
+
+        const ledgerEntry = {
+            id: id("LEDGER"),
+            owner_id: tenant.id,
+            orderId: referenceId,
+            amount: withdrawAmount,
+            entry_type: "DEBIT",
+            currency: currencyCode,
+            reference_id: referenceId,
+            destination: destination,
+            status: "SETTLED",
+            timestamp: Date.now()
+        };
+        ledgerEntry.merkleProof = generateStage61MerkleProof(ledgerEntry);
+        data.ledger_entries.push(ledgerEntry);
+        await saveDB();
+
+        if (global.io) {
+            global.io.emit('walletUpdated', { businessId: tenant.id, currency: currencyCode });
+        }
+
+        return ok(res, { success: true, message: `Successfully withdrew ${currencyCode} ${withdrawAmount} to ${destination}` });
     } catch (err) {
         return fail(res, err.message, 500);
     }
