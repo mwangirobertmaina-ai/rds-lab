@@ -1,5 +1,5 @@
 // ==========================================
-// RDS - STAGE 60 SOVEREIGN HYBRID ENGINE
+// RDS - STAGE 60 SOVEREIGN HYBRID ENGINE (LIVE PRODUCTION)
 // Production-Grade Escrow, Immutable Merkle Ledgers, Explicit Multi-Wallet,
 // Real-Time Socket.IO Telemetry, KRA Vault, & Scoped Tenant Isolation
 // ==========================================
@@ -96,18 +96,17 @@ function processStage60FinancialSplit(itemPriceTotal, distanceKm, demandMultipli
   };
 }
 
+// ================= LIVE PRODUCTION M-PESA CONFIG =================
 const MPESA_CONFIG = {
-  consumerKey: process.env.MPESA_CONSUMER_KEY || "1gUiUGRcrNGP7GEplYsE62mNKqAnItctwfteNSPPklSop61w",
-  consumerSecret: process.env.MPESA_CONSUMER_SECRET || "wF4tdktQCUIATJr3DNqW9wtIjtImd7bNGGyYhYa5k3LNesW20xRG1ZAsEiqBqgRv",
-  shortCode: process.env.MPESA_SHORTCODE || "174379",
-  passkey: process.env.MPESA_PASSKEY || "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919",
-  environment: process.env.MPESA_ENV || "sandbox",
-  callbackUrl: process.env.MPESA_CALLBACK_URL || "https://sandbox.safaricom.co.ke/callback"
+  consumerKey: "1gUiUGRcrNGP7GEplYsE62mNKqAnItctwfteNSPPklSop61w",
+  consumerSecret: "wF4tdktQCUIATJr3DNqW9wtIjtImd7bNGGyYhYa5k3LNesW20xRG1ZAsEiqBqgRv",
+  shortCode: "1200280", // Store / Paybill Shortcode (Till: 1672064)
+  passkey: "4862",
+  environment: "production",
+  callbackUrl: process.env.MPESA_CALLBACK_URL || "https://rds-lab.onrender.com/mpesa/callback"
 };
 
-const MPESA_BASE_URL = MPESA_CONFIG.environment === "production"
-  ? "https://api.safaricom.co.ke"
-  : "https://sandbox.safaricom.co.ke";
+const MPESA_BASE_URL = "https://api.safaricom.co.ke";
 
 async function executeWithRetry(fn, retries = 5, delay = 1000) {
   try {
@@ -142,7 +141,7 @@ app.get("/", (req, res) => {
 app.use(express.static("."));
 
 function log(type, msg) {
-  console.log(`[${new Date().toISOString()}] [STAGE-60-SOVEREIGN] [${type}] ${msg}`);
+  console.log(`[${new Date().toISOString()}] [STAGE-60-LIVE] [${type}] ${msg}`);
 }
 
 app.use((req, res, next) => {
@@ -153,7 +152,7 @@ app.use((req, res, next) => {
 function defaultDB() {
   return { 
     businesses: [
-      { id: "BIZ-001", name: "KFC Nairobi", ownerPhone: "254708374149", taxPin: "P055123456Z" },
+      { id: "BIZ-001", name: "KFC Nairobi", ownerPhone: "254721862397", taxPin: "P055123456Z" },
       { id: "BIZ-002", name: "Naivas Groceries", ownerPhone: "254712345678", taxPin: "P055654321Z" },
       { id: "BIZ-003", name: "Goodlife Meds", ownerPhone: "254722334455", taxPin: "P055987654Z" }
     ], 
@@ -390,7 +389,7 @@ app.get('/wallets', (req, res) => {
   ok(res, { wallets: data.wallets });
 });
 
-// ================= REAL M-PESA STK GATEWAY (SMART HYBRID SETTLEMENT) =================
+// ================= REAL LIVE PRODUCTION M-PESA STK GATEWAY =================
 app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -403,46 +402,123 @@ app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
         }
 
         const activeBizId = businessId || req.tenantId || "BIZ-001";
-        const orderId = id("ORD60");
-        const checkoutId = "ws_CO_" + Date.now();
+        
+        // 1. Get Live Production OAuth Token from Safaricom
+        const accessToken = await getMpesaAccessToken();
 
+        // 2. Generate Timestamp and Password using your shortcode 1200280 and passkey 4862
+        const date = new Date();
+        const timestamp = date.getFullYear() +
+            String(date.getMonth() + 1).padStart(2, '0') +
+            String(date.getDate()).padStart(2, '0') +
+            String(date.getHours()).padStart(2, '0') +
+            String(date.getMinutes()).padStart(2, '0') +
+            String(date.getSeconds()).padStart(2, '0');
+
+        const password = Buffer.from(`${MPESA_CONFIG.shortCode}${MPESA_CONFIG.passkey}${timestamp}`).toString('base64');
+
+        const orderId = id("ORD60");
         const order = {
             id: orderId,
             businessId: activeBizId,
             customerPhone: sanitizedPhone,
             total: amount,
-            status: "STAGE_60_PAID",
-            checkoutRequestId: checkoutId,
+            status: "STAGE_60_PENDING_STK",
             createdAt: Date.now()
         };
         data.orders.push(order);
-
-        // Instantly credit wallet with real precision
-        const currentBalance = updateWalletBalance(activeBizId, amount, "CREDIT");
-
-        const ledgerEntry = {
-            id: id("LEDGER60"),
-            businessId: activeBizId,
-            orderId: order.id,
-            gross: amount,
-            reconciled: true,
-            timestamp: Date.now()
-        };
-        ledgerEntry.merkleProof = generateStage60MerkleProof(ledgerEntry);
-        data.ledger.push(ledgerEntry);
         await saveDB();
 
-        // Broadcast real-time balance and order updates via Socket.io
-        if (global.io) {
-            global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'STAGE_60_PAID' });
-            global.io.emit('walletUpdated', { businessId: activeBizId, ownerId: activeBizId, balance: currentBalance });
+        // 3. Send Live STK Push Request to Safaricom Production Server
+        const stkResponse = await axios.post(
+            `${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`,
+            {
+                BusinessShortCode: MPESA_CONFIG.shortCode,
+                Password: password,
+                Timestamp: timestamp,
+                TransactionType: "CustomerPayBillOnline",
+                Amount: amount,
+                PartyA: sanitizedPhone,
+                PartyB: MPESA_CONFIG.shortCode,
+                PhoneNumber: sanitizedPhone,
+                CallBackURL: MPESA_CONFIG.callbackUrl,
+                AccountReference: `RDS Store 1200280`,
+                TransactionDesc: "Sovereign Super App Checkout"
+            },
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+
+        if (stkResponse.data && stkResponse.data.CheckoutRequestID) {
+            order.checkoutRequestId = stkResponse.data.CheckoutRequestID;
+            await saveDB();
         }
 
-        log("STK_SUCCESS", `M-Pesa payment settled instantly for ${sanitizedPhone}. Credited KES ${amount}. New Wallet Balance: ${currentBalance}`);
-        return res.json({ success: true, message: "Payment processed and wallet updated.", balance: currentBalance, CheckoutRequestID: checkoutId });
+        log("STK_LIVE", `Live STK Push successfully sent to ${sanitizedPhone} for KES ${amount}`);
+        if (global.io) global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
+
+        return res.json({ success: true, darajaResponse: stkResponse.data });
 
     } catch (err) {
-        log("STK_ERR", err.message);
+        console.error("Live Daraja Error:", err.response?.data || err.message);
+        return res.status(500).json({ success: false, error: err.response?.data?.errorMessage || err.message });
+    }
+});
+
+// ================= LIVE M-PESA DARAJA CALLBACK ENDPOINT =================
+app.post("/mpesa/callback", async (req, res) => {
+    try {
+        ensureState();
+        const callbackData = req.body.Body?.stkCallback;
+        if (!callbackData) {
+            return res.status(400).json({ success: false, error: "Invalid callback structure" });
+        }
+
+        const checkoutRequestId = callbackData.CheckoutRequestID;
+        const resultCode = callbackData.ResultCode;
+
+        const order = data.orders.find(o => o.checkoutRequestId === checkoutRequestId);
+        if (!order) {
+            log("CALLBACK_WARN", `Order not found for CheckoutRequestID: ${checkoutRequestId}`);
+            return res.json({ success: true });
+        }
+
+        if (resultCode === 0) {
+            // Real money payment completed successfully by user on phone!
+            order.status = "STAGE_60_PAID";
+            const activeBizId = order.businessId;
+            const amountPaid = order.total;
+
+            const currentBalance = updateWalletBalance(activeBizId, amountPaid, "CREDIT");
+
+            const ledgerEntry = {
+                id: id("LEDGER60"),
+                businessId: activeBizId,
+                orderId: order.id,
+                gross: amountPaid,
+                reconciled: true,
+                timestamp: Date.now()
+            };
+            ledgerEntry.merkleProof = generateStage60MerkleProof(ledgerEntry);
+            data.ledger.push(ledgerEntry);
+            await saveDB();
+
+            if (global.io) {
+                global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'STAGE_60_PAID' });
+                global.io.emit('walletUpdated', { businessId: activeBizId, ownerId: activeBizId, balance: currentBalance });
+            }
+            log("LIVE_PAYMENT_CONFIRMED", `Real funds received: KES ${amountPaid}. Wallet updated for ${activeBizId}`);
+        } else {
+            order.status = "STAGE_60_FAILED";
+            await saveDB();
+            if (global.io) {
+                global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'STAGE_60_FAILED' });
+            }
+            log("STK_FAILED", `Payment failed/cancelled for order ${order.id}: ${callbackData.ResultDesc}`);
+        }
+
+        return res.json({ success: true });
+    } catch (err) {
+        log("CALLBACK_ERR", err.message);
         return res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -493,7 +569,7 @@ app.use((req, res) => res.status(200).json({ success: true, stage60SovereignHybr
 
 if (require.main === module) {
   server.listen(PORT, () => {
-    log("SYSTEM", `🚀 STAGE-60 SOVEREIGN HYBRID ENGINE ACTIVE ON PORT ${PORT}`);
+    log("SYSTEM", `🚀 STAGE-60 LIVE PRODUCTION ENGINE ACTIVE ON PORT ${PORT}`);
   });
 }
 
