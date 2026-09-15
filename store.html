@@ -110,7 +110,7 @@
       color: #fff;
     }
 
-    /* Category Filter Bar for Hotels, Restaurants, Retail */
+    /* Category Filter Bar for Hotels, Restaurants, Supermarkets, Hypermarkets, Retail */
     .category-filter-bar {
       display: flex;
       gap: 8px;
@@ -360,11 +360,13 @@
             <div class="corridor-btn" onclick="switchCorridor('BIZ-CA', 'Toronto, Canada', 'CAD', this)">🇨🇦 CA (CAD)</div>
         </div>
 
-        <!-- Category Filter Bar (Hotels, Restaurants, Shops) -->
+        <!-- Category Filter Bar -->
         <div class="category-filter-bar">
-            <button class="cat-btn active" onclick="filterCategory('ALL', this)">🛒 All Vendors</button>
+            <button class="cat-btn active" onclick="filterCategory('ALL', this)">🛒 All</button>
             <button class="cat-btn" onclick="filterCategory('RESTAURANT', this)">🍽️ Restaurants</button>
-            <button class="cat-btn" onclick="filterCategory('HOTEL', this)">🏨 Hotels & Suites</button>
+            <button class="cat-btn" onclick="filterCategory('HOTEL', this)">🏨 Hotels</button>
+            <button class="cat-btn" onclick="filterCategory('SUPERMARKET', this)">🏬 Supermarkets</button>
+            <button class="cat-btn" onclick="filterCategory('HYPERMARKET', this)">🏬🏢 Hypermarkets</button>
             <button class="cat-btn" onclick="filterCategory('RETAIL', this)">🛍️ Retail Shops</button>
         </div>
 
