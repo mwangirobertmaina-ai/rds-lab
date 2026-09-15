@@ -33,7 +33,6 @@
       padding-bottom: 110px;
     }
 
-    /* Views Framework */
     .app-view { display: none; }
     .app-view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
 
@@ -42,7 +41,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Stage 60 Telemetry Header Ribbon */
     .telemetry-ribbon {
       background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(56,189,248,0.1));
       border: 1px solid var(--stage-purple);
@@ -58,7 +56,6 @@
       letter-spacing: 0.5px;
     }
 
-    /* Header & Location */
     .header-location {
       display: flex;
       justify-content: space-between;
@@ -69,7 +66,6 @@
     .location-text span { font-size: 0.75rem; color: var(--text-dim); display: block; }
     .location-text strong { font-size: 0.95rem; color: #fff; }
 
-    /* Search Bar */
     .search-bar {
       position: relative;
       margin-bottom: 20px;
@@ -88,7 +84,6 @@
     .search-bar input:focus { border-color: var(--stage-purple); box-shadow: 0 0 10px rgba(168,85,247,0.25); }
     .search-bar svg { position: absolute; left: 12px; top: 14px; width: 18px; height: 18px; fill: var(--text-dim); }
 
-    /* Category Icons Row */
     .categories-row {
       display: flex;
       justify-content: space-between;
@@ -114,7 +109,6 @@
     .category-item span { font-size: 0.75rem; color: var(--text-dim); font-weight: 600; }
     .category-item.active span { color: var(--stage-purple); }
 
-    /* Section Headers */
     .section-header {
       display: flex;
       justify-content: space-between;
@@ -123,7 +117,6 @@
     }
     .section-header h3 { font-size: 1rem; color: #fff; font-weight: 700; }
 
-    /* Horizontal Vendor Cards */
     .vendors-scroll {
       display: flex;
       gap: 12px;
@@ -149,7 +142,6 @@
     .vendor-info h4 { font-size: 0.8rem; color: #fff; margin-bottom: 2px; }
     .vendor-info p { font-size: 0.7rem; color: var(--text-dim); }
 
-    /* Product Catalog Grid */
     .catalog-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -165,13 +157,23 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-      animation: fadeInUp 0.4s ease-out;
+      transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+      animation: productSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+      transform: translateY(15px);
     }
+
+    @keyframes productSlideUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     .product-card:hover { 
       transform: translateY(-4px); 
       border-color: var(--stage-purple); 
-      box-shadow: 0 6px 16px rgba(168, 85, 247, 0.2); 
+      box-shadow: 0 8px 20px rgba(168, 85, 247, 0.25); 
     }
 
     .image-wrapper {
@@ -193,7 +195,6 @@
     .product-title { font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
     .product-price { font-size: 0.85rem; color: var(--stage-purple); font-weight: 700; margin-bottom: 8px; }
 
-    /* Quantity Stepper Controls */
     .quantity-stepper {
       display: flex;
       align-items: center;
@@ -244,7 +245,6 @@
     }
     .owner-mode .owner-controls { display: block; }
 
-    /* Floating Cart Bar */
     .floating-cart {
       position: fixed;
       bottom: 70px;
@@ -265,7 +265,6 @@
     }
     .floating-cart.active { display: flex; }
 
-    /* Checkout & Status Panel */
     .checkout-panel {
       background: var(--panel-bg);
       border: 1px solid #222c3d;
@@ -291,7 +290,6 @@
     .btn-cyan { background: var(--cyan); color: #000; }
     .btn-cyan:hover { background: var(--neon-green); }
 
-    /* Transaction Ledger List */
     .ledger-list {
       max-height: 130px;
       overflow-y: auto;
@@ -310,7 +308,6 @@
       padding-bottom: 3px;
     }
 
-    /* Rider Dispatch Info Box */
     .rider-card {
       background: rgba(56, 189, 248, 0.08);
       border: 1px dashed var(--cyan);
@@ -322,7 +319,6 @@
     .rider-card.active { display: block; }
     .rider-card p { font-size: 0.8rem; color: #fff; margin-bottom: 4px; }
 
-    /* Bottom Navigation Bar */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -347,11 +343,6 @@
     }
     .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
     .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin-bottom: 3px; display: block; margin: 0 auto 3px auto; }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
   </style>
 </head>
 <body id="appBody">
@@ -436,7 +427,8 @@
         <!-- Owner Settings Panel (Visible only in Owner Mode) -->
         <div class="checkout-panel owner-controls" style="margin-bottom: 15px; border-color: var(--stage-purple);">
             <h3>🔐 Owner Management Hub</h3>
-            <button class="btn-cyan" onclick="changeOwnerPin()" style="margin-bottom: 12px;">Change Owner PIN</button>
+            <button class="btn-cyan" onclick="changeOwnerPin()" style="margin-bottom: 8px;">Change Owner PIN</button>
+            <button class="btn-cyan" onclick="downloadCatalogJSON()" style="margin-bottom: 12px; background: var(--neon-green); color: #000;">📥 Download Catalog (JSON)</button>
             
             <div style="border-top: 1px dashed #374151; padding-top: 10px;">
                 <h4 style="font-size: 0.8rem; color: var(--neon-green); margin-bottom: 8px;">➕ Add New Catalog Item</h4>
@@ -494,7 +486,7 @@
         </div>
         <div class="checkout-panel" style="text-align: center; padding: 25px 15px;">
             <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;">AVAILABLE BALANCE</p>
-            <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 15px;">KES <span id="walletBalance">12,450.00</span></h2>
+            <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 15px;">KES <span id="walletBalance">0.00</span></h2>
         </div>
 
         <div class="checkout-panel">
@@ -571,7 +563,6 @@
         let cart = {}; 
         let isOwnerMode = false;
 
-        // Retrieve stored owner PIN or default strictly to "0000"
         function getOwnerPin() {
             return localStorage.getItem('rds_owner_pin') || "0000";
         }
@@ -600,7 +591,7 @@
             if (pin === currentPin || pin === "5555") { 
                 isOwnerMode = !isOwnerMode;
                 document.getElementById('appBody').classList.toggle('owner-mode', isOwnerMode);
-                alert(isOwnerMode ? "Owner Mode Unlocked: Catalog editing & pricing enabled." : "Locked to Customer Mode.");
+                alert(isOwnerMode ? "Owner Mode Unlocked: Catalog editing enabled." : "Locked to Customer Mode.");
                 renderCatalog(allProductsCache);
                 logLedgerEvent("Owner Mode", isOwnerMode ? "Unlocked" : "Locked");
             } else if (pin !== null) {
@@ -630,6 +621,22 @@
             }
         }
 
+        function downloadCatalogJSON() {
+            if (!isOwnerMode) {
+                alert("Restricted: Owner mode required.");
+                return;
+            }
+            const bizId = document.getElementById('storeBusinessId').value;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allProductsCache, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `RDS_Catalog_${bizId}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            logLedgerEvent("Catalog Export", `Downloaded JSON for ${bizId}`);
+        }
+
         async function loadStoreCatalog() {
             const bizId = document.getElementById('storeBusinessId').value;
             try {
@@ -652,13 +659,14 @@
             }
 
             let html = '';
-            products.forEach(p => {
+            products.forEach((p, index) => {
                 const realImage = p.image && p.image.trim() !== "" ? p.image : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80';
                 const qty = cart[p.id] ? cart[p.id].qty : 0;
                 const unitPrice = Number(p.price) || 0;
+                const animationDelay = (index * 0.05) + 's';
 
                 html += `
-                    <div class="product-card">
+                    <div class="product-card" style="animation-delay: ${animationDelay};">
                         <div class="image-wrapper">
                             <img src="${realImage}" class="product-img" alt="${p.name}">
                         </div>
@@ -935,7 +943,7 @@
             socket.on('productDeleted', () => loadStoreCatalog());
             socket.on('walletUpdated', (data) => {
                 const currentBiz = document.getElementById('storeBusinessId').value;
-                if (data.businessId === currentBiz) {
+                if (data.businessId === currentBiz || data.ownerId === currentBiz) {
                     document.getElementById('walletBalance').innerText = Number(data.balance).toLocaleString();
                 }
             });
