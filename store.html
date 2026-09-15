@@ -769,7 +769,7 @@
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
                     body: JSON.stringify({ amount, destination, phone, accountNumber, businessId: bizId })
                 });
-                const data =آور res.json();
+                const data = await res.json();
 
                 if (data.success) {
                     alert(data.message);
