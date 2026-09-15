@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 61 | Global Sovereign Multi-Region Super App</title>
+  <title>RDS 62 | Sovereign Multi-Corridor Super App & Fleet Dispatch</title>
 
   <!-- Socket.io Client -->
   <script src="/socket.io/socket.io.js"></script>
-  <!-- Stripe.js for International Checkouts (UK, Spain, Canada) -->
+  <!-- Stripe.js for International Checkouts -->
   <script src="https://js.stripe.com/v3/"></script>
 
   <style>
@@ -68,10 +68,7 @@
     .location-text span { font-size: 0.75rem; color: var(--text-dim); display: block; }
     .location-text strong { font-size: 0.95rem; color: #fff; }
 
-    .search-bar {
-      position: relative;
-      margin-bottom: 15px;
-    }
+    .search-bar { position: relative; margin-bottom: 15px; }
     .search-bar input {
       width: 100%;
       background: var(--panel-bg);
@@ -336,7 +333,7 @@
     <!-- HOME / STORE VIEW -->
     <div id="viewHome" class="app-view active-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 61 GLOBAL MESH: ONLINE</span>
+            <span>🌐 RDS STAGE 62 FLEET & SPLIT ENGINE</span>
             <span id="nodeLatency">10ms • Secured</span>
         </div>
 
@@ -382,10 +379,28 @@
         </div>
     </div>
 
-    <!-- ORDERS & CHECKOUT VIEW -->
+    <!-- ORDERS & STAGE 62 CHECKOUT VIEW -->
     <div id="viewOrders" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>International Secure Checkout</h3>
+            <h3>Stage 62 Fleet & Secure Checkout</h3>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Delivery & Fleet Configuration</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Vehicle Tier (Motorbike / Car)</label>
+            <select id="vehicleTypeSelect">
+                <option value="MOTORBIKE">Motorbike (Ideal for &lt;200m or traffic)</option>
+                <option value="CAR">Car / Executive Ride</option>
+            </select>
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Estimated Distance (KM)</label>
+            <input type="number" id="distanceKmInput" value="2.5" step="0.1" placeholder="Distance in KM">
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Pickup Location (Merchant/Source)</label>
+            <input type="text" id="pickupLoc" placeholder="e.g. Nairobi CBD Merchant Hub">
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Dropoff Location (Destination)</label>
+            <input type="text" id="dropoffLoc" placeholder="e.g. Westlands Commercial Center">
         </div>
 
         <div class="checkout-panel">
@@ -394,9 +409,16 @@
                 <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">M-Pesa Phone Number</label>
                 <input type="text" id="custPhone" placeholder="2547XXXXXXXX" value="254721862397">
             </div>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Total Amount</label>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Items Value</label>
             <input type="number" id="custAmount" placeholder="0" readonly>
-            <button onclick="triggerGlobalCheckout()" class="btn-cyan" id="checkoutBtn">Authorize Payment</button>
+            <button onclick="triggerGlobalCheckout()" class="btn-cyan" id="checkoutBtn">Authorize Stage 62 Payment</button>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Merchant Dispatch Control</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Active Order ID for Dispatch</label>
+            <input type="text" id="dispatchOrderIdInput" placeholder="Enter Order ID">
+            <button onclick="triggerShopDispatch()" style="background: var(--neon-green); color:#000;">Press Dispatched (Release 95% to Driver)</button>
         </div>
 
         <div class="checkout-panel">
@@ -418,7 +440,7 @@
             <div style="font-size: 0.65rem; color: var(--text-dim);" id="auditStatus">Synced & Reconciled</div>
         </div>
 
-        <!-- Deposit Panel with Source Selection -->
+        <!-- Deposit Panel -->
         <div class="checkout-panel">
             <h3>Top Up Wallet (Deposit)</h3>
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Select Payment Source</label>
@@ -433,11 +455,6 @@
                 <input type="text" id="depPhone" placeholder="2547XXXXXXXX" value="254721862397">
             </div>
 
-            <div id="depBankGroup" style="display:none;">
-                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Bank Account Number</label>
-                <input type="text" id="depAccount" placeholder="Enter bank account">
-            </div>
-
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Deposit Amount</label>
             <input type="number" id="depositAmountInput" placeholder="Enter amount">
             <button onclick="triggerWalletDeposit()" class="btn-cyan">Fund Wallet via Selected Source</button>
@@ -445,22 +462,12 @@
 
         <!-- Withdrawal Panel -->
         <div class="checkout-panel">
-            <h3>Withdraw Funds</h3>
+            <h3>Withdraw Funds (Driver Anytime Payout)</h3>
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Withdraw Destination</label>
-            <select id="withdrawDestination" onchange="toggleWithdrawFields()">
+            <select id="withdrawDestination">
                 <option value="MPESA">M-Pesa</option>
                 <option value="BANK">Bank Account</option>
             </select>
-
-            <div id="wthPhoneGroup">
-                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Recipient Phone Number</label>
-                <input type="text" id="wthPhone" placeholder="2547XXXXXXXX" value="254721862397">
-            </div>
-
-            <div id="wthBankGroup" style="display:none;">
-                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Recipient Bank Account</label>
-                <input type="text" id="wthAccount" placeholder="Enter bank account">
-            </div>
 
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Withdraw Amount</label>
             <input type="number" id="withdrawAmountInput" placeholder="Enter amount">
@@ -471,7 +478,7 @@
             <h3>RECONCILED TRANSACTION LEDGER</h3>
             <div id="ledgerFeed" class="ledger-list">
                 <div class="ledger-item">
-                    <span>[SETTLED] System Initialized</span>
+                    <span>[SETTLED] Stage 62 Engine Online</span>
                     <span style="color:var(--neon-green);">Verified</span>
                 </div>
             </div>
@@ -486,7 +493,7 @@
         <div class="checkout-panel">
             <p><strong>User:</strong> Robert Maina</p>
             <p style="margin-top: 8px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
-            <p style="margin-top: 8px;"><strong>Engine Build:</strong> RDS Stage 61 Global Sovereign Hybrid</p>
+            <p style="margin-top: 8px;"><strong>Engine Build:</strong> RDS Stage 62 Global Sovereign Fleet</p>
         </div>
     </div>
 
@@ -709,13 +716,6 @@
         function toggleDepositFields() {
             const source = document.getElementById('depositSource').value;
             document.getElementById('depPhoneGroup').style.display = source === 'MPESA' ? 'block' : 'none';
-            document.getElementById('depBankGroup').style.display = source === 'BANK' ? 'block' : 'none';
-        }
-
-        function toggleWithdrawFields() {
-            const dest = document.getElementById('withdrawDestination').value;
-            document.getElementById('wthPhoneGroup').style.display = dest === 'MPESA' ? 'block' : 'none';
-            document.getElementById('wthBankGroup').style.display = dest === 'BANK' ? 'block' : 'none';
         }
 
         async function triggerWalletDeposit() {
@@ -723,7 +723,6 @@
             const source = document.getElementById('depositSource').value;
             const amount = Number(document.getElementById('depositAmountInput').value) || 0;
             const phone = document.getElementById('depPhone').value.trim();
-            const accountNumber = document.getElementById('depAccount').value.trim();
 
             if (amount <= 0) {
                 alert("Please enter a valid deposit amount.");
@@ -734,7 +733,7 @@
                 const res = await fetch(`${API_BASE}/api/wallet/deposit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ amount, source, phone, accountNumber, businessId: bizId })
+                    body: JSON.stringify({ amount, source, phone, businessId: bizId })
                 });
                 const data = await res.json();
 
@@ -755,8 +754,6 @@
             const bizId = document.getElementById('storeBusinessId').value;
             const destination = document.getElementById('withdrawDestination').value;
             const amount = Number(document.getElementById('withdrawAmountInput').value) || 0;
-            const phone = document.getElementById('wthPhone').value.trim();
-            const accountNumber = document.getElementById('wthAccount').value.trim();
 
             if (amount <= 0) {
                 alert("Please enter a valid withdrawal amount.");
@@ -767,7 +764,7 @@
                 const res = await fetch(`${API_BASE}/api/wallet/withdraw`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ amount, destination, phone, accountNumber, businessId: bizId })
+                    body: JSON.stringify({ amount, destination, businessId: bizId })
                 });
                 const data = await res.json();
 
@@ -775,7 +772,7 @@
                     alert(data.message);
                     document.getElementById('withdrawAmountInput').value = "";
                     fetchSovereignBalance();
-                    logLedgerEvent("Withdrawal (" + destination + ")", `Debited successfully`, false);
+                    logLedgerEvent("Withdrawal", `Debited successfully to ${destination}`, false);
                 } else {
                     alert(data.error || "Withdrawal failed.");
                 }
@@ -788,9 +785,13 @@
             const bizId = document.getElementById('storeBusinessId').value;
             const curr = document.getElementById('storeCurrency').value;
             const phone = document.getElementById('custPhone').value.trim();
-            const amount = Number(document.getElementById('custAmount').value) || 0;
+            const itemPriceTotal = Number(document.getElementById('custAmount').value) || 0;
+            const distanceKm = Number(document.getElementById('distanceKmInput').value) || 2.5;
+            const vehicleType = document.getElementById('vehicleTypeSelect').value;
+            const pickupLocation = document.getElementById('pickupLoc').value.trim();
+            const dropoffLocation = document.getElementById('dropoffLoc').value.trim();
 
-            if (amount <= 0) {
+            if (itemPriceTotal <= 0) {
                 alert("Please add items to your cart before checking out.");
                 return;
             }
@@ -799,24 +800,55 @@
                 const res = await fetch(`${API_BASE}/api/checkout`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ phone, itemPriceTotal: amount, businessId: bizId })
+                    body: JSON.stringify({ phone, itemPriceTotal, distanceKm, vehicleType, pickupLocation, dropoffLocation, businessId: bizId })
                 });
                 const data = await res.json();
 
                 if (data.success) {
+                    document.getElementById('dispatchOrderIdInput').value = data.orderId;
                     if (data.gateway === "M-PESA") {
-                        alert(`M-Pesa STK Push sent successfully for KES ${amount}! Check your device.`);
+                        alert(`M-Pesa STK Push sent successfully for total ${curr} ${data.split.userTotalPaid}! (Includes 2% shop surcharge & delivery).`);
                         document.getElementById('lifecycleStatus').innerText = "PENDING_M_PESA_PIN";
                     } else if (data.gateway === "STRIPE") {
-                        alert(`Stripe Payment Intent created successfully for ${curr} ${amount}! Gateway ready.`);
+                        alert(`Stripe Payment Intent created for ${curr} ${data.split.userTotalPaid}! Gateway ready.`);
                         document.getElementById('lifecycleStatus').innerText = "STRIPE_INTENT_CREATED";
                     }
-                    logLedgerEvent("Checkout Init", `${curr} ${amount} via ${data.gateway}`, false);
+                    logLedgerEvent("Stage 62 Checkout", `${curr} ${data.split.userTotalPaid} via ${data.gateway}`, false);
                 } else {
                     alert(data.error || "Checkout failed.");
                 }
             } catch (err) {
-                alert("Network error processing international checkout.");
+                alert("Network error processing checkout.");
+            }
+        }
+
+        async function triggerShopDispatch() {
+            const orderId = document.getElementById('dispatchOrderIdInput').value.trim();
+            const bizId = document.getElementById('storeBusinessId').value;
+
+            if (!orderId) {
+                alert("Please enter a valid Order ID to dispatch.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/orders/${orderId}/dispatch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ businessId: bizId })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('lifecycleStatus').innerText = "DISPATCHED_AND_SETTLED";
+                    logLedgerEvent("Dispatch", `95% sent to driver wallet`, true);
+                    fetchSovereignBalance();
+                } else {
+                    alert(data.error || "Dispatch action failed.");
+                }
+            } catch (err) {
+                alert("Network error dispatching order.");
             }
         }
 
@@ -827,13 +859,13 @@
             });
             socket.on('walletUpdated', (data) => {
                 fetchSovereignBalance();
-                logLedgerEvent("Settlement", `Verified & Credited`, true);
+                logLedgerEvent("Wallet Settlement", `Reconciled`, true);
             });
         } catch(e) {}
 
         window.onload = () => {
             loadStoreCatalog();
-            logLedgerEvent("Global Node", "Connected Successfully", false);
+            logLedgerEvent("Stage 62 Engine", "Connected Successfully", false);
         };
     </script>
 </body>

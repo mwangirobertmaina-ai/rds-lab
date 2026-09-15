@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 61 GLOBAL SOVEREIGN HYBRID ENGINE (ZERO-FAKE-MONEY PRODUCTION)
-// International Multi-Gateway (M-Pesa + Stripe UK/Spain/Canada/Global),
-// Immutable Merkle Ledgers, Explicit Multi-Wallet, & Scalable Multi-Vendor Catalog
+// RDS - STAGE 62 GLOBAL SOVEREIGN HYBRID ENGINE (ZERO-FAKE-MONEY PRODUCTION)
+// Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Multi-Wallet,
+// & Stage 62 Advanced Economic Split (2% Shop Surcharge, 95/5 Driver Split, KRA 16% Tax, Motorbike/Car Tariffs)
 // ==========================================
 
 const express = require("express");
@@ -36,14 +36,11 @@ global.io = io;
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 
-// System-wide economic constants
-const DRIVER_SHARE_RATE = 0.95;         
-const PLATFORM_COMMISSION_RATE = 0.05; 
-const SHOP_SURCHARGE_RATE = 0.02;      
-const KRA_TAX_RATE = 0.16;             
-
-const BASE_FARE = 180;                 
-const RATE_PER_KM = 75;                
+// System-wide economic constants (Stage 62 Matrix)
+const DRIVER_SHARE_RATE = 0.95;         // 95% of delivery fare goes to driver wallet
+const PLATFORM_DELIVERY_SHARE = 0.05;   // 5% platform share of delivery fare
+const SHOP_SURCHARGE_RATE = 0.02;       // 2% added on top of items for platform surcharge
+const KRA_TAX_RATE = 0.16;              // 16% KRA tax applicable on platform commission (KES)
 
 function num(v) {
   const parsed = Number(v);
@@ -53,40 +50,65 @@ function num(v) {
 /**
  * Generates an immutable cryptographic Merkle receipt proof for auditing and ledger integrity across global corridors.
  */
-function generateStage61MerkleProof(record) {
+function generateStage62MerkleProof(record) {
   const payload = `${record.id}:${record.businessId || 'GLOBAL'}:${record.orderId || record.transactionId}:${record.gross || record.amount}:${record.currency || 'KES'}:${record.timestamp}`;
-  return crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_61_MASTER_KEY').update(payload).digest('hex');
+  return crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_62_MASTER_KEY').update(payload).digest('hex');
 }
 
 /**
- * Global Multi-Currency Financial Split Matrix
+ * Stage 62 Advanced Multi-Currency Financial & Delivery Split Matrix
  */
-function processGlobalFinancialSplit(itemPriceTotal, distanceKm, currencyCode = "KES", demandMultiplier = 1.0, trafficIndex = 1.0) {
+function processStage62FinancialSplit(itemPriceTotal, distanceKm = 1.0, vehicleType = "MOTORBIKE", currencyCode = "KES", demandMultiplier = 1.0, trafficIndex = 1.0) {
   const itemsGross = currency(num(itemPriceTotal));
-  const km = num(distanceKm) > 0 ? num(distanceKm) : 10;
-  const multiplier = Math.max(1.0, num(demandMultiplier)) * Math.max(1.0, num(trafficIndex));
-  
-  const rawDeliveryFare = (BASE_FARE + (km * RATE_PER_KM)) * multiplier;
-  const baseDeliveryFare = currency(rawDeliveryFare);
-  const shopOwnerSurcharge = baseDeliveryFare.multiply(SHOP_SURCHARGE_RATE);
-  
-  const gross = itemsGross.add(baseDeliveryFare).add(shopOwnerSurcharge);
-  const driverAmount = baseDeliveryFare.multiply(DRIVER_SHARE_RATE);
-  const platformCommissionFromDelivery = baseDeliveryFare.multiply(PLATFORM_COMMISSION_RATE).add(shopOwnerSurcharge);
-  const totalPlatformCommission = platformCommissionFromDelivery; 
-  const tax = currencyCode === "KES" ? totalPlatformCommission.multiply(KRA_TAX_RATE) : currency(0);
+  const km = num(distanceKm);
+  const vType = vehicleType ? vehicleType.toUpperCase() : "MOTORBIKE";
+
+  // 1. Dynamic Delivery Tariff (Bolt/Uber style matrix + vehicle tier)
+  let baseFare = 150;
+  let ratePerKm = 50;
+
+  if (vType === "CAR") {
+    baseFare = 300;
+    ratePerKm = 120;
+  }
+
+  // Short distance / motorbike 200m rule (< 0.2 km flat base rule)
+  let rawDeliveryFare = 100; 
+  if (km >= 0.2) {
+    const multiplier = Math.max(1.0, num(demandMultiplier)) * Math.max(1.0, num(trafficIndex));
+    rawDeliveryFare = (baseFare + (km * ratePerKm)) * multiplier;
+  }
+
+  const deliveryGross = currency(rawDeliveryFare);
+
+  // 2. 2% Shop Surcharge on item price
+  const shopOwnerSurcharge = itemsGross.multiply(SHOP_SURCHARGE_RATE);
+
+  // 3. Driver & Platform Delivery Split (95% Driver, 5% Platform)
+  const driverAmount = deliveryGross.multiply(DRIVER_SHARE_RATE);
+  const platformDeliveryShare = deliveryGross.multiply(PLATFORM_DELIVERY_SHARE);
+
+  // 4. Total Platform Commission = 2% Shop Surcharge + 5% Delivery Platform Share
+  const totalPlatformCommission = platformDeliveryShare.add(shopOwnerSurcharge);
+
+  // 5. KRA Tax (16% on platform commission for KES corridor)
+  const tax = currencyCode.toUpperCase() === "KES" ? totalPlatformCommission.multiply(KRA_TAX_RATE) : currency(0);
   const netPlatformRevenue = totalPlatformCommission.subtract(tax);
 
-  return { 
+  // Total amount paid by user
+  const totalUserGross = itemsGross.add(deliveryGross).add(shopOwnerSurcharge);
+
+  return {
     currency: currencyCode.toUpperCase(),
-    gross: gross.value, 
+    userTotalPaid: totalUserGross.value,
     itemsValue: itemsGross.value,
-    baseDeliveryFare: baseDeliveryFare.value,
-    shopOwnerSurcharge: shopOwnerSurcharge.value,
-    commission: totalPlatformCommission.value, 
-    tax: tax.value, 
-    netPlatformRevenue: netPlatformRevenue.value, 
-    driverAmount: driverAmount.value 
+    deliveryFare: deliveryGross.value,
+    shopSurcharge2Percent: shopOwnerSurcharge.value,
+    driverWalletCredit: driverAmount.value,          // 95% released to driver wallet upon dispatch
+    platformDeliveryShare5Percent: platformDeliveryShare.value,
+    totalPlatformRevenue: totalPlatformCommission.value,
+    kraTax16Percent: tax.value,
+    netPlatformRevenue: netPlatformRevenue.value
   };
 }
 
@@ -251,7 +273,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => log("SOCKET", `Client disconnected: ${socket.id}`));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "GLOBAL_SOVEREIGN_ENGINE_ONLINE", regions: ["KE", "UK", "ES", "CA"], time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_62_GLOBAL_ENGINE_ONLINE", regions: ["KE", "UK", "ES", "CA"], time: Date.now() }));
 
 // ================= PRODUCT & MERCHANT CATALOG ENDPOINTS =================
 app.get('/api/products', enforceTenantIsolation, (req, res) => {
@@ -362,7 +384,6 @@ app.post("/api/wallet/deposit", enforceTenantIsolation, async (req, res) => {
         const currencyCode = tenant.currency;
 
         if (depositAmount <= 0) return fail(res, "Invalid deposit amount", 400);
-        const referenceId = id("DEP_" + source);
 
         if (source === "MPESA" || currencyCode === "KES") {
             const sanitizedPhone = validateKenyanPhone(phone || tenant.ownerPhone);
@@ -457,7 +478,7 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
             status: "SETTLED",
             timestamp: Date.now()
         };
-        ledgerEntry.merkleProof = generateStage61MerkleProof(ledgerEntry);
+        ledgerEntry.merkleProof = generateStage62MerkleProof(ledgerEntry);
         data.ledger_entries.push(ledgerEntry);
         await saveDB();
 
@@ -471,24 +492,41 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// ================= INTERNATIONAL PAYMENT GATEWAY ROUTER =================
+// ================= STAGE 62 CHECKOUT & DISPATCH ROUTE =================
 app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
-        const { phone, itemPriceTotal } = req.body;
-        const amount = Number(itemPriceTotal);
+        const { phone, itemPriceTotal, distanceKm, vehicleType, pickupLocation, dropoffLocation, driverId } = req.body;
         const tenant = req.tenantObj;
         const currencyCode = tenant.currency;
 
-        if (amount <= 0) return fail(res, "Invalid checkout amount", 400);
+        // Calculate split using Stage 62 Advanced Matrix
+        const split = processStage62FinancialSplit(
+            itemPriceTotal, 
+            distanceKm || 2.5, 
+            vehicleType || "MOTORBIKE", 
+            currencyCode
+        );
 
-        const orderId = id("ORD_GL");
+        if (split.userTotalPaid <= 0) return fail(res, "Invalid checkout amount", 400);
+
+        const orderId = id("ORD_ST62");
         const order = {
             id: orderId,
             businessId: tenant.id,
             region: tenant.region,
             currency: currencyCode,
-            total: amount,
+            itemsValue: split.itemsValue,
+            deliveryFare: split.deliveryFare,
+            shopSurcharge2Percent: split.shopSurcharge2Percent,
+            driverWalletCredit: split.driverWalletCredit,
+            platformRevenue: split.netPlatformRevenue,
+            kraTax16Percent: split.kraTax16Percent,
+            totalPaid: split.userTotalPaid,
+            pickupLocation: pickupLocation || "Shop Headquarters",
+            dropoffLocation: dropoffLocation || "Customer Destination",
+            vehicleType: vehicleType || "MOTORBIKE",
+            driverId: driverId || "DRV_DEFAULT",
             status: "PENDING_PAYMENT",
             createdAt: Date.now()
         };
@@ -519,13 +557,13 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     Password: password,
                     Timestamp: timestamp,
                     TransactionType: "CustomerPayBillOnline",
-                    Amount: amount,
+                    Amount: Math.round(split.userTotalPaid),
                     PartyA: sanitizedPhone,
                     PartyB: MPESA_CONFIG.shortCode,
                     PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl,
                     AccountReference: `RDS ${tenant.region}`,
-                    TransactionDesc: `Global Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 62 Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -535,43 +573,98 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                 await saveDB();
             }
 
-            log("M-PESA", `STK Push sent to ${sanitizedPhone} for ${currencyCode} ${amount}`);
-            return ok(res, { success: true, gateway: "M-PESA", darajaResponse: stkResponse.data, orderId });
+            return ok(res, { success: true, gateway: "M-PESA", darajaResponse: stkResponse.data, orderId, split });
         } else {
-            const stripeAmount = Math.round(amount * 100);
-            let clientSecret = "pi_mock_secret_" + Math.random().toString(36).substring(7);
-            let stripeIntentId = "pi_" + Math.random().toString(36).substring(7);
+            const stripeAmount = Math.round(split.userTotalPaid * 100);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: stripeAmount,
+                currency: currencyCode.toLowerCase(),
+                metadata: { orderId, businessId: tenant.id, region: tenant.region }
+            });
 
-            if (stripeSecretKey.startsWith("sk_live_") || stripeSecretKey.startsWith("sk_test_")) {
-                try {
-                    const paymentIntent = await stripe.paymentIntents.create({
-                        amount: stripeAmount,
-                        currency: currencyCode.toLowerCase(),
-                        metadata: { orderId, businessId: tenant.id, region: tenant.region }
-                    });
-                    clientSecret = paymentIntent.client_secret;
-                    stripeIntentId = paymentIntent.id;
-                } catch (stripeErr) {
-                    log("STRIPE_WARN", `Stripe API fallback invoked: ${stripeErr.message}`);
-                }
-            }
-
-            order.checkoutRequestId = stripeIntentId;
+            order.checkoutRequestId = paymentIntent.id;
             await saveDB();
 
-            log("STRIPE", `Created Stripe Payment Intent for ${currencyCode} ${amount} (${tenant.region})`);
             return ok(res, { 
                 success: true, 
                 gateway: "STRIPE", 
                 region: tenant.region,
                 currency: currencyCode,
-                clientSecret, 
-                paymentIntentId: stripeIntentId, 
-                orderId 
+                clientSecret: paymentIntent.client_secret,
+                paymentIntentId: paymentIntent.id,
+                orderId,
+                split
             });
         }
     } catch (err) {
         console.error("Global Checkout Error:", err.response?.data || err.message);
+        return fail(res, err.message, 500);
+    }
+});
+
+// ================= SHOP DISPATCH & INSTANT SPLIT EXECUTION =================
+app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, res) => {
+    try {
+        ensureState();
+        const { orderId } = req.params;
+        const order = data.orders.find(o => o.id === orderId && o.businessId === req.tenantId);
+
+        if (!order) return fail(res, "Order not found", 404);
+        if (order.status === "DISPATCHED") return fail(res, "Order already dispatched.", 400);
+
+        order.status = "DISPATCHED";
+
+        // 1. Credit Shop with Item Price + Surcharge retained separately or credited to shop wallet
+        const shopLedger = {
+            id: id("LEDGER"),
+            owner_id: order.businessId,
+            orderId: order.id,
+            amount: order.itemsValue,
+            entry_type: "CREDIT",
+            currency: order.currency,
+            reference_id: order.id,
+            status: "SETTLED",
+            timestamp: Date.now()
+        };
+        shopLedger.merkleProof = generateStage62MerkleProof(shopLedger);
+        data.ledger_entries.push(shopLedger);
+
+        // 2. Immediately Release 95% of Delivery Fare to Driver Wallet
+        const driverId = order.driverId || "DRV_DEFAULT";
+        const driverLedger = {
+            id: id("LEDGER"),
+            owner_id: driverId,
+            orderId: order.id,
+            amount: order.driverWalletCredit,
+            entry_type: "CREDIT",
+            currency: order.currency,
+            reference_id: order.id,
+            status: "SETTLED",
+            timestamp: Date.now()
+        };
+        driverLedger.merkleProof = generateStage62MerkleProof(driverLedger);
+        data.ledger_entries.push(driverLedger);
+
+        await saveDB();
+
+        if (global.io) {
+            global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'DISPATCHED' });
+            global.io.emit('walletUpdated', { businessId: order.businessId, currency: order.currency });
+            global.io.emit('driverWalletUpdated', { driverId, amount: order.driverWalletCredit });
+        }
+
+        return ok(res, { 
+            success: true, 
+            message: "Order marked as dispatched. 95% delivery credited to driver wallet instantly. Shop credited for items.",
+            splitDetails: {
+                shopCredited: order.itemsValue,
+                driverCredited95Percent: order.driverWalletCredit,
+                platformRetained2PercentSurcharge: order.shopSurcharge2Percent,
+                platformRetained5PercentDeliveryShare: order.deliveryFare * 0.05,
+                kraTax16Percent: order.kraTax16Percent
+            }
+        });
+    } catch (err) {
         return fail(res, err.message, 500);
     }
 });
@@ -591,27 +684,12 @@ app.post("/mpesa/callback", async (req, res) => {
 
         if (resultCode === 0) {
             order.status = "PAID";
-            
-            const ledgerEntry = {
-                id: id("LEDGER"),
-                owner_id: order.businessId,
-                orderId: order.id,
-                amount: order.total,
-                entry_type: "CREDIT",
-                currency: order.currency,
-                reference_id: checkoutRequestId,
-                status: "SETTLED",
-                timestamp: Date.now()
-            };
-            ledgerEntry.merkleProof = generateStage61MerkleProof(ledgerEntry);
-            data.ledger_entries.push(ledgerEntry);
             await saveDB();
 
             if (global.io) {
                 global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'PAID' });
-                global.io.emit('walletUpdated', { businessId: order.businessId, currency: order.currency });
             }
-            log("PAYMENT_SUCCESS", `M-Pesa payment confirmed for ${order.currency} ${order.total}`);
+            log("PAYMENT_SUCCESS", `M-Pesa payment confirmed for order ${order.id}`);
         } else {
             order.status = "FAILED";
             await saveDB();
@@ -635,28 +713,12 @@ app.post("/stripe/webhook", express.raw({ type: 'application/json' }), async (re
             const order = data.orders.find(o => o.checkoutRequestId === paymentIntent.id || o.id === orderId);
             if (order && order.status !== "PAID") {
                 order.status = "PAID";
-                const amountPaid = paymentIntent.amount_received / 100;
-
-                const ledgerEntry = {
-                    id: id("LEDGER"),
-                    owner_id: order.businessId,
-                    orderId: order.id,
-                    amount: amountPaid,
-                    entry_type: "CREDIT",
-                    currency: order.currency,
-                    reference_id: paymentIntent.id,
-                    status: "SETTLED",
-                    timestamp: Date.now()
-                };
-                ledgerEntry.merkleProof = generateStage61MerkleProof(ledgerEntry);
-                data.ledger_entries.push(ledgerEntry);
                 await saveDB();
 
                 if (global.io) {
                     global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'PAID' });
-                    global.io.emit('walletUpdated', { businessId: order.businessId, currency: order.currency });
                 }
-                log("STRIPE_CONFIRMED", `Stripe payment webhook processed successfully for ${order.currency} ${amountPaid}`);
+                log("STRIPE_CONFIRMED", `Stripe payment webhook processed successfully for order ${order.id}`);
             }
         }
         return res.json({ received: true });
@@ -665,10 +727,10 @@ app.post("/stripe/webhook", express.raw({ type: 'application/json' }), async (re
     }
 });
 
-app.use((req, res) => res.status(200).json({ success: true, globalSovereignEngineActive: true }));
+app.use((req, res) => res.status(200).json({ success: true, stage62EngineActive: true }));
 
 server.listen(PORT, () => {
-  log("SYSTEM", `🚀 GLOBAL SOVEREIGN MULTI-CORRIDOR ENGINE ACTIVE ON PORT ${PORT} [KE, UK, ES, CA]`);
+  log("SYSTEM", `🚀 RDS STAGE 62 GLOBAL SOVEREIGN HYBRID ENGINE ACTIVE ON PORT ${PORT} [KE, UK, ES, CA]`);
 });
 
-module.exports = { app, server, processGlobalFinancialSplit };
+module.exports = { app, server, processStage62FinancialSplit };
