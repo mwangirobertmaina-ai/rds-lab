@@ -244,16 +244,6 @@ const saveDB = async () => {
   }
 };
 
-async function runInTransaction(callback) {
-  try {
-    const result = await callback();
-    await saveDB();
-    return result;
-  } catch (error) {
-    throw error;
-  }
-}
-
 /**
  * Atomic Wallet State Manager with Exact Currency Precision
  */
@@ -308,6 +298,44 @@ app.get('/api/products', enforceTenantIsolation, (req, res) => {
   ok(res, { success: true, businessId: tenantId, storeName: tenantObj.name, products: scopedProducts });
 });
 
+// Add Product (Owner Action)
+app.post('/api/products', enforceTenantIsolation, async (req, res) => {
+  try {
+    ensureState();
+    const { name, price, image } = req.body;
+    const tenantId = req.tenantId;
+    
+    const safeName = sanitizeString(name);
+    const itemPrice = num(price);
+    const safeImage = sanitizeString(image) || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80";
+
+    if (!safeName || itemPrice <= 0) {
+      return fail(res, "Invalid product name or price.", 400);
+    }
+
+    const newProduct = {
+      id: id("PROD"),
+      businessId: tenantId,
+      name: safeName,
+      price: itemPrice,
+      image: safeImage,
+      createdAt: Date.now()
+    };
+
+    data.products.push(newProduct);
+    await saveDB();
+
+    if (global.io) {
+      global.io.emit('productAdded', { businessId: tenantId, product: newProduct });
+    }
+
+    return ok(res, { success: true, product: newProduct });
+  } catch (err) {
+    return fail(res, "Product addition failed: " + err.message, 500);
+  }
+});
+
+// Update Product Price (Owner Action)
 app.put('/api/products/:id', enforceTenantIsolation, async (req, res) => {
   try {
     ensureState();
@@ -331,12 +359,36 @@ app.put('/api/products/:id', enforceTenantIsolation, async (req, res) => {
   }
 });
 
+// Delete Product from Catalog (Owner Action)
+app.delete('/api/products/:id', enforceTenantIsolation, async (req, res) => {
+  try {
+    ensureState();
+    const productId = req.params.id;
+    const index = data.products.findIndex(p => p.id === productId);
+
+    if (index === -1) return fail(res, "Product not found", 404);
+
+    const product = data.products[index];
+    if (product.businessId !== req.tenantId && req.tenantId !== "BIZ-001") {
+      return fail(res, "Tenant isolation breach: Cannot delete another merchant's product", 403);
+    }
+
+    data.products.splice(index, 1);
+    await saveDB();
+
+    if (global.io) global.io.emit('productDeleted', { businessId: req.tenantId, id: productId });
+    return ok(res, { success: true, id: productId });
+  } catch (err) {
+    return fail(res, "Product deletion failed: " + err.message, 500);
+  }
+});
+
 app.get('/wallets', (req, res) => {
   ensureState();
   ok(res, { wallets: data.wallets });
 });
 
-// ================= M-PESA STK GATEWAY (DEPOSIT & TOP-UP WITH 100% LEDGER ACCURACY) =================
+// ================= M-PESA STK GATEWAY =================
 app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
   try {
     ensureState();
@@ -348,7 +400,6 @@ app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
     const amountVal = num(itemPriceTotal);
     if (amountVal <= 0) return fail(res, "Invalid amount", 400);
 
-    // Simulate instant secure Daraja STK Push handshake
     const checkoutId = "ws_CO_" + Date.now();
 
     const order = {
@@ -363,12 +414,9 @@ app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
     data.orders.push(order);
     await saveDB();
 
-    // Self-Healing Automatic Webhook Simulation (Credits exact KES amount to wallet instantly in sandbox)
     setTimeout(async () => {
       try {
         order.status = "STAGE_60_PAID";
-        
-        // Update wallet balance precisely with currency.js (e.g., exactly +50)
         const currentBalance = updateWalletBalance(activeBizId, amountVal, "CREDIT");
 
         const ledgerEntry = {
@@ -387,7 +435,6 @@ app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
           global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'STAGE_60_PAID' });
           global.io.emit('walletUpdated', { businessId: activeBizId, balance: currentBalance });
         }
-        log("STK_SUCCESS", `Successfully credited KES ${amountVal} to namespace ${activeBizId}. New Balance: ${currentBalance}`);
       } catch (err) {
         log("STK_SETTLEMENT_ERROR", err.message);
       }

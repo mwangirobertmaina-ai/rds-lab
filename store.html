@@ -202,6 +202,7 @@
       border: 1px solid #374151;
       border-radius: 6px;
       overflow: hidden;
+      margin-bottom: 6px;
     }
     .quantity-stepper button {
       background: #222e3c;
@@ -435,7 +436,15 @@
         <!-- Owner Settings Panel (Visible only in Owner Mode) -->
         <div class="checkout-panel owner-controls" style="margin-bottom: 15px; border-color: var(--stage-purple);">
             <h3>🔐 Owner Management Hub</h3>
-            <button class="btn-cyan" onclick="changeOwnerPin()" style="margin-bottom: 8px;">Change Owner PIN</button>
+            <button class="btn-cyan" onclick="changeOwnerPin()" style="margin-bottom: 12px;">Change Owner PIN</button>
+            
+            <div style="border-top: 1px dashed #374151; padding-top: 10px;">
+                <h4 style="font-size: 0.8rem; color: var(--neon-green); margin-bottom: 8px;">➕ Add New Catalog Item</h4>
+                <input type="text" id="newProdName" placeholder="Product Name (e.g. Burger Combo)">
+                <input type="number" id="newProdPrice" placeholder="Price (KES)">
+                <input type="text" id="newProdImage" placeholder="Image URL (Optional Unsplash link)">
+                <button class="btn-cyan" onclick="addNewProduct()">Publish Item</button>
+            </div>
         </div>
 
         <div class="catalog-grid" id="catalogGrid">
@@ -491,7 +500,7 @@
         <div class="checkout-panel">
             <h3>Top Up Wallet via M-Pesa</h3>
             <input type="text" id="walletPhone" placeholder="M-Pesa Phone (2547XXXXXXXX)" value="254708374149">
-            <input type="number" id="walletAmount" placeholder="Top Up Amount (KES)" value="500">
+            <input type="number" id="walletAmount" placeholder="Top Up Amount (KES)" value="50">
             <button onclick="triggerWalletTopUp()" class="btn-cyan">Top Up Now</button>
         </div>
 
@@ -591,7 +600,7 @@
             if (pin === currentPin || pin === "5555") { 
                 isOwnerMode = !isOwnerMode;
                 document.getElementById('appBody').classList.toggle('owner-mode', isOwnerMode);
-                alert(isOwnerMode ? "Owner Mode Unlocked: Price editing enabled." : "Locked to Customer Mode.");
+                alert(isOwnerMode ? "Owner Mode Unlocked: Catalog editing & pricing enabled." : "Locked to Customer Mode.");
                 renderCatalog(allProductsCache);
                 logLedgerEvent("Owner Mode", isOwnerMode ? "Unlocked" : "Locked");
             } else if (pin !== null) {
@@ -665,7 +674,8 @@
                                     <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, 1)">+</button>
                                 </div>
                                 <div class="owner-controls">
-                                    <button class="btn-cyan" style="margin-top:6px;" onclick="updatePricePrompt('${p.id}', ${unitPrice})">Edit Price</button>
+                                    <button class="btn-cyan" style="margin-bottom:4px;" onclick="updatePricePrompt('${p.id}', ${unitPrice})">Edit Price</button>
+                                    <button style="background:var(--alert-red);" onclick="deleteProductPrompt('${p.id}', '${p.name}')">Delete Item</button>
                                 </div>
                             </div>
                         </div>
@@ -673,6 +683,91 @@
                 `;
             });
             grid.innerHTML = html;
+        }
+
+        async function addNewProduct() {
+            if (!isOwnerMode) {
+                alert("Restricted: Owner mode required.");
+                return;
+            }
+            const nameInput = document.getElementById('newProdName');
+            const priceInput = document.getElementById('newProdPrice');
+            const imageInput = document.getElementById('newProdImage');
+
+            const name = nameInput ? nameInput.value.trim() : "";
+            const price = priceInput ? Number(priceInput.value) : 0;
+            const image = imageInput ? imageInput.value.trim() : "";
+
+            if (!name || price <= 0) {
+                alert("Please provide a valid product name and price.");
+                return;
+            }
+
+            const bizId = document.getElementById('storeBusinessId').value;
+            try {
+                const res = await fetch(`${API_BASE}/api/products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ name, price, image, businessId: bizId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("Product published successfully!");
+                    nameInput.value = "";
+                    priceInput.value = "";
+                    imageInput.value = "";
+                    loadStoreCatalog();
+                    logLedgerEvent("Inventory", `Added Product: ${name}`);
+                } else {
+                    alert(data.error || "Failed to publish product.");
+                }
+            } catch (err) {
+                alert("Network error publishing product.");
+            }
+        }
+
+        async function updatePricePrompt(id, currentPrice) {
+            if (!isOwnerMode) return;
+            const newPrice = prompt("Enter new fixed price (KES):", currentPrice);
+            if (newPrice === null || isNaN(newPrice)) return;
+
+            const bizId = document.getElementById('storeBusinessId').value;
+            try {
+                const res = await fetch(`${API_BASE}/api/products/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ price: Number(newPrice) })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("Price updated successfully!");
+                    loadStoreCatalog();
+                    logLedgerEvent("Inventory", `Price Updated to KES ${newPrice}`);
+                }
+            } catch (err) {
+                alert("Network error updating price.");
+            }
+        }
+
+        async function deleteProductPrompt(id, name) {
+            if (!isOwnerMode) return;
+            if (!confirm(`Are you sure you want to delete '${name}' from your catalog?`)) return;
+
+            const bizId = document.getElementById('storeBusinessId').value;
+            try {
+                const res = await fetch(`${API_BASE}/api/products/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'x-business-id': bizId }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("Product deleted successfully!");
+                    loadStoreCatalog();
+                    logLedgerEvent("Inventory", `Deleted Product: ${name}`);
+                }
+            } catch (err) {
+                alert("Network error deleting product.");
+            }
         }
 
         function updateCart(id, name, price, change) {
@@ -698,11 +793,8 @@
             
             for (let id in cart) {
                 const item = cart[id];
-                const itemQty = Number(item.qty) || 0;
-                const itemPrice = Number(item.price) || 0;
-                
-                totalQty += itemQty;
-                totalPrice += itemPrice * itemQty;
+                totalQty += Number(item.qty) || 0;
+                totalPrice += (Number(item.price) || 0) * (Number(item.qty) || 0);
             }
 
             const amountInput = document.getElementById('custAmount');
@@ -718,34 +810,6 @@
                 if (totalSumEl) totalSumEl.innerText = `KES ${totalPrice.toLocaleString()}`;
             } else {
                 if (floatingBar) floatingBar.classList.remove('active');
-            }
-        }
-
-        async function updatePricePrompt(id, currentPrice) {
-            if (!isOwnerMode) {
-                alert("Restricted: Owner authorization required.");
-                return;
-            }
-            const newPrice = prompt("Enter fixed price (KES):", currentPrice);
-            if (newPrice === null || isNaN(newPrice)) return;
-
-            const bizId = document.getElementById('storeBusinessId').value;
-            try {
-                const res = await fetch(`${API_BASE}/api/products/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ price: Number(newPrice) })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert("Price updated successfully!");
-                    loadStoreCatalog();
-                    logLedgerEvent("Inventory", `Price Updated to KES ${newPrice}`);
-                } else {
-                    alert("Failed to update price.");
-                }
-            } catch (err) {
-                alert("Network error updating price.");
             }
         }
 
@@ -773,13 +837,10 @@
 
         async function triggerStkCheckout() {
             const bizId = document.getElementById('storeBusinessId').value;
-            const phoneInput = document.getElementById('custPhone');
-            const amountInput = document.getElementById('custAmount');
+            const phone = document.getElementById('custPhone').value.trim();
+            const amount = Number(document.getElementById('custAmount').value) || 0;
 
-            const phone = phoneInput ? phoneInput.value.trim() : "";
-            const amount = amountInput ? Number(amountInput.value) : 0;
-
-            if (!phone || isNaN(amount) || amount <= 0) {
+            if (!phone || amount <= 0) {
                 alert("Please add items to your cart and provide a valid phone number.");
                 return;
             }
@@ -788,38 +849,27 @@
                 const res = await fetch(`${API_BASE}/mpesa/stkpush`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ 
-                        phone: phone, 
-                        itemPriceTotal: amount, 
-                        distanceKm: 5, 
-                        businessId: bizId 
-                    })
+                    body: JSON.stringify({ phone, itemPriceTotal: amount, distanceKm: 5, businessId: bizId })
                 });
                 const data = await res.json();
                 if (data.success || res.ok) {
                     alert(`M-Pesa STK Push sent for KES ${amount}! Check your phone to enter PIN.`);
                     updateTrackerUI("STAGE_60_PAID");
                     logLedgerEvent("Checkout Payment", `KES ${amount} via STK`);
-                } else {
-                    alert("STK Push triggered.");
                 }
             } catch (err) {
                 alert(`M-Pesa payment of KES ${amount} initiated successfully!`);
                 updateTrackerUI("STAGE_60_PAID");
-                logLedgerEvent("Checkout Payment", `KES ${amount} (Simulated)`);
             }
         }
 
         async function triggerWalletTopUp() {
             const bizId = document.getElementById('storeBusinessId').value;
-            const phoneInput = document.getElementById('walletPhone');
-            const amountInput = document.getElementById('walletAmount');
+            const phone = document.getElementById('walletPhone').value.trim();
+            const amount = Number(document.getElementById('walletAmount').value) || 0;
 
-            const phone = phoneInput ? phoneInput.value.trim() : "";
-            const amount = amountInput ? Number(amountInput.value) : 0;
-
-            if (!phone || isNaN(amount) || amount <= 0) {
-                alert("Please enter a valid phone number and wallet top-up amount.");
+            if (!phone || amount <= 0) {
+                alert("Please enter a valid phone number and top-up amount.");
                 return;
             }
 
@@ -827,20 +877,11 @@
                 const res = await fetch(`${API_BASE}/mpesa/stkpush`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ 
-                        phone: phone, 
-                        itemPriceTotal: amount, 
-                        distanceKm: 0, 
-                        businessId: bizId 
-                    })
+                    body: JSON.stringify({ phone, itemPriceTotal: amount, distanceKm: 0, businessId: bizId })
                 });
                 const data = await res.json();
-                
                 if (data.success || res.ok) {
                     alert(`M-Pesa STK Push sent for KES ${amount} wallet top-up! Enter your PIN on your phone.`);
-                    logLedgerEvent("Wallet Top-Up", `+KES ${amount}`);
-                } else {
-                    alert(`Wallet top-up of KES ${amount} triggered successfully.`);
                     logLedgerEvent("Wallet Top-Up", `+KES ${amount}`);
                 }
             } catch (err) {
@@ -851,25 +892,11 @@
 
         async function triggerWalletWithdrawal() {
             const bizId = document.getElementById('storeBusinessId').value;
-            const phoneInput = document.getElementById('withdrawPhone');
-            const amountInput = document.getElementById('withdrawAmount');
+            const phone = document.getElementById('withdrawPhone').value.trim();
+            const amount = Number(document.getElementById('withdrawAmount').value) || 0;
 
-            const phone = phoneInput ? phoneInput.value.trim() : "";
-            const amount = amountInput ? Number(amountInput.value) : 0;
-
-            if (!phone || isNaN(amount) || amount <= 0) {
+            if (!phone || amount <= 0) {
                 alert("Please enter a valid phone number and withdrawal amount.");
-                return;
-            }
-
-            const balanceEl = document.getElementById('walletBalance');
-            let currentBalance = 12450.00;
-            if (balanceEl) {
-                currentBalance = Number(balanceEl.innerText.replace(/,/g, '')) || 0;
-            }
-
-            if (amount > currentBalance) {
-                alert("Insufficient wallet balance for this withdrawal.");
                 return;
             }
 
@@ -877,20 +904,17 @@
                 const res = await fetch(`${API_BASE}/mpesa/withdraw`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ 
-                        phone: phone, 
-                        amount: amount, 
-                        businessId: bizId 
-                    })
+                    body: JSON.stringify({ phone, amount, businessId: bizId })
                 });
                 const data = await res.json();
-                
                 if (data.success || res.ok) {
-                    alert(`Withdrawal request of KES ${amount} submitted successfully to ${phone}. Check your M-Pesa messages.`);
+                    alert(`Withdrawal request of KES ${amount} submitted successfully to ${phone}.`);
                     logLedgerEvent("Wallet Withdrawal", `-KES ${amount}`);
+                    if (data.remainingBalance !== undefined) {
+                        document.getElementById('walletBalance').innerText = data.remainingBalance.toLocaleString();
+                    }
                 } else {
-                    alert(data.message || "Withdrawal request processed.");
-                    logLedgerEvent("Wallet Withdrawal", `-KES ${amount}`);
+                    alert(data.error || "Withdrawal failed.");
                 }
             } catch (err) {
                 alert(`M-Pesa payout of KES ${amount} initiated to ${phone}!`);
@@ -900,49 +924,21 @@
 
         function updateTrackerUI(status) {
             document.getElementById('lifecycleStatus').innerText = status;
-            
-            document.getElementById('progPaid').style.background = '#222e3c';
-            document.getElementById('progAccepted').style.background = '#222e3c';
-            document.getElementById('progTransit').style.background = '#222e3c';
-            document.getElementById('progDelivered').style.background = '#222e3c';
-
-            const riderCard = document.getElementById('riderCard');
-
-            if (status.includes('PAID') || status.includes('STAGE_60_PAID')) {
-                document.getElementById('progPaid').style.background = 'var(--neon-green)';
-                riderCard.classList.remove('active');
-            } else if (status.includes('DISPATCHED') || status.includes('RIDER_ASSIGNED')) {
-                document.getElementById('progPaid').style.background = 'var(--neon-green)';
-                document.getElementById('progAccepted').style.background = 'var(--neon-green)';
-                riderCard.classList.add('active');
-            } else if (status.includes('TRANSIT')) {
-                document.getElementById('progPaid').style.background = 'var(--neon-green)';
-                document.getElementById('progAccepted').style.background = 'var(--neon-green)';
-                document.getElementById('progTransit').style.background = 'var(--cyan)';
-                riderCard.classList.add('active');
-            } else if (status.includes('DELIVERED')) {
-                document.getElementById('progPaid').style.background = 'var(--neon-green)';
-                document.getElementById('progAccepted').style.background = 'var(--neon-green)';
-                document.getElementById('progTransit').style.background = 'var(--cyan)';
-                document.getElementById('progDelivered').style.background = 'var(--neon-green)';
-                riderCard.classList.remove('active');
-            }
+            document.getElementById('progPaid').style.background = 'var(--neon-green)';
         }
 
         try {
             const socket = io();
-            socket.on('orderStatusUpdate', (data) => {
-                updateTrackerUI(data.status);
-                logLedgerEvent("Mesh Telemetry", `Status: ${data.status}`);
-                if (data.riderName) {
-                    document.getElementById('riderName').innerText = data.riderName;
-                    document.getElementById('riderPhone').innerText = data.riderPhone || "+254 712 345 678";
-                    document.getElementById('riderPhone').href = `tel:${data.riderPhone || "+254712345678"}`;
-                }
-            });
+            socket.on('orderStatusUpdate', (data) => updateTrackerUI(data.status));
             socket.on('productAdded', () => loadStoreCatalog());
             socket.on('productUpdated', () => loadStoreCatalog());
             socket.on('productDeleted', () => loadStoreCatalog());
+            socket.on('walletUpdated', (data) => {
+                const currentBiz = document.getElementById('storeBusinessId').value;
+                if (data.businessId === currentBiz) {
+                    document.getElementById('walletBalance').innerText = Number(data.balance).toLocaleString();
+                }
+            });
         } catch(e) {}
 
         window.onload = () => {
