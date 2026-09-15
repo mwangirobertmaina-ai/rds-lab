@@ -1,5 +1,5 @@
 // ==========================================
-// RDS - STAGE 60 SOVEREIGN HYBRID ENGINE (LIVE PRODUCTION)
+// RDS - STAGE 60 SOVEREIGN HYBRID ENGINE (LIVE B2B & TILL PRODUCTION)
 // Production-Grade Escrow, Immutable Merkle Ledgers, Explicit Multi-Wallet,
 // Real-Time Socket.IO Telemetry, KRA Vault, & Scoped Tenant Isolation
 // ==========================================
@@ -96,11 +96,12 @@ function processStage60FinancialSplit(itemPriceTotal, distanceKm, demandMultipli
   };
 }
 
-// ================= LIVE PRODUCTION M-PESA CONFIG =================
+// ================= LIVE PRODUCTION M-PESA CONFIG (TILL 1672064 & SHORTCODE 1200280) =================
 const MPESA_CONFIG = {
   consumerKey: "1gUiUGRcrNGP7GEplYsE62mNKqAnItctwfteNSPPklSop61w",
   consumerSecret: "wF4tdktQCUIATJr3DNqW9wtIjtImd7bNGGyYhYa5k3LNesW20xRG1ZAsEiqBqgRv",
-  shortCode: "1200280", // Store / Paybill Shortcode (Till: 1672064)
+  shortCode: "1200280",      // Store Shortcode / Passkey Holder
+  tillNumber: "1672064",     // Buy Goods Till Number (PartyB)
   passkey: "4862",
   environment: "production",
   callbackUrl: process.env.MPESA_CALLBACK_URL || "https://rds-lab.onrender.com/mpesa/callback"
@@ -141,7 +142,7 @@ app.get("/", (req, res) => {
 app.use(express.static("."));
 
 function log(type, msg) {
-  console.log(`[${new Date().toISOString()}] [STAGE-60-LIVE] [${type}] ${msg}`);
+  console.log(`[${new Date().toISOString()}] [STAGE-60-LIVE-PRODUCTION] [${type}] ${msg}`);
 }
 
 app.use((req, res, next) => {
@@ -152,7 +153,7 @@ app.use((req, res, next) => {
 function defaultDB() {
   return { 
     businesses: [
-      { id: "BIZ-001", name: "KFC Nairobi", ownerPhone: "254721862397", taxPin: "P055123456Z" },
+      { id: "BIZ-001", name: "RDS Sovereign Store", ownerPhone: "254721862397", taxPin: "P055123456Z" },
       { id: "BIZ-002", name: "Naivas Groceries", ownerPhone: "254712345678", taxPin: "P055654321Z" },
       { id: "BIZ-003", name: "Goodlife Meds", ownerPhone: "254722334455", taxPin: "P055987654Z" }
     ], 
@@ -389,7 +390,7 @@ app.get('/wallets', (req, res) => {
   ok(res, { wallets: data.wallets });
 });
 
-// ================= REAL LIVE PRODUCTION M-PESA STK GATEWAY =================
+// ================= REAL LIVE PRODUCTION M-PESA STK GATEWAY (TILL 1672064) =================
 app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -429,20 +430,20 @@ app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
         data.orders.push(order);
         await saveDB();
 
-        // 3. Send Live STK Push Request to Safaricom Production Server
+        // 3. Send Live STK Push Request targeting Buy Goods Till Number (1672064)
         const stkResponse = await axios.post(
             `${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`,
             {
                 BusinessShortCode: MPESA_CONFIG.shortCode,
                 Password: password,
                 Timestamp: timestamp,
-                TransactionType: "CustomerPayBillOnline",
+                TransactionType: "CustomerBuyGoodsOnline", // Correct transaction type for Till
                 Amount: amount,
                 PartyA: sanitizedPhone,
-                PartyB: MPESA_CONFIG.shortCode,
+                PartyB: MPESA_CONFIG.tillNumber,           // Till Number 1672064
                 PhoneNumber: sanitizedPhone,
                 CallBackURL: MPESA_CONFIG.callbackUrl,
-                AccountReference: `RDS Store 1200280`,
+                AccountReference: `Till 1672064`,
                 TransactionDesc: "Sovereign Super App Checkout"
             },
             { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -453,7 +454,7 @@ app.post("/mpesa/stkpush", enforceTenantIsolation, async (req, res) => {
             await saveDB();
         }
 
-        log("STK_LIVE", `Live STK Push successfully sent to ${sanitizedPhone} for KES ${amount}`);
+        log("STK_LIVE", `Live Till STK Push sent to ${sanitizedPhone} for KES ${amount}. CheckoutRequestID: ${order.checkoutRequestId}`);
         if (global.io) global.io.emit('orderStatusUpdate', { orderId: order.id, status: order.status });
 
         return res.json({ success: true, darajaResponse: stkResponse.data });
@@ -506,7 +507,7 @@ app.post("/mpesa/callback", async (req, res) => {
                 global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'STAGE_60_PAID' });
                 global.io.emit('walletUpdated', { businessId: activeBizId, ownerId: activeBizId, balance: currentBalance });
             }
-            log("LIVE_PAYMENT_CONFIRMED", `Real funds received: KES ${amountPaid}. Wallet updated for ${activeBizId}`);
+            log("LIVE_PAYMENT_CONFIRMED", `Real funds received via Till 1672064: KES ${amountPaid}. Wallet updated for ${activeBizId}`);
         } else {
             order.status = "STAGE_60_FAILED";
             await saveDB();
