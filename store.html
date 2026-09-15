@@ -421,6 +421,14 @@
             <div style="font-size: 0.65rem; color: var(--text-dim);" id="auditStatus">Synced & Reconciled</div>
         </div>
 
+        <!-- Wallet Deposit Panel -->
+        <div class="checkout-panel">
+            <h3>Top Up Wallet</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Deposit Amount</label>
+            <input type="number" id="depositAmountInput" placeholder="Enter amount">
+            <button onclick="triggerWalletDeposit()" class="btn-cyan">Fund Wallet Now</button>
+        </div>
+
         <div class="checkout-panel">
             <h3>RECONCILED TRANSACTION LEDGER</h3>
             <div id="ledgerFeed" class="ledger-list">
@@ -693,6 +701,37 @@
                 }
             } catch (err) {
                 alert("Network error processing international checkout.");
+            }
+        }
+
+        async function triggerWalletDeposit() {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const amount = Number(document.getElementById('depositAmountInput').value) || 0;
+            const phone = document.getElementById('custPhone') ? document.getElementById('custPhone').value : "";
+
+            if (amount <= 0) {
+                alert("Please enter a valid deposit amount.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/wallet/deposit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ amount, phone, businessId: bizId })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('depositAmountInput').value = "";
+                    fetchSovereignBalance();
+                    logLedgerEvent("Wallet Deposit", `Credited successfully`, true);
+                } else {
+                    alert(data.error || "Deposit failed.");
+                }
+            } catch (err) {
+                alert("Network error processing wallet deposit.");
             }
         }
 

@@ -141,23 +141,19 @@ function defaultDB() {
       { id: "BIZ-CA", name: "RDS Toronto (Stripe Canada)", region: "CA", currency: "CAD", ownerPhone: "14165550198", taxPin: "CA123456789RT" }
     ], 
     products: [
-      // KENNEDY / NAIROBI CORRIDOR (BIZ-KE)
       { id: "p1", businessId: "BIZ-KE", category: "RESTAURANT", merchant: "Nairobi Grill & Chicken", name: "2pc Chicken Meal (KES)", price: 650, currency: "KES", image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80" },
       { id: "p5", businessId: "BIZ-KE", category: "HOTEL", merchant: "Serena Luxury Suites", name: "Executive Suite Booking (1 Night)", price: 12500, currency: "KES", image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&auto=format&fit=crop&q=80" },
       { id: "p6", businessId: "BIZ-KE", category: "SUPERMARKET", merchant: "Naivas Supermarket Express", name: "Organic Fresh Basket", price: 2100, currency: "KES", image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80" },
       { id: "p12", businessId: "BIZ-KE", category: "HYPERMARKET", merchant: "Carrefour Hypermarket", name: "Bulk Household Monthly Bundle", price: 8500, currency: "KES", image: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400&auto=format&fit=crop&q=80" },
       { id: "p13", businessId: "BIZ-KE", category: "RETAIL", merchant: "QuickMart Local Shop", name: "Daily Essentials Pack", price: 1200, currency: "KES", image: "https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=400&auto=format&fit=crop&q=80" },
 
-      // LONDON CORRIDOR (BIZ-UK)
       { id: "p2", businessId: "BIZ-UK", category: "RESTAURANT", merchant: "Soho Fish & Pub", name: "Fish & Chips Combo (GBP)", price: 12.50, currency: "GBP", image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80" },
       { id: "p8", businessId: "BIZ-UK", category: "HOTEL", merchant: "The Savoy London", name: "Deluxe Thames View Room", price: 280.00, currency: "GBP", image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&auto=format&fit=crop&q=80" },
       { id: "p14", businessId: "BIZ-UK", category: "HYPERMARKET", merchant: "Tesco Extra Superstore", name: "Family Weekly Grocery Pack", price: 65.00, currency: "GBP", image: "https://images.unsplash.com/photo-1601599334135-8443e936556e?w=400&auto=format&fit=crop&q=80" },
 
-      // MADRID CORRIDOR (BIZ-ES)
       { id: "p3", businessId: "BIZ-ES", category: "RESTAURANT", merchant: "Madrid Tapas Bar", name: "Iberian Tapas Menu (EUR)", price: 15.00, currency: "EUR", image: "https://images.unsplash.com/photo-1515443961218-a51367888e4b?w=400&auto=format&fit=crop&q=80" },
       { id: "p15", businessId: "BIZ-ES", category: "SUPERMARKET", merchant: "Mercadona Market", name: "Mediterranean Fresh Pack", price: 32.00, currency: "EUR", image: "https://images.unsplash.com/photo-1534482492-2642f5344449?w=400&auto=format&fit=crop&q=80" },
 
-      // TORONTO CORRIDOR (BIZ-CA)
       { id: "p4", businessId: "BIZ-CA", category: "RESTAURANT", merchant: "Maple Diner & Grill", name: "Maple Glazed Poutine (CAD)", price: 18.00, currency: "CAD", image: "https://images.unsplash.com/photo-1585109649139-366815a0d713?w=400&auto=format&fit=crop&q=80" },
       { id: "p16", businessId: "BIZ-CA", category: "HYPERMARKET", merchant: "Walmart Supercentre", name: "Bulk Pantry Essentials", price: 110.00, currency: "CAD", image: "https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?w=400&auto=format&fit=crop&q=80" }
     ], 
@@ -354,6 +350,49 @@ app.get('/wallets', (req, res) => {
         };
     });
     ok(res, { wallets });
+});
+
+// ================= DIRECT WALLET DEPOSIT ROUTE =================
+app.post("/api/wallet/deposit", enforceTenantIsolation, async (req, res) => {
+    try {
+        ensureState();
+        const { amount, phone } = req.body;
+        const depositAmount = Number(amount);
+        const tenant = req.tenantObj;
+        const currencyCode = tenant.currency;
+
+        if (depositAmount <= 0) return fail(res, "Invalid deposit amount", 400);
+
+        const referenceId = id("DEP");
+
+        if (currencyCode === "KES") {
+            const sanitizedPhone = validateKenyanPhone(phone);
+            if (!sanitizedPhone) return fail(res, "Invalid Kenyan phone number for M-Pesa deposit", 400);
+        }
+
+        const ledgerEntry = {
+            id: id("LEDGER_DEP"),
+            owner_id: tenant.id,
+            orderId: referenceId,
+            amount: depositAmount,
+            entry_type: "CREDIT",
+            currency: currencyCode,
+            reference_id: referenceId,
+            status: "SETTLED",
+            timestamp: Date.now()
+        };
+        ledgerEntry.merkleProof = generateStage61MerkleProof(ledgerEntry);
+        data.ledger_entries.push(ledgerEntry);
+        await saveDB();
+
+        if (global.io) {
+            global.io.emit('walletUpdated', { businessId: tenant.id, currency: currencyCode });
+        }
+
+        return ok(res, { success: true, message: `Successfully deposited ${currencyCode} ${depositAmount}`, balance: depositAmount });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
 });
 
 // ================= INTERNATIONAL PAYMENT GATEWAY ROUTER =================
