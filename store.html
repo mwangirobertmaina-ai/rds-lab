@@ -247,7 +247,7 @@
     .btn-cyan:hover { background: var(--neon-green); }
 
     .ledger-list {
-      max-height: 130px;
+      max-height: 150px;
       overflow-y: auto;
       font-size: 0.75rem;
       color: var(--text-dim);
@@ -259,9 +259,9 @@
     .ledger-item {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       border-bottom: 1px solid rgba(255,255,255,0.05);
-      padding-bottom: 3px;
+      padding-bottom: 4px;
     }
 
     .bottom-nav {
@@ -358,20 +358,25 @@
         </div>
     </div>
 
-    <!-- DIGITAL WALLET VIEW -->
+    <!-- DIGITAL WALLET VIEW (LEDGER BOUND) -->
     <div id="viewWallet" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
             <h3>Multi-Currency Sovereign Wallets</h3>
         </div>
         <div class="checkout-panel" style="text-align: center; padding: 25px 15px;">
             <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;" id="walletCurrencyLabel">AVAILABLE BALANCE (KES)</p>
-            <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 15px;"><span id="walletBalance">0.00</span></h2>
+            <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 8px;"><span id="walletBalance">0.00</span></h2>
+            <div style="font-size: 0.65rem; color: var(--text-dim);" id="auditStatus">Synced & Reconciled</div>
         </div>
 
         <div class="checkout-panel">
-            <h3>Transaction Ledger & Merkle Proofs</h3>
+            <h3>RECONCILED TRANSACTION LEDGER</h3>
             <div id="ledgerFeed" class="ledger-list">
-                <div class="ledger-item"><span>Engine Initialized</span><span style="color: var(--neon-green);">Zero Fake Money</span></div>
+                <!-- Dynamically populated from database rows -->
+                <div class="ledger-item">
+                    <span>[SETTLED] System Initialized</span>
+                    <span style="color:var(--neon-green);">Verified</span>
+                </div>
             </div>
         </div>
     </div>
@@ -426,16 +431,15 @@
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
         let allProductsCache = [];
-        let walletsCache = [];
         let cart = {}; 
 
-        function logLedgerEvent(title, detail) {
+        function logLedgerEvent(title, detail, isPositive = true) {
             const feed = document.getElementById('ledgerFeed');
             if (!feed) return;
             const timeStr = new Date().toLocaleTimeString();
             const item = document.createElement('div');
             item.className = 'ledger-item';
-            item.innerHTML = `<span>[${timeStr}] ${title}</span><strong style="color:var(--cyan);">${detail}</strong>`;
+            item.innerHTML = `<span>[${timeStr}] ${title}</span><strong style="color:${isPositive ? 'var(--neon-green)' : 'var(--cyan)'};">${detail}</strong>`;
             feed.prepend(item);
         }
 
@@ -445,6 +449,10 @@
             document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
             if(el) el.classList.add('active');
             window.scrollTo(0, 0);
+
+            if (viewId === 'viewWallet') {
+                fetchSovereignBalance();
+            }
         }
 
         async function loadStoreCatalog() {
@@ -458,31 +466,26 @@
                 document.getElementById('activeCurrencyLabel').innerText = data.currency || "KES";
                 document.getElementById('storeCurrency').value = data.currency || "KES";
                 renderCatalog(allProductsCache);
-                loadWallets();
+                fetchSovereignBalance();
             } catch (err) {
                 console.error("Catalog load error", err);
             }
         }
 
-        async function loadWallets() {
-            try {
-                const res = await fetch(`${API_BASE}/wallets`);
-                const data = await res.json();
-                walletsCache = data.wallets || [];
-                updateActiveWalletDisplay();
-            } catch (err) {
-                console.error("Wallet load error", err);
-            }
-        }
-
-        function updateActiveWalletDisplay() {
+        async function fetchSovereignBalance() {
             const currentBiz = document.getElementById('storeBusinessId').value;
-            const currentCurr = document.getElementById('storeCurrency').value;
-            const wallet = walletsCache.find(w => w.ownerId === currentBiz && w.currency === currentCurr);
-            const balance = wallet ? wallet.balance : 0;
-            
-            document.getElementById('walletCurrencyLabel').innerText = `AVAILABLE BALANCE (${currentCurr})`;
-            document.getElementById('walletBalance').innerText = Number(balance).toLocaleString(undefined, {minimumFractionDigits: 2});
+            try {
+                const response = await fetch(`${API_BASE}/wallets/${currentBiz}/balance`);
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('walletCurrencyLabel').innerText = `AVAILABLE BALANCE (${data.currency})`;
+                    document.getElementById('walletBalance').innerText = Number(data.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                    document.getElementById('auditStatus').innerText = `Synced & Reconciled: ${new Date(data.last_reconciled).toLocaleTimeString()}`;
+                }
+            } catch (error) {
+                console.error("Critical: Ledger sync error", error);
+            }
         }
 
         function renderCatalog(products) {
@@ -581,7 +584,7 @@
             cart = {};
             recalculateCartSummary();
             loadStoreCatalog();
-            logLedgerEvent("Corridor Switch", `Switched to ${tenantId} (${currencyCode})`);
+            logLedgerEvent("Corridor Switch", `Switched to ${tenantId}`, false);
         }
 
         async function triggerGlobalCheckout() {
@@ -611,7 +614,7 @@
                         alert(`Stripe Payment Intent created successfully for ${curr} ${amount}! Gateway ready.`);
                         document.getElementById('lifecycleStatus').innerText = "STRIPE_INTENT_CREATED";
                     }
-                    logLedgerEvent("Checkout Init", `${curr} ${amount} via ${data.gateway}`);
+                    logLedgerEvent("Checkout Init", `${curr} ${amount} via ${data.gateway}`, false);
                 } else {
                     alert(data.error || "Checkout failed.");
                 }
@@ -626,13 +629,14 @@
                 document.getElementById('lifecycleStatus').innerText = data.status;
             });
             socket.on('walletUpdated', (data) => {
-                loadWallets();
+                fetchSovereignBalance();
+                logLedgerEvent("Settlement", `Verified & Credited`, true);
             });
         } catch(e) {}
 
         window.onload = () => {
             loadStoreCatalog();
-            logLedgerEvent("Global Node", "Connected Successfully");
+            logLedgerEvent("Global Node", "Connected Successfully", false);
         };
     </script>
 </body>

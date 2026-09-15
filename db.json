@@ -1,627 +1,143 @@
 {
   "businesses": [
     {
-      "id": "B_1788923915150_88524",
-      "name": "caro",
-      "createdAt": 1788923915150
+      "id": "BIZ-KE",
+      "name": "RDS Nairobi (M-Pesa Corridor)",
+      "region": "KE",
+      "currency": "KES",
+      "ownerPhone": "254721862397",
+      "taxPin": "P055123456Z"
     },
     {
-      "id": "BIZ_1788934394576_9413",
-      "name": "quick",
-      "category": "supermarket",
-      "address": "Nairobi, Kenya",
-      "phone": "0700000000",
-      "balance": 0,
-      "createdAt": 1788934394576
+      "id": "BIZ-UK",
+      "name": "RDS London (Stripe UK)",
+      "region": "UK",
+      "currency": "GBP",
+      "ownerPhone": "447123456789",
+      "taxPin": "GB123456789"
+    },
+    {
+      "id": "BIZ-ES",
+      "name": "RDS Madrid (Stripe Spain)",
+      "region": "ES",
+      "currency": "EUR",
+      "ownerPhone": "34612345678",
+      "taxPin": "ESB12345678"
+    },
+    {
+      "id": "BIZ-CA",
+      "name": "RDS Toronto (Stripe Canada)",
+      "region": "CA",
+      "currency": "CAD",
+      "ownerPhone": "14165550198",
+      "taxPin": "CA123456789RT"
     }
   ],
   "products": [
     {
-      "id": "P_1788923930157_83294",
-      "name": "rice",
-      "price": 800,
-      "businessId": "B_1788923915150_88524",
-      "createdAt": 1788923930157,
-      "stock": 100
+      "id": "p1",
+      "businessId": "BIZ-KE",
+      "name": "2pc Chicken Meal (KES)",
+      "price": 650,
+      "currency": "KES",
+      "image": "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80"
     },
     {
-      "id": "PROD_1788937039819_28273",
-      "businessId": "B_1788923915150_88524",
-      "name": "sugur",
-      "price": 180,
-      "stock": 50,
-      "category": "General",
-      "createdAt": 1788937039819
+      "id": "p2",
+      "businessId": "BIZ-UK",
+      "name": "Fish & Chips Combo (GBP)",
+      "price": 12.5,
+      "currency": "GBP",
+      "image": "https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80"
     },
     {
-      "id": "PROD_1788938016535_28405",
-      "businessId": "B_1788923915150_88524",
-      "name": "sugure",
-      "price": 170,
-      "stock": 50,
-      "category": "General",
-      "createdAt": 1788938016535
+      "id": "p3",
+      "businessId": "BIZ-ES",
+      "name": "Iberian Tapas Menu (EUR)",
+      "price": 15,
+      "currency": "EUR",
+      "image": "https://images.unsplash.com/photo-1515443961218-a51367888e4b?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+      "id": "p4",
+      "businessId": "BIZ-CA",
+      "name": "Maple Glazed Poutine (CAD)",
+      "price": 18,
+      "currency": "CAD",
+      "image": "https://images.unsplash.com/photo-1585109649139-366815a0d713?w=400&auto=format&fit=crop&q=80"
     }
   ],
   "orders": [
     {
-      "id": "O_1788924010236_75810",
-      "items": [
-        {
-          "productId": "P_1788923930157_83294",
-          "name": "rice",
-          "price": 800,
-          "qty": 1,
-          "subtotal": 800
-        }
-      ],
-      "total": 800,
-      "commission": 40,
-      "status": "DISPATCHED",
-      "createdAt": 1788924010237,
-      "updatedAt": 1788924010238,
-      "driverId": "D_1788917494728_60043"
+      "id": "ORD_GL_1789502960982_52055",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "total": 50,
+      "status": "PENDING_PAYMENT",
+      "createdAt": 1789502960982
     },
     {
-      "id": "O_1788924400968_34729",
-      "items": [
-        {
-          "productId": "P_1788923930157_83294",
-          "name": "rice",
-          "price": 800,
-          "qty": 1,
-          "subtotal": 800
-        }
-      ],
-      "total": 800,
-      "commission": 40,
+      "id": "ORD_GL_1789503150616_59443",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "total": 50,
       "status": "PAID",
-      "createdAt": 1788924400968,
-      "updatedAt": 1788924400968,
-      "driverId": "D_1788934424495_92753"
+      "createdAt": 1789503150616,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_150920262312239721862397"
     },
     {
-      "id": "ORD_1788932182240_30065",
-      "customerName": "Guest Customer",
-      "customerPhone": "0700000000",
-      "deliveryAddress": "Nairobi CBD, Kenya",
-      "targetLocation": {
-        "lat": -1.286389,
-        "lng": 36.817223
-      },
-      "items": [
-        {
-          "productId": "P_1788923930157_83294",
-          "name": "rice",
-          "price": 800,
-          "quantity": 1
-        }
-      ],
-      "total": 800,
-      "status": "PLACED",
-      "createdAt": 1788932182240,
-      "driverId": "D_1788917494728_60043"
-    },
-    {
-      "id": "ORD_1788933857516_27173",
-      "customerName": "Robert (Valued Customer)",
-      "customerPhone": "0700000000",
-      "deliveryAddress": "Nairobi CBD, Kenya",
-      "targetLocation": {
-        "lat": -1.286389,
-        "lng": 36.817223
-      },
-      "items": [
-        {
-          "productId": "P_1788923930157_83294",
-          "name": "rice",
-          "price": 800,
-          "quantity": 8
-        }
-      ],
-      "total": 6400,
-      "status": "PLACED",
-      "createdAt": 1788933857517,
-      "driverId": "D_1788934424495_92753"
-    },
-    {
-      "id": "ORD_1788933961695_78001",
-      "customerName": "Admin Dispatch Simulation",
-      "customerPhone": "0722000111",
-      "deliveryAddress": "Nairobi CBD",
-      "targetLocation": {
-        "lat": -1.286389,
-        "lng": 36.817223
-      },
-      "items": [
-        {
-          "productId": "PROD_DISPATCH_TEST",
-          "name": "Simulated Market Item",
-          "price": 40,
-          "quantity": 1
-        }
-      ],
-      "total": 40,
-      "status": "DISPATCHED",
-      "createdAt": 1788933961695,
-      "driverId": "D_1788917494728_60043"
-    },
-    {
-      "id": "ORD54_1789356541438_59121",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260628544712345678",
-      "merchantReleased": false,
-      "createdAt": 1789356541438
-    },
-    {
-      "id": "ORD54_1789358921654_17548",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260708346712345678",
-      "merchantReleased": false,
-      "createdAt": 1789358921654
-    },
-    {
-      "id": "ORD54_1789358946208_82170",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260708592712345678",
-      "merchantReleased": false,
-      "createdAt": 1789358946208
-    },
-    {
-      "id": "ORD54_1789359476241_76872",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260717491712345678",
-      "merchantReleased": false,
-      "createdAt": 1789359476241
-    },
-    {
-      "id": "ORD54_1789359477858_54942",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260717507712345678",
-      "merchantReleased": false,
-      "createdAt": 1789359477858
-    },
-    {
-      "id": "ORD54_1789359494937_29396",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260718078712345678",
-      "merchantReleased": false,
-      "createdAt": 1789359494937
-    },
-    {
-      "id": "ORD54_1789359496500_80258",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260718093712345678",
-      "merchantReleased": false,
-      "createdAt": 1789359496500
-    },
-    {
-      "id": "ORD54_1789359606346_80593",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260719592712345678",
-      "merchantReleased": false,
-      "createdAt": 1789359606346
-    },
-    {
-      "id": "ORD54_1789360285294_42711",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260731183712345678",
-      "merchantReleased": false,
-      "createdAt": 1789360285294
-    },
-    {
-      "id": "ORD54_1789360289837_50221",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260731227712345678",
-      "merchantReleased": false,
-      "createdAt": 1789360289837
-    },
-    {
-      "id": "ORD54_1789360355439_57738",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260732284712345678",
-      "merchantReleased": false,
-      "createdAt": 1789360355439
-    },
-    {
-      "id": "ORD54_1789360356336_6768",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260732293712345678",
-      "merchantReleased": false,
-      "createdAt": 1789360356336
-    },
-    {
-      "id": "ORD54_1789360357230_1145",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260732302712345678",
-      "merchantReleased": false,
-      "createdAt": 1789360357230
-    },
-    {
-      "id": "ORD54_1789360678857_80932",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260737516712345678",
-      "merchantReleased": false,
-      "createdAt": 1789360678857
-    },
-    {
-      "id": "ORD54_1789361326615_99745",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260748396712345678",
-      "merchantReleased": false,
-      "createdAt": 1789361326615
-    },
-    {
-      "id": "ORD54_1789363031189_60327",
-      "businessId": "BIZ-001",
-      "driverId": "DRV-001",
-      "customerPhone": "254712345678",
-      "total": 3066.1,
-      "split": {
-        "gross": 3066.1,
-        "itemsValue": 2500,
-        "baseDeliveryFare": 555,
-        "shopOwnerSurcharge": 11.1,
-        "commission": 38.85,
-        "tax": 6.22,
-        "netPlatformRevenue": 32.63,
-        "driverAmount": 527.25
-      },
-      "status": "STAGE_54_PENDING_STK",
-      "checkoutRequestId": "ws_CO_140920260817039712345678",
-      "merchantReleased": false,
-      "createdAt": 1789363031189
+      "id": "ORD_GL_1789503528929_7874",
+      "businessId": "BIZ-UK",
+      "region": "UK",
+      "currency": "GBP",
+      "total": 12.5,
+      "status": "PENDING_PAYMENT",
+      "createdAt": 1789503528929,
+      "checkoutRequestId": "pi_1m66bs"
     }
   ],
-  "drivers": [
-    {
-      "id": "D_1788917494728_60043",
-      "name": "kamau",
-      "phone": "0700000000",
-      "status": "online",
-      "earnings": 1558,
-      "walletBalance": 1558,
-      "location": {
-        "lat": 0,
-        "lng": 0
-      },
-      "lastSeen": 1789221738883
-    },
-    {
-      "id": "D_1788934424495_92753",
-      "name": "robert",
-      "phone": "254722123456",
-      "status": "online",
-      "earnings": 6840,
-      "walletBalance": 6840,
-      "location": {
-        "lat": -1.286389,
-        "lng": 36.817223
-      },
-      "lastSeen": 1789221738883
-    }
-  ],
+  "drivers": [],
   "ledger": [
     {
-      "id": "L_1788924010237_89404",
-      "orderId": "O_1788924010236_75810",
-      "entries": [
-        {
-          "account": "CASH",
-          "debit": 800,
-          "credit": 0
-        },
-        {
-          "account": "BUSINESS_PAYABLE",
-          "businessId": "B_1788923915150_88524",
-          "debit": 0,
-          "credit": 760
-        },
-        {
-          "account": "PLATFORM_REVENUE",
-          "debit": 0,
-          "credit": 40
-        }
-      ],
-      "total": 800,
-      "commission": 40,
-      "createdAt": 1788924010237
-    },
-    {
-      "id": "L_1788924400968_72027",
-      "orderId": "O_1788924400968_34729",
-      "entries": [
-        {
-          "account": "CASH",
-          "debit": 800,
-          "credit": 0
-        },
-        {
-          "account": "BUSINESS_PAYABLE",
-          "businessId": "B_1788923915150_88524",
-          "debit": 0,
-          "credit": 760
-        },
-        {
-          "account": "PLATFORM_REVENUE",
-          "debit": 0,
-          "credit": 40
-        }
-      ],
-      "total": 800,
-      "commission": 40,
-      "createdAt": 1788924400968
-    },
-    {
-      "id": "TX_1788932182240_87312",
-      "orderId": "ORD_1788932182240_30065",
-      "type": "ORDER_PAYMENT",
-      "amount": 800,
-      "timestamp": 1788932182240
-    },
-    {
-      "id": "TX_1788933857517_96205",
-      "orderId": "ORD_1788933857516_27173",
-      "type": "ORDER_PAYMENT",
-      "amount": 6400,
-      "timestamp": 1788933857517
-    },
-    {
-      "id": "TX_1788933961695_20137",
-      "orderId": "ORD_1788933961695_78001",
-      "type": "ORDER_PAYMENT",
-      "amount": 40,
-      "timestamp": 1788933961695
+      "id": "LEDGER_1789503266923_14157",
+      "businessId": "BIZ-KE",
+      "orderId": "ORD_GL_1789503150616_59443",
+      "gross": 50,
+      "currency": "KES",
+      "reconciled": true,
+      "timestamp": 1789503266923,
+      "merkleProof": "cc02e608006c6c8358532734be0e5c3ca9e42643eb796c133911efb11400ab4b"
     }
   ],
   "wallets": [
     {
-      "id": "wal_1789251853672_57042",
-      "businessId": "B_1788923915150_88524",
-      "balance": 0
+      "ownerId": "BIZ-KE",
+      "balance": 50,
+      "currency": "KES",
+      "type": "SHOP"
     },
     {
-      "id": "wal_1789251853689_92002",
-      "businessId": "BIZ_1788934394576_9413",
-      "balance": 0
+      "ownerId": "BIZ-UK",
+      "balance": 0,
+      "currency": "GBP",
+      "type": "SHOP"
+    },
+    {
+      "ownerId": "BIZ-ES",
+      "balance": 0,
+      "currency": "EUR",
+      "type": "SHOP"
+    },
+    {
+      "ownerId": "BIZ-CA",
+      "balance": 0,
+      "currency": "CAD",
+      "type": "SHOP"
     }
   ],
   "payouts": [],
-  "auditTrail": [],
-  "externalIntegrations": [],
-  "deliveries": [
-    {
-      "id": "DL_1788924010238_6174",
-      "orderId": "O_1788924010236_75810",
-      "driverId": "D_1788917494728_60043",
-      "status": "ASSIGNED",
-      "createdAt": 1788924010238,
-      "updatedAt": 1788924010238
-    },
-    {
-      "id": "DEL_1788933961695_94310",
-      "orderId": "ORD_1788933961695_78001",
-      "driverId": "D_1788917494728_60043",
-      "status": "ASSIGNED",
-      "createdAt": 1788933961695,
-      "updatedAt": 1788933961695
-    }
-  ],
-  "escrow": [],
-  "system": {
-    "stage": 20,
-    "mode": "HYBRID_ZERO_ERROR",
-    "createdAt": 1789221738882,
-    "lastCheck": 1789221738882
-  }
+  "auditTrail": []
 }

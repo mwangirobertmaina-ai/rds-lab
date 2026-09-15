@@ -37,7 +37,7 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 
 // System-wide economic constants
-const DRIVER_SHARE_RATE = 0.95;          
+const DRIVER_SHARE_RATE = 0.95;         
 const PLATFORM_COMMISSION_RATE = 0.05; 
 const SHOP_SURCHARGE_RATE = 0.02;      
 const KRA_TAX_RATE = 0.16;             
@@ -148,13 +148,7 @@ function defaultDB() {
     ], 
     orders: [], 
     drivers: [], 
-    ledger: [], 
-    wallets: [
-      { ownerId: "BIZ-KE", balance: 0, currency: "KES", type: "SHOP" },
-      { ownerId: "BIZ-UK", balance: 0, currency: "GBP", type: "SHOP" },
-      { ownerId: "BIZ-ES", balance: 0, currency: "EUR", type: "SHOP" },
-      { ownerId: "BIZ-CA", balance: 0, currency: "CAD", type: "SHOP" }
-    ], 
+    ledger_entries: [], // Immutable accounting ledger
     payouts: [], 
     auditTrail: [] 
   };
@@ -168,8 +162,7 @@ function ensureState() {
   if (!Array.isArray(data.products)) data.products = [];
   if (!Array.isArray(data.orders)) data.orders = [];
   if (!Array.isArray(data.drivers)) data.drivers = [];
-  if (!Array.isArray(data.ledger)) data.ledger = [];
-  if (!Array.isArray(data.wallets)) data.wallets = [];
+  if (!Array.isArray(data.ledger_entries)) data.ledger_entries = [];
   if (!Array.isArray(data.payouts)) data.payouts = [];
   if (!Array.isArray(data.auditTrail)) data.auditTrail = [];
 }
@@ -224,22 +217,6 @@ const saveDB = async () => {
     log("DB_SAVE_ERROR", err.message);
   }
 };
-
-/**
- * Multi-Currency Atomic Wallet Manager
- */
-function updateWalletBalance(ownerId, amount, currencyCode = "KES", type = "CREDIT") {
-  let wallet = data.wallets.find(w => w.ownerId === ownerId && w.currency === currencyCode);
-  if (!wallet) {
-    wallet = { ownerId, balance: 0, currency: currencyCode.toUpperCase(), type: 'SHOP' };
-    data.wallets.push(wallet);
-  }
-  const delta = currency(amount);
-  wallet.balance = type === "CREDIT" 
-    ? currency(wallet.balance).add(delta).value 
-    : currency(wallet.balance).subtract(delta).value;
-  return wallet.balance;
-}
 
 /**
  * Global Multi-Tenant Authorization Middleware
@@ -302,9 +279,52 @@ app.post('/api/products', enforceTenantIsolation, async (req, res) => {
   }
 });
 
+// ================= SOVEREIGN LEDGER-BASED BALANCE ROUTE =================
+app.get('/wallets/:ownerId/balance', async (req, res) => {
+    const { ownerId } = req.params;
+
+    try {
+        ensureState();
+        // Compute mathematical truth exclusively from settled immutable ledger entries
+        const entries = data.ledger_entries.filter(e => e.owner_id === ownerId && e.status === 'SETTLED');
+
+        const balance = entries.reduce((acc, entry) => {
+            return entry.entry_type === 'CREDIT' 
+                ? acc + entry.amount 
+                : acc - entry.amount;
+        }, 0);
+
+        const tenant = data.businesses.find(b => b.id === ownerId);
+        const currencyCode = tenant ? tenant.currency : (ownerId === 'BIZ-KE' ? 'KES' : 'GBP');
+
+        res.json({
+            success: true,
+            ownerId,
+            currency: currencyCode,
+            balance: parseFloat(balance.toFixed(2)),
+            last_reconciled: new Date().toISOString()
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Ledger calculation failed", details: err.message });
+    }
+});
+
+// Legacy fallback endpoint matching old dashboard arrays if needed
 app.get('/wallets', (req, res) => {
-  ensureState();
-  ok(res, { wallets: data.wallets });
+    ensureState();
+    const wallets = data.businesses.map(tenant => {
+        const entries = data.ledger_entries.filter(e => e.owner_id === tenant.id && e.status === 'SETTLED');
+        const balance = entries.reduce((acc, entry) => {
+            return entry.entry_type === 'CREDIT' ? acc + entry.amount : acc - entry.amount;
+        }, 0);
+        return {
+            ownerId: tenant.id,
+            balance: parseFloat(balance.toFixed(2)),
+            currency: tenant.currency,
+            type: "SHOP"
+        };
+    });
+    ok(res, { wallets });
 });
 
 // ================= INTERNATIONAL PAYMENT GATEWAY ROUTER =================
@@ -314,7 +334,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         const { phone, itemPriceTotal } = req.body;
         const amount = Number(itemPriceTotal);
         const tenant = req.tenantObj;
-        const currencyCode = tenant.currency; // KES, GBP, EUR, CAD
+        const currencyCode = tenant.currency;
 
         if (amount <= 0) return fail(res, "Invalid checkout amount", 400);
 
@@ -331,7 +351,6 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         data.orders.push(order);
         await saveDB();
 
-        // 1. CORRIDOR: KENYA -> SAFARICOM M-PESA STK PUSH
         if (currencyCode === "KES") {
             const sanitizedPhone = validateKenyanPhone(phone);
             if (!sanitizedPhone) return fail(res, "Invalid Kenyan phone number for M-Pesa", 400);
@@ -374,12 +393,8 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
             log("M-PESA", `STK Push sent to ${sanitizedPhone} for ${currencyCode} ${amount}`);
             return ok(res, { success: true, gateway: "M-PESA", darajaResponse: stkResponse.data, orderId });
-        } 
-        
-        // 2. CORRIDOR: UK (GBP), SPAIN (EUR), CANADA (CAD) -> STRIPE PAYMENT INTENT
-        else {
+        } else {
             const stripeAmount = Math.round(amount * 100);
-            
             let clientSecret = "pi_mock_secret_" + Math.random().toString(36).substring(7);
             let stripeIntentId = "pi_" + Math.random().toString(36).substring(7);
 
@@ -432,24 +447,25 @@ app.post("/mpesa/callback", async (req, res) => {
 
         if (resultCode === 0) {
             order.status = "PAID";
-            const currentBalance = updateWalletBalance(order.businessId, order.total, order.currency, "CREDIT");
             
             const ledgerEntry = {
                 id: id("LEDGER"),
-                businessId: order.businessId,
+                owner_id: order.businessId,
                 orderId: order.id,
-                gross: order.total,
+                amount: order.total,
+                entry_type: "CREDIT",
                 currency: order.currency,
-                reconciled: true,
+                reference_id: checkoutRequestId,
+                status: "SETTLED",
                 timestamp: Date.now()
             };
             ledgerEntry.merkleProof = generateStage61MerkleProof(ledgerEntry);
-            data.ledger.push(ledgerEntry);
+            data.ledger_entries.push(ledgerEntry);
             await saveDB();
 
             if (global.io) {
                 global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'PAID' });
-                global.io.emit('walletUpdated', { businessId: order.businessId, balance: currentBalance, currency: order.currency });
+                global.io.emit('walletUpdated', { businessId: order.businessId, currency: order.currency });
             }
             log("PAYMENT_SUCCESS", `M-Pesa payment confirmed for ${order.currency} ${order.total}`);
         } else {
@@ -476,24 +492,25 @@ app.post("/stripe/webhook", express.raw({ type: 'application/json' }), async (re
             if (order && order.status !== "PAID") {
                 order.status = "PAID";
                 const amountPaid = paymentIntent.amount_received / 100;
-                const currentBalance = updateWalletBalance(order.businessId, amountPaid, order.currency, "CREDIT");
 
                 const ledgerEntry = {
                     id: id("LEDGER"),
-                    businessId: order.businessId,
+                    owner_id: order.businessId,
                     orderId: order.id,
-                    gross: amountPaid,
+                    amount: amountPaid,
+                    entry_type: "CREDIT",
                     currency: order.currency,
-                    reconciled: true,
+                    reference_id: paymentIntent.id,
+                    status: "SETTLED",
                     timestamp: Date.now()
                 };
                 ledgerEntry.merkleProof = generateStage61MerkleProof(ledgerEntry);
-                data.ledger.push(ledgerEntry);
+                data.ledger_entries.push(ledgerEntry);
                 await saveDB();
 
                 if (global.io) {
                     global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'PAID' });
-                    global.io.emit('walletUpdated', { businessId: order.businessId, balance: currentBalance, currency: order.currency });
+                    global.io.emit('walletUpdated', { businessId: order.businessId, currency: order.currency });
                 }
                 log("STRIPE_CONFIRMED", `Stripe payment webhook processed successfully for ${order.currency} ${amountPaid}`);
             }
