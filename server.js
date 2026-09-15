@@ -12,7 +12,7 @@ const fsPromises = require("fs").promises;
 const cors = require("cors");
 const path = require("path");
 const axios = require("axios");
-const currency = require("currency.js"); 
+const currency = require("currency.js");
 const crypto = require("crypto");
 
 // Initialize Stripe conditionally if API key is present
