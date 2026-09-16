@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 73, 74, 75, 76 & 77 SOVEREIGN & COMPLIANCE ENGINE
-// Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Multi-Wallet,
-// 16% KRA Tax Allocation, Frictionless Phone OTP, End-to-End Autonomous Routing,
+// RDS - STAGE 78 INSTITUTIONAL, ESCROW & COMPLIANCE ENGINE
+// Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Escrow Storage,
+// Multi-Wallet, 16% KRA Tax Allocation, Frictionless Phone OTP, End-to-End Autonomous Routing,
 // Comprehensive Driver/Vehicle KYC, & CBK / World Bank Hardened Compliance
 // ==========================================
 
@@ -41,7 +41,7 @@ const PLATFORM_DELIVERY_SHARE = 0.05;   // 5% platform share of delivery/ride fa
 const SHOP_SURCHARGE_RATE = 0.02;       // 2% platform surcharge on commodities
 const KRA_TAX_RATE = 0.16;              // 16% KRA tax applicable on platform commissions (KES corridor)
 
-// --- STAGE 75/76/77 INSTITUTIONAL COMPLIANCE CONSTANTS ---
+// --- STAGE 75/76/77/78 INSTITUTIONAL COMPLIANCE CONSTANTS ---
 const MAX_DAILY_ANONYMOUS_TX = 50000; // KES 50,000 AML threshold per CBK guidelines
 
 function num(v) {
@@ -51,7 +51,7 @@ function num(v) {
 
 function generateStage70MerkleProof(record) {
   const salt = process.env.SOVEREIGN_SALT || crypto.randomBytes(16).toString('hex');
-  const payload = `${record.id}:${record.businessId || 'GLOBAL'}:${record.orderId || record.transactionId}:${record.total || record.amount}:${record.currency || 'KES'}:${record.timestamp}:${salt}`;
+  const payload = `${record.id || record.escrowId}:${record.businessId || 'GLOBAL'}:${record.orderId || record.transactionId}:${record.total || record.amount}:${record.currency || 'KES'}:${record.timestamp || Date.now()}:${salt}`;
   return {
     hash: crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_70_MASTER_KEY').update(payload).digest('hex'),
     salt
@@ -59,7 +59,7 @@ function generateStage70MerkleProof(record) {
 }
 
 /**
- * Stage 70/71/72/73 Financial & KRA Tax Calculation Engine
+ * Stage 70/71/72/73/78 Financial & KRA Tax Calculation Engine
  */
 function processStage70FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, timeMinutes = 10, vehicleType = "MOTORBIKE", currencyCode = "KES") {
   const itemsGross = currency(num(itemPriceTotal));
@@ -155,6 +155,8 @@ function defaultDB() {
     users: [],
     otp_sessions: [],
     orders: [], 
+    escrow: [],       // 🔐 STAGE 78 ESCROW STORAGE
+    wallets: [],      // 💳 STAGE 78 MULTI-WALLET STORAGE
     ledger_entries: [],
     shops: [],
     catalogs: {},
@@ -174,6 +176,8 @@ function ensureState() {
   if (!Array.isArray(data.otp_sessions)) data.otp_sessions = [];
   if (!Array.isArray(data.orders)) data.orders = [];
   if (!Array.isArray(data.drivers)) data.drivers = [];
+  if (!Array.isArray(data.escrow)) data.escrow = [];
+  if (!Array.isArray(data.wallets)) data.wallets = [];
   if (!Array.isArray(data.ledger_entries)) data.ledger_entries = [];
   if (!Array.isArray(data.shops)) data.shops = [];
   if (!Array.isArray(data.audit_logs)) data.audit_logs = [];
@@ -231,9 +235,6 @@ function enforceTenantIsolation(req, res, next) {
     next();
 }
 
-// ==========================================
-// STAGE 75/76/77 AML & CBK ENFORCEMENT MIDDLEWARE
-// ==========================================
 function enforceCbkAmlAndKyc(req, res, next) {
   try {
     const { amount } = req.body;
@@ -259,11 +260,34 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_77_INSTITUTIONAL_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_78_ESCROW_ENGINE_ONLINE", time: Date.now() }));
 
-// ==========================================
-// STAGE 75/76: CBK & WORLD BANK COMPLIANCE ENDPOINTS
-// ==========================================
+// 🔐 STAGE 78 ESCROW CREATION HELPER
+function createEscrow(orderId, businessId, amount, region) {
+    const escrowEntry = {
+        escrowId: id("ESC"),
+        orderId,
+        businessId,
+        amount,
+        region,
+        status: "HELD",
+        createdAt: Date.now()
+    };
+    ensureState();
+    data.escrow.push(escrowEntry);
+    return escrowEntry;
+}
+
+// 🚴 STAGE 78 RIDE & DELIVERY CALCULATION ENGINE
+function calculateRide(distanceKm, type) {
+    const km = num(distanceKm);
+    const vType = type ? type.toUpperCase() : "MOTORBIKE";
+    if (km < 0.2 && vType === "BODA") return 100;
+    let base = vType === "BODA" ? 50 : 100;
+    let perKm = vType === "BODA" ? 30 : 60;
+    return base + (km * perKm);
+}
+
 app.post('/api/compliance/reconcile-ledger', async (req, res) => {
   ensureState();
   let isValid = true;
@@ -383,27 +407,13 @@ app.post('/api/shop/register', async (req, res) => {
     }
 });
 
-// ==========================================
-// STAGE 74 SOVEREIGN DRIVER & VEHICLE KYC ENDPOINT
-// ==========================================
 app.post('/api/driver/register-sovereign', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
         const {
-            userId,
-            fullName,
-            phone,
-            licenseNumber,
-            idNumber,
-            vehicleType, // "CAR" or "MOTORBIKE"
-            numberPlate,
-            facePhotoBase64,
-            licenseFrontBase64,
-            licenseBackBase64,
-            vehicleFrontBase64,
-            vehicleBackBase64,
-            psvTaxCopyBase64,
-            insuranceCopyBase64
+            userId, fullName, phone, licenseNumber, idNumber, vehicleType, numberPlate,
+            facePhotoBase64, licenseFrontBase64, licenseBackBase64, vehicleFrontBase64,
+            vehicleBackBase64, psvTaxCopyBase64, insuranceCopyBase64
         } = req.body;
 
         if (!userId || !licenseNumber || !idNumber || !numberPlate || !facePhotoBase64) {
@@ -418,26 +428,14 @@ app.post('/api/driver/register-sovereign', enforceTenantIsolation, async (req, r
 
         const driverId = id("DRV_KYC");
         const sovereignDriverProfile = {
-            id: driverId,
-            userId,
-            fullName: fullName || "Verified Operator",
-            phone: phone || "",
-            licenseNumber,
-            idNumber,
-            vehicleType: vehicleType ? vehicleType.toUpperCase() : "MOTORBIKE",
+            id: driverId, userId, fullName: fullName || "Verified Operator", phone: phone || "",
+            licenseNumber, idNumber, vehicleType: vehicleType ? vehicleType.toUpperCase() : "MOTORBIKE",
             numberPlate: numberPlate.toUpperCase(),
             documents: {
-                facePhoto: facePhotoBase64,
-                licenseFront: licenseFrontBase64,
-                licenseBack: licenseBackBase64,
-                vehicleFront: vehicleFrontBase64,
-                vehicleBack: vehicleBackBase64,
-                psvTaxCopy: psvTaxCopyBase64,
-                insuranceCopy: insuranceCopyBase64
+                facePhoto: facePhotoBase64, licenseFront: licenseFrontBase64, licenseBack: licenseBackBase64,
+                vehicleFront: vehicleFrontBase64, vehicleBack: vehicleBackBase64, psvTaxCopy: psvTaxCopyBase64, insuranceCopy: insuranceCopyBase64
             },
-            verificationStatus: "PENDING_KRA_PSV_AUDIT",
-            status: "OFFLINE",
-            createdAt: Date.now()
+            verificationStatus: "PENDING_KRA_PSV_AUDIT", status: "OFFLINE", createdAt: Date.now()
         };
 
         data.drivers.push(sovereignDriverProfile);
@@ -445,7 +443,7 @@ app.post('/api/driver/register-sovereign', enforceTenantIsolation, async (req, r
 
         return ok(res, {
             success: true,
-            message: "Sovereign Driver & Vehicle Registration submitted successfully. Pending automated KRA, PSV & Insurance compliance check.",
+            message: "Sovereign Driver & Vehicle Registration submitted successfully.",
             driverId
         });
     } catch (err) {
@@ -462,13 +460,8 @@ app.post('/api/products/add', (req, res) => {
     if (!data.catalogs[shopId]) data.catalogs[shopId] = [];
 
     const newProduct = {
-        id: id("PRD"),
-        businessId: shopId,
-        category: category || "RESTAURANT",
-        merchant: merchant || "My Shop",
-        name,
-        price: Number(price),
-        currency: "KES",
+        id: id("PRD"), businessId: shopId, category: category || "RESTAURANT",
+        merchant: merchant || "My Shop", name, price: Number(price), currency: "KES",
         image: image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80"
     };
 
@@ -498,12 +491,8 @@ app.post('/api/shops/:shopId/import-csv', enforceTenantIsolation, async (req, re
                 const category = parts[2] || "RESTAURANT";
                 if (name && !isNaN(price)) {
                     const newProd = {
-                        id: id("PRD_CSV"),
-                        businessId: shopId,
-                        category: category.toUpperCase(),
-                        merchant: req.tenantObj.name || "Merchant Node",
-                        name,
-                        price,
+                        id: id("PRD_CSV"), businessId: shopId, category: category.toUpperCase(),
+                        merchant: req.tenantObj.name || "Merchant Node", name, price,
                         currency: req.tenantObj.currency || "KES",
                         image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80"
                     };
@@ -556,6 +545,7 @@ app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
   ok(res, { success: true, split });
 });
 
+// 💳 CHECKOUT FLOW WITH STAGE 78 ESCROW LOCK
 app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -566,7 +556,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.total <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST73");
+        const orderId = id("ORD_ST78");
         const order = {
             id: orderId,
             businessId: tenant.id,
@@ -587,6 +577,13 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
             createdAt: Date.now()
         };
         data.orders.push(order);
+
+        // 🔐 CREATE ESCROW ENTRY (HIDES MONEY FROM SHOP UNTIL DELIVERY COMPLETE)
+        const baseAmount = num(itemPriceTotal);
+        const platformFeeVal = baseAmount * 0.02;
+        const totalPaidEscrow = baseAmount + platformFeeVal;
+        createEscrow(orderId, tenant.id, totalPaidEscrow, tenant.region || "KE");
+
         await saveDB();
 
         if (currencyCode === "KES") {
@@ -601,17 +598,11 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
             const stkResponse = await axios.post(
                 `${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`,
                 {
-                    BusinessShortCode: MPESA_CONFIG.shortCode,
-                    Password: password,
-                    Timestamp: timestamp,
-                    TransactionType: "CustomerPayBillOnline",
-                    Amount: Math.round(split.total),
-                    PartyA: sanitizedPhone,
-                    PartyB: MPESA_CONFIG.shortCode,
-                    PhoneNumber: sanitizedPhone,
-                    CallBackURL: MPESA_CONFIG.callbackUrl,
-                    AccountReference: `RDS ${tenant.region || 'KE'}`,
-                    TransactionDesc: `Stage 73 Checkout (${currencyCode})`
+                    BusinessShortCode: MPESA_CONFIG.shortCode, Password: password, Timestamp: timestamp,
+                    TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.total),
+                    PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
+                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS ${tenant.region || 'KE'}`,
+                    TransactionDesc: `Stage 78 Escrow Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -637,6 +628,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     }
 });
 
+// 📦 DISPATCH ENDPOINT (SHOP ACTION - NO EARLY FUNDS RELEASE)
 app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -646,33 +638,18 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
         if (order.status === "DISPATCHED" || order.status === "COMPLETED") return fail(res, "Already dispatched.", 400);
 
         order.status = "DISPATCHED";
-        if (order.productAmount > 0) {
-            const shopLedger = {
-                id: id("LEDGER"),
-                owner_id: order.businessId,
-                orderId: order.id,
-                amount: order.productAmount,
-                entry_type: "CREDIT",
-                currency: order.currency,
-                reference_id: order.id,
-                status: "SETTLED",
-                timestamp: Date.now()
-            };
-            shopLedger.merkleProof = generateStage70MerkleProof(shopLedger);
-            data.ledger_entries.push(shopLedger);
-        }
-
         await saveDB();
+
         if (global.io) {
             global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'DISPATCHED', pickup: order.pickup, destination: order.destination });
-            global.io.emit('walletUpdated', { ownerId: order.businessId, currency: order.currency });
         }
-        return ok(res, { success: true, message: "Order dispatched! Auto-navigation triggered to pickup." });
+        return ok(res, { success: true, message: "Order dispatched, waiting delivery. Funds remain secure in escrow." });
     } catch (err) {
         return fail(res, err.message, 500);
     }
 });
 
+// 🚴 5. DELIVERY COMPLETE → RELEASE ESCROW & DISTRIBUTE FUNDS (CORE ENGINE)
 app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -681,44 +658,108 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
         if (!order) return fail(res, "Order not found", 404);
         if (order.status === "COMPLETED") return fail(res, "Already completed.", 400);
 
-        order.status = "COMPLETED";
+        const escrow = data.escrow.find(e => e.orderId === orderId && e.status === "HELD");
+        if (!escrow) return fail(res, "Escrow not found or already released", 400);
+
+        const baseAmount = order.productAmount;
+
+        // 💰 CALCULATIONS
+        const shopAmount = baseAmount * 0.95;
+        const platformCommission = baseAmount * 0.05;
+        const platformFee = baseAmount * 0.02;
+        const tax = baseAmount * 0.16;
+
+        // 🧾 ENSURE WALLETS EXIST
+        if (!data.wallets) data.wallets = [];
+
+        function getWallet(ownerId, currency) {
+            let w = data.wallets.find(w => w.ownerId === ownerId);
+            if (!w) {
+                w = { ownerId, balance: 0, currency };
+                data.wallets.push(w);
+            }
+            return w;
+        }
+
+        const shopWallet = getWallet(order.businessId, order.currency || "KES");
+        const platformWallet = getWallet("PLATFORM", order.currency || "KES");
+        const taxWallet = getWallet("TAX", order.currency || "KES");
         const driverId = order.driverId || "DRV_01";
+        const driverWallet = getWallet(driverId, order.currency || "KES");
+
+        // 💰 DISTRIBUTE MONEY TO WALLETS
+        shopWallet.balance += shopAmount;
+        platformWallet.balance += (platformCommission + platformFee);
+        taxWallet.balance += tax;
+        driverWallet.balance += order.driverWalletCredit;
+
+        // 📝 CREATE SETTLED LEDGER ENTRIES FOR MERKLE PROOF AUDIT
+        const shopLedger = {
+            id: id("LEDGER"), owner_id: order.businessId, orderId: order.id,
+            amount: shopAmount, entry_type: "CREDIT", currency: order.currency,
+            reference_id: order.id, status: "SETTLED", timestamp: Date.now()
+        };
+        shopLedger.merkleProof = generateStage70MerkleProof(shopLedger);
+        data.ledger_entries.push(shopLedger);
+
         const driverLedger = {
-            id: id("LEDGER"),
-            owner_id: driverId,
-            orderId: order.id,
-            amount: order.driverWalletCredit,
-            entry_type: "CREDIT",
-            currency: order.currency,
-            reference_id: order.id,
-            status: "SETTLED",
-            timestamp: Date.now()
+            id: id("LEDGER"), owner_id: driverId, orderId: order.id,
+            amount: order.driverWalletCredit, entry_type: "CREDIT", currency: order.currency,
+            reference_id: order.id, status: "SETTLED", timestamp: Date.now()
         };
         driverLedger.merkleProof = generateStage70MerkleProof(driverLedger);
         data.ledger_entries.push(driverLedger);
 
+        // 🔐 UPDATE ESCROW
+        escrow.status = "RELEASED";
+        escrow.releasedAt = Date.now();
+
+        // 📦 UPDATE ORDER
+        order.status = "COMPLETED";
+
         await saveDB();
+
         if (global.io) {
             global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'COMPLETED' });
+            global.io.emit('walletUpdated', { ownerId: order.businessId, currency: order.currency });
             global.io.emit('walletUpdated', { ownerId: driverId, currency: order.currency });
         }
-        return ok(res, { success: true, message: "Completed successfully! 95% credited to driver wallet.", driverCredit: order.driverWalletCredit });
+
+        return res.json({
+            success: true,
+            message: "Order completed, escrow released, and funds distributed safely",
+            breakdown: {
+                shop: shopAmount,
+                driver: order.driverWalletCredit,
+                platform: platformCommission + platformFee,
+                tax: tax
+            }
+        });
+
     } catch (err) {
-        return fail(res, err.message, 500);
+        res.status(500).json({ error: err.message });
     }
 });
 
+// 💳 WALLET BALANCE ENDPOINT
 app.get('/wallets/:ownerId/balance', async (req, res) => {
     const { ownerId } = req.params;
     try {
         ensureState();
-        const entries = data.ledger_entries.filter(e => e.owner_id === ownerId && e.status === 'SETTLED');
-        const balance = entries.reduce((acc, entry) => entry.entry_type === 'CREDIT' ? acc + entry.amount : acc - entry.amount, 0);
+        let w = data.wallets.find(wallet => wallet.ownerId === ownerId);
+        let balance = w ? w.balance : 0;
+        
+        // Fallback calculation from ledger if wallet entity is missing
+        if (!w) {
+            const entries = data.ledger_entries.filter(e => e.owner_id === ownerId && e.status === 'SETTLED');
+            balance = entries.reduce((acc, entry) => entry.entry_type === 'CREDIT' ? acc + entry.amount : acc - entry.amount, 0);
+        }
+
         const tenant = data.businesses.find(b => b.id === ownerId);
         const currencyCode = tenant ? tenant.currency : 'KES';
         res.json({ success: true, ownerId, currency: currencyCode, balance: parseFloat(balance.toFixed(2)), last_reconciled: new Date().toISOString() });
     } catch (err) {
-        res.status(500).json({ error: "Ledger calculation failed", details: err.message });
+        res.status(500).json({ error: "Wallet calculation failed", details: err.message });
     }
 });
 
@@ -733,23 +774,22 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, enforceCbkAmlAndKyc, as
 
         if (withdrawAmount <= 0) return fail(res, "Invalid withdrawal amount", 400);
 
-        const entries = data.ledger_entries.filter(e => e.owner_id === targetOwner && e.status === 'SETTLED');
-        const currentBalance = entries.reduce((acc, entry) => entry.entry_type === 'CREDIT' ? acc + entry.amount : acc - entry.amount, 0);
+        let w = data.wallets.find(wallet => wallet.ownerId === targetOwner);
+        let currentBalance = w ? w.balance : 0;
+        if (!w) {
+            const entries = data.ledger_entries.filter(e => e.owner_id === targetOwner && e.status === 'SETTLED');
+            currentBalance = entries.reduce((acc, entry) => entry.entry_type === 'CREDIT' ? acc + entry.amount : acc - entry.amount, 0);
+        }
 
         if (withdrawAmount > currentBalance) return fail(res, "Insufficient balance", 400);
 
+        if (w) w.balance -= withdrawAmount;
+
         const referenceId = id("WTH_" + destination);
         const ledgerEntry = {
-            id: id("LEDGER"),
-            owner_id: targetOwner,
-            orderId: referenceId,
-            amount: withdrawAmount,
-            entry_type: "DEBIT",
-            currency: currencyCode,
-            reference_id: referenceId,
-            destination: destination,
-            status: "SETTLED",
-            timestamp: Date.now()
+            id: id("LEDGER"), owner_id: targetOwner, orderId: referenceId,
+            amount: withdrawAmount, entry_type: "DEBIT", currency: currencyCode,
+            reference_id: referenceId, destination: destination, status: "SETTLED", timestamp: Date.now()
         };
         ledgerEntry.merkleProof = generateStage70MerkleProof(ledgerEntry);
         data.ledger_entries.push(ledgerEntry);
@@ -763,5 +803,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, enforceCbkAmlAndKyc, as
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 77 INSTITUTIONAL & SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 78 ESCROW & SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
 });

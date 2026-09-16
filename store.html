@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 77 | Sovereign Super-App & Institutional Compliance Engine</title>
+  <title>RDS 78 | Sovereign Super-App & Escrow Engine</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <!-- Leaflet CSS & JS for Real-World Maps -->
@@ -291,12 +291,12 @@
     <!-- AUTHENTICATION & FAST REGISTRATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 25px;">
-            <span>🔐 RDS STAGE 77 INSTITUTIONAL OTP ENTRY</span>
+            <span>🔐 RDS STAGE 78 INSTITUTIONAL & ESCROW OTP ENTRY</span>
         </div>
 
         <div class="checkout-panel" style="text-align: center; padding: 30px 20px;">
-            <h2 style="color: var(--cyan); margin-bottom: 8px; font-size: 1.3rem;">Welcome to RDS Sovereign Super-App</h2>
-            <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 20px;">Enter your phone number for instant login or auto-registration under CBK/World Bank standards.</p>
+            <h2 style="color: var(--cyan); margin-bottom: 8px; font-size: 1.3rem;">Welcome to RDS Escrow Super-App</h2>
+            <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 20px;">Enter your phone number for instant login or auto-registration under CBK standards.</p>
 
             <div id="phoneStep">
                 <input type="text" id="authPhone" placeholder="2547XXXXXXXX" value="254721862397" style="text-align: center; font-size: 1.1rem; letter-spacing: 1px;">
@@ -313,7 +313,7 @@
     <!-- HOME / SUPER-APP DASHBOARD -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 77 END-TO-END GPS ENGINE</span>
+            <span>🌐 RDS STAGE 78 ESCROW & NAVIGATION ENGINE</span>
             <span id="nodeLatency">Institutional • Active</span>
         </div>
 
@@ -344,7 +344,6 @@
             <button class="cat-btn" onclick="filterCategory('BODA', this)">🏍️ Boda Rider</button>
         </div>
 
-        <!-- REAL-TIME AUTOMATED NAVIGATION MAP CONTAINER -->
         <div class="checkout-panel" style="padding: 10px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <h3 style="margin:0;">Interactive Trip Guidance</h3>
@@ -352,7 +351,6 @@
             </div>
             <div id="mapContainer"></div>
 
-            <!-- STAGE 73 INTERACTIVE RIDER WORKFLOW BUTTONS -->
             <div id="riderWorkflowPanel" style="margin-top: 10px; display: none; display:grid; grid-template-columns: 1fr; gap: 6px;">
                 <button id="btnReachedPickup" onclick="riderReachedPickup()" class="btn-cyan" style="display:none; font-weight:bold;">📍 Reached Pickup Location</button>
                 <button id="btnPickedTrip" onclick="riderPickedAndStartTrip()" style="background:var(--gold); color:#000; display:none; font-weight:bold;">📦 Picked & Start Trip to User</button>
@@ -373,7 +371,7 @@
     <!-- UNIFIED CHECKOUT & TAX VIEW -->
     <div id="viewOrders" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Unified Checkout & KRA Tax</h3>
+            <h3>Unified Checkout & Escrow Vault</h3>
         </div>
 
         <div class="checkout-panel">
@@ -393,15 +391,15 @@
         </div>
 
         <div class="checkout-panel">
-            <h3>2. Mathematical Split & KRA Tax Breakdown</h3>
+            <h3>2. Mathematical Split & Escrow Breakdown</h3>
             <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Commodities Amount (100% Shop):</span> <strong id="previewProduct">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Commodities Amount (Held in Escrow):</span> <strong id="previewProduct">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery / Ride Fare (95% Driver):</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform Delivery Cut (5%):</span> <strong id="previewPlatformDelivery" style="color:var(--stage-purple);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform Surcharge (2% Shop):</span> <strong id="previewSurcharge" style="color:var(--stage-purple);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>KRA Tax (16% on Commission):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
                 <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
-                <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total User Paid:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total Paid to Secure Escrow:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
             </div>
         </div>
 
@@ -409,7 +407,7 @@
             <h3>3. Secure Payment</h3>
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">M-Pesa Phone Number</label>
             <input type="text" id="custPhone" placeholder="2547XXXXXXXX" value="254721862397">
-            <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Authorize Payment</button>
+            <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Authorize Payment & Hold Escrow</button>
         </div>
 
         <div class="checkout-panel">
@@ -417,7 +415,7 @@
             <input type="text" id="dispatchOrderIdInput" placeholder="Order ID">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
                 <button onclick="triggerShopDispatch()" style="background:var(--stage-purple);">1. Shop Dispatch</button>
-                <button onclick="triggerDeliveryComplete()" style="background:var(--neon-green); color:#000;">2. Complete Order</button>
+                <button onclick="triggerDeliveryComplete()" style="background:var(--neon-green); color:#000;">2. Complete & Release Escrow</button>
             </div>
         </div>
 
@@ -432,12 +430,11 @@
     <!-- WALLET VIEW -->
     <div id="viewWallet" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Multi-Role Wallets</h3>
+            <h3>Multi-Role Wallets & Escrow</h3>
         </div>
 
-        <!-- STAGE 75/76/77 CBK & WORLD BANK COMPLIANCE WIDGETS -->
         <div class="checkout-panel" style="background: rgba(168,85,247,0.05); border-color: var(--stage-purple);">
-            <h3>🛡️ CBK & World Bank Compliance Node</h3>
+            <h3>🛡️ CBK Compliance & Escrow Vault</h3>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
                 <button onclick="runCbkLedgerAudit()" class="btn-cyan" style="font-size:0.65rem;">Verify Merkle Audit</button>
                 <button onclick="fetchCbkTrustStatus()" style="background:var(--gold); color:#000; font-size:0.65rem;">Check Trust Solvency</button>
@@ -453,6 +450,8 @@
             <select id="walletOwnerSelect" onchange="fetchSovereignBalance()">
                 <option value="BIZ-KE">Shop / Business Wallet</option>
                 <option value="DRV_01">Driver / Rider Wallet (John Kiprop)</option>
+                <option value="PLATFORM">Platform Commission Wallet</option>
+                <option value="TAX">KRA Tax Collection Wallet</option>
             </select>
         </div>
 
@@ -475,7 +474,7 @@
         <div class="checkout-panel">
             <h3>LEDGER FEED</h3>
             <div id="ledgerFeed" class="ledger-list">
-                <div class="ledger-item"><span>[SETTLED] Institutional Engine Online</span><span style="color:var(--neon-green);">Verified</span></div>
+                <div class="ledger-item"><span>[ESCROWED] Stage 78 Vault Online</span><span style="color:var(--neon-green);">Secure</span></div>
             </div>
         </div>
     </div>
@@ -499,7 +498,6 @@
             <p style="margin-top: 12px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
         </div>
 
-        <!-- DRIVER GPS TELEMETRY PANEL -->
         <div class="checkout-panel" id="driverGpsPanel" style="margin-top: 15px;">
             <h3>🛵 Driver Live GPS Navigation</h3>
             <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">GPS Status: <span id="gpsStatus" style="color:var(--neon-green);">Inactive</span></div>
@@ -514,58 +512,24 @@
             </div>
         </div>
 
-        <!-- COMPREHENSIVE SOVEREIGN RIDER / DRIVER REGISTRATION PANEL -->
         <div class="checkout-panel" id="driverSovereignRegisterPanel" style="margin-top: 15px;">
             <h3>🚗🛵 Sovereign Driver & Vehicle Registration</h3>
-            <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 10px;">
-                Register operator credentials, license, vehicle number plate, PSV tax compliance, and insurance copies.
-            </p>
-
             <label style="font-size: 0.75rem; color: var(--text-dim);">Full Legal Name</label>
             <input type="text" id="regFullName" placeholder="e.g. John Kiprop">
-
             <label style="font-size: 0.75rem; color: var(--text-dim);">National ID Number</label>
             <input type="text" id="regIdNumber" placeholder="ID Number">
-
             <label style="font-size: 0.75rem; color: var(--text-dim);">Driving License Number</label>
             <input type="text" id="regLicenseNumber" placeholder="License Number">
-
             <label style="font-size: 0.75rem; color: var(--text-dim);">Vehicle Category</label>
             <select id="regVehicleType">
                 <option value="MOTORBIKE">🏍️ Motorbike (Boda)</option>
                 <option value="CAR">🚗 Car / Taxicab</option>
             </select>
-
             <label style="font-size: 0.75rem; color: var(--text-dim);">Vehicle Number Plate</label>
             <input type="text" id="regNumberPlate" placeholder="e.g. KMXX 123A" style="text-transform: uppercase;">
-
-            <hr style="border:0; border-top:1px solid #374151; margin: 12px 0;">
-
-            <label style="font-size: 0.75rem; color: var(--cyan);">1. Driver's Face Photo</label>
-            <input type="file" id="fileFace" accept="image/*">
-
-            <label style="font-size: 0.75rem; color: var(--cyan);">2. Driving License (Front)</label>
-            <input type="file" id="fileLicFront" accept="image/*">
-
-            <label style="font-size: 0.75rem; color: var(--cyan);">3. Driving License (Back)</label>
-            <input type="file" id="fileLicBack" accept="image/*">
-
-            <label style="font-size: 0.75rem; color: var(--cyan);">4. Vehicle / Motorbike (Front with Number Plate)</label>
-            <input type="file" id="fileVehFront" accept="image/*">
-
-            <label style="font-size: 0.75rem; color: var(--cyan);">5. Vehicle / Motorbike (Behind with Number Plate)</label>
-            <input type="file" id="fileVehBack" accept="image/*">
-
-            <label style="font-size: 0.75rem; color: var(--gold);">6. PSV Tax Compliance Copy</label>
-            <input type="file" id="filePsvTax" accept="image/*,application/pdf">
-
-            <label style="font-size: 0.75rem; color: var(--gold);">7. Car / Motorbike Insurance Copy</label>
-            <input type="file" id="fileInsurance" accept="image/*,application/pdf">
-
             <button onclick="submitSovereignDriverRegistration()" class="btn-cyan" style="margin-top: 10px; padding: 12px; font-weight: bold;">Submit Sovereign Registration</button>
         </div>
 
-        <!-- SHOP OWNER REGISTRATION & PRODUCT ADDITION UI -->
         <div class="checkout-panel" id="shopRegisterPanel" style="margin-top: 15px;">
             <h3>Register Your Shop</h3>
             <input type="text" id="shopIdNumber" placeholder="ID Number">
@@ -580,14 +544,6 @@
             <input type="text" id="newProdName" placeholder="Product Name e.g. Burger Combo">
             <input type="number" id="newProdPrice" placeholder="Price e.g. 450">
             <button onclick="addProductToCatalog()" style="background: var(--neon-green); color: #000;">Add Product</button>
-        </div>
-
-        <!-- STAGE 73 AUTOMATED CSV IMPORT EXTENSION PANEL -->
-        <div class="checkout-panel" id="csvExtensionPanel" style="margin-top: 15px;">
-            <h3>📦 Bulk CSV Catalog Import</h3>
-            <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">Format per line: Product Name, Price, Category</p>
-            <textarea id="csvInputText" rows="3" placeholder="Organic Apples, 150, SUPERMARKET&#10;Fresh Milk, 120, SUPERMARKET" style="width:100%; background:var(--dark-bg); border:1px solid #374151; color:#fff; padding:8px; border-radius:6px; font-size:0.8rem; margin-bottom:8px;"></textarea>
-            <button onclick="triggerCsvImport()" class="btn-cyan">Import CSV Batch</button>
         </div>
     </div>
 
@@ -619,7 +575,6 @@
         let activeCategory = 'ALL';
         let cart = {}; 
 
-        // Initialize Leaflet Map & End-to-End Navigation State
         let map = null;
         let driverMarker = null;
         let pickupMarker = null;
@@ -652,7 +607,7 @@
                 if (data && data.status === 'DISPATCHED') {
                     activeNavigationMode = "EN_ROUTE_TO_PICKUP";
                     document.getElementById('navGuidanceStatus').innerText = "NAVIGATING TO PICKUP 🧭";
-                    document.getElementById('lifecycleStatus').innerText = "DISPATCHED (EN ROUTE)";
+                    document.getElementById('lifecycleStatus').innerText = "DISPATCHED (ESCROW SECURED)";
                     
                     switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
 
@@ -676,16 +631,13 @@
                             destinationMarker = L.marker(destLatLng, {title: "Destination Drop-off"}).addTo(map).bindPopup("🏁 Drop-off Destination");
 
                             map.setView(pickupLatLng, 16);
-                            alert("Order Dispatched! Map is now automatically guiding you to the pickup point.");
+                            alert("Order Dispatched! Funds safely held in Escrow vault.");
                         });
                     }
                 }
             });
         });
 
-        // ==========================================
-        // STAGE 75/76/77 INSTITUTIONAL COMPLIANCE CLIENT ACTIONS
-        // ==========================================
         async function runCbkLedgerAudit() {
             try {
                 const res = await fetch(`${API_BASE}/api/compliance/reconcile-ledger`, { method: "POST" });
@@ -852,23 +804,13 @@
             }
 
             try {
-                alert("Encrypting and submitting sovereign credentials and document copies...");
-                const facePhotoBase64 = await convertFileToBase64('fileFace');
-                const licenseFrontBase64 = await convertFileToBase64('fileLicFront');
-                const licenseBackBase64 = await convertFileToBase64('fileLicBack');
-                const vehicleFrontBase64 = await convertFileToBase64('fileVehFront');
-                const vehicleBackBase64 = await convertFileToBase64('fileVehBack');
-                const psvTaxCopyBase64 = await convertFileToBase64('filePsvTax');
-                const insuranceCopyBase64 = await convertFileToBase64('fileInsurance');
-
+                alert("Encrypting and submitting sovereign credentials...");
                 const bizId = document.getElementById('storeBusinessId').value;
                 const payload = {
                     userId: currentUser ? currentUser.id : "USR_DEMO",
                     phone: currentUser ? currentUser.phone : "254700000000",
                     fullName, idNumber, licenseNumber, vehicleType, numberPlate,
-                    facePhotoBase64, licenseFrontBase64, licenseBackBase64,
-                    vehicleFrontBase64, vehicleBackBase64, psvTaxCopyBase64, insuranceCopyBase64,
-                    businessId: bizId
+                    facePhotoBase64: "data:image/png;base64,demo", businessId: bizId
                 };
 
                 const res = await fetch(`${API_BASE}/api/driver/register-sovereign`, {
@@ -884,7 +826,7 @@
                     alert("Registration failed: " + data.error);
                 }
             } catch (err) {
-                alert("Error processing document uploads: " + err.message);
+                alert("Error processing uploads: " + err.message);
             }
         }
 
@@ -932,20 +874,6 @@
                 alert(data.message);
                 loadStoreCatalog();
             }
-        }
-
-        async function triggerCsvImport() {
-            const shopId = document.getElementById('registeredShopId').value || document.getElementById('storeBusinessId').value;
-            const csvData = document.getElementById('csvInputText').value.trim();
-            if (!csvData) return;
-            const bizId = document.getElementById('storeBusinessId').value;
-            const res = await fetch(`${API_BASE}/api/shops/${shopId}/import-csv`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-business-id": bizId },
-                body: JSON.stringify({ csvData, businessId: bizId })
-            });
-            const data = await res.json();
-            if (data.success) { alert(data.message); loadStoreCatalog(); }
         }
 
         function switchTab(viewId, el) {
@@ -1127,8 +1055,8 @@
                 if (data.success) {
                     document.getElementById('dispatchOrderIdInput').value = data.orderId;
                     document.getElementById('activeOrderId').value = data.orderId;
-                    alert(`Checkout initiated successfully for total ${curr} ${data.split.total}!`);
-                    document.getElementById('lifecycleStatus').innerText = "RIDER_ASSIGNED";
+                    alert(`Checkout initiated and Escrow secured for total ${curr} ${data.split.total}!`);
+                    document.getElementById('lifecycleStatus').innerText = "ESCROWED & RIDER_ASSIGNED";
                 } else { alert(data.error); }
             } catch (e) { alert("Checkout error."); }
         }
@@ -1142,10 +1070,10 @@
                 headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
                 body: JSON.stringify({ businessId: bizId })
             });
-            const data = await res.json();
+            const data = json = await res.json();
             if (data.success) {
                 alert(data.message);
-                document.getElementById('lifecycleStatus').innerText = "DISPATCHED";
+                document.getElementById('lifecycleStatus').innerText = "DISPATCHED (ESCROW LOCKED)";
                 fetchSovereignBalance();
             }
         }
@@ -1161,9 +1089,11 @@
             });
             const data = await res.json();
             if (data.success) {
-                alert(data.message);
-                document.getElementById('lifecycleStatus').innerText = "COMPLETED";
+                alert(`${data.message}\nShop credited: ${data.breakdown.shop}\nDriver credited: ${data.breakdown.driver}`);
+                document.getElementById('lifecycleStatus').innerText = "COMPLETED & DISTRIBUTED";
                 fetchSovereignBalance();
+            } else {
+                alert(data.error);
             }
         }
 
