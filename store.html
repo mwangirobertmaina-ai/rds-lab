@@ -457,6 +457,23 @@
             </div>
             <p style="margin-top: 12px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
         </div>
+
+        <!-- NEW SHOP OWNER REGISTRATION & PRODUCT ADDITION UI -->
+        <div class="checkout-panel" id="shopRegisterPanel" style="margin-top: 15px;">
+            <h3>Register Your Shop</h3>
+            <input type="text" id="shopIdNumber" placeholder="ID Number">
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Shop Photo</label>
+            <input type="file" id="shopImage" accept="image/*">
+            <button onclick="registerShop()" class="btn-cyan">Register Shop</button>
+        </div>
+
+        <div class="checkout-panel" id="productAddPanel" style="margin-top: 15px; display:none;">
+            <h3>Add Product to Catalog</h3>
+            <input type="hidden" id="registeredShopId">
+            <input type="text" id="newProdName" placeholder="Product Name e.g. Burger Combo">
+            <input type="number" id="newProdPrice" placeholder="Price e.g. 450">
+            <button onclick="addProductToCatalog()" style="background: var(--neon-green); color: #000;">Add Product</button>
+        </div>
     </div>
 
     <div id="floatingCart" class="floating-cart" onclick="switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1])">
@@ -517,6 +534,7 @@
             const data = await res.json();
             if (data.success) {
                 currentUser = data.user;
+                localStorage.setItem("userId", currentUser.id);
                 document.getElementById('profilePhone').innerText = currentUser.phone;
                 document.getElementById('profileRole').innerText = currentUser.role;
                 document.getElementById('userRoleSelect').value = currentUser.role;
@@ -540,6 +558,90 @@
                 currentUser = data.user;
                 document.getElementById('profileRole').innerText = currentUser.role;
                 alert(`Role updated to ${currentUser.role}`);
+            }
+        }
+
+        // Shop Registration Handler
+        async function registerShop() {
+            const idNumber = document.getElementById('shopIdNumber').value.trim();
+            const fileInput = document.getElementById('shopImage');
+            const file = fileInput.files[0];
+
+            if (!idNumber || !file) {
+                alert("Please provide ID number and shop photo.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+
+            reader.onload = async () => {
+                const shopImageBase64 = reader.result;
+
+                if (!navigator.geolocation) {
+                    alert("Geolocation is not supported by your browser");
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const location = {
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude
+                    };
+
+                    try {
+                        const res = await fetch(`${API_BASE}/api/shop/register`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                userId: localStorage.getItem("userId") || (currentUser ? currentUser.id : "USR_DEMO"),
+                                idNumber,
+                                shopImageBase64,
+                                location
+                            })
+                        });
+
+                        const data = await res.json();
+                        if (data.success) {
+                            alert(data.message || "Shop registered successfully!");
+                            document.getElementById('registeredShopId').value = data.shopId;
+                            document.getElementById('shopRegisterPanel').style.display = 'none';
+                            document.getElementById('productAddPanel').style.display = 'block';
+                        } else {
+                            alert(data.error);
+                        }
+                    } catch(err) {
+                        alert("Registration error.");
+                    }
+                }, () => {
+                    alert("Unable to retrieve your location. Ensure GPS is enabled.");
+                });
+            };
+        }
+
+        async function addProductToCatalog() {
+            const shopId = document.getElementById('registeredShopId').value;
+            const name = document.getElementById('newProdName').value.trim();
+            const price = document.getElementById('newProdPrice').value.trim();
+
+            if (!shopId || !name || !price) {
+                alert("Please fill in product name and price.");
+                return;
+            }
+
+            const res = await fetch(`${API_BASE}/api/products/add`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ shopId, name, price })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('newProdName').value = "";
+                document.getElementById('newProdPrice').value = "";
+                loadStoreCatalog();
+            } else {
+                alert(data.error);
             }
         }
 

@@ -150,7 +150,9 @@ function defaultDB() {
     users: [],
     otp_sessions: [],
     orders: [], 
-    ledger_entries: [] 
+    ledger_entries: [],
+    shops: [],
+    catalogs: {}
   };
 }
 
@@ -165,6 +167,8 @@ function ensureState() {
   if (!Array.isArray(data.orders)) data.orders = [];
   if (!Array.isArray(data.drivers)) data.drivers = [];
   if (!Array.isArray(data.ledger_entries)) data.ledger_entries = [];
+  if (!Array.isArray(data.shops)) data.shops = [];
+  if (!data.catalogs || typeof data.catalogs !== 'object') data.catalogs = {};
 }
 
 ensureState();
@@ -289,6 +293,86 @@ app.post('/api/user/set-role', async (req, res) => {
     } catch (err) {
         return fail(res, err.message, 500);
     }
+});
+
+// ==========================================
+// SHOP OWNER REGISTRATION & PRODUCT ADDITION APIs
+// ==========================================
+app.post('/api/shop/register', async (req, res) => {
+    try {
+        ensureState();
+        const { userId, idNumber, shopImageBase64, location } = req.body;
+
+        if (!userId || !idNumber || !shopImageBase64) {
+            return res.status(400).json({ success: false, error: "Missing required fields" });
+        }
+
+        if (!data.shops) data.shops = [];
+
+        // Prevent duplicate shop
+        const existing = data.shops.find(s => s.ownerId === userId);
+        if (existing) {
+            return res.status(400).json({ success: false, error: "Shop already registered" });
+        }
+
+        const shopId = id("SHOP");
+
+        const newShop = {
+            shopId,
+            ownerId: userId,
+            idNumber,
+            shopImage: shopImageBase64,
+            location: location || {},
+            verified: false,
+            createdAt: Date.now(),
+            status: "ACTIVE"
+        };
+
+        data.shops.push(newShop);
+
+        // AUTO CREATE EMPTY CATALOG
+        if (!data.catalogs) data.catalogs = {};
+        data.catalogs[shopId] = [];
+
+        await saveDB();
+
+        return res.json({
+            success: true,
+            message: "Shop registered successfully",
+            shopId
+        });
+
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/products/add', (req, res) => {
+    ensureState();
+    const { shopId, name, price, category, merchant, image } = req.body;
+    if (!shopId || !name || !price) {
+        return res.status(400).json({ success: false, error: "Missing required product fields" });
+    }
+
+    if (!data.catalogs) data.catalogs = {};
+    if (!data.catalogs[shopId]) data.catalogs[shopId] = [];
+
+    const newProduct = {
+        id: id("PRD"),
+        businessId: shopId,
+        category: category || "RESTAURANT",
+        merchant: merchant || "My Shop",
+        name,
+        price: Number(price),
+        currency: "KES",
+        image: image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80"
+    };
+
+    data.catalogs[shopId].push(newProduct);
+    data.products.push(newProduct);
+    saveDB();
+
+    res.json({ success: true, product: newProduct, message: "Product added successfully!" });
 });
 
 app.get('/api/products', enforceTenantIsolation, (req, res) => {
