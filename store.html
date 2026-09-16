@@ -395,11 +395,10 @@
             <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Product Amount (Base):</span> <strong id="previewProduct">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery Fee (Dynamic):</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Shop Receives (95% of Base):</span> <strong id="previewShopReceives" style="color:var(--neon-green);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform from Product (5%):</span> <strong id="previewPlatformProduct" style="color:var(--stage-purple);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Shop Receives (100% of Base):</span> <strong id="previewShopReceives" style="color:var(--neon-green);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform from User Fee (2%):</span> <strong id="previewPlatformUser" style="color:var(--stage-purple);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform from Rider (5%):</span> <strong id="previewPlatformRider" style="color:var(--stage-purple);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Tax (16% on Commission):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Tax (16% Statutory):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Rider Receives (95% Delivery):</span> <strong id="previewRiderReceives" style="color:var(--cyan);">0.00</strong></div>
                 <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total Paid by User:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
@@ -1018,7 +1017,6 @@
                     document.getElementById('previewProduct').innerText = `${curr} ${s.productAmount.toFixed(2)}`;
                     document.getElementById('previewDelivery').innerText = `${curr} ${s.deliveryFee.toFixed(2)}`;
                     document.getElementById('previewShopReceives').innerText = `${curr} ${s.shopReceives.toFixed(2)}`;
-                    document.getElementById('previewPlatformProduct').innerText = `${curr} ${s.platformFromProduct.toFixed(2)}`;
                     document.getElementById('previewPlatformUser').innerText = `${curr} ${s.platformFromUserFee.toFixed(2)}`;
                     document.getElementById('previewPlatformRider').innerText = `${curr} ${s.platformFromRider.toFixed(2)}`;
                     document.getElementById('previewKraTax').innerText = `${curr} ${s.tax.toFixed(2)}`;

@@ -58,28 +58,29 @@ function generateStage70MerkleProof(record) {
 
 /**
  * Stage 81 Dynamic Financial Split Engine (Updated Business Logic)
- * ✔ Shop receives 100% of product price
+ * ✔ Shop receives 100% of product price (shopReceives = baseAmount)
  * ✔ Platform earns 2% user fee surcharge + 5% from rider delivery fee
  * ✔ Rider receives 95% of delivery fee
- * ✔ Tax is recorded inside/on base amount
+ * ✔ Tax is recorded inside/on base amount or platform commissions
  */
 function calculateFinancials(order) {
     const baseAmount = Number(order.itemPriceTotal || 0);   
     const deliveryFee = Number(order.deliveryFee || 0);
 
-    // 🧾 USER PAYS
+    // 🧾 USER PAYS (Product + 2% user fee surcharge + delivery fee)
     const surcharge2 = round(baseAmount * 0.02);
     const total = round(baseAmount + surcharge2 + deliveryFee);
 
     // 🏪 SHOP (100% of product amount)
     const shopReceives = round(baseAmount);
 
-    // 🧾 TAX
+    // 🧾 TAX (16% statutory allocation on the base/surcharge volume)
     const tax = round(baseAmount * 0.16);
 
-    // 🚴 RIDER (95% of delivery fee)
+    // 🚴 RIDER & PLATFORM FROM DELIVERY (95% to rider, 5% to platform)
     const riderReceives = round(deliveryFee * 0.95);
     const riderPlatform = round(deliveryFee * 0.05);
+    const platformFromProduct = 0; // Set to 0 since shop receives 100% of product price
 
     return {
         currency: order.currency || "KES",
@@ -87,6 +88,7 @@ function calculateFinancials(order) {
         deliveryFee,
         userPays: total,
         shopReceives,
+        platformFromProduct,
         platformFromUserFee: surcharge2,
         platformFromRider: riderPlatform,
         tax,
