@@ -4,10 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 64 | Sovereign Multi-Corridor Super App & Logistics</title>
+  <title>RDS 65 | Sovereign Super-App (Marketplace & Ride-Hailing)</title>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="https://js.stripe.com/v3/"></script>
 
   <style>
     :root {
@@ -53,7 +52,6 @@
       margin-bottom: 12px;
       color: var(--stage-purple);
       font-weight: bold;
-      letter-spacing: 0.5px;
     }
 
     .header-location {
@@ -65,20 +63,6 @@
     .location-box { display: flex; align-items: center; gap: 8px; }
     .location-text span { font-size: 0.75rem; color: var(--text-dim); display: block; }
     .location-text strong { font-size: 0.95rem; color: #fff; }
-
-    .search-bar { position: relative; margin-bottom: 15px; }
-    .search-bar input {
-      width: 100%;
-      background: var(--panel-bg);
-      border: 1px solid #374151;
-      color: #fff;
-      padding: 12px 15px 12px 40px;
-      border-radius: 12px;
-      font-size: 0.9rem;
-      outline: none;
-    }
-    .search-bar input:focus { border-color: var(--stage-purple); box-shadow: 0 0 10px rgba(168,85,247,0.25); }
-    .search-bar svg { position: absolute; left: 12px; top: 14px; width: 18px; height: 18px; fill: var(--text-dim); }
 
     .corridor-selector {
       display: grid;
@@ -177,7 +161,6 @@
     .product-img { width: 100%; height: 100%; object-fit: cover; }
     .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
     .product-title { font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 2px; }
-    .product-merchant { font-size: 0.65rem; color: var(--text-dim); margin-bottom: 6px; }
     .product-price { font-size: 0.85rem; color: var(--stage-purple); font-weight: 700; margin-bottom: 8px; }
 
     .quantity-stepper {
@@ -218,8 +201,7 @@
     .floating-cart {
       position: fixed;
       bottom: 70px;
-      left: 15px;
-      right: 15px;
+      left: 15px; right: 15px;
       max-width: 450px;
       margin: 0 auto;
       background: linear-gradient(135deg, #111827, #1f2937);
@@ -296,10 +278,10 @@
 </head>
 <body id="appBody">
 
-    <!-- HOME / STORE VIEW -->
+    <!-- HOME / SUPER-APP DASHBOARD -->
     <div id="viewHome" class="app-view active-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 64 LOGISTICS ENGINE</span>
+            <span>🌐 RDS STAGE 65 SUPER-APP ENGINE</span>
             <span id="nodeLatency">10ms • Secured</span>
         </div>
 
@@ -315,76 +297,65 @@
         </div>
 
         <div class="corridor-selector">
-            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE (KES)</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK (GBP)</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-ES', 'Madrid, Spain', 'EUR', this)">🇪🇸 ES (EUR)</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-CA', 'Toronto, Canada', 'CAD', this)">🇨🇦 CA (CAD)</div>
+            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-ES', 'Madrid, Spain', 'EUR', this)">🇪🇸 ES</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-CA', 'Toronto, Canada', 'CAD', this)">🇨🇦 CA</div>
         </div>
 
+        <!-- Super-App Category Tabs (Now Includes Taxicab and Boda Rider) -->
         <div class="category-filter-bar">
             <button class="cat-btn active" onclick="filterCategory('ALL', this)">🛒 All</button>
             <button class="cat-btn" onclick="filterCategory('RESTAURANT', this)">🍽️ Restaurants</button>
             <button class="cat-btn" onclick="filterCategory('HOTEL', this)">🏨 Hotels</button>
             <button class="cat-btn" onclick="filterCategory('SUPERMARKET', this)">🏬 Supermarkets</button>
-        </div>
-
-        <div class="search-bar">
-            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-            <input type="text" id="searchInput" placeholder="Search menu, groceries..." oninput="handleSearchInput()">
+            <button class="cat-btn" onclick="filterCategory('TAXI', this)">🚕 Taxicab</button>
+            <button class="cat-btn" onclick="filterCategory('BODA', this)">🏍️ Boda Rider</button>
         </div>
 
         <div class="section-header">
-            <h3>Regional Storefront Catalog</h3>
+            <h3 id="catalogTitle">Super-App Catalog & Services</h3>
             <span id="activeCurrencyLabel" style="font-size:0.75rem; color:var(--stage-purple);">KES</span>
         </div>
 
         <div class="catalog-grid" id="catalogGrid">
-            <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading catalog...</em>
+            <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading services...</em>
         </div>
     </div>
 
-    <!-- ORDERS & CHECKOUT VIEW -->
+    <!-- CHECKOUT VIEW -->
     <div id="viewOrders" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Decoupled Logistics & Secure Checkout</h3>
+            <h3>Secure Super-App Checkout</h3>
         </div>
 
         <div class="checkout-panel">
-            <h3>Choose Delivery Mode</h3>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Vehicle Selection (User Choice)</label>
-            <select id="vehicleTypeSelect" onchange="recalculatePreview()">
-                <option value="MOTORBIKE">🏍️ Motorbike (Faster / &lt;200m Rule)</option>
-                <option value="CAR">🚗 Car (Comfortable / Standard)</option>
-            </select>
-
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Estimated Distance (KM)</label>
-            <input type="number" id="distanceKmInput" value="2.5" step="0.1" oninput="recalculatePreview()">
-
-            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.8rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Product Amount:</span> <strong id="previewProduct">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery Fee:</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
+            <h3>Trip & Delivery Breakdown</h3>
+            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 0.8rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Service/Product Amount:</span> <strong id="previewProduct">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Ride/Delivery Fare:</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform Fee (2%):</span> <strong id="previewPlatform" style="color:var(--stage-purple);">0.00</strong></div>
                 <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total Due:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
             </div>
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Estimated Distance (KM)</label>
+            <input type="number" id="distanceKmInput" value="3.0" step="0.1" oninput="recalculatePreview()">
         </div>
 
         <div class="checkout-panel">
-            <h3 id="gatewayTitle">Payment Gateway</h3>
-            <div id="mpesaFieldGroup">
-                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">M-Pesa Phone Number</label>
-                <input type="text" id="custPhone" placeholder="2547XXXXXXXX" value="254721862397">
-            </div>
-            <button onclick="triggerGlobalCheckout()" class="btn-cyan" id="checkoutBtn">Authorize Payment</button>
+            <h3>Payment Gateway</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">M-Pesa Phone Number</label>
+            <input type="text" id="custPhone" placeholder="2547XXXXXXXX" value="254721862397">
+            <button onclick="triggerGlobalCheckout()" class="btn-cyan">Authorize Payment</button>
         </div>
 
         <div class="checkout-panel">
             <h3>Lifecycle Actions</h3>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Active Order ID</label>
             <input type="text" id="dispatchOrderIdInput" placeholder="Order ID">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
-                <button onclick="triggerShopDispatch()" style="background:var(--stage-purple);">1. Shop Dispatch</button>
-                <button onclick="triggerDeliveryComplete()" style="background:var(--neon-green); color:#000;">2. Delivery Complete</button>
+                <button onclick="triggerDispatch()" style="background:var(--stage-purple);">1. Dispatch / Start</button>
+                <button onclick="triggerComplete()" style="background:var(--neon-green); color:#000;">2. Complete Trip</button>
             </div>
         </div>
 
@@ -405,25 +376,23 @@
         <div class="checkout-panel">
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Wallet Owner</label>
             <select id="walletOwnerSelect" onchange="fetchSovereignBalance()">
-                <option value="BIZ-KE">Shop Wallet (BIZ-KE)</option>
-                <option value="DRV_01">Driver Wallet (Alex Kiprop - DRV_01)</option>
+                <option value="BIZ-KE">Shop / Business Wallet</option>
+                <option value="DRV_01">Driver / Rider Wallet (Alex Kiprop)</option>
             </select>
         </div>
 
         <div class="checkout-panel" style="text-align: center; padding: 25px 15px;">
-            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;" id="walletCurrencyLabel">AVAILABLE BALANCE</p>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;" id="walletCurrencyLabel">BALANCE</p>
             <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 8px;"><span id="walletBalance">0.00</span></h2>
             <div style="font-size: 0.65rem; color: var(--text-dim);" id="auditStatus">Synced & Reconciled</div>
         </div>
 
         <div class="checkout-panel">
             <h3>Withdraw Funds</h3>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Destination</label>
             <select id="withdrawDestination">
                 <option value="MPESA">M-Pesa</option>
                 <option value="BANK">Bank Account</option>
             </select>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Amount</label>
             <input type="number" id="withdrawAmountInput" placeholder="Amount">
             <button onclick="triggerWalletWithdrawal()" style="background: var(--alert-red);">Withdraw</button>
         </div>
@@ -444,7 +413,7 @@
         <div class="checkout-panel">
             <p><strong>User:</strong> Robert Maina</p>
             <p style="margin-top: 8px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
-            <p style="margin-top: 8px;"><strong>Engine:</strong> RDS Stage 64 Global Logistics</p>
+            <p style="margin-top: 8px;"><strong>Engine:</strong> RDS Stage 65 Sovereign Super-App</p>
         </div>
     </div>
 
@@ -475,16 +444,6 @@
         let activeCategory = 'ALL';
         let cart = {}; 
 
-        function logLedgerEvent(title, detail, isPositive = true) {
-            const feed = document.getElementById('ledgerFeed');
-            if (!feed) return;
-            const timeStr = new Date().toLocaleTimeString();
-            const item = document.createElement('div');
-            item.className = 'ledger-item';
-            item.innerHTML = `<span>[${timeStr}] ${title}</span><strong style="color:${isPositive ? 'var(--neon-green)' : 'var(--cyan)'};">${detail}</strong>`;
-            feed.prepend(item);
-        }
-
         function switchTab(viewId, el) {
             document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
             document.getElementById(viewId).classList.add('active-view');
@@ -502,7 +461,14 @@
                 allProductsCache = (data && data.products) ? data.products : [];
                 document.getElementById('activeCurrencyLabel').innerText = data.currency || "KES";
                 document.getElementById('storeCurrency').value = data.currency || "KES";
-                renderCatalog(allProductsCache);
+
+                if (activeCategory === 'TAXI') {
+                    renderRideHailingCard('TAXI', 'Taxicab Ride Booking', 'Comfortable 4-Wheeled Taxi Ride', 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop&q=80');
+                } else if (activeCategory === 'BODA') {
+                    renderRideHailingCard('MOTORBIKE', 'Boda Boda Ride Booking', 'Fast 2-Wheeled Motorbike Ride', 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=400&auto=format&fit=crop&q=80');
+                } else {
+                    renderCatalog(allProductsCache);
+                }
                 fetchSovereignBalance();
             } catch (err) { console.error("Catalog load error", err); }
         }
@@ -514,23 +480,30 @@
             loadStoreCatalog();
         }
 
-        function handleSearchInput() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allProductsCache.filter(p => p.name.toLowerCase().includes(query) || (p.merchant && p.merchant.toLowerCase().includes(query)));
-            renderCatalog(filtered);
+        function renderRideHailingCard(vType, title, subtitle, imgUrl) {
+            const grid = document.getElementById('catalogGrid');
+            const curr = document.getElementById('storeCurrency').value;
+            grid.innerHTML = `
+                <div class="product-card" style="grid-column: span 2;">
+                    <div class="image-wrapper" style="height: 150px;"><span class="merchant-badge">RDS RIDE-HAILING</span><img src="${imgUrl}" class="product-img"></div>
+                    <div class="product-info">
+                        <div>
+                            <div class="product-title" style="font-size: 1rem; margin-bottom:4px;">${title}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">${subtitle}</div>
+                            <div class="product-price">Metered Rate by Distance</div>
+                        </div>
+                        <button onclick="bookRide('${vType}')" class="btn-cyan">Book ${title} Now</button>
+                    </div>
+                </div>
+            `;
         }
 
-        async function fetchSovereignBalance() {
-            const ownerId = document.getElementById('walletOwnerSelect').value;
-            try {
-                const response = await fetch(`${API_BASE}/wallets/${ownerId}/balance`);
-                const data = await response.json();
-                if (data.success) {
-                    document.getElementById('walletCurrencyLabel').innerText = `BALANCE (${data.currency}) - ${ownerId}`;
-                    document.getElementById('walletBalance').innerText = Number(data.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
-                    document.getElementById('auditStatus').innerText = `Synced: ${new Date(data.last_reconciled).toLocaleTimeString()}`;
-                }
-            } catch (error) { console.error("Balance fetch error", error); }
+        function bookRide(vType) {
+            cart = {
+                'ride_service': { name: `${vType} Ride Service`, price: 0, qty: 1, vehicleType: vType === 'TAXI' ? 'CAR' : 'MOTORBIKE' }
+            };
+            recalculateCartSummary();
+            switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
         }
 
         function renderCatalog(products) {
@@ -574,28 +547,28 @@
         async function recalculateCartSummary() {
             let totalQty = 0;
             let totalPrice = 0;
+            let vehicleType = "MOTORBIKE";
             const curr = document.getElementById('storeCurrency').value;
+
             for (let id in cart) {
                 totalQty += cart[id].qty;
-                totalPrice += cart[id].price * cart[id].qty;
+                totalPrice += (cart[id].price || 0) * cart[id].qty;
+                if (cart[id].vehicleType) vehicleType = cart[id].vehicleType;
             }
 
             const floatingBar = document.getElementById('floatingCart');
             if (totalQty > 0) {
                 floatingBar.classList.add('active');
-                document.getElementById('cartItemCount').innerText = `${totalQty} Item(s)`;
+                document.getElementById('cartItemCount').innerText = `${totalQty} Item/Service`;
                 document.getElementById('cartTotalSum').innerText = `${curr} ${totalPrice.toFixed(2)}`;
             } else {
                 floatingBar.classList.remove('active');
             }
-            await recalculatePreview();
+            await recalculatePreview(totalPrice, vehicleType);
         }
 
-        async function recalculatePreview() {
-            let totalPrice = 0;
-            for (let id in cart) totalPrice += cart[id].price * cart[id].qty;
-            const distanceKm = Number(document.getElementById('distanceKmInput').value) || 2.5;
-            const vehicleType = document.getElementById('vehicleTypeSelect').value;
+        async function recalculatePreview(productTotal = 0, vehicleType = "MOTORBIKE") {
+            const distanceKm = Number(document.getElementById('distanceKmInput').value) || 3.0;
             const bizId = document.getElementById('storeBusinessId').value;
             const curr = document.getElementById('storeCurrency').value;
 
@@ -603,7 +576,7 @@
                 const res = await fetch(`${API_BASE}/api/calculate-delivery`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ itemPriceTotal: totalPrice, distanceKm, vehicleType, businessId: bizId })
+                    body: JSON.stringify({ itemPriceTotal: productTotal, distanceKm, vehicleType, businessId: bizId })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -627,18 +600,19 @@
             cart = {};
             recalculateCartSummary();
             loadStoreCatalog();
-            logLedgerEvent("Corridor Switch", `Switched to ${tenantId}`, false);
         }
 
         async function triggerGlobalCheckout() {
             let totalPrice = 0;
-            for (let id in cart) totalPrice += cart[id].price * cart[id].qty;
-            if (totalPrice <= 0) { alert("Cart is empty."); return; }
+            let vehicleType = "MOTORBIKE";
+            for (let id in cart) {
+                totalPrice += (cart[id].price || 0) * cart[id].qty;
+                if (cart[id].vehicleType) vehicleType = cart[id].vehicleType;
+            }
 
             const bizId = document.getElementById('storeBusinessId').value;
             const phone = document.getElementById('custPhone').value.trim();
-            const distanceKm = Number(document.getElementById('distanceKmInput').value) || 2.5;
-            const vehicleType = document.getElementById('vehicleTypeSelect').value;
+            const distanceKm = Number(document.getElementById('distanceKmInput').value) || 3.0;
             const curr = document.getElementById('storeCurrency').value;
 
             try {
@@ -650,53 +624,56 @@
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('dispatchOrderIdInput').value = data.orderId;
-                    alert(`Checkout initiated for ${curr} ${data.split.total}! (Product: ${data.split.productAmount} + Delivery: ${data.split.deliveryFee} + Platform: ${data.split.platformFee})`);
+                    alert(`Checkout initiated for ${curr} ${data.split.total}!`);
                     document.getElementById('lifecycleStatus').innerText = "RIDER_ASSIGNED";
-                    logLedgerEvent("Checkout", `Total ${curr} ${data.split.total}`, false);
-                } else { alert(data.error || "Checkout failed."); }
-            } catch (e) { alert("Network error during checkout."); }
+                } else { alert(data.error); }
+            } catch (e) { alert("Checkout error."); }
         }
 
-        async function triggerShopDispatch() {
+        async function triggerDispatch() {
             const orderId = document.getElementById('dispatchOrderIdInput').value.trim();
             const bizId = document.getElementById('storeBusinessId').value;
             if (!orderId) { alert("Enter Order ID."); return; }
 
-            try {
-                const res = await fetch(`${API_BASE}/api/orders/${orderId}/dispatch`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ businessId: bizId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('lifecycleStatus').innerText = "DISPATCHED";
-                    logLedgerEvent("Shop Dispatch", "Shop credited 100%", true);
-                    fetchSovereignBalance();
-                } else { alert(data.error); }
-            } catch (e) { alert("Dispatch error."); }
+            const res = await fetch(`${API_BASE}/api/orders/${orderId}/dispatch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                body: JSON.stringify({ businessId: bizId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('lifecycleStatus').innerText = "DISPATCHED";
+                fetchSovereignBalance();
+            } else { alert(data.error); }
         }
 
-        async function triggerDeliveryComplete() {
+        async function triggerComplete() {
             const orderId = document.getElementById('dispatchOrderIdInput').value.trim();
             const bizId = document.getElementById('storeBusinessId').value;
             if (!orderId) { alert("Enter Order ID."); return; }
 
-            try {
-                const res = await fetch(`${API_BASE}/api/orders/${orderId}/complete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ businessId: bizId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('lifecycleStatus').innerText = "COMPLETED";
-                    logLedgerEvent("Delivery Complete", "Driver credited 95%", true);
-                    fetchSovereignBalance();
-                } else { alert(data.error); }
-            } catch (e) { alert("Completion error."); }
+            const res = await fetch(`${API_BASE}/api/orders/${orderId}/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                body: JSON.stringify({ businessId: bizId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('lifecycleStatus').innerText = "COMPLETED";
+                fetchSovereignBalance();
+            } else { alert(data.error); }
+        }
+
+        async function fetchSovereignBalance() {
+            const ownerId = document.getElementById('walletOwnerSelect').value;
+            const response = await fetch(`${API_BASE}/wallets/${ownerId}/balance`);
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('walletCurrencyLabel').innerText = `BALANCE (${data.currency}) - ${ownerId}`;
+                document.getElementById('walletBalance').innerText = Number(data.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
+            }
         }
 
         async function triggerWalletWithdrawal() {
@@ -706,27 +683,18 @@
             const amount = Number(document.getElementById('withdrawAmountInput').value) || 0;
             if (amount <= 0) { alert("Enter valid amount."); return; }
 
-            try {
-                const res = await fetch(`${API_BASE}/api/wallet/withdraw`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ amount, destination, ownerId, businessId: bizId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('withdrawAmountInput').value = "";
-                    fetchSovereignBalance();
-                    logLedgerEvent("Withdrawal", `Withdrawn to ${destination}`, false);
-                } else { alert(data.error); }
-            } catch (e) { alert("Withdrawal error."); }
+            const res = await fetch(`${API_BASE}/api/wallet/withdraw`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                body: JSON.stringify({ amount, destination, ownerId, businessId: bizId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('withdrawAmountInput').value = "";
+                fetchSovereignBalance();
+            } else { alert(data.error); }
         }
-
-        try {
-            const socket = io();
-            socket.on('orderStatusUpdate', (d) => { document.getElementById('lifecycleStatus').innerText = d.status; });
-            socket.on('walletUpdated', () => { fetchSovereignBalance(); logLedgerEvent("Wallet", "Synced", true); });
-        } catch(e) {}
 
         window.onload = () => { loadStoreCatalog(); };
     </script>
