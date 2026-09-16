@@ -1,8 +1,8 @@
 // ==========================================
-// RDS - STAGE 86 ROLE-ISOLATED LIVE ORDER & SETTLEMENT ENGINE
+// RDS - STAGE 87 MULTI-ROLE ONBOARDING & SETTLEMENT ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Escrow Storage,
 // Multi-Wallet, 16% KRA Tax Allocation, Frictionless Phone OTP, End-to-End Autonomous Routing,
-// Comprehensive Driver/Vehicle KYC, Dynamic Sovereign Document Download Hub & Role Isolation
+// Comprehensive Driver/Vehicle KYC, Dynamic Sovereign Document Download Hub & Role Onboarding
 // ==========================================
 
 const express = require("express");
@@ -48,7 +48,7 @@ function round(n) {
 }
 
 /**
- * Stage 86 Precise Haversine Formula for Real-World Distance Calculation (KM)
+ * Stage 87 Precise Haversine Formula for Real-World Distance Calculation (KM)
  */
 function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 3.0; // Fallback default
@@ -74,7 +74,7 @@ function generateStage70MerkleProof(record) {
 }
 
 /**
- * Stage 86 Dynamic Financial Split Engine
+ * Stage 87 Dynamic Financial Split Engine
  */
 function calculateFinancials(order) {
     const baseAmount = Number(order.itemPriceTotal || 0);    
@@ -266,7 +266,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_86_LIVE_ORDER_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_87_LIVE_ORDER_ENGINE_ONLINE", time: Date.now() }));
 
 function createEscrow(orderId, businessId, amount, region) {
     const escrowEntry = {
@@ -417,12 +417,12 @@ app.get('/api/compliance/trust-account/:businessId', (req, res) => {
 app.post('/api/auth/send-otp', async (req, res) => {
     try {
         ensureState();
-        const { phone } = req.body;
+        const { phone, email } = req.body;
         if (!phone) return fail(res, "Phone number required", 400);
         const otp = "1234";
         const expires = Date.now() + 5 * 60 * 1000;
         data.otp_sessions = data.otp_sessions.filter(s => s.phone !== phone);
-        data.otp_sessions.push({ phone, otp, expires });
+        data.otp_sessions.push({ phone, email: email || "", otp, expires });
         await saveDB();
         return ok(res, { success: true, message: "OTP sent successfully (Use 1234 for testing)" });
     } catch (err) {
@@ -433,14 +433,17 @@ app.post('/api/auth/send-otp', async (req, res) => {
 app.post('/api/auth/verify-otp', async (req, res) => {
     try {
         ensureState();
-        const { phone, otp } = req.body;
+        const { phone, otp, role } = req.body;
         const session = data.otp_sessions.find(s => s.phone === phone && s.otp === otp);
         if (!session || Date.now() > session.expires) return fail(res, "Invalid or expired OTP", 400);
 
         let user = data.users.find(u => u.phone === phone);
         if (!user) {
-            user = { id: id("USR"), phone, role: "USER", createdAt: Date.now() };
+            user = { id: id("USR"), phone, email: session.email || "", role: role || "USER", createdAt: Date.now() };
             data.users.push(user);
+        } else {
+            if (role) user.role = role;
+            if (session.email) user.email = session.email;
         }
         const token = crypto.randomBytes(32).toString('hex');
         await saveDB();
@@ -510,7 +513,7 @@ app.post('/api/driver/register-sovereign', enforceTenantIsolation, async (req, r
             vehicleBackBase64, logbookBase64, psvInsuranceBase64, psvBadgeBase64
         } = req.body;
 
-        if (!userId || !licenseNumber || !idNumber || !numberPlate || !facePhotoBase64) {
+        if (!userId || !licenseNumber || !idNumber || !numberPlate) {
             return fail(res, "Missing mandatory operator KYC or vehicle registration data", 400);
         }
 
@@ -644,7 +647,7 @@ app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
 app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
-        const { phone, itemPriceTotal, pickupCoords, destinationCoords, vehicleType, pickup, destination, riderId } = req.body;
+        const { phone, itemPriceTotal, pickupCoords, destinationCoords, vehicleType, pickup, destination, riderId, userId } = req.body;
         const tenant = req.tenantObj;
         const currencyCode = tenant.currency || "KES";
 
@@ -662,11 +665,11 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST86");
+        const orderId = id("ORD_ST87");
         const assignedRiderId = riderId || "DRV_01";
 
         const order = {
-            id: orderId, businessId: tenant.id, region: tenant.region || "KE",
+            id: orderId, userId: userId || "ANONYMOUS", businessId: tenant.id, region: tenant.region || "KE",
             currency: currencyCode, productAmount: split.productAmount,
             deliveryFee: split.deliveryFee, distanceKm,
             shopSurcharge2Percent: split.platformFromUserFee, total: split.userPays,
@@ -702,7 +705,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS ${tenant.region || 'KE'}`,
-                    TransactionDesc: `Stage 86 Escrow Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 87 Escrow Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -907,5 +910,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, enforceCbkAmlAndKyc, as
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 86 ROLE-ISOLATED ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 87 MULTI-ROLE ONBOARDING ENGINE ACTIVE ON PORT ${PORT}`);
 });
