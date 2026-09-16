@@ -89,7 +89,7 @@
     {
       "phone": "254721862397",
       "otp": "1234",
-      "expires": 1789599018290
+      "expires": 1789600770158
     }
   ],
   "orders": [
@@ -500,6 +500,37 @@
       "createdAt": 1789594081323,
       "customerPhone": "254721862397",
       "checkoutRequestId": "ws_CO_170920260027522721862397"
+    },
+    {
+      "id": "ORD_ST84_1789600490750_92957",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 0,
+      "deliveryFee": 332,
+      "distanceKm": 2.82,
+      "shopSurcharge2Percent": 0,
+      "total": 332,
+      "driverWalletCredit": 315.4,
+      "platformRevenue": 16.6,
+      "kraTax16Percent": 0,
+      "pickup": "Nairobi CBD (Kenyatta Ave)",
+      "destination": "kasarani",
+      "pickupCoords": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "destinationCoords": {
+        "lat": -1.265556,
+        "lng": 36.802778
+      },
+      "vehicleType": "MOTORBIKE",
+      "riderId": "DRV_01",
+      "driverId": "DRV_01",
+      "status": "RIDER_ASSIGNED",
+      "createdAt": 1789600490750,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_170920260214424721862397"
     }
   ],
   "escrow": [
@@ -613,6 +644,15 @@
       "region": "KE",
       "status": "HELD",
       "createdAt": 1789594081323
+    },
+    {
+      "escrowId": "ESC_1789600490750_58120",
+      "orderId": "ORD_ST84_1789600490750_92957",
+      "businessId": "BIZ-KE",
+      "amount": 332,
+      "region": "KE",
+      "status": "HELD",
+      "createdAt": 1789600490750
     }
   ],
   "wallets": [

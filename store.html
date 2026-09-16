@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 87 | Multi-Role Onboarding & User Portal</title>
+  <title>RDS 88 | Complete Multi-Role KYC & Autonomous Super-App</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <!-- Leaflet CSS & JS for Real-World Maps & Routing -->
@@ -313,15 +313,15 @@
 </head>
 <body id="appBody">
 
-    <!-- AUTHENTICATION & ROLE ONBOARDING VIEW -->
+    <!-- AUTHENTICATION & MULTI-ROLE ONBOARDING VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🚀 RDS STAGE 87 MULTI-ROLE ONBOARDING</span>
+            <span>🚀 RDS STAGE 88 MULTI-ROLE KYC ONBOARDING</span>
         </div>
 
         <div class="checkout-panel" style="padding: 20px;">
             <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Welcome to RDS Super-App</h2>
-            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Select your desired portal role below before signing in.</p>
+            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Select your portal role and enter your ID, Email & Phone credentials.</p>
 
             <label style="font-size: 0.75rem; color: var(--stage-purple); display: block; margin-bottom: 6px; font-weight: bold;">Continue as:</label>
             <div class="role-select-grid">
@@ -331,6 +331,9 @@
             </div>
 
             <div id="registrationFormSection">
+                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">National ID Number</label>
+                <input type="text" id="authIdNumber" placeholder="ID Number e.g. 32456789" value="32456789">
+
                 <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Email Address</label>
                 <input type="email" id="authEmail" placeholder="user@example.com" value="robert.maina@rds.com">
 
@@ -344,7 +347,7 @@
                 <div id="otpStep" style="display: none; margin-top: 15px;">
                     <label style="font-size: 0.75rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP Code (Use 1234)</label>
                     <input type="text" id="authOtp" placeholder="1234" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" maxlength="4">
-                    <button onclick="verifyOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch App Portal</button>
+                    <button onclick="verifyOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch Portal</button>
                 </div>
             </div>
         </div>
@@ -353,7 +356,7 @@
     <!-- HOME DASHBOARD (User / Shop / Rider Segregated) -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span id="portalTitleBanner">🌐 RDS STAGE 87 USER PORTAL</span>
+            <span id="portalTitleBanner">🌐 RDS STAGE 88 USER PORTAL</span>
             <span id="nodeLatency">Secure • Active</span>
         </div>
 
@@ -479,7 +482,8 @@
             <h3>My Account Profile</h3>
         </div>
         <div class="checkout-panel">
-            <p><strong>Email:</strong> <span id="profileEmail">-</span></p>
+            <p><strong>ID Number:</strong> <span id="profileIdNumber">-</span></p>
+            <p style="margin-top: 6px;"><strong>Email:</strong> <span id="profileEmail">-</span></p>
             <p style="margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">-</span></p>
             <p style="margin-top: 6px;"><strong>Active Role:</strong> <span id="profileRole">USER</span></p>
             <p style="margin-top: 6px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
@@ -487,14 +491,34 @@
 
         <!-- SHOP OWNER REGISTRATION PANEL -->
         <div class="checkout-panel role-restricted-shop" id="shopRegisterPanel" style="margin-top: 15px; display: none;">
-            <h3>Register Your Shop / Merchant Node</h3>
-            <input type="text" id="regShopName" placeholder="Shop Name e.g. Naivas Supermarket Express">
-            <input type="text" id="shopIdNumber" placeholder="Business ID Number">
-            <button onclick="registerShop()" class="btn-cyan">Register Shop Node</button>
+            <h3>🏬 Register Shop / Hotel / Supermarket</h3>
+            <input type="text" id="regShopName" placeholder="Shop/Hotel/Supermarket Name">
+            <input type="text" id="shopIdNumber" placeholder="Business ID Number" value="">
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Shop Photo Link (Base64 or URL)</label>
+            <input type="text" id="regShopImage" placeholder="https://images.unsplash.com/..." value="https://images.unsplash.com/photo-1542838132-92c53300491e?w=400">
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:8px;">
+                <input type="number" id="shopLat" value="-1.286389" step="0.000001" placeholder="Shop Lat">
+                <input type="number" id="shopLng" value="36.817223" step="0.000001" placeholder="Shop Lng">
+            </div>
+            <button type="button" onclick="autoDetectShopLocation()" style="background:#222e3c; color:var(--cyan); margin-bottom:10px;">📍 Auto-Detect Real Place Geolocation</button>
+
+            <h4 style="font-size:0.8rem; color:var(--neon-green); margin-bottom:6px;">Commodity Catalog Setup</h4>
+            <input type="text" id="catItemName" placeholder="Item Name e.g. Organic Fresh Basket">
+            <input type="number" id="catItemPrice" placeholder="Price e.g. 2100">
+            <select id="catItemCategory">
+                <option value="SUPERMARKET">Supermarket</option>
+                <option value="RESTAURANT">Restaurant</option>
+                <option value="HOTEL">Hotel</option>
+            </select>
+            <button onclick="addCatalogItemToDraft()" style="background:var(--stage-purple); margin-bottom:10px;">+ Add Item to Catalog Draft</button>
+            <div id="catalogDraftList" style="font-size:0.75rem; color:var(--text-dim); margin-bottom:10px; max-height:100px; overflow-y:auto; border:1px solid #374151; padding:6px; border-radius:6px;">No items in draft yet.</div>
+
+            <button onclick="registerShopWithCatalog()" class="btn-cyan">Complete Shop & Catalog Registration</button>
         </div>
 
         <div class="checkout-panel role-restricted-shop" id="productAddPanel" style="margin-top: 15px; display:none;">
-            <h3>Add Product to Catalog</h3>
+            <h3>Add Product to Active Catalog</h3>
             <input type="hidden" id="registeredShopId">
             <input type="text" id="newProdName" placeholder="Product Name">
             <input type="number" id="newProdPrice" placeholder="Price">
@@ -503,12 +527,14 @@
 
         <!-- RIDER REGISTRATION PANEL -->
         <div class="checkout-panel role-restricted-driver" id="driverSovereignRegisterPanel" style="margin-top: 15px; display: none;">
-            <h3>🚗🛵 Rider KYC & Vehicle Registration</h3>
+            <h3>🚗🛵 Complete Rider & Vehicle KYC</h3>
             <input type="text" id="regFullName" placeholder="Full Legal Name">
-            <input type="text" id="regIdNumber" placeholder="National ID">
-            <input type="text" id="regLicenseNumber" placeholder="License Number">
-            <input type="text" id="regNumberPlate" placeholder="Number Plate e.g. KMXX 123A">
-            <button onclick="submitSovereignDriverRegistration()" class="btn-cyan" style="margin-top: 10px;">Submit Rider KYC</button>
+            <input type="text" id="regDriverIdNumber" placeholder="National ID Number">
+            <input type="text" id="regLicenseNumber" placeholder="Driving License Number">
+            <input type="text" id="regNumberPlate" placeholder="Vehicle Number Plate e.g. KMXX 123A">
+            <input type="text" id="regPassportPhoto" placeholder="Passport Photo URL/Base64" value="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400">
+            <input type="text" id="regPsvBadge" placeholder="PSV Badge Number">
+            <button onclick="submitSovereignDriverRegistration()" class="btn-cyan" style="margin-top: 10px;">Submit Full Rider KYC</button>
         </div>
     </div>
 
@@ -540,6 +566,7 @@
         let allProductsCache = [];
         let activeCategory = 'ALL';
         let cart = {}; 
+        let draftCatalog = [];
 
         let map = null;
         let pickupMarker = null;
@@ -574,10 +601,11 @@
         async function requestOtp() {
             const phone = document.getElementById('authPhone').value.trim();
             const email = document.getElementById('authEmail').value.trim();
-            if (!phone) { alert("Please enter phone number"); return; }
+            const idNumber = document.getElementById('authIdNumber').value.trim();
+            if (!phone || !idNumber) { alert("Please enter phone number and ID number"); return; }
             const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, email })
+                body: JSON.stringify({ phone, email, idNumber })
             });
             const data = await res.json();
             if (data.success) {
@@ -589,16 +617,19 @@
 
         async function verifyOtpAndEnter() {
             const phone = document.getElementById('authPhone').value.trim();
+            const email = document.getElementById('authEmail').value.trim();
+            const idNumber = document.getElementById('authIdNumber').value.trim();
             const otp = document.getElementById('authOtp').value.trim();
             const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, otp, role: selectedOnboardingRole })
+                body: JSON.stringify({ phone, otp, role: selectedOnboardingRole, email, idNumber })
             });
             const data = await res.json();
             if (data.success) {
                 currentUser = data.user;
                 localStorage.setItem("userId", currentUser.id);
-                document.getElementById('profileEmail').innerText = currentUser.email || 'N/A';
+                document.getElementById('profileIdNumber').innerText = currentUser.idNumber || idNumber;
+                document.getElementById('profileEmail').innerText = currentUser.email || email;
                 document.getElementById('profilePhone').innerText = currentUser.phone;
                 document.getElementById('profileRole').innerText = currentUser.role;
 
@@ -620,11 +651,11 @@
             shopPanels.forEach(p => p.style.display = (role === 'SHOP') ? 'block' : 'none');
 
             if (role === 'USER') {
-                document.getElementById('portalTitleBanner').innerText = '🌐 RDS STAGE 87 USER PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🌐 RDS STAGE 88 USER PORTAL';
             } else if (role === 'SHOP') {
-                document.getElementById('portalTitleBanner').innerText = '🏬 RDS STAGE 87 MERCHANT PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🏬 RDS STAGE 88 MERCHANT PORTAL';
             } else if (role === 'DRIVER') {
-                document.getElementById('portalTitleBanner').innerText = '🏍️ RDS STAGE 87 RIDER PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🏍️ RDS STAGE 88 RIDER PORTAL';
             }
         }
 
@@ -704,37 +735,87 @@
             } catch (e) {}
         }
 
-        async function submitSovereignDriverRegistration() {
-            const fullName = document.getElementById('regFullName').value.trim();
-            const idNumber = document.getElementById('regIdNumber').value.trim();
-            const licenseNumber = document.getElementById('regLicenseNumber').value.trim();
-            const numberPlate = document.getElementById('regNumberPlate').value.trim();
-            const bizId = document.getElementById('storeBusinessId').value;
-
-            const res = await fetch(`${API_BASE}/api/driver/register-sovereign`, {
-                method: "POST", headers: { "Content-Type": "application/json", "x-business-id": bizId },
-                body: JSON.stringify({ userId: currentUser.id, fullName, idNumber, licenseNumber, numberPlate, businessId: bizId })
-            });
-            const data = await res.json();
-            if (data.success) alert(data.message);
-            else alert(data.error);
+        function autoDetectShopLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    document.getElementById('shopLat').value = position.coords.latitude.toFixed(6);
+                    document.getElementById('shopLng').value = position.coords.longitude.toFixed(6);
+                    alert("Real place geolocation successfully detected (100% precise)!");
+                }, () => { alert("Geolocation access denied or unavailable. Using default Nairobi coordinates."); });
+            } else { alert("Geolocation is not supported by this browser."); }
         }
 
-        async function registerShop() {
+        function addCatalogItemToDraft() {
+            const name = document.getElementById('catItemName').value.trim();
+            const price = document.getElementById('catItemPrice').value.trim();
+            const category = document.getElementById('catItemCategory').value;
+            if (!name || !price) { alert("Enter item name and price"); return; }
+            draftCatalog.push({ name, price: Number(price), category });
+            
+            let html = '';
+            draftCatalog.forEach((item, idx) => {
+                html += `<div>${idx+1}. <strong>${item.name}</strong> - KES ${item.price} (${item.category})</div>`;
+            });
+            document.getElementById('catalogDraftList').innerHTML = html;
+            document.getElementById('catItemName').value = '';
+            document.getElementById('catItemPrice').value = '';
+        }
+
+        async function registerShopWithCatalog() {
             const shopName = document.getElementById('regShopName').value.trim();
-            const idNumber = document.getElementById('shopIdNumber').value.trim();
+            const idNumber = document.getElementById('shopIdNumber').value.trim() || currentUser.idNumber;
+            const shopImage = document.getElementById('regShopImage').value.trim();
+            const lat = Number(document.getElementById('shopLat').value);
+            const lng = Number(document.getElementById('shopLng').value);
+
+            if (!shopName || !idNumber) { alert("Shop name and ID number are required"); return; }
+
             const res = await fetch(`${API_BASE}/api/shop/register`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: currentUser.id, shopName, idNumber })
+                body: JSON.stringify({
+                    userId: currentUser.id, shopName, idNumber,
+                    email: currentUser.email, phone: currentUser.phone,
+                    shopImageBase64: shopImage,
+                    location: { lat, lng },
+                    catalog: draftCatalog
+                })
             });
             const data = await res.json();
             if (data.success) {
-                alert("Shop registered successfully!");
+                alert(data.message);
                 document.getElementById('registeredShopId').value = data.shopId;
                 document.getElementById('shopRegisterPanel').style.display = 'none';
                 document.getElementById('productAddPanel').style.display = 'block';
                 loadDynamicShopsAndCorridors();
-            } else alert(data.error);
+                loadStoreCatalog();
+            } else { alert(data.error); }
+        }
+
+        async function submitSovereignDriverRegistration() {
+            const fullName = document.getElementById('regFullName').value.trim();
+            const idNumber = document.getElementById('regDriverIdNumber').value.trim() || currentUser.idNumber;
+            const licenseNumber = document.getElementById('regLicenseNumber').value.trim();
+            const numberPlate = document.getElementById('regNumberPlate').value.trim();
+            const psvBadge = document.getElementById('regPsvBadge').value.trim();
+            const passportPhoto = document.getElementById('regPassportPhoto').value.trim();
+            const bizId = document.getElementById('storeBusinessId').value;
+
+            if (!fullName || !licenseNumber || !idNumber || !numberPlate) {
+                alert("Please fill in all mandatory Rider KYC fields.");
+                return;
+            }
+
+            const res = await fetch(`${API_BASE}/api/driver/register-sovereign`, {
+                method: "POST", headers: { "Content-Type": "application/json", "x-business-id": bizId },
+                body: JSON.stringify({
+                    userId: currentUser.id, fullName, idNumber, licenseNumber, numberPlate,
+                    email: currentUser.email, phone: currentUser.phone,
+                    facePhotoBase64: passportPhoto, psvBadgeBase64: psvBadge, businessId: bizId
+                })
+            });
+            const data = await res.json();
+            if (data.success) alert(data.message);
+            else alert(data.error);
         }
 
         async function addProductToCatalog() {

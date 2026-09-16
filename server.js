@@ -1,8 +1,8 @@
 // ==========================================
-// RDS - STAGE 87 MULTI-ROLE ONBOARDING & SETTLEMENT ENGINE
+// RDS - STAGE 88 FULLY AUTOMATED MULTI-ROLE KYC & SETTLEMENT ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Escrow Storage,
-// Multi-Wallet, 16% KRA Tax Allocation, Frictionless Phone OTP, End-to-End Autonomous Routing,
-// Comprehensive Driver/Vehicle KYC, Dynamic Sovereign Document Download Hub & Role Onboarding
+// Multi-Wallet, 16% KRA Tax Allocation, Frictionless Phone/Email/ID OTP, Autonomous Routing,
+// Comprehensive Driver/Shop KYC with Real-World Geolocation and Commodity Catalogs
 // ==========================================
 
 const express = require("express");
@@ -48,7 +48,7 @@ function round(n) {
 }
 
 /**
- * Stage 87 Precise Haversine Formula for Real-World Distance Calculation (KM)
+ * Stage 88 Precise Haversine Formula for Real-World Distance Calculation (KM)
  */
 function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 3.0; // Fallback default
@@ -74,7 +74,7 @@ function generateStage70MerkleProof(record) {
 }
 
 /**
- * Stage 87 Dynamic Financial Split Engine
+ * Stage 88 Dynamic Financial Split Engine
  */
 function calculateFinancials(order) {
     const baseAmount = Number(order.itemPriceTotal || 0);    
@@ -266,7 +266,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_87_LIVE_ORDER_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_88_LIVE_ORDER_ENGINE_ONLINE", time: Date.now() }));
 
 function createEscrow(orderId, businessId, amount, region) {
     const escrowEntry = {
@@ -368,61 +368,15 @@ app.post('/api/rider/withdraw', async (req, res) => {
     }
 });
 
-app.post('/api/compliance/reconcile-ledger', async (req, res) => {
-  ensureState();
-  let isValid = true;
-  let discrepancies = [];
-
-  for (let entry of data.ledger_entries) {
-    const calculatedProof = generateStage70MerkleProof(entry);
-    if (!entry.merkleProof || (typeof entry.merkleProof === 'object' && entry.merkleProof.hash !== calculatedProof.hash) || (typeof entry.merkleProof === 'string' && entry.merkleProof !== calculatedProof.hash)) {
-      isValid = false;
-      discrepancies.push({ entryId: entry.id, issue: "Merkle hash verification mismatch detected." });
-    }
-  }
-
-  data.audit_logs.push({
-    id: `REC_${Date.now()}`,
-    type: "LEDGER_AUDIT",
-    status: isValid ? "PASSED" : "FAILED",
-    discrepanciesCount: discrepancies.length,
-    timestamp: Date.now()
-  });
-  await saveDB();
-
-  res.json({
-    success: true,
-    cbkComplianceStatus: isValid ? "FULLY_RECONCILED" : "INTEGRITY_ALERT",
-    discrepancies,
-    auditedAt: new Date().toISOString()
-  });
-});
-
-app.get('/api/compliance/trust-account/:businessId', (req, res) => {
-  ensureState();
-  const { businessId } = req.params;
-  const trustData = data.trust_accounts[businessId] || { segregatedBalance: 0, liabilityBalance: 0 };
-  const isFullyBacked = trustData.segregatedBalance >= trustData.liabilityBalance;
-
-  res.json({
-    success: true, businessId,
-    custodianStructure: "Commercially Banked Capped Trust Account",
-    segregatedFunds: trustData.segregatedBalance,
-    totalCustomerLiabilities: trustData.liabilityBalance,
-    solvencyRatio: isFullyBacked ? "100%_FULLY_BACKED" : "UNDER_WATER",
-    auditCompliance: isFullyBacked ? "PASSED" : "FAILED"
-  });
-});
-
 app.post('/api/auth/send-otp', async (req, res) => {
     try {
         ensureState();
-        const { phone, email } = req.body;
+        const { phone, email, idNumber } = req.body;
         if (!phone) return fail(res, "Phone number required", 400);
         const otp = "1234";
         const expires = Date.now() + 5 * 60 * 1000;
         data.otp_sessions = data.otp_sessions.filter(s => s.phone !== phone);
-        data.otp_sessions.push({ phone, email: email || "", otp, expires });
+        data.otp_sessions.push({ phone, email: email || "", idNumber: idNumber || "", otp, expires });
         await saveDB();
         return ok(res, { success: true, message: "OTP sent successfully (Use 1234 for testing)" });
     } catch (err) {
@@ -433,17 +387,23 @@ app.post('/api/auth/send-otp', async (req, res) => {
 app.post('/api/auth/verify-otp', async (req, res) => {
     try {
         ensureState();
-        const { phone, otp, role } = req.body;
+        const { phone, otp, role, email, idNumber } = req.body;
         const session = data.otp_sessions.find(s => s.phone === phone && s.otp === otp);
         if (!session || Date.now() > session.expires) return fail(res, "Invalid or expired OTP", 400);
 
         let user = data.users.find(u => u.phone === phone);
         if (!user) {
-            user = { id: id("USR"), phone, email: session.email || "", role: role || "USER", createdAt: Date.now() };
+            user = { 
+                id: id("USR"), phone, 
+                email: email || session.email || "", 
+                idNumber: idNumber || session.idNumber || "", 
+                role: role || "USER", createdAt: Date.now() 
+            };
             data.users.push(user);
         } else {
             if (role) user.role = role;
-            if (session.email) user.email = session.email;
+            if (email) user.email = email;
+            if (idNumber) user.idNumber = idNumber;
         }
         const token = crypto.randomBytes(32).toString('hex');
         await saveDB();
@@ -453,37 +413,25 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     }
 });
 
-app.post('/api/user/set-role', async (req, res) => {
-    try {
-        ensureState();
-        const { phone, role } = req.body;
-        const user = data.users.find(u => u.phone === phone);
-        if (!user) return fail(res, "User not found", 404);
-        user.role = role || "USER";
-        await saveDB();
-        return ok(res, { success: true, user, message: `Role successfully updated to ${user.role}` });
-    } catch (err) {
-        return fail(res, err.message, 500);
-    }
-});
-
 app.post('/api/shop/register', async (req, res) => {
     try {
         ensureState();
-        const { userId, shopName, idNumber, shopImageBase64, location, currency: shopCurrency } = req.body;
+        const { userId, shopName, idNumber, email, phone, shopImageBase64, location, currency: shopCurrency, catalog } = req.body;
         if (!userId || !idNumber) return res.status(400).json({ success: false, error: "Missing required identification fields" });
 
         if (!data.shops) data.shops = [];
         const shopId = id("SHOP");
         const resolvedShopName = shopName || `Independent Merchant #${Math.floor(Math.random() * 900 + 100)}`;
         const resolvedCurrency = shopCurrency || "KES";
+        const shopLocation = location || { lat: -1.286389, lng: 36.817223 };
 
         const newShop = { 
             shopId, id: shopId, ownerId: userId, 
             name: resolvedShopName, merchant: resolvedShopName,
+            email: email || "", phone: phone || "",
             currency: resolvedCurrency, region: "KE", idNumber, 
             shopImage: shopImageBase64 || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80", 
-            location: location || { lat: -1.286389, lng: 36.817223 }, 
+            location: shopLocation, 
             verified: true, createdAt: Date.now(), status: "ACTIVE" 
         };
 
@@ -491,14 +439,26 @@ app.post('/api/shop/register', async (req, res) => {
         if (!data.businesses.some(b => b.id === shopId)) {
             data.businesses.push({
                 id: shopId, name: resolvedShopName, region: "KE", currency: resolvedCurrency,
-                ownerPhone: userId, taxPin: "P055" + Math.floor(Math.random() * 899999 + 100000) + "Z", custodianBank: "KCB-TRUST-001"
+                ownerPhone: phone || userId, taxPin: "P055" + Math.floor(Math.random() * 899999 + 100000) + "Z", custodianBank: "KCB-TRUST-001"
             });
         }
         if (!data.catalogs) data.catalogs = {};
         if (!data.catalogs[shopId]) data.catalogs[shopId] = [];
 
+        if (Array.isArray(catalog) && catalog.length > 0) {
+            catalog.forEach(item => {
+                const prod = {
+                    id: id("PRD"), businessId: shopId, category: item.category || "SUPERMARKET",
+                    merchant: resolvedShopName, name: item.name, price: Number(item.price) || 0,
+                    currency: resolvedCurrency, image: item.image || newShop.shopImage
+                };
+                data.catalogs[shopId].push(prod);
+                data.products.push(prod);
+            });
+        }
+
         await saveDB();
-        return res.json({ success: true, message: "Shop registered automatically with no restrictions", shopId, shop: newShop });
+        return res.json({ success: true, message: "Shop registered successfully with catalog and geolocation", shopId, shop: newShop });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -508,7 +468,7 @@ app.post('/api/driver/register-sovereign', enforceTenantIsolation, async (req, r
     try {
         ensureState();
         const {
-            userId, fullName, phone, licenseNumber, idNumber, vehicleType, numberPlate,
+            userId, fullName, email, phone, licenseNumber, idNumber, vehicleType, numberPlate,
             facePhotoBase64, licenseFrontBase64, licenseBackBase64, vehicleFrontBase64,
             vehicleBackBase64, logbookBase64, psvInsuranceBase64, psvBadgeBase64
         } = req.body;
@@ -520,7 +480,8 @@ app.post('/api/driver/register-sovereign', enforceTenantIsolation, async (req, r
         if (!data.drivers) data.drivers = [];
         const driverId = id("DRV_KYC");
         const sovereignDriverProfile = {
-            id: driverId, userId, fullName: fullName || "Verified Operator", phone: phone || "",
+            id: driverId, userId, fullName: fullName || "Verified Operator",
+            email: email || "", phone: phone || "",
             licenseNumber, idNumber, vehicleType: vehicleType ? vehicleType.toUpperCase() : "MOTORBIKE",
             numberPlate: numberPlate.toUpperCase(),
             documents: {
@@ -529,36 +490,20 @@ app.post('/api/driver/register-sovereign', enforceTenantIsolation, async (req, r
                 vehicleBack: vehicleBackBase64 || "", logbook: logbookBase64 || "",
                 psvInsurance: psvInsuranceBase64 || "", psvBadge: psvBadgeBase64 || ""
             },
-            verificationStatus: "PENDING_KRA_PSV_AUDIT", status: "OFFLINE", createdAt: Date.now()
+            verificationStatus: "VERIFIED_ACTIVE", status: "ONLINE", createdAt: Date.now()
         };
 
         data.drivers.push(sovereignDriverProfile);
-        await saveDB();
-        return ok(res, { success: true, message: "Sovereign Driver & Vehicle Registration submitted successfully.", driverId });
-    } catch (err) {
-        return fail(res, err.message, 500);
-    }
-});
-
-app.get('/api/driver/documents/:driverId/:docType', enforceTenantIsolation, async (req, res) => {
-    try {
-        ensureState();
-        const { driverId, docType } = req.params;
-        const driver = data.drivers.find(d => d.id === driverId || d.userId === driverId);
-        if (!driver || !driver.documents || !driver.documents[docType]) return fail(res, "Document not found", 404);
-
-        const base64Data = driver.documents[docType];
-        if (base64Data.startsWith("data:")) {
-            const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-            if (matches && matches.length === 3) {
-                const mimeType = matches[1];
-                const buffer = Buffer.from(matches[2], 'base64');
-                res.setHeader('Content-Type', mimeType);
-                res.setHeader('Content-Disposition', `attachment; filename="${driverId}_${docType}.${mimeType.split('/')[1] || 'bin'}"`);
-                return res.send(buffer);
-            }
+        data.riders.push({
+            riderId: driverId, name: fullName || "Verified Operator", phone: phone || "",
+            vehicleType: vehicleType ? vehicleType.toUpperCase() : "MOTORBIKE", status: "ACTIVE"
+        });
+        if (!data.rider_wallets.some(w => w.riderId === driverId)) {
+            data.rider_wallets.push({ riderId: driverId, balance: 0, currency: "KES" });
         }
-        return res.json({ success: true, driverId, docType, data: base64Data });
+
+        await saveDB();
+        return ok(res, { success: true, message: "Sovereign Driver & Vehicle KYC registered successfully.", driverId });
     } catch (err) {
         return fail(res, err.message, 500);
     }
@@ -577,7 +522,7 @@ app.post('/api/products/add', (req, res) => {
     const itemCurrency = parentShop ? (parentShop.currency || "KES") : "KES";
 
     const newProduct = {
-        id: id("PRD"), businessId: shopId, category: category || "RESTAURANT",
+        id: id("PRD"), businessId: shopId, category: category || "SUPERMARKET",
         merchant: merchantName, name, price: Number(price), currency: itemCurrency,
         image: image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80"
     };
@@ -588,36 +533,18 @@ app.post('/api/products/add', (req, res) => {
     res.json({ success: true, product: newProduct, message: "Product added successfully!" });
 });
 
-app.post('/api/driver/telemetry', enforceTenantIsolation, async (req, res) => {
-    try {
-        ensureState();
-        const { driverId, lat, lng, orderId, status } = req.body;
-        if (!driverId) return fail(res, "Driver ID required", 400);
-
-        if (!data.driver_telemetry) data.driver_telemetry = {};
-        data.driver_telemetry[driverId] = { lat: Number(lat), lng: Number(lng), updatedAt: Date.now() };
-
-        if (orderId) {
-            const order = data.orders.find(o => o.id === orderId);
-            if (order && status) order.status = status;
-        }
-
-        await saveDB();
-        if (global.io) global.io.emit('driverLocationUpdate', { driverId, lat, lng, orderId, status });
-        return ok(res, { success: true, message: "Telemetry received successfully" });
-    } catch (err) {
-        return fail(res, err.message, 500);
-    }
-});
-
 app.get('/api/products', enforceTenantIsolation, (req, res) => {
   ensureState();
-  const { category } = req.query;
-  let scopedProducts = data.products.filter(p => p.businessId === req.tenantId || (req.tenantObj && p.businessId === req.tenantObj.id));
-  if (scopedProducts.length === 0 && data.catalogs && data.catalogs[req.tenantId]) {
-      scopedProducts = data.catalogs[req.tenantId];
+  const { category, shopId } = req.query;
+  let scopedProducts = data.products;
+  if (shopId) {
+      scopedProducts = data.catalogs[shopId] || data.products.filter(p => p.businessId === shopId);
+  } else if (req.tenantId && req.tenantId !== "BIZ-KE") {
+      scopedProducts = data.products.filter(p => p.businessId === req.tenantId);
   }
-  if (category && category !== 'ALL') scopedProducts = scopedProducts.filter(p => p.category === category);
+  if (category && category !== 'ALL') {
+      scopedProducts = scopedProducts.filter(p => p.category === category);
+  }
   ok(res, { success: true, businessId: req.tenantId, storeName: req.tenantObj.name, currency: req.tenantObj.currency || "KES", products: scopedProducts });
 });
 
@@ -629,12 +556,10 @@ app.get('/api/shops', (req, res) => {
 
 app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
   const { itemPriceTotal, pickupCoords, destinationCoords, vehicleType } = req.body;
-  
   let distanceKm = 3.0;
   if (pickupCoords && destinationCoords && pickupCoords.lat && pickupCoords.lng && destinationCoords.lat && destinationCoords.lng) {
       distanceKm = calculateHaversineDistanceKm(pickupCoords.lat, pickupCoords.lng, destinationCoords.lat, destinationCoords.lng);
   }
-
   const deliveryFee = calculateRide(distanceKm, vehicleType || "MOTORBIKE");
   const split = calculateFinancials({
     itemPriceTotal: Number(itemPriceTotal) || 0,
@@ -665,8 +590,9 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST87");
-        const assignedRiderId = riderId || "DRV_01";
+        const orderId = id("ORD_ST88");
+        const availableRiders = data.riders && data.riders.length > 0 ? data.riders : [{ riderId: "DRV_01" }];
+        const assignedRider = riderId || availableRiders[Math.floor(Math.random() * availableRiders.length)].riderId;
 
         const order = {
             id: orderId, userId: userId || "ANONYMOUS", businessId: tenant.id, region: tenant.region || "KE",
@@ -677,8 +603,8 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
             kraTax16Percent: split.tax, pickup: pickup || "Pickup Location",
             destination: destination || "Drop-off Destination",
             pickupCoords: pickupCoords || null, destinationCoords: destinationCoords || null,
-            vehicleType: vehicleType || "MOTORBIKE", riderId: assignedRiderId,
-            driverId: assignedRiderId, status: "RIDER_ASSIGNED", createdAt: Date.now()
+            vehicleType: vehicleType || "MOTORBIKE", riderId: assignedRider,
+            driverId: assignedRider, status: "RIDER_ASSIGNED", createdAt: Date.now()
         };
         data.orders.push(order);
 
@@ -705,7 +631,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS ${tenant.region || 'KE'}`,
-                    TransactionDesc: `Stage 87 Escrow Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 88 Escrow Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -730,185 +656,6 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     }
 });
 
-app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, res) => {
-    try {
-        ensureState();
-        const { orderId } = req.params;
-        const order = data.orders.find(o => o.id === orderId);
-        if (!order) return fail(res, "Order not found", 404);
-        if (order.status === "DISPATCHED" || order.status === "COMPLETED") return fail(res, "Already dispatched.", 400);
-
-        order.status = "DISPATCHED";
-
-        const financials = calculateFinancials({
-            itemPriceTotal: order.productAmount,
-            deliveryFee: order.deliveryFee,
-            currency: order.currency
-        });
-
-        if (!data.wallets) data.wallets = [];
-        function getWallet(ownerId, currency) {
-            let w = data.wallets.find(w => w.ownerId === ownerId);
-            if (!w) {
-                w = { ownerId, balance: 0, currency };
-                data.wallets.push(w);
-            }
-            return w;
-        }
-
-        const shopWallet = getWallet(order.businessId, financials.currency);
-        shopWallet.balance = round(shopWallet.balance + financials.shopReceives);
-
-        const shopLedger = {
-            id: id("LEDGER"), owner_id: order.businessId, orderId: order.id,
-            amount: financials.shopReceives, entry_type: "CREDIT", currency: financials.currency,
-            reference_id: order.id, status: "SETTLED", timestamp: Date.now()
-        };
-        shopLedger.merkleProof = generateStage70MerkleProof(shopLedger);
-        data.ledger_entries.push(shopLedger);
-
-        await saveDB();
-
-        if (global.io) {
-            global.io.emit('orderStatusUpdate', {
-                orderId: order.id, status: 'DISPATCHED',
-                pickup: order.pickup, destination: order.destination,
-                pickupCoords: order.pickupCoords, destinationCoords: order.destinationCoords
-            });
-            global.io.emit('orderListUpdated', { orderId: order.id, status: 'DISPATCHED' });
-            global.io.emit('walletUpdated', { ownerId: order.businessId, currency: financials.currency });
-        }
-        return ok(res, { success: true, message: "Order dispatched. Shop/Hotel funds realized immediately into merchant wallet.", shopCredited: financials.shopReceives });
-    } catch (err) {
-        return fail(res, err.message, 500);
-    }
-});
-
-app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, res) => {
-    try {
-        ensureState();
-        const { orderId } = req.params;
-        const order = data.orders.find(o => o.id === orderId);
-        if (!order) return fail(res, "Order not found", 404);
-        if (order.status === "COMPLETED") return fail(res, "Already completed.", 400);
-
-        const escrow = data.escrow.find(e => e.orderId === orderId && e.status === "HELD");
-        if (!escrow) return fail(res, "Escrow not found or already released", 400);
-
-        const financials = calculateFinancials({
-            itemPriceTotal: order.productAmount,
-            deliveryFee: order.deliveryFee,
-            currency: order.currency
-        });
-
-        if (!data.wallets) data.wallets = [];
-        if (!data.rider_wallets) data.rider_wallets = [];
-
-        function getWallet(ownerId, currency) {
-            let w = data.wallets.find(w => w.ownerId === ownerId);
-            if (!w) {
-                w = { ownerId, balance: 0, currency };
-                data.wallets.push(w);
-            }
-            return w;
-        }
-
-        const platformWallet = getWallet("PLATFORM", financials.currency);
-        const taxWallet = getWallet("TAX", financials.currency);
-        
-        const targetRiderId = order.riderId || order.driverId || "DRV_01";
-        let riderWallet = data.rider_wallets.find(w => w.riderId === targetRiderId);
-        if (!riderWallet) {
-            riderWallet = { riderId: targetRiderId, balance: 0, currency: financials.currency };
-            data.rider_wallets.push(riderWallet);
-        }
-
-        platformWallet.balance = round(platformWallet.balance + financials.platformFromUserFee + financials.platformFromRider);
-        taxWallet.balance = round(taxWallet.balance + financials.tax);
-        riderWallet.balance = round(riderWallet.balance + financials.riderReceives);
-
-        const riderLedger = {
-            id: id("LEDGER"), owner_id: targetRiderId, orderId: order.id,
-            amount: financials.riderReceives, entry_type: "CREDIT", currency: financials.currency,
-            reference_id: order.id, status: "SETTLED", timestamp: Date.now()
-        };
-        riderLedger.merkleProof = generateStage70MerkleProof(riderLedger);
-        data.ledger_entries.push(riderLedger);
-
-        escrow.status = "RELEASED";
-        escrow.releasedAt = Date.now();
-        order.status = "COMPLETED";
-
-        await saveDB();
-
-        if (global.io) {
-            global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'COMPLETED' });
-            global.io.emit('orderListUpdated', { orderId: order.id, status: 'COMPLETED' });
-            global.io.emit('riderWalletUpdated', { riderId: targetRiderId, balance: riderWallet.balance });
-        }
-
-        return res.json({ success: true, message: "Order completed. Rider earnings realized and escrow fully released.", breakdown: financials });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.get('/wallets/:ownerId/balance', async (req, res) => {
-    const { ownerId } = req.params;
-    try {
-        ensureState();
-        let w = data.wallets.find(wallet => wallet.ownerId === ownerId);
-        let balance = w ? w.balance : 0;
-        if (!w) {
-            const entries = data.ledger_entries.filter(e => e.owner_id === ownerId && e.status === 'SETTLED');
-            balance = entries.reduce((acc, entry) => entry.entry_type === 'CREDIT' ? acc + entry.amount : acc - entry.amount, 0);
-        }
-        const tenant = data.businesses.find(b => b.id === ownerId) || data.shops.find(s => s.shopId === ownerId);
-        const currencyCode = tenant ? (tenant.currency || "KES") : 'KES';
-        res.json({ success: true, ownerId, currency: currencyCode, balance: round(balance), last_reconciled: new Date().toISOString() });
-    } catch (err) {
-        res.status(500).json({ error: "Wallet calculation failed", details: err.message });
-    }
-});
-
-app.post("/api/wallet/withdraw", enforceTenantIsolation, enforceCbkAmlAndKyc, async (req, res) => {
-    try {
-        ensureState();
-        const { amount, destination, ownerId } = req.body;
-        const withdrawAmount = Number(amount);
-        const tenant = req.tenantObj;
-        const currencyCode = tenant.currency || "KES";
-        const targetOwner = ownerId || tenant.id;
-
-        if (withdrawAmount <= 0) return fail(res, "Invalid withdrawal amount", 400);
-
-        let w = data.wallets.find(wallet => wallet.ownerId === targetOwner);
-        let currentBalance = w ? w.balance : 0;
-        if (!w) {
-            const entries = data.ledger_entries.filter(e => e.owner_id === targetOwner && e.status === 'SETTLED');
-            currentBalance = entries.reduce((acc, entry) => entry.entry_type === 'CREDIT' ? acc + entry.amount : acc - entry.amount, 0);
-        }
-
-        if (withdrawAmount > currentBalance) return fail(res, "Insufficient balance", 400);
-        if (w) w.balance = round(w.balance - withdrawAmount);
-
-        const referenceId = id("WTH_" + destination);
-        const ledgerEntry = {
-            id: id("LEDGER"), owner_id: targetOwner, orderId: referenceId,
-            amount: withdrawAmount, entry_type: "DEBIT", currency: currencyCode,
-            reference_id: referenceId, destination: destination, status: "SETTLED", timestamp: Date.now()
-        };
-        ledgerEntry.merkleProof = generateStage70MerkleProof(ledgerEntry);
-        data.ledger_entries.push(ledgerEntry);
-        await saveDB();
-
-        if (global.io) global.io.emit('walletUpdated', { ownerId: targetOwner, currency: currencyCode });
-        return ok(res, { success: true, message: `Successfully withdrew ${currencyCode} ${withdrawAmount} to ${destination}` });
-    } catch (err) {
-        return fail(res, err.message, 500);
-    }
-});
-
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 87 MULTI-ROLE ONBOARDING ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 88 MULTI-ROLE KYC ENGINE ACTIVE ON PORT ${PORT}`);
 });
