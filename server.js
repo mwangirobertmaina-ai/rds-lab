@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 67 SOVEREIGN UNIFIED ENGINE
+// RDS - STAGE 68 SOVEREIGN KRA TAX-OPTIMIZED ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Multi-Wallet,
-// & Dual-Model Execution: (1) Marketplace + Delivery (2) Standalone Ride-Hailing
+// & Strict 16% KRA Tax Allocation on Platform Commissions
 // ==========================================
 
 const express = require("express");
@@ -35,33 +35,30 @@ global.io = io;
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 
-const DRIVER_SHARE_RATE = 0.95;         // 95% of delivery/ride fare to driver
+const DRIVER_SHARE_RATE = 0.95;         // 95% of delivery/ride fare goes to driver wallet
 const PLATFORM_DELIVERY_SHARE = 0.05;   // 5% platform share of delivery/ride fare
-const SHOP_SURCHARGE_RATE = 0.02;       // 2% platform surcharge added on top of commodities
-const KRA_TAX_RATE = 0.16;              // 16% KRA tax on platform commissions (KES)
+const SHOP_SURCHARGE_RATE = 0.02;       // 2% platform surcharge on commodities
+const KRA_TAX_RATE = 0.16;              // 16% KRA tax applicable on platform commissions (KES corridor)
 
 function num(v) {
   const parsed = Number(v);
   return isNaN(parsed) ? 0 : parsed;
 }
 
-function generateStage67MerkleProof(record) {
+function generateStage68MerkleProof(record) {
   const payload = `${record.id}:${record.businessId || 'GLOBAL'}:${record.orderId || record.transactionId}:${record.total || record.amount}:${record.currency || 'KES'}:${record.timestamp}`;
-  return crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_67_MASTER_KEY').update(payload).digest('hex');
+  return crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_68_MASTER_KEY').update(payload).digest('hex');
 }
 
 /**
- * Dual Model Financial Engine:
- * Model A: Commodity Price (100% to Shop) + 2% Surcharge + Distance Delivery (95% Driver, 5% Platform)
- * Model B: Standalone Ride Hailing Fare (95% Driver, 5% Platform)
+ * Stage 68 Financial & KRA Tax Calculation Engine
  */
-function processStage67FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, timeMinutes = 10, vehicleType = "MOTORBIKE", currencyCode = "KES") {
+function processStage68FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, timeMinutes = 10, vehicleType = "MOTORBIKE", currencyCode = "KES") {
   const itemsGross = currency(num(itemPriceTotal));
   const km = num(distanceKm);
   const mins = num(timeMinutes);
   const vType = vehicleType ? vehicleType.toUpperCase() : "MOTORBIKE";
 
-  // Delivery / Ride tariff matrix
   let baseFare = 100;
   let ratePerKm = 30;
   let ratePerMin = 2;
@@ -76,17 +73,17 @@ function processStage67FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, time
   if (km < 0.2 || rawDeliveryFare < 100) rawDeliveryFare = 100;
 
   const deliveryFare = currency(rawDeliveryFare);
+  const shopSurcharge = itemsGross.multiply(SHOP_SURCHARGE_RATE); // 2% on commodities
+
+  // Splits
+  const driverAmount = deliveryFare.multiply(DRIVER_SHARE_RATE); // 95% to driver
+  const platformDeliveryShare = deliveryFare.multiply(PLATFORM_DELIVERY_SHARE); // 5% delivery share
+
+  const totalPlatformCommission = platformDeliveryShare.add(shopSurcharge); // 5% delivery + 2% surcharge
   
-  // Model A: 2% platform surcharge on commodities
-  const shopSurcharge = itemsGross.multiply(SHOP_SURCHARGE_RATE);
-
-  // Split Rules
-  const driverAmount = deliveryFare.multiply(DRIVER_SHARE_RATE); // 95% of delivery/ride
-  const platformDeliveryShare = deliveryFare.multiply(PLATFORM_DELIVERY_SHARE); // 5% of delivery/ride
-
-  const totalPlatformCommission = platformDeliveryShare.add(shopSurcharge); // 5% delivery share + 2% commodity surcharge
-  const tax = currencyCode.toUpperCase() === "KES" ? totalPlatformCommission.multiply(KRA_TAX_RATE) : currency(0);
-  const netPlatformRevenue = totalPlatformCommission.subtract(tax);
+  // 16% KRA Tax on Platform Commission (strictly for KES / Kenya corridor)
+  const kraTax = currencyCode.toUpperCase() === "KES" ? totalPlatformCommission.multiply(KRA_TAX_RATE) : currency(0);
+  const netPlatformRevenue = totalPlatformCommission.subtract(kraTax);
 
   const totalUserPaid = itemsGross.add(deliveryFare).add(shopSurcharge);
 
@@ -94,12 +91,11 @@ function processStage67FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, time
     currency: currencyCode.toUpperCase(),
     productAmount: itemsGross.value,          // 100% to Shop
     deliveryFee: deliveryFare.value,
-    shopSurcharge2Percent: shopSurcharge.value, // 2% on top of commodity
+    shopSurcharge2Percent: shopSurcharge.value, // 2% platform surcharge
     total: totalUserPaid.value,
     driverWalletCredit: driverAmount.value,   // 95% to Driver
-    platformShare: platformDeliveryShare.value,
-    totalPlatformRevenue: totalPlatformCommission.value,
-    kraTax: tax.value,
+    platformCommission: totalPlatformCommission.value,
+    kraTax16Percent: kraTax.value,             // 16% KRA Tax breakdown
     netPlatformRevenue: netPlatformRevenue.value
   };
 }
@@ -221,7 +217,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_67_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_68_ENGINE_ONLINE", time: Date.now() }));
 
 app.get('/api/products', enforceTenantIsolation, (req, res) => {
   ensureState();
@@ -233,14 +229,12 @@ app.get('/api/products', enforceTenantIsolation, (req, res) => {
   ok(res, { success: true, businessId: req.tenantId, storeName: req.tenantObj.name, currency: req.tenantObj.currency, products: scopedProducts });
 });
 
-// Unified Calculation Endpoint for both Models
 app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
   const { itemPriceTotal, distanceKm, vehicleType } = req.body;
-  const split = processStage67FinancialSplit(itemPriceTotal, distanceKm || 3.0, 10, vehicleType || "MOTORBIKE", req.tenantObj.currency);
+  const split = processStage68FinancialSplit(itemPriceTotal, distanceKm || 3.0, 10, vehicleType || "MOTORBIKE", req.tenantObj.currency);
   ok(res, { success: true, split });
 });
 
-// Checkout and Order Placement
 app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -248,11 +242,11 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         const tenant = req.tenantObj;
         const currencyCode = tenant.currency;
 
-        const split = processStage67FinancialSplit(itemPriceTotal, distanceKm || 3.0, 10, vehicleType || "MOTORBIKE", currencyCode);
+        const split = processStage68FinancialSplit(itemPriceTotal, distanceKm || 3.0, 10, vehicleType || "MOTORBIKE", currencyCode);
 
         if (split.total <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST67");
+        const orderId = id("ORD_ST68");
         const order = {
             id: orderId,
             businessId: tenant.id,
@@ -264,7 +258,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
             total: split.total,
             driverWalletCredit: split.driverWalletCredit,
             platformRevenue: split.netPlatformRevenue,
-            kraTax: split.kraTax,
+            kraTax16Percent: split.kraTax16Percent,
             pickup: pickup || "Shop Hub",
             destination: destination || "Customer Destination",
             vehicleType: vehicleType || "MOTORBIKE",
@@ -298,7 +292,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl,
                     AccountReference: `RDS ${tenant.region}`,
-                    TransactionDesc: `Stage 67 Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 68 Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -327,7 +321,6 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// Shop Dispatches ➔ Shop gets 100% of Commodity Price
 app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -351,7 +344,7 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
                 status: "SETTLED",
                 timestamp: Date.now()
             };
-            shopLedger.merkleProof = generateStage67MerkleProof(shopLedger);
+            shopLedger.merkleProof = generateStage68MerkleProof(shopLedger);
             data.ledger_entries.push(shopLedger);
         }
 
@@ -367,7 +360,6 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
     }
 });
 
-// Complete Delivery/Ride ➔ Driver gets 95% of Delivery/Ride Fare
 app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -391,7 +383,7 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
             status: "SETTLED",
             timestamp: Date.now()
         };
-        driverLedger.merkleProof = generateStage67MerkleProof(driverLedger);
+        driverLedger.merkleProof = generateStage68MerkleProof(driverLedger);
         data.ledger_entries.push(driverLedger);
 
         await saveDB();
@@ -449,7 +441,7 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
             status: "SETTLED",
             timestamp: Date.now()
         };
-        ledgerEntry.merkleProof = generateStage67MerkleProof(ledgerEntry);
+        ledgerEntry.merkleProof = generateStage68MerkleProof(ledgerEntry);
         data.ledger_entries.push(ledgerEntry);
         await saveDB();
 
@@ -462,5 +454,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 67 UNIFIED ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 68 KRA TAX ENGINE ACTIVE ON PORT ${PORT}`);
 });

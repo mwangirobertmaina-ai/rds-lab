@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 67 | Sovereign Super-App (Marketplace + Ride Hailing)</title>
+  <title>RDS 68 | Sovereign Super-App & KRA Tax Engine</title>
 
   <script src="/socket.io/socket.io.js"></script>
 
@@ -279,7 +279,7 @@
     <!-- HOME / SUPER-APP DASHBOARD -->
     <div id="viewHome" class="app-view active-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 67 UNIFIED ENGINE</span>
+            <span>🌐 RDS STAGE 68 KRA TAX ENGINE</span>
             <span id="nodeLatency">10ms • Secured</span>
         </div>
 
@@ -320,10 +320,10 @@
         </div>
     </div>
 
-    <!-- UNIFIED CHECKOUT & RIDE VIEW -->
+    <!-- UNIFIED CHECKOUT & TAX VIEW -->
     <div id="viewOrders" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Unified Checkout & Logistics</h3>
+            <h3>Unified Checkout & KRA Tax</h3>
         </div>
 
         <div class="checkout-panel">
@@ -343,11 +343,12 @@
         </div>
 
         <div class="checkout-panel">
-            <h3>2. Mathematical Split Breakdown</h3>
+            <h3>2. Mathematical Split & KRA Tax Breakdown</h3>
             <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Commodity / Items Amount (100% Shop):</span> <strong id="previewProduct">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Commodities Amount (100% Shop):</span> <strong id="previewProduct">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery / Ride Fare (95% Driver):</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform Surcharge (2%):</span> <strong id="previewSurcharge" style="color:var(--stage-purple);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>KRA Tax (16% on Commission):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
                 <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total User Paid:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
             </div>
@@ -423,7 +424,7 @@
         <div class="checkout-panel">
             <p><strong>User:</strong> Robert Maina</p>
             <p style="margin-top: 8px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
-            <p style="margin-top: 8px;"><strong>Engine:</strong> RDS Stage 67 Sovereign Unified Engine</p>
+            <p style="margin-top: 8px;"><strong>Engine:</strong> RDS Stage 68 KRA Tax Engine</p>
         </div>
     </div>
 
@@ -596,6 +597,7 @@
                     document.getElementById('previewProduct').innerText = `${curr} ${s.productAmount.toFixed(2)}`;
                     document.getElementById('previewDelivery').innerText = `${curr} ${s.deliveryFee.toFixed(2)}`;
                     document.getElementById('previewSurcharge').innerText = `${curr} ${s.shopSurcharge2Percent.toFixed(2)}`;
+                    document.getElementById('previewKraTax').innerText = `${curr} ${s.kraTax16Percent.toFixed(2)}`;
                     document.getElementById('previewTotal').innerText = `${curr} ${s.total.toFixed(2)}`;
                 }
             } catch (e) { console.error("Calculation error", e); }
@@ -635,7 +637,7 @@
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('dispatchOrderIdInput').value = data.orderId;
-                    alert(`Checkout initiated successfully for total ${curr} ${data.split.total}!`);
+                    alert(`Checkout initiated successfully for total ${curr} ${data.split.total}! (Includes KRA Tax on commissions)`);
                     document.getElementById('lifecycleStatus').innerText = "RIDER_ASSIGNED";
                 } else { alert(data.error); }
             } catch (e) { alert("Checkout error."); }
