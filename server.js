@@ -1,8 +1,8 @@
 // ==========================================
-// RDS - STAGE 85 LIVE ORDER LIST & AUTOMATED SETTLEMENT ENGINE
+// RDS - STAGE 86 ROLE-ISOLATED LIVE ORDER & SETTLEMENT ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Escrow Storage,
 // Multi-Wallet, 16% KRA Tax Allocation, Frictionless Phone OTP, End-to-End Autonomous Routing,
-// Comprehensive Driver/Vehicle KYC, Dynamic Sovereign Document Download Hub & Live Order Feed
+// Comprehensive Driver/Vehicle KYC, Dynamic Sovereign Document Download Hub & Role Isolation
 // ==========================================
 
 const express = require("express");
@@ -48,7 +48,7 @@ function round(n) {
 }
 
 /**
- * Stage 85 Precise Haversine Formula for Real-World Distance Calculation (KM)
+ * Stage 86 Precise Haversine Formula for Real-World Distance Calculation (KM)
  */
 function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 3.0; // Fallback default
@@ -74,7 +74,7 @@ function generateStage70MerkleProof(record) {
 }
 
 /**
- * Stage 85 Dynamic Financial Split Engine
+ * Stage 86 Dynamic Financial Split Engine
  */
 function calculateFinancials(order) {
     const baseAmount = Number(order.itemPriceTotal || 0);    
@@ -266,7 +266,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_85_LIVE_ORDER_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_86_LIVE_ORDER_ENGINE_ONLINE", time: Date.now() }));
 
 function createEscrow(orderId, businessId, amount, region) {
     const escrowEntry = {
@@ -662,7 +662,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST85");
+        const orderId = id("ORD_ST86");
         const assignedRiderId = riderId || "DRV_01";
 
         const order = {
@@ -702,7 +702,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS ${tenant.region || 'KE'}`,
-                    TransactionDesc: `Stage 85 Escrow Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 86 Escrow Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -727,9 +727,6 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     }
 });
 
-/**
- * STAGE 85 STAGED DISPATCH: Shop / Hotel / Naivas realizes product funds upon dispatch.
- */
 app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -784,9 +781,6 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
     }
 });
 
-/**
- * STAGE 85 STAGED COMPLETE: Rider delivery fee realized and escrow released upon completion.
- */
 app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -913,5 +907,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, enforceCbkAmlAndKyc, as
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 85 LIVE ORDER ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 86 ROLE-ISOLATED ENGINE ACTIVE ON PORT ${PORT}`);
 });

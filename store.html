@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 85 | Live Order List & Staged Settlement Engine</title>
+  <title>RDS 86 | Role-Isolated Super App & Checkout Engine</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <!-- Leaflet CSS & JS for Real-World Maps & Routing -->
@@ -289,7 +289,6 @@
       z-index: 1;
     }
 
-    /* Stage 85 Live Order Cards */
     .live-order-card {
       background: rgba(0,0,0,0.4);
       border: 1px solid #374151;
@@ -312,11 +311,11 @@
     <!-- AUTHENTICATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 25px;">
-            <span>🔐 RDS STAGE 85 INSTITUTIONAL OTP ENTRY</span>
+            <span>🔐 RDS STAGE 86 INSTITUTIONAL OTP ENTRY</span>
         </div>
 
         <div class="checkout-panel" style="text-align: center; padding: 30px 20px;">
-            <h2 style="color: var(--cyan); margin-bottom: 8px; font-size: 1.3rem;">Welcome to RDS Hybrid Super-App</h2>
+            <h2 style="color: var(--cyan); margin-bottom: 8px; font-size: 1.3rem;">Welcome to RDS Super-App</h2>
             <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 20px;">Enter your phone number for instant login or auto-registration.</p>
 
             <div id="phoneStep">
@@ -334,8 +333,8 @@
     <!-- HOME DASHBOARD -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 85 LIVE ORDER LIST & SETTLEMENT</span>
-            <span id="nodeLatency">Institutional • Active</span>
+            <span>🌐 RDS STAGE 86 CUSTOMER PORTAL</span>
+            <span id="nodeLatency">Secure • Active</span>
         </div>
 
         <div class="header-location">
@@ -372,7 +371,8 @@
             </div>
             <div id="mapContainer"></div>
 
-            <div id="riderWorkflowPanel" style="margin-top: 10px; display: none; display:grid; grid-template-columns: 1fr; gap: 6px;">
+            <!-- Driver workflow panel is restricted to drivers only -->
+            <div id="riderWorkflowPanel" style="margin-top: 10px; display: none; grid-template-columns: 1fr; gap: 6px;">
                 <button id="btnReachedPickup" onclick="riderReachedPickup()" class="btn-cyan" style="display:none; font-weight:bold;">📍 Reached Pickup Location</button>
                 <button id="btnPickedTrip" onclick="riderPickedAndStartTrip()" style="background:var(--gold); color:#000; display:none; font-weight:bold;">📦 Picked & Start Trip to Destination</button>
                 <button id="btnReachedDestination" onclick="riderReachedDestination()" style="background:var(--neon-green); color:#000; display:none; font-weight:bold;">🏁 Reached Destination & Complete</button>
@@ -422,15 +422,11 @@
         </div>
 
         <div class="checkout-panel">
-            <h3>2. Dynamic Mathematical Split (100% Correct)</h3>
+            <h3>2. Dynamic Mathematical Split</h3>
             <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Product Amount (Naivas/Hotel):</span> <strong id="previewProduct">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery Fee (Rider):</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Shop Receives (Realized on Dispatch):</span> <strong id="previewShopReceives" style="color:var(--neon-green);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform from User Fee (2%):</span> <strong id="previewPlatformUser" style="color:var(--stage-purple);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform from Rider (5%):</span> <strong id="previewPlatformRider" style="color:var(--stage-purple);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Product Amount:</span> <strong id="previewProduct">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery Fee:</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Tax (16% KRA):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Rider Receives (Realized on Complete):</span> <strong id="previewRiderReceives" style="color:var(--cyan);">0.00</strong></div>
                 <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total Paid by User:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
             </div>
@@ -443,80 +439,31 @@
             <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Authorize Payment & Hold Escrow</button>
         </div>
 
-        <!-- STAGE 85 AUTOMATED LIVE ORDER LIST (Replaces Manual typing) -->
         <div class="checkout-panel">
-            <h3>4. Live Order List & Automated Actions</h3>
-            <p style="font-size:0.7rem; color:var(--text-dim); margin-bottom:8px;">Orders appear automatically below. Use one-touch buttons per order—no manual typing required!</p>
+            <h3>4. Your Active Orders & Status</h3>
             <div id="liveOrderListContainer">
-                <em style="color:var(--text-dim); font-size:0.75rem;">No active orders. Place an order to see live interactive controls.</em>
-            </div>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>Status Tracker</h3>
-            <div style="font-size: 0.8rem; color: var(--text-dim);">
-                Status: <span id="lifecycleStatus" style="color: var(--neon-green); font-weight: bold;">STANDBY</span>
+                <em style="color:var(--text-dim); font-size:0.75rem;">No active orders. Place an order to see status updates.</em>
             </div>
         </div>
     </div>
 
-    <!-- WALLET VIEW -->
+    <!-- WALLET VIEW (Restricted or Customer friendly) -->
     <div id="viewWallet" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Multi-Role Wallets & Payouts</h3>
-        </div>
-
-        <div class="checkout-panel" style="background: rgba(168,85,247,0.05); border-color: var(--stage-purple);">
-            <h3>🛡️ CBK Compliance & Escrow Vault</h3>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                <button onclick="runCbkLedgerAudit()" class="btn-cyan" style="font-size:0.65rem;">Verify Merkle Audit</button>
-                <button onclick="fetchCbkTrustStatus()" style="background:var(--gold); color:#000; font-size:0.65rem;">Check Trust Solvency</button>
-            </div>
-            <div style="font-size: 0.7rem; color: var(--text-dim);">
-                <div>Compliance Status: <span id="complianceAuditStatus" style="color:var(--neon-green);">VERIFIED_IMMUTABLE</span></div>
-                <div>Solvency Ratio: <span id="complianceSolvency" style="color:var(--cyan);">100%_FULLY_BACKED</span></div>
-            </div>
-        </div>
-
-        <div class="checkout-panel">
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Wallet Owner / Role</label>
-            <select id="walletOwnerSelect" onchange="fetchSovereignBalance()">
-                <option value="BIZ-KE">Shop / Business / Naivas Wallet</option>
-                <option value="DRV_01">Driver / Rider Wallet (John Kiprop)</option>
-                <option value="RDR_01">Dedicated Rider Wallet (RDR_01)</option>
-                <option value="PLATFORM">Platform Commission Wallet</option>
-                <option value="TAX">KRA Tax Collection Wallet</option>
-            </select>
+            <h3>User Balance & Transactions</h3>
         </div>
 
         <div class="checkout-panel" style="text-align: center; padding: 25px 15px;">
-            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;" id="walletCurrencyLabel">BALANCE</p>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;" id="walletCurrencyLabel">ACCOUNT BALANCE</p>
             <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 8px;"><span id="walletBalance">0.00</span></h2>
             <div style="font-size: 0.65rem; color: var(--text-dim);" id="auditStatus">Synced & Reconciled</div>
         </div>
-
-        <div class="checkout-panel">
-            <h3>Withdraw Funds</h3>
-            <select id="withdrawDestination">
-                <option value="MPESA">M-Pesa B2C</option>
-                <option value="BANK">Bank Account</option>
-            </select>
-            <input type="number" id="withdrawAmountInput" placeholder="Amount">
-            <button onclick="triggerWalletWithdrawal()" style="background: var(--alert-red);">Withdraw Funds</button>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>LEDGER FEED</h3>
-            <div id="ledgerFeed" class="ledger-list">
-                <div class="ledger-item"><span>[ESCROWED] Stage 85 Live Settlement Online</span><span style="color:var(--neon-green);">Secure</span></div>
-            </div>
-        </div>
     </div>
 
-    <!-- PROFILE VIEW -->
+    <!-- PROFILE VIEW WITH ROLE ISOLATION -->
     <div id="viewProfile" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Super App Account</h3>
+            <h3>My Account Profile</h3>
         </div>
         <div class="checkout-panel">
             <p><strong>Phone:</strong> <span id="profilePhone">-</span></p>
@@ -532,7 +479,8 @@
             <p style="margin-top: 12px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
         </div>
 
-        <div class="checkout-panel" id="driverGpsPanel" style="margin-top: 15px;">
+        <!-- HIDDEN BY DEFAULT FOR USERS: Driver GPS Panel -->
+        <div class="checkout-panel role-restricted-driver" id="driverGpsPanel" style="margin-top: 15px; display: none;">
             <h3>🛵 Driver Live GPS Navigation</h3>
             <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">GPS Status: <span id="gpsStatus" style="color:var(--neon-green);">Inactive</span></div>
             <input type="text" id="activeOrderId" placeholder="Active Order ID for GPS Tracking">
@@ -540,85 +488,31 @@
                 <button onclick="startDriverTracking()" class="btn-cyan">Start GPS Feed</button>
                 <button onclick="stopDriverTracking()" style="background:var(--alert-red);">Stop GPS</button>
             </div>
-            <div style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; font-size: 0.75rem;">
-                <div><strong>Current Lat:</strong> <span id="lblLat">0.0000</span></div>
-                <div><strong>Current Lng:</strong> <span id="lblLng">0.0000</span></div>
-            </div>
         </div>
 
-        <!-- SOVEREIGN DRIVER & VEHICLE KYC -->
-        <div class="checkout-panel" id="driverSovereignRegisterPanel" style="margin-top: 15px;">
-            <h3>🚗🛵 Sovereign Driver & Vehicle KYC Bundle</h3>
-            <label style="font-size: 0.75rem; color: var(--text-dim);">Full Legal Name</label>
-            <input type="text" id="regFullName" placeholder="e.g. John Kiprop">
-            <label style="font-size: 0.75rem; color: var(--text-dim);">National ID Number</label>
-            <input type="text" id="regIdNumber" placeholder="ID Number">
-            <label style="font-size: 0.75rem; color: var(--text-dim);">Driving License Number</label>
+        <!-- HIDDEN BY DEFAULT FOR USERS: Sovereign KYC Panel -->
+        <div class="checkout-panel role-restricted-driver" id="driverSovereignRegisterPanel" style="margin-top: 15px; display: none;">
+            <h3>🚗🛵 Sovereign Driver & Vehicle KYC</h3>
+            <input type="text" id="regFullName" placeholder="Full Legal Name">
+            <input type="text" id="regIdNumber" placeholder="National ID">
             <input type="text" id="regLicenseNumber" placeholder="License Number">
-            <label style="font-size: 0.75rem; color: var(--text-dim);">Vehicle Category</label>
-            <select id="regVehicleType">
-                <option value="MOTORBIKE">🏍️ Motorbike (Boda)</option>
-                <option value="CAR">🚗 Car / Taxicab</option>
-            </select>
-            <label style="font-size: 0.75rem; color: var(--text-dim);">Vehicle Number Plate</label>
-            <input type="text" id="regNumberPlate" placeholder="e.g. KMXX 123A" style="text-transform: uppercase;">
-
-            <div style="border-top: 1px solid #374151; margin-top:10px; padding-top:10px;">
-                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">1. Passport / Face Photo</label>
-                <input type="file" id="fileFace" accept="image/*">
-                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">2. Vehicle Logbook Copy</label>
-                <input type="file" id="fileLogbook" accept="image/*,application/pdf">
-                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">3. PSV Insurance Copy</label>
-                <input type="file" id="filePsvInsurance" accept="image/*,application/pdf">
-                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">4. PSV Badge Copy</label>
-                <input type="file" id="filePsvBadge" accept="image/*,application/pdf">
-                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">5. Vehicle Front Plate</label>
-                <input type="file" id="fileVehicleFront" accept="image/*">
-                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">6. Vehicle Back Plate</label>
-                <input type="file" id="fileVehicleBack" accept="image/*">
-            </div>
-
-            <button onclick="submitSovereignDriverRegistration()" class="btn-cyan" style="margin-top: 10px; padding: 12px; font-weight: bold;">Submit Sovereign Registration</button>
-
-            <div style="margin-top: 15px; border-top:1px dashed #374151; padding-top:10px;" id="documentDownloadSection">
-                <label style="font-size: 0.75rem; color: var(--gold); display:block; margin-bottom:6px;">📥 Dynamic Document Downloader</label>
-                <input type="text" id="downloadDriverIdInput" placeholder="Enter Driver ID (e.g. DRV_KYC...)">
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
-                    <button onclick="downloadDriverDoc('logbook')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download Logbook</button>
-                    <button onclick="downloadDriverDoc('psvInsurance')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download PSV Insur.</button>
-                    <button onclick="downloadDriverDoc('psvBadge')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download PSV Badge</button>
-                    <button onclick="downloadDriverDoc('vehicleFront')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download Front Plate</button>
-                    <button onclick="downloadDriverDoc('vehicleBack')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download Back Plate</button>
-                    <button onclick="downloadDriverDoc('facePhoto')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download Passport</button>
-                </div>
-            </div>
+            <input type="text" id="regNumberPlate" placeholder="Number Plate e.g. KMXX 123A">
+            <button onclick="submitSovereignDriverRegistration()" class="btn-cyan" style="margin-top: 10px;">Submit KYC</button>
         </div>
 
-        <div class="checkout-panel" id="shopRegisterPanel" style="margin-top: 15px;">
-            <h3>Register Your Shop / Naivas / Hotel</h3>
-            <input type="text" id="regShopName" placeholder="Shop Name e.g. Naivas Supermarket Express">
-            <input type="text" id="shopIdNumber" placeholder="National ID / Business Reg Number">
-            <select id="regShopCurrency">
-                <option value="KES">KES (Kenyan Shilling)</option>
-                <option value="USD">USD (US Dollar)</option>
-                <option value="EUR">EUR (Euro)</option>
-                <option value="GBP">GBP (British Pound)</option>
-            </select>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Shop Photo / Logo</label>
-            <input type="file" id="shopImage" accept="image/*">
-            <button onclick="registerShop()" class="btn-cyan">Register Shop Automatically</button>
+        <!-- HIDDEN BY DEFAULT FOR USERS: Shop Registration Panel -->
+        <div class="checkout-panel role-restricted-shop" id="shopRegisterPanel" style="margin-top: 15px; display: none;">
+            <h3>Register Your Shop / Merchant Node</h3>
+            <input type="text" id="regShopName" placeholder="Shop Name">
+            <input type="text" id="shopIdNumber" placeholder="Business ID Number">
+            <button onclick="registerShop()" class="btn-cyan">Register Shop</button>
         </div>
 
-        <div class="checkout-panel" id="productAddPanel" style="margin-top: 15px; display:none;">
-            <h3>Add Product to Your Catalog</h3>
+        <div class="checkout-panel role-restricted-shop" id="productAddPanel" style="margin-top: 15px; display:none;">
+            <h3>Add Product to Catalog</h3>
             <input type="hidden" id="registeredShopId">
-            <input type="text" id="newProdName" placeholder="Product Name e.g. Organic Basket">
-            <input type="number" id="newProdPrice" placeholder="Price e.g. 2100">
-            <select id="newProdCategory">
-                <option value="RESTAURANT">🍽️ Restaurant</option>
-                <option value="HOTEL">🏨 Hotel</option>
-                <option value="SUPERMARKET">🏬 Supermarket</option>
-            </select>
+            <input type="text" id="newProdName" placeholder="Product Name">
+            <input type="number" id="newProdPrice" placeholder="Price">
             <button onclick="addProductToCatalog()" style="background: var(--neon-green); color: #000;">Add Product</button>
         </div>
     </div>
@@ -686,49 +580,20 @@
                     } else {
                         driverMarker.setLatLng(latLng);
                     }
-                    if (activeNavigationMode === "STANDBY") {
-                        map.setView(latLng, 14);
-                    }
                 }
             });
 
-            socket.on('orderListUpdated', () => {
-                fetchLiveOrders();
-            });
-
-            socket.on('orderStatusUpdate', (data) => {
-                fetchLiveOrders();
-                if (data && data.status === 'DISPATCHED') {
-                    activeNavigationMode = "EN_ROUTE_TO_PICKUP";
-                    document.getElementById('navGuidanceStatus').innerText = "NAVIGATING TO PICKUP 🧭";
-                    document.getElementById('lifecycleStatus').innerText = "DISPATCHED (SHOP FUNDS REALIZED)";
-                    
-                    switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
-
-                    document.getElementById('riderWorkflowPanel').style.display = 'grid';
-                    document.getElementById('btnReachedPickup').style.display = 'block';
-                    document.getElementById('btnPickedTrip').style.display = 'none';
-                    document.getElementById('btnReachedDestination').style.display = 'none';
-
-                    if (data.pickupCoords && data.destinationCoords) {
-                        const pLat = data.pickupCoords.lat;
-                        const pLng = data.pickupCoords.lng;
-                        const dLat = data.destinationCoords.lat;
-                        const dLng = data.destinationCoords.lng;
-
-                        if (pickupMarker) map.removeLayer(pickupMarker);
-                        if (destinationMarker) map.removeLayer(destinationMarker);
-                        if (routePolyline) map.removeLayer(routePolyline);
-
-                        pickupMarker = L.marker([pLat, pLng], {title: "Pickup"}).addTo(map).bindPopup("📦 Pickup Point").openPopup();
-                        destinationMarker = L.marker([dLat, dLng], {title: "Destination"}).addTo(map).bindPopup("🏁 Drop-off Destination");
-                        routePolyline = L.polyline([[pLat, pLng], [dLat, dLng]], {color: '#00ff88', weight: 5, dashArray: '8, 8'}).addTo(map);
-
-                        map.fitBounds(routePolyline.getBounds(), {padding: [50, 50]});
-                    }
-                }
-            });
+            socket.on('orderListUpdated', () => { fetchLiveOrders(); });
+            socket.on('orderStatusUpdate', () => { fetchLiveOrders(); });
         });
+
+        function applyRoleIsolation(role) {
+            const driverPanels = document.querySelectorAll('.role-restricted-driver');
+            const shopPanels = document.querySelectorAll('.role-restricted-shop');
+
+            driverPanels.forEach(p => p.style.display = (role === 'DRIVER') ? 'block' : 'none');
+            shopPanels.forEach(p => p.style.display = (role === 'SHOP') ? 'block' : 'none');
+        }
 
         async function fetchLiveOrders() {
             const bizId = document.getElementById('storeBusinessId').value;
@@ -744,7 +609,7 @@
         function renderLiveOrderList(orders) {
             const container = document.getElementById('liveOrderListContainer');
             if (!orders || orders.length === 0) {
-                container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No active orders. Place an order to see live interactive controls.</em>';
+                container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No active orders. Place an order to see status updates.</em>';
                 return;
             }
             let html = '';
@@ -756,48 +621,14 @@
                             <span>🆔 ${o.id}</span>
                             <span style="color: ${statusColor};">${o.status}</span>
                         </div>
-                        <div style="font-size: 0.75rem; color: #fff; margin-bottom: 6px;">
+                        <div style="font-size: 0.75rem; color: #fff;">
                             <div>📍 ${o.pickup} ➔ ${o.destination}</div>
                             <div>💰 Total: <strong>${o.currency} ${o.total}</strong></div>
-                        </div>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-                            <button onclick="dispatchOrderDirect('${o.id}')" style="background:var(--stage-purple); font-size:0.65rem; padding:6px;">1. Dispatch Order</button>
-                            <button onclick="completeOrderDirect('${o.id}')" style="background:var(--neon-green); color:#000; font-size:0.65rem; padding:6px;">2. Complete Trip</button>
                         </div>
                     </div>
                 `;
             });
             container.innerHTML = html;
-        }
-
-        async function dispatchOrderDirect(orderId) {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const res = await fetch(`${API_BASE}/api/orders/${orderId}/dispatch`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                body: JSON.stringify({ businessId: bizId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(`Order ${orderId} Dispatched! Shop funds realized.`);
-                fetchLiveOrders();
-                fetchSovereignBalance();
-            } else { alert(data.error); }
-        }
-
-        async function completeOrderDirect(orderId) {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const res = await fetch(`${API_BASE}/api/orders/${orderId}/complete`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                body: JSON.stringify({ businessId: bizId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(`Order ${orderId} Completed! Rider earnings credited & escrow released.`);
-                fetchLiveOrders();
-                fetchSovereignBalance();
-            } else { alert(data.error); }
         }
 
         function updateMapMarkersAndPolyline() {
@@ -813,7 +644,6 @@
             pickupMarker = L.marker([pLat, pLng], {title: "Pickup"}).addTo(map).bindPopup("📦 Pickup Point");
             destinationMarker = L.marker([dLat, dLng], {title: "Destination"}).addTo(map).bindPopup("🏁 Drop-off Destination");
             routePolyline = L.polyline([[pLat, pLng], [dLat, dLng]], {color: '#38bdf8', weight: 4}).addTo(map);
-
             map.fitBounds(routePolyline.getBounds(), {padding: [50, 50]});
         }
 
@@ -839,86 +669,6 @@
                     selector.innerHTML = html;
                 }
             } catch (e) {}
-        }
-
-        async function runCbkLedgerAudit() {
-            try {
-                const res = await fetch(`${API_BASE}/api/compliance/reconcile-ledger`, { method: "POST" });
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('complianceAuditStatus').innerText = data.cbkComplianceStatus;
-                    alert(`CBK Compliance Audit Completed: ${data.cbkComplianceStatus}`);
-                }
-            } catch (e) { alert("Audit request failed."); }
-        }
-
-        async function fetchCbkTrustStatus() {
-            const bizId = document.getElementById('storeBusinessId').value;
-            try {
-                const res = await fetch(`${API_BASE}/api/compliance/trust-account/${bizId}`);
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('complianceSolvency').innerText = data.solvencyRatio;
-                    alert(`Trust Account Solvency: ${data.solvencyRatio}`);
-                }
-            } catch (e) { alert("Trust account query failed."); }
-        }
-
-        function riderReachedPickup() {
-            document.getElementById('navGuidanceStatus').innerText = "AT PICKUP - COMMODITY LOADED 📦";
-            document.getElementById('navGuidanceStatus').style.color = "var(--gold)";
-            alert("Reached pickup location! Commodity loaded securely.");
-            document.getElementById('btnReachedPickup').style.display = 'none';
-            document.getElementById('btnPickedTrip').style.display = 'block';
-        }
-
-        function riderPickedAndStartTrip() {
-            activeNavigationMode = "TRIP_IN_PROGRESS";
-            document.getElementById('navGuidanceStatus').innerText = "NAVIGATING TO DESTINATION 🏁";
-            document.getElementById('navGuidanceStatus').style.color = "var(--cyan)";
-            if (destinationMarker && map) {
-                map.setView(destinationMarker.getLatLng(), 15);
-                alert("Trip started! Navigating along precise coordinates.");
-            }
-            document.getElementById('btnPickedTrip').style.display = 'none';
-            document.getElementById('btnReachedDestination').style.display = 'block';
-        }
-
-        function riderReachedDestination() {
-            activeNavigationMode = "COMPLETED";
-            document.getElementById('navGuidanceStatus').innerText = "DELIVERED & SETTLED 🟢";
-            document.getElementById('navGuidanceStatus').style.color = "var(--neon-green)";
-            alert("Reached drop-off destination! Realizing rider earnings and releasing escrow.");
-            document.getElementById('riderWorkflowPanel').style.display = 'none';
-        }
-
-        let watchId = null;
-        function startDriverTracking() {
-            const driverId = currentUser ? currentUser.id : "DRV_01";
-            if (!navigator.geolocation) { alert("Geolocation not supported"); return; }
-            document.getElementById('gpsStatus').innerText = "Live Tracking Active 🟢";
-            watchId = navigator.geolocation.watchPosition(async (pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                document.getElementById('lblLat').innerText = lat.toFixed(5);
-                document.getElementById('lblLng').innerText = lng.toFixed(5);
-                const bizId = document.getElementById('storeBusinessId').value;
-                try {
-                    await fetch(`${API_BASE}/api/driver/telemetry`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "x-business-id": bizId },
-                        body: JSON.stringify({ driverId, lat, lng, status: activeNavigationMode, businessId: bizId })
-                    });
-                } catch (e) {}
-            }, (err) => {}, { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
-        }
-
-        function stopDriverTracking() {
-            if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-                document.getElementById('gpsStatus').innerText = "Stopped 🔴";
-            }
         }
 
         async function requestOtp() {
@@ -949,6 +699,10 @@
                 localStorage.setItem("userId", currentUser.id);
                 document.getElementById('profilePhone').innerText = currentUser.phone;
                 document.getElementById('profileRole').innerText = currentUser.role;
+                document.getElementById('userRoleSelect').value = currentUser.role || 'USER';
+                
+                applyRoleIsolation(currentUser.role || 'USER');
+
                 document.getElementById('bottomNav').style.display = 'flex';
                 switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
                 loadStoreCatalog();
@@ -968,121 +722,57 @@
             if (data.success) {
                 currentUser = data.user;
                 document.getElementById('profileRole').innerText = currentUser.role;
+                applyRoleIsolation(currentUser.role);
                 alert(`Role updated to ${currentUser.role}`);
             }
-        }
-
-        function readFileAsBase64(fileInputId) {
-            return new Promise((resolve) => {
-                const input = document.getElementById(fileInputId);
-                if (!input || !input.files[0]) { resolve(""); return; }
-                const reader = new FileReader();
-                reader.readAsDataURL(input.files[0]);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = () => resolve("");
-            });
         }
 
         async function submitSovereignDriverRegistration() {
             const fullName = document.getElementById('regFullName').value.trim();
             const idNumber = document.getElementById('regIdNumber').value.trim();
             const licenseNumber = document.getElementById('regLicenseNumber').value.trim();
-            const vehicleType = document.getElementById('regVehicleType').value;
             const numberPlate = document.getElementById('regNumberPlate').value.trim();
-
-            if (!fullName || !idNumber || !licenseNumber || !numberPlate) {
-                alert("Please fill in all mandatory text fields.");
-                return;
-            }
-
-            try {
-                alert("Encoding KYC documents & submitting...");
-                const facePhotoBase64 = await readFileAsBase64('fileFace');
-                const logbookBase64 = await readFileAsBase64('fileLogbook');
-                const psvInsuranceBase64 = await readFileAsBase64('filePsvInsurance');
-                const psvBadgeBase64 = await readFileAsBase64('filePsvBadge');
-                const vehicleFrontBase64 = await readFileAsBase64('fileVehicleFront');
-                const vehicleBackBase64 = await readFileAsBase64('fileVehicleBack');
-
-                const bizId = document.getElementById('storeBusinessId').value;
-                const payload = {
-                    userId: currentUser ? currentUser.id : "USR_DEMO",
-                    phone: currentUser ? currentUser.phone : "254700000000",
-                    fullName, idNumber, licenseNumber, vehicleType, numberPlate,
-                    facePhotoBase64: facePhotoBase64 || "data:image/png;base64,demo",
-                    logbookBase64, psvInsuranceBase64, psvBadgeBase64,
-                    vehicleFrontBase64, vehicleBackBase64, businessId: bizId
-                };
-
-                const res = await fetch(`${API_BASE}/api/driver/register-sovereign`, {
-                    method: "POST", headers: { "Content-Type": "application/json", "x-business-id": bizId },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`${data.message}\nDriver ID: ${data.driverId}`);
-                    document.getElementById('downloadDriverIdInput').value = data.driverId;
-                    document.getElementById('driverSovereignRegisterPanel').style.display = 'none';
-                } else { alert("Registration failed: " + data.error); }
-            } catch (err) { alert("Error: " + err.message); }
-        }
-
-        function downloadDriverDoc(docType) {
-            const driverId = document.getElementById('downloadDriverIdInput').value.trim();
-            if (!driverId) { alert("Please enter a valid Driver ID."); return; }
             const bizId = document.getElementById('storeBusinessId').value;
-            window.open(`${API_BASE}/api/driver/documents/${driverId}/${docType}?businessId=${bizId}`, '_blank');
+
+            const res = await fetch(`${API_BASE}/api/driver/register-sovereign`, {
+                method: "POST", headers: { "Content-Type": "application/json", "x-business-id": bizId },
+                body: JSON.stringify({ userId: currentUser.id, fullName, idNumber, licenseNumber, numberPlate, businessId: bizId })
+            });
+            const data = await res.json();
+            if (data.success) alert(data.message);
+            else alert(data.error);
         }
 
         async function registerShop() {
             const shopName = document.getElementById('regShopName').value.trim();
             const idNumber = document.getElementById('shopIdNumber').value.trim();
-            const shopCurrency = document.getElementById('regShopCurrency').value;
-            const fileInput = document.getElementById('shopImage');
-            
-            if (!shopName || !idNumber) { alert("Please provide Shop Name and ID."); return; }
-
-            const processShopRegistration = async (shopImageBase64, location) => {
-                const res = await fetch(`${API_BASE}/api/shop/register`, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ userId: currentUser ? currentUser.id : "USR_DEMO", shopName, idNumber, currency: shopCurrency, shopImageBase64, location })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`Shop/Naivas/Hotel "${shopName}" registered successfully!`);
-                    document.getElementById('registeredShopId').value = data.shopId;
-                    document.getElementById('shopRegisterPanel').style.display = 'none';
-                    document.getElementById('productAddPanel').style.display = 'block';
-                    loadDynamicShopsAndCorridors();
-                    switchCorridor(data.shopId, shopName, shopCurrency, document.createElement('div'));
-                } else { alert("Failed: " + data.error); }
-            };
-
-            if (fileInput && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.readAsDataURL(fileInput.files[0]);
-                reader.onload = () => processShopRegistration(reader.result, { lat: -1.286389, lng: 36.817223 });
-            } else {
-                processShopRegistration(null, { lat: -1.286389, lng: 36.817223 });
-            }
+            const res = await fetch(`${API_BASE}/api/shop/register`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: currentUser.id, shopName, idNumber })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert("Shop registered successfully!");
+                document.getElementById('registeredShopId').value = data.shopId;
+                document.getElementById('shopRegisterPanel').style.display = 'none';
+                document.getElementById('productAddPanel').style.display = 'block';
+                loadDynamicShopsAndCorridors();
+            } else alert(data.error);
         }
 
         async function addProductToCatalog() {
             const shopId = document.getElementById('registeredShopId').value;
             const name = document.getElementById('newProdName').value.trim();
             const price = document.getElementById('newProdPrice').value.trim();
-            const category = document.getElementById('newProdCategory').value;
             if (!shopId || !name || !price) return;
 
             const res = await fetch(`${API_BASE}/api/products/add`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ shopId, name, price, category })
+                body: JSON.stringify({ shopId, name, price })
             });
             const data = await res.json();
             if (data.success) {
                 alert(data.message);
-                document.getElementById('newProdName').value = "";
-                document.getElementById('newProdPrice').value = "";
                 loadStoreCatalog();
             }
         }
@@ -1106,16 +796,7 @@
                 allProductsCache = (data && data.products) ? data.products : [];
                 document.getElementById('activeCurrencyLabel').innerText = data.currency || "KES";
                 document.getElementById('storeCurrency').value = data.currency || "KES";
-
-                if (activeCategory === 'TAXI') {
-                    document.getElementById('vehicleTypeSelect').value = 'CAR';
-                    renderRideHailingCard('TAXI', 'Taxicab Booking', 'Comfortable 4-Wheeled Ride', 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop&q=80');
-                } else if (activeCategory === 'BODA') {
-                    document.getElementById('vehicleTypeSelect').value = 'MOTORBIKE';
-                    renderRideHailingCard('MOTORBIKE', 'Boda Booking', 'Fast Motorbike Ride', 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=400&auto=format&fit=crop&q=80');
-                } else {
-                    renderCatalog(allProductsCache);
-                }
+                renderCatalog(allProductsCache);
                 fetchSovereignBalance();
             } catch (err) {}
         }
@@ -1127,32 +808,10 @@
             loadStoreCatalog();
         }
 
-        function renderRideHailingCard(vType, title, subtitle, imgUrl) {
-            const grid = document.getElementById('catalogGrid');
-            grid.innerHTML = `
-                <div class="product-card" style="grid-column: span 2;">
-                    <div class="image-wrapper" style="height: 140px;"><span class="merchant-badge">RDS RIDE SERVICE</span><img src="${imgUrl}" class="product-img"></div>
-                    <div class="product-info">
-                        <div>
-                            <div class="product-title" style="font-size: 1rem; margin-bottom:4px;">${title}</div>
-                            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">${subtitle}</div>
-                        </div>
-                        <button onclick="bookRideOnly('${vType}')" class="btn-cyan">Select ${title}</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function bookRideOnly(vType) {
-            cart = { 'ride_only': { name: `${vType} Ride`, price: 0, qty: 1 } };
-            recalculateCartSummary();
-            switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
-        }
-
         function renderCatalog(products) {
             const grid = document.getElementById('catalogGrid');
             if (!products || products.length === 0) {
-                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No catalog items found. Register items in Profile!</em>';
+                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No catalog items found.</em>';
                 return;
             }
             let html = '';
@@ -1236,11 +895,7 @@
                     document.getElementById('calculatedDistanceDisplay').innerText = `${data.distanceKm} km`;
                     document.getElementById('previewProduct').innerText = `${curr} ${s.productAmount.toFixed(2)}`;
                     document.getElementById('previewDelivery').innerText = `${curr} ${s.deliveryFee.toFixed(2)}`;
-                    document.getElementById('previewShopReceives').innerText = `${curr} ${s.shopReceives.toFixed(2)}`;
-                    document.getElementById('previewPlatformUser').innerText = `${curr} ${s.platformFromUserFee.toFixed(2)}`;
-                    document.getElementById('previewPlatformRider').innerText = `${curr} ${s.platformFromRider.toFixed(2)}`;
                     document.getElementById('previewKraTax').innerText = `${curr} ${s.tax.toFixed(2)}`;
-                    document.getElementById('previewRiderReceives').innerText = `${curr} ${s.riderReceives.toFixed(2)}`;
                     document.getElementById('previewTotal').innerText = `${curr} ${s.userPays.toFixed(2)}`;
                 }
             } catch (e) {}
@@ -1289,62 +944,22 @@
                 const data = await res.json();
                 if (data.success) {
                     alert(`Checkout initiated and Escrow secured! Distance: ${data.distanceKm} km, Total: ${curr} ${data.split.userPays}`);
-                    document.getElementById('lifecycleStatus').innerText = "ESCROWED & RIDER_ASSIGNED";
                     fetchLiveOrders();
                 } else { alert(data.error); }
             } catch (e) { alert("Checkout error."); }
         }
 
         async function fetchSovereignBalance() {
-            const ownerId = document.getElementById('walletOwnerSelect').value;
-            if (ownerId.startsWith('RDR_')) {
-                const res = await fetch(`${API_BASE}/api/rider/wallet/${ownerId}`);
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('walletCurrencyLabel').innerText = `RIDER BALANCE (${data.wallet.currency}) - ${ownerId}`;
-                    document.getElementById('walletBalance').innerText = Number(data.wallet.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
-                }
-            } else {
+            if (!currentUser) return;
+            const ownerId = currentUser.id;
+            try {
                 const response = await fetch(`${API_BASE}/wallets/${ownerId}/balance`);
                 const data = await response.json();
                 if (data.success) {
-                    document.getElementById('walletCurrencyLabel').innerText = `BALANCE (${data.currency}) - ${ownerId}`;
+                    document.getElementById('walletCurrencyLabel').innerText = `ACCOUNT BALANCE (${data.currency})`;
                     document.getElementById('walletBalance').innerText = Number(data.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
                 }
-            }
-        }
-
-        async function triggerWalletWithdrawal() {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const ownerId = document.getElementById('walletOwnerSelect').value;
-            const destination = document.getElementById('withdrawDestination').value;
-            const amount = Number(document.getElementById('withdrawAmountInput').value) || 0;
-            if (amount <= 0) return;
-
-            if (ownerId.startsWith('RDR_')) {
-                const phone = currentUser ? currentUser.phone : "254721862397";
-                const res = await fetch(`${API_BASE}/api/rider/withdraw`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ riderId: ownerId, amount, phone })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('withdrawAmountInput').value = "";
-                    fetchSovereignBalance();
-                } else { alert(data.error); }
-            } else {
-                const res = await fetch(`${API_BASE}/api/wallet/withdraw`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ amount, destination, ownerId, businessId: bizId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('withdrawAmountInput').value = "";
-                    fetchSovereignBalance();
-                } else { alert(data.error.message || data.error); }
-            }
+            } catch (e) {}
         }
     </script>
 </body>
