@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 68 | Sovereign Super-App & KRA Tax Engine</title>
+  <title>RDS 70 | Sovereign Super-App & Fast OTP Auth</title>
 
   <script src="/socket.io/socket.io.js"></script>
 
@@ -276,10 +276,32 @@
 </head>
 <body id="appBody">
 
+    <!-- AUTHENTICATION & FAST REGISTRATION VIEW -->
+    <div id="viewAuth" class="app-view active-view">
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 25px;">
+            <span>🔐 RDS STAGE 70 FAST OTP ENTRY</span>
+        </div>
+
+        <div class="checkout-panel" style="text-align: center; padding: 30px 20px;">
+            <h2 style="color: var(--cyan); margin-bottom: 8px; font-size: 1.3rem;">Welcome to RDS Super-App</h2>
+            <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 20px;">Enter your phone number for instant login or auto-registration.</p>
+
+            <div id="phoneStep">
+                <input type="text" id="authPhone" placeholder="2547XXXXXXXX" value="254721862397" style="text-align: center; font-size: 1.1rem; letter-spacing: 1px;">
+                <button onclick="requestOtp()" class="btn-cyan" style="padding: 12px; font-weight: bold;">Send OTP Code</button>
+            </div>
+
+            <div id="otpStep" style="display: none; margin-top: 15px;">
+                <input type="text" id="authOtp" placeholder="Enter 4-digit OTP (e.g. 1234)" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" maxlength="4">
+                <button onclick="verifyOtp()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Enter App</button>
+            </div>
+        </div>
+    </div>
+
     <!-- HOME / SUPER-APP DASHBOARD -->
-    <div id="viewHome" class="app-view active-view">
+    <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 68 KRA TAX ENGINE</span>
+            <span>🌐 RDS STAGE 70 KRA TAX ENGINE</span>
             <span id="nodeLatency">10ms • Secured</span>
         </div>
 
@@ -422,9 +444,17 @@
             <h3>Super App Account</h3>
         </div>
         <div class="checkout-panel">
-            <p><strong>User:</strong> Robert Maina</p>
-            <p style="margin-top: 8px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
-            <p style="margin-top: 8px;"><strong>Engine:</strong> RDS Stage 68 KRA Tax Engine</p>
+            <p><strong>Phone:</strong> <span id="profilePhone">-</span></p>
+            <p style="margin-top: 8px;"><strong>Role:</strong> <span id="profileRole">USER</span></p>
+            <div style="margin-top: 12px;">
+                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Select Role</label>
+                <select id="userRoleSelect" onchange="updateUserRole()">
+                    <option value="USER">Customer (Buy / Ride)</option>
+                    <option value="SHOP">Shop Owner (Sell)</option>
+                    <option value="DRIVER">Delivery Rider / Driver</option>
+                </select>
+            </div>
+            <p style="margin-top: 12px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
         </div>
     </div>
 
@@ -439,7 +469,7 @@
     <input type="hidden" id="storeBusinessId" value="BIZ-KE">
     <input type="hidden" id="storeCurrency" value="KES">
 
-    <div class="bottom-nav">
+    <div class="bottom-nav" id="bottomNav" style="display: none;">
         <a class="nav-item active" onclick="switchTab('viewHome', this)"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</a>
         <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Checkout</a>
         <a class="nav-item" onclick="switchTab('viewWallet', this)"><svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>Wallets</a>
@@ -451,9 +481,66 @@
         const CLOUD_API = "https://rds-lab.onrender.com";
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
+        let currentUser = null;
         let allProductsCache = [];
         let activeCategory = 'ALL';
         let cart = {}; 
+
+        async function requestOtp() {
+            const phone = document.getElementById('authPhone').value.trim();
+            if (!phone) { alert("Please enter phone number"); return; }
+
+            const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('phoneStep').style.display = 'none';
+                document.getElementById('otpStep').style.display = 'block';
+            } else { alert(data.error); }
+        }
+
+        async function verifyOtp() {
+            const phone = document.getElementById('authPhone').value.trim();
+            const otp = document.getElementById('authOtp').value.trim();
+            if (!otp) { alert("Please enter OTP code"); return; }
+
+            const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, otp })
+            });
+            const data = await res.json();
+            if (data.success) {
+                currentUser = data.user;
+                document.getElementById('profilePhone').innerText = currentUser.phone;
+                document.getElementById('profileRole').innerText = currentUser.role;
+                document.getElementById('userRoleSelect').value = currentUser.role;
+
+                document.getElementById('bottomNav').style.display = 'flex';
+                switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
+                loadStoreCatalog();
+            } else { alert(data.error); }
+        }
+
+        async function updateUserRole() {
+            const role = document.getElementById('userRoleSelect').value;
+            if (!currentUser) return;
+            const res = await fetch(`${API_BASE}/api/user/set-role`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: currentUser.phone, role })
+            });
+            const data = await res.json();
+            if (data.success) {
+                currentUser = data.user;
+                document.getElementById('profileRole').innerText = currentUser.role;
+                alert(`Role updated to ${currentUser.role}`);
+            }
+        }
 
         function switchTab(viewId, el) {
             document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
@@ -621,7 +708,7 @@
             for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
 
             const bizId = document.getElementById('storeBusinessId').value;
-            const phone = document.getElementById('custPhone').value.trim();
+            const phone = currentUser ? currentUser.phone : document.getElementById('custPhone').value.trim();
             const distanceKm = Number(document.getElementById('distanceKmInput').value) || 3.0;
             const vehicleType = document.getElementById('vehicleTypeSelect').value;
             const pickup = document.getElementById('pickupInput').value.trim();
@@ -637,7 +724,7 @@
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('dispatchOrderIdInput').value = data.orderId;
-                    alert(`Checkout initiated successfully for total ${curr} ${data.split.total}! (Includes KRA Tax on commissions)`);
+                    alert(`Checkout initiated successfully for total ${curr} ${data.split.total}!`);
                     document.getElementById('lifecycleStatus').innerText = "RIDER_ASSIGNED";
                 } else { alert(data.error); }
             } catch (e) { alert("Checkout error."); }
@@ -708,8 +795,6 @@
                 fetchSovereignBalance();
             } else { alert(data.error); }
         }
-
-        window.onload = () => { loadStoreCatalog(); };
     </script>
 </body>
 </html>

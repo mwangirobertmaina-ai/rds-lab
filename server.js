@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 68 SOVEREIGN KRA TAX-OPTIMIZED ENGINE
+// RDS - STAGE 70 SOVEREIGN ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Multi-Wallet,
-// & Strict 16% KRA Tax Allocation on Platform Commissions
+// 16% KRA Tax Allocation, & Frictionless Phone OTP Auto-Registration
 // ==========================================
 
 const express = require("express");
@@ -45,15 +45,15 @@ function num(v) {
   return isNaN(parsed) ? 0 : parsed;
 }
 
-function generateStage68MerkleProof(record) {
+function generateStage70MerkleProof(record) {
   const payload = `${record.id}:${record.businessId || 'GLOBAL'}:${record.orderId || record.transactionId}:${record.total || record.amount}:${record.currency || 'KES'}:${record.timestamp}`;
-  return crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_68_MASTER_KEY').update(payload).digest('hex');
+  return crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_70_MASTER_KEY').update(payload).digest('hex');
 }
 
 /**
- * Stage 68 Financial & KRA Tax Calculation Engine
+ * Stage 70 Financial & KRA Tax Calculation Engine
  */
-function processStage68FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, timeMinutes = 10, vehicleType = "MOTORBIKE", currencyCode = "KES") {
+function processStage70FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, timeMinutes = 10, vehicleType = "MOTORBIKE", currencyCode = "KES") {
   const itemsGross = currency(num(itemPriceTotal));
   const km = num(distanceKm);
   const mins = num(timeMinutes);
@@ -146,6 +146,8 @@ function defaultDB() {
       { id: "p5", businessId: "BIZ-KE", category: "HOTEL", merchant: "Serena Luxury Suites", name: "Executive Suite Booking (1 Night)", price: 12500, currency: "KES", image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&auto=format&fit=crop&q=80" },
       { id: "p6", businessId: "BIZ-KE", category: "SUPERMARKET", merchant: "Naivas Supermarket Express", name: "Organic Fresh Basket", price: 2100, currency: "KES", image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80" }
     ], 
+    users: [],
+    otp_sessions: [],
     orders: [], 
     ledger_entries: [] 
   };
@@ -157,6 +159,8 @@ function ensureState() {
   if (!data || typeof data !== 'object') data = defaultDB();
   if (!Array.isArray(data.businesses)) data.businesses = [];
   if (!Array.isArray(data.products)) data.products = [];
+  if (!Array.isArray(data.users)) data.users = [];
+  if (!Array.isArray(data.otp_sessions)) data.otp_sessions = [];
   if (!Array.isArray(data.orders)) data.orders = [];
   if (!Array.isArray(data.drivers)) data.drivers = [];
   if (!Array.isArray(data.ledger_entries)) data.ledger_entries = [];
@@ -217,7 +221,74 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_68_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_70_ENGINE_ONLINE", time: Date.now() }));
+
+// ==========================================
+// AUTH & AUTO-REGISTRATION ENDPOINTS
+// ==========================================
+app.post('/api/auth/send-otp', async (req, res) => {
+    try {
+        ensureState();
+        const { phone } = req.body;
+        if (!phone) return fail(res, "Phone number required", 400);
+
+        const otp = "1234"; // Default testing code
+        const expires = Date.now() + 5 * 60 * 1000;
+
+        data.otp_sessions = data.otp_sessions.filter(s => s.phone !== phone);
+        data.otp_sessions.push({ phone, otp, expires });
+        await saveDB();
+
+        return ok(res, { success: true, message: "OTP sent successfully (Use 1234 for testing)" });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+app.post('/api/auth/verify-otp', async (req, res) => {
+    try {
+        ensureState();
+        const { phone, otp } = req.body;
+        const session = data.otp_sessions.find(s => s.phone === phone && s.otp === otp);
+
+        if (!session || Date.now() > session.expires) {
+            return fail(res, "Invalid or expired OTP", 400);
+        }
+
+        let user = data.users.find(u => u.phone === phone);
+        if (!user) {
+            user = {
+                id: id("USR"),
+                phone,
+                role: "USER",
+                createdAt: Date.now()
+            };
+            data.users.push(user);
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        await saveDB();
+
+        return ok(res, { success: true, token, user });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+app.post('/api/user/set-role', async (req, res) => {
+    try {
+        ensureState();
+        const { phone, role } = req.body;
+        const user = data.users.find(u => u.phone === phone);
+        if (!user) return fail(res, "User not found", 404);
+
+        user.role = role || "USER";
+        await saveDB();
+        return ok(res, { success: true, user, message: `Role successfully updated to ${user.role}` });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
 
 app.get('/api/products', enforceTenantIsolation, (req, res) => {
   ensureState();
@@ -231,7 +302,7 @@ app.get('/api/products', enforceTenantIsolation, (req, res) => {
 
 app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
   const { itemPriceTotal, distanceKm, vehicleType } = req.body;
-  const split = processStage68FinancialSplit(itemPriceTotal, distanceKm || 3.0, 10, vehicleType || "MOTORBIKE", req.tenantObj.currency);
+  const split = processStage70FinancialSplit(itemPriceTotal, distanceKm || 3.0, 10, vehicleType || "MOTORBIKE", req.tenantObj.currency);
   ok(res, { success: true, split });
 });
 
@@ -242,11 +313,11 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         const tenant = req.tenantObj;
         const currencyCode = tenant.currency;
 
-        const split = processStage68FinancialSplit(itemPriceTotal, distanceKm || 3.0, 10, vehicleType || "MOTORBIKE", currencyCode);
+        const split = processStage70FinancialSplit(itemPriceTotal, distanceKm || 3.0, 10, vehicleType || "MOTORBIKE", currencyCode);
 
         if (split.total <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST68");
+        const orderId = id("ORD_ST70");
         const order = {
             id: orderId,
             businessId: tenant.id,
@@ -292,7 +363,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl,
                     AccountReference: `RDS ${tenant.region}`,
-                    TransactionDesc: `Stage 68 Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 70 Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -344,7 +415,7 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
                 status: "SETTLED",
                 timestamp: Date.now()
             };
-            shopLedger.merkleProof = generateStage68MerkleProof(shopLedger);
+            shopLedger.merkleProof = generateStage70MerkleProof(shopLedger);
             data.ledger_entries.push(shopLedger);
         }
 
@@ -383,7 +454,7 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
             status: "SETTLED",
             timestamp: Date.now()
         };
-        driverLedger.merkleProof = generateStage68MerkleProof(driverLedger);
+        driverLedger.merkleProof = generateStage70MerkleProof(driverLedger);
         data.ledger_entries.push(driverLedger);
 
         await saveDB();
@@ -441,7 +512,7 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
             status: "SETTLED",
             timestamp: Date.now()
         };
-        ledgerEntry.merkleProof = generateStage68MerkleProof(ledgerEntry);
+        ledgerEntry.merkleProof = generateStage70MerkleProof(ledgerEntry);
         data.ledger_entries.push(ledgerEntry);
         await saveDB();
 
@@ -454,5 +525,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 68 KRA TAX ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 70 ENGINE ACTIVE ON PORT ${PORT}`);
 });
