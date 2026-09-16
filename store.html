@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 63 | Sovereign Multi-Corridor Super App & Fleet Dispatch</title>
+  <title>RDS 64 | Sovereign Multi-Corridor Super App & Logistics</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://js.stripe.com/v3/"></script>
@@ -76,7 +76,6 @@
       border-radius: 12px;
       font-size: 0.9rem;
       outline: none;
-      transition: border-color 0.3s;
     }
     .search-bar input:focus { border-color: var(--stage-purple); box-shadow: 0 0 10px rgba(168,85,247,0.25); }
     .search-bar svg { position: absolute; left: 12px; top: 14px; width: 18px; height: 18px; fill: var(--text-dim); }
@@ -97,7 +96,6 @@
       color: var(--text-dim);
       font-size: 0.75rem;
       font-weight: 700;
-      transition: all 0.2s;
     }
     .corridor-btn.active, .corridor-btn:hover {
       border-color: var(--stage-purple);
@@ -124,7 +122,6 @@
       font-weight: 600;
       white-space: nowrap;
       cursor: pointer;
-      transition: all 0.2s;
     }
     .cat-btn.active, .cat-btn:hover {
       background: var(--stage-purple);
@@ -155,12 +152,6 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s ease, border-color 0.3s ease;
-    }
-    .product-card:hover { 
-      transform: translateY(-4px); 
-      border-color: var(--stage-purple); 
-      box-shadow: 0 8px 20px rgba(168, 85, 247, 0.25); 
     }
 
     .image-wrapper {
@@ -183,14 +174,7 @@
       font-weight: bold;
     }
 
-    .product-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.5s;
-    }
-    .product-card:hover .product-img { transform: scale(1.08); }
-
+    .product-img { width: 100%; height: 100%; object-fit: cover; }
     .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
     .product-title { font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 2px; }
     .product-merchant { font-size: 0.65rem; color: var(--text-dim); margin-bottom: 6px; }
@@ -215,12 +199,7 @@
       cursor: pointer;
       font-size: 0.8rem;
     }
-    .quantity-display {
-      font-size: 0.8rem;
-      font-weight: bold;
-      color: var(--neon-green);
-      padding: 0 8px;
-    }
+    .quantity-display { font-size: 0.8rem; font-weight: bold; color: var(--neon-green); padding: 0 8px; }
 
     button {
       background: var(--stage-purple);
@@ -233,7 +212,6 @@
       border-radius: 6px;
       font-size: 0.75rem;
       text-transform: uppercase;
-      transition: background 0.2s;
     }
     button:hover { background: var(--cyan); color: #000; }
 
@@ -251,7 +229,6 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 8px 20px rgba(168,85,247,0.3);
       z-index: 999;
       display: none;
     }
@@ -302,9 +279,7 @@
 
     .bottom-nav {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      bottom: 0; left: 0; right: 0;
       background: var(--panel-bg);
       border-top: 1px solid #222c3d;
       display: flex;
@@ -314,14 +289,7 @@
       max-width: 480px;
       margin: 0 auto;
     }
-    .nav-item {
-      text-align: center;
-      color: var(--text-dim);
-      text-decoration: none;
-      font-size: 0.65rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
+    .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
     .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
     .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
   </style>
@@ -331,7 +299,7 @@
     <!-- HOME / STORE VIEW -->
     <div id="viewHome" class="app-view active-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 63 FLEET & SPLIT ENGINE</span>
+            <span>🌐 RDS STAGE 64 LOGISTICS ENGINE</span>
             <span id="nodeLatency">10ms • Secured</span>
         </div>
 
@@ -358,47 +326,47 @@
             <button class="cat-btn" onclick="filterCategory('RESTAURANT', this)">🍽️ Restaurants</button>
             <button class="cat-btn" onclick="filterCategory('HOTEL', this)">🏨 Hotels</button>
             <button class="cat-btn" onclick="filterCategory('SUPERMARKET', this)">🏬 Supermarkets</button>
-            <button class="cat-btn" onclick="filterCategory('HYPERMARKET', this)">🏬🏢 Hypermarkets</button>
-            <button class="cat-btn" onclick="filterCategory('RETAIL', this)">🛍️ Retail Shops</button>
         </div>
 
         <div class="search-bar">
             <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-            <input type="text" id="searchInput" placeholder="Search millions of shops, hotels..." oninput="handleSearchInput()">
+            <input type="text" id="searchInput" placeholder="Search menu, groceries..." oninput="handleSearchInput()">
         </div>
 
         <div class="section-header">
-            <h3 id="catalogTitle">Regional Storefront Catalog</h3>
+            <h3>Regional Storefront Catalog</h3>
             <span id="activeCurrencyLabel" style="font-size:0.75rem; color:var(--stage-purple);">KES</span>
         </div>
 
         <div class="catalog-grid" id="catalogGrid">
-            <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading regional inventory...</em>
+            <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading catalog...</em>
         </div>
     </div>
 
-    <!-- ORDERS & STAGE 63 CHECKOUT VIEW -->
+    <!-- ORDERS & CHECKOUT VIEW -->
     <div id="viewOrders" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Stage 63 Fleet & Secure Checkout</h3>
+            <h3>Decoupled Logistics & Secure Checkout</h3>
         </div>
 
         <div class="checkout-panel">
-            <h3>Delivery & Fleet Configuration</h3>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Vehicle Tier</label>
-            <select id="vehicleTypeSelect">
-                <option value="MOTORBIKE">Motorbike (&lt;200m flat or traffic resilient)</option>
-                <option value="CAR">Car / Executive Ride</option>
+            <h3>Choose Delivery Mode</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Vehicle Selection (User Choice)</label>
+            <select id="vehicleTypeSelect" onchange="recalculatePreview()">
+                <option value="MOTORBIKE">🏍️ Motorbike (Faster / &lt;200m Rule)</option>
+                <option value="CAR">🚗 Car (Comfortable / Standard)</option>
             </select>
 
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Estimated Distance (KM)</label>
-            <input type="number" id="distanceKmInput" value="2.5" step="0.1" placeholder="Distance in KM">
+            <input type="number" id="distanceKmInput" value="2.5" step="0.1" oninput="recalculatePreview()">
 
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Pickup Location (Merchant Hub)</label>
-            <input type="text" id="pickupLoc" placeholder="e.g. Nairobi CBD Hub">
-
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Dropoff Location (Destination)</label>
-            <input type="text" id="dropoffLoc" placeholder="e.g. Westlands Destination">
+            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.8rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Product Amount:</span> <strong id="previewProduct">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery Fee:</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform Fee (2%):</span> <strong id="previewPlatform" style="color:var(--stage-purple);">0.00</strong></div>
+                <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total Due:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
+            </div>
         </div>
 
         <div class="checkout-panel">
@@ -407,34 +375,35 @@
                 <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">M-Pesa Phone Number</label>
                 <input type="text" id="custPhone" placeholder="2547XXXXXXXX" value="254721862397">
             </div>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Items Value</label>
-            <input type="number" id="custAmount" placeholder="0" readonly>
-            <button onclick="triggerGlobalCheckout()" class="btn-cyan" id="checkoutBtn">Authorize Stage 63 Payment</button>
+            <button onclick="triggerGlobalCheckout()" class="btn-cyan" id="checkoutBtn">Authorize Payment</button>
         </div>
 
         <div class="checkout-panel">
-            <h3>Merchant Dispatch Control</h3>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Active Order ID for Dispatch</label>
-            <input type="text" id="dispatchOrderIdInput" placeholder="Enter Order ID">
-            <button onclick="triggerShopDispatch()" style="background: var(--neon-green); color:#000;">Press Dispatched (Release 95% to Driver)</button>
+            <h3>Lifecycle Actions</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Active Order ID</label>
+            <input type="text" id="dispatchOrderIdInput" placeholder="Order ID">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+                <button onclick="triggerShopDispatch()" style="background:var(--stage-purple);">1. Shop Dispatch</button>
+                <button onclick="triggerDeliveryComplete()" style="background:var(--neon-green); color:#000;">2. Delivery Complete</button>
+            </div>
         </div>
 
         <div class="checkout-panel">
-            <h3>Live Status Tracker</h3>
-            <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;">
+            <h3>Status Tracker</h3>
+            <div style="font-size: 0.8rem; color: var(--text-dim);">
                 Status: <span id="lifecycleStatus" style="color: var(--neon-green); font-weight: bold;">STANDBY</span>
             </div>
         </div>
     </div>
 
-    <!-- DIGITAL WALLET VIEW (EXPLICIT SHOP vs DRIVER WALLETS) -->
+    <!-- WALLET VIEW -->
     <div id="viewWallet" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Multi-Role Sovereign Wallets</h3>
+            <h3>Multi-Role Wallets</h3>
         </div>
 
         <div class="checkout-panel">
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Select Wallet Owner</label>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Wallet Owner</label>
             <select id="walletOwnerSelect" onchange="fetchSovereignBalance()">
                 <option value="BIZ-KE">Shop Wallet (BIZ-KE)</option>
                 <option value="DRV_01">Driver Wallet (Alex Kiprop - DRV_01)</option>
@@ -442,31 +411,27 @@
         </div>
 
         <div class="checkout-panel" style="text-align: center; padding: 25px 15px;">
-            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;" id="walletCurrencyLabel">AVAILABLE BALANCE (KES)</p>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;" id="walletCurrencyLabel">AVAILABLE BALANCE</p>
             <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 8px;"><span id="walletBalance">0.00</span></h2>
             <div style="font-size: 0.65rem; color: var(--text-dim);" id="auditStatus">Synced & Reconciled</div>
         </div>
 
         <div class="checkout-panel">
-            <h3>Withdraw Funds (Anytime Payout)</h3>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Withdraw Destination</label>
+            <h3>Withdraw Funds</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Destination</label>
             <select id="withdrawDestination">
                 <option value="MPESA">M-Pesa</option>
                 <option value="BANK">Bank Account</option>
             </select>
-
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Withdraw Amount</label>
-            <input type="number" id="withdrawAmountInput" placeholder="Enter amount">
-            <button onclick="triggerWalletWithdrawal()" style="background: var(--alert-red);">Withdraw Funds</button>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Amount</label>
+            <input type="number" id="withdrawAmountInput" placeholder="Amount">
+            <button onclick="triggerWalletWithdrawal()" style="background: var(--alert-red);">Withdraw</button>
         </div>
 
         <div class="checkout-panel">
-            <h3>RECONCILED TRANSACTION LEDGER</h3>
+            <h3>LEDGER FEED</h3>
             <div id="ledgerFeed" class="ledger-list">
-                <div class="ledger-item">
-                    <span>[SETTLED] Stage 63 Engine Online</span>
-                    <span style="color:var(--neon-green);">Verified</span>
-                </div>
+                <div class="ledger-item"><span>[SETTLED] Engine Online</span><span style="color:var(--neon-green);">Verified</span></div>
             </div>
         </div>
     </div>
@@ -479,13 +444,13 @@
         <div class="checkout-panel">
             <p><strong>User:</strong> Robert Maina</p>
             <p style="margin-top: 8px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
-            <p style="margin-top: 8px;"><strong>Engine Build:</strong> RDS Stage 63 Global Sovereign Fleet</p>
+            <p style="margin-top: 8px;"><strong>Engine:</strong> RDS Stage 64 Global Logistics</p>
         </div>
     </div>
 
     <div id="floatingCart" class="floating-cart" onclick="switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1])">
         <div>
-            <strong id="cartItemCount" style="color: var(--neon-green); display: block; font-size: 0.85rem;">0 Items Selected</strong>
+            <strong id="cartItemCount" style="color: var(--neon-green); display: block; font-size: 0.85rem;">0 Items</strong>
             <span id="cartTotalSum" style="font-size: 0.75rem; color: var(--text-dim);">0</span>
         </div>
         <button style="width: auto; padding: 6px 14px; font-size: 0.75rem;">Proceed ➔</button>
@@ -495,22 +460,10 @@
     <input type="hidden" id="storeCurrency" value="KES">
 
     <div class="bottom-nav">
-        <a class="nav-item active" onclick="switchTab('viewHome', this)">
-            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-            Home
-        </a>
-        <a class="nav-item" onclick="switchTab('viewOrders', this)">
-            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-            Checkout
-        </a>
-        <a class="nav-item" onclick="switchTab('viewWallet', this)">
-            <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-            Wallets
-        </a>
-        <a class="nav-item" onclick="switchTab('viewProfile', this)">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
-            Profile
-        </a>
+        <a class="nav-item active" onclick="switchTab('viewHome', this)"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</a>
+        <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Checkout</a>
+        <a class="nav-item" onclick="switchTab('viewWallet', this)"><svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>Wallets</a>
+        <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
     </div>
 
     <script>
@@ -538,27 +491,20 @@
             document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
             if(el) el.classList.add('active');
             window.scrollTo(0, 0);
-
-            if (viewId === 'viewWallet') {
-                fetchSovereignBalance();
-            }
+            if (viewId === 'viewWallet') fetchSovereignBalance();
         }
 
         async function loadStoreCatalog() {
             const bizId = document.getElementById('storeBusinessId').value;
             try {
-                const res = await fetch(`${API_BASE}/api/products?category=${activeCategory}`, {
-                    headers: { "x-business-id": bizId }
-                });
+                const res = await fetch(`${API_BASE}/api/products?category=${activeCategory}`, { headers: { "x-business-id": bizId } });
                 const data = await res.json();
                 allProductsCache = (data && data.products) ? data.products : [];
                 document.getElementById('activeCurrencyLabel').innerText = data.currency || "KES";
                 document.getElementById('storeCurrency').value = data.currency || "KES";
                 renderCatalog(allProductsCache);
                 fetchSovereignBalance();
-            } catch (err) {
-                console.error("Catalog load error", err);
-            }
+            } catch (err) { console.error("Catalog load error", err); }
         }
 
         function filterCategory(category, el) {
@@ -570,10 +516,7 @@
 
         function handleSearchInput() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allProductsCache.filter(p => 
-                p.name.toLowerCase().includes(query) || 
-                (p.merchant && p.merchant.toLowerCase().includes(query))
-            );
+            const filtered = allProductsCache.filter(p => p.name.toLowerCase().includes(query) || (p.merchant && p.merchant.toLowerCase().includes(query)));
             renderCatalog(filtered);
         }
 
@@ -582,50 +525,35 @@
             try {
                 const response = await fetch(`${API_BASE}/wallets/${ownerId}/balance`);
                 const data = await response.json();
-
                 if (data.success) {
-                    document.getElementById('walletCurrencyLabel').innerText = `AVAILABLE BALANCE (${data.currency}) - ${ownerId}`;
+                    document.getElementById('walletCurrencyLabel').innerText = `BALANCE (${data.currency}) - ${ownerId}`;
                     document.getElementById('walletBalance').innerText = Number(data.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
-                    document.getElementById('auditStatus').innerText = `Synced & Reconciled: ${new Date(data.last_reconciled).toLocaleTimeString()}`;
+                    document.getElementById('auditStatus').innerText = `Synced: ${new Date(data.last_reconciled).toLocaleTimeString()}`;
                 }
-            } catch (error) {
-                console.error("Critical: Ledger sync error", error);
-            }
+            } catch (error) { console.error("Balance fetch error", error); }
         }
 
         function renderCatalog(products) {
             const grid = document.getElementById('catalogGrid');
             if (!products || products.length === 0) {
-                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No vendors or items found.</em>';
+                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No items found.</em>';
                 return;
             }
-
             let html = '';
             const curr = document.getElementById('storeCurrency').value;
             products.forEach(p => {
                 const realImage = p.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80';
-                const merchantName = p.merchant || 'RDS Vendor';
                 const qty = cart[p.id] ? cart[p.id].qty : 0;
                 const unitPrice = Number(p.price) || 0;
-
                 html += `
                     <div class="product-card">
-                        <div class="image-wrapper">
-                            <span class="merchant-badge">${merchantName}</span>
-                            <img src="${realImage}" class="product-img" alt="${p.name}">
-                        </div>
+                        <div class="image-wrapper"><span class="merchant-badge">${p.merchant || 'Vendor'}</span><img src="${realImage}" class="product-img" alt="${p.name}"></div>
                         <div class="product-info">
-                            <div>
-                                <div class="product-title">${p.name}</div>
-                                <div class="product-merchant">${p.category || 'STORE'}</div>
-                                <div class="product-price">${curr} ${unitPrice.toFixed(2)}</div>
-                            </div>
-                            <div>
-                                <div class="quantity-stepper">
-                                    <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, -1)">-</button>
-                                    <span class="quantity-display" id="qty-${p.id}">${qty}</span>
-                                    <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, 1)">+</button>
-                                </div>
+                            <div><div class="product-title">${p.name}</div><div class="product-price">${curr} ${unitPrice.toFixed(2)}</div></div>
+                            <div class="quantity-stepper">
+                                <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, -1)">-</button>
+                                <span class="quantity-display" id="qty-${p.id}">${qty}</span>
+                                <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, 1)">+</button>
                             </div>
                         </div>
                     </div>
@@ -637,137 +565,102 @@
         function updateCart(id, name, price, change) {
             if (!cart[id]) cart[id] = { name, price: Number(price), qty: 0 };
             cart[id].qty += change;
-            
-            if (cart[id].qty <= 0) {
-                delete cart[id];
-                const qEl = document.getElementById(`qty-${id}`);
-                if(qEl) qEl.innerText = 0;
-            } else {
-                const qEl = document.getElementById(`qty-${id}`);
-                if(qEl) qEl.innerText = cart[id].qty;
-            }
+            if (cart[id].qty <= 0) delete cart[id];
+            const qEl = document.getElementById(`qty-${id}`);
+            if(qEl) qEl.innerText = cart[id] ? cart[id].qty : 0;
             recalculateCartSummary();
         }
 
-        function recalculateCartSummary() {
+        async function recalculateCartSummary() {
             let totalQty = 0;
             let totalPrice = 0;
             const curr = document.getElementById('storeCurrency').value;
-            
             for (let id in cart) {
                 totalQty += cart[id].qty;
                 totalPrice += cart[id].price * cart[id].qty;
             }
 
-            document.getElementById('custAmount').value = totalPrice.toFixed(2);
             const floatingBar = document.getElementById('floatingCart');
-
             if (totalQty > 0) {
                 floatingBar.classList.add('active');
-                document.getElementById('cartItemCount').innerText = `${totalQty} Item(s) Selected`;
+                document.getElementById('cartItemCount').innerText = `${totalQty} Item(s)`;
                 document.getElementById('cartTotalSum').innerText = `${curr} ${totalPrice.toFixed(2)}`;
             } else {
                 floatingBar.classList.remove('active');
             }
+            await recalculatePreview();
+        }
+
+        async function recalculatePreview() {
+            let totalPrice = 0;
+            for (let id in cart) totalPrice += cart[id].price * cart[id].qty;
+            const distanceKm = Number(document.getElementById('distanceKmInput').value) || 2.5;
+            const vehicleType = document.getElementById('vehicleTypeSelect').value;
+            const bizId = document.getElementById('storeBusinessId').value;
+            const curr = document.getElementById('storeCurrency').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/calculate-delivery`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ itemPriceTotal: totalPrice, distanceKm, vehicleType, businessId: bizId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const s = data.split;
+                    document.getElementById('previewProduct').innerText = `${curr} ${s.productAmount.toFixed(2)}`;
+                    document.getElementById('previewDelivery').innerText = `${curr} ${s.deliveryFee.toFixed(2)}`;
+                    document.getElementById('previewPlatform').innerText = `${curr} ${s.platformFee.toFixed(2)}`;
+                    document.getElementById('previewTotal').innerText = `${curr} ${s.total.toFixed(2)}`;
+                }
+            } catch (e) { console.error("Preview calc error", e); }
         }
 
         function switchCorridor(tenantId, locationName, currencyCode, el) {
             document.querySelectorAll('.corridor-btn').forEach(b => b.classList.remove('active'));
             el.classList.add('active');
-
             document.getElementById('storeBusinessId').value = tenantId;
             document.getElementById('storeCurrency').value = currencyCode;
             document.getElementById('tenantBadge').innerText = tenantId;
             document.getElementById('corridorLabel').innerText = locationName;
             document.getElementById('profileCorridor').innerText = `${locationName} (${currencyCode})`;
-
             cart = {};
             recalculateCartSummary();
             loadStoreCatalog();
             logLedgerEvent("Corridor Switch", `Switched to ${tenantId}`, false);
         }
 
-        async function triggerWalletWithdrawal() {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const ownerId = document.getElementById('walletOwnerSelect').value;
-            const destination = document.getElementById('withdrawDestination').value;
-            const amount = Number(document.getElementById('withdrawAmountInput').value) || 0;
-
-            if (amount <= 0) {
-                alert("Please enter a valid withdrawal amount.");
-                return;
-            }
-
-            try {
-                const res = await fetch(`${API_BASE}/api/wallet/withdraw`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ amount, destination, ownerId, businessId: bizId })
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('withdrawAmountInput').value = "";
-                    fetchSovereignBalance();
-                    logLedgerEvent("Withdrawal", `Debited successfully to ${destination}`, false);
-                } else {
-                    alert(data.error || "Withdrawal failed.");
-                }
-            } catch (err) {
-                alert("Network error processing withdrawal.");
-            }
-        }
-
         async function triggerGlobalCheckout() {
+            let totalPrice = 0;
+            for (let id in cart) totalPrice += cart[id].price * cart[id].qty;
+            if (totalPrice <= 0) { alert("Cart is empty."); return; }
+
             const bizId = document.getElementById('storeBusinessId').value;
-            const curr = document.getElementById('storeCurrency').value;
             const phone = document.getElementById('custPhone').value.trim();
-            const itemPriceTotal = Number(document.getElementById('custAmount').value) || 0;
             const distanceKm = Number(document.getElementById('distanceKmInput').value) || 2.5;
             const vehicleType = document.getElementById('vehicleTypeSelect').value;
-            const pickupLocation = document.getElementById('pickupLoc').value.trim();
-            const dropoffLocation = document.getElementById('dropoffLoc').value.trim();
-
-            if (itemPriceTotal <= 0) {
-                alert("Please add items to your cart before checking out.");
-                return;
-            }
+            const curr = document.getElementById('storeCurrency').value;
 
             try {
                 const res = await fetch(`${API_BASE}/api/checkout`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ phone, itemPriceTotal, distanceKm, vehicleType, pickupLocation, dropoffLocation, driverId: "DRV_01", businessId: bizId })
+                    body: JSON.stringify({ phone, itemPriceTotal: totalPrice, distanceKm, vehicleType, businessId: bizId })
                 });
                 const data = await res.json();
-
                 if (data.success) {
                     document.getElementById('dispatchOrderIdInput').value = data.orderId;
-                    if (data.gateway === "M-PESA") {
-                        alert(`M-Pesa STK Push sent successfully for total ${curr} ${data.split.userTotalPaid}! (Includes 2% shop surcharge & delivery).`);
-                        document.getElementById('lifecycleStatus').innerText = "PENDING_M_PESA_PIN";
-                    } else if (data.gateway === "STRIPE") {
-                        alert(`Stripe Payment Intent created for ${curr} ${data.split.userTotalPaid}! Gateway ready.`);
-                        document.getElementById('lifecycleStatus').innerText = "STRIPE_INTENT_CREATED";
-                    }
-                    logLedgerEvent("Stage 63 Checkout", `${curr} ${data.split.userTotalPaid} via ${data.gateway}`, false);
-                } else {
-                    alert(data.error || "Checkout failed.");
-                }
-            } catch (err) {
-                alert("Network error processing checkout.");
-            }
+                    alert(`Checkout initiated for ${curr} ${data.split.total}! (Product: ${data.split.productAmount} + Delivery: ${data.split.deliveryFee} + Platform: ${data.split.platformFee})`);
+                    document.getElementById('lifecycleStatus').innerText = "RIDER_ASSIGNED";
+                    logLedgerEvent("Checkout", `Total ${curr} ${data.split.total}`, false);
+                } else { alert(data.error || "Checkout failed."); }
+            } catch (e) { alert("Network error during checkout."); }
         }
 
         async function triggerShopDispatch() {
             const orderId = document.getElementById('dispatchOrderIdInput').value.trim();
             const bizId = document.getElementById('storeBusinessId').value;
-
-            if (!orderId) {
-                alert("Please enter a valid Order ID to dispatch.");
-                return;
-            }
+            if (!orderId) { alert("Enter Order ID."); return; }
 
             try {
                 const res = await fetch(`${API_BASE}/api/orders/${orderId}/dispatch`, {
@@ -776,35 +669,66 @@
                     body: JSON.stringify({ businessId: bizId })
                 });
                 const data = await res.json();
-
                 if (data.success) {
                     alert(data.message);
-                    document.getElementById('lifecycleStatus').innerText = "DISPATCHED_AND_SETTLED";
-                    logLedgerEvent("Dispatch", `100% item value to shop & 95% delivery to driver wallet`, true);
+                    document.getElementById('lifecycleStatus').innerText = "DISPATCHED";
+                    logLedgerEvent("Shop Dispatch", "Shop credited 100%", true);
                     fetchSovereignBalance();
-                } else {
-                    alert(data.error || "Dispatch action failed.");
-                }
-            } catch (err) {
-                alert("Network error dispatching order.");
-            }
+                } else { alert(data.error); }
+            } catch (e) { alert("Dispatch error."); }
+        }
+
+        async function triggerDeliveryComplete() {
+            const orderId = document.getElementById('dispatchOrderIdInput').value.trim();
+            const bizId = document.getElementById('storeBusinessId').value;
+            if (!orderId) { alert("Enter Order ID."); return; }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/orders/${orderId}/complete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ businessId: bizId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('lifecycleStatus').innerText = "COMPLETED";
+                    logLedgerEvent("Delivery Complete", "Driver credited 95%", true);
+                    fetchSovereignBalance();
+                } else { alert(data.error); }
+            } catch (e) { alert("Completion error."); }
+        }
+
+        async function triggerWalletWithdrawal() {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const ownerId = document.getElementById('walletOwnerSelect').value;
+            const destination = document.getElementById('withdrawDestination').value;
+            const amount = Number(document.getElementById('withdrawAmountInput').value) || 0;
+            if (amount <= 0) { alert("Enter valid amount."); return; }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/wallet/withdraw`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ amount, destination, ownerId, businessId: bizId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('withdrawAmountInput').value = "";
+                    fetchSovereignBalance();
+                    logLedgerEvent("Withdrawal", `Withdrawn to ${destination}`, false);
+                } else { alert(data.error); }
+            } catch (e) { alert("Withdrawal error."); }
         }
 
         try {
             const socket = io();
-            socket.on('orderStatusUpdate', (data) => {
-                document.getElementById('lifecycleStatus').innerText = data.status;
-            });
-            socket.on('walletUpdated', (data) => {
-                fetchSovereignBalance();
-                logLedgerEvent("Wallet Settlement", `Reconciled`, true);
-            });
+            socket.on('orderStatusUpdate', (d) => { document.getElementById('lifecycleStatus').innerText = d.status; });
+            socket.on('walletUpdated', () => { fetchSovereignBalance(); logLedgerEvent("Wallet", "Synced", true); });
         } catch(e) {}
 
-        window.onload = () => {
-            loadStoreCatalog();
-            logLedgerEvent("Stage 63 Engine", "Connected Successfully", false);
-        };
+        window.onload = () => { loadStoreCatalog(); };
     </script>
 </body>
 </html>
