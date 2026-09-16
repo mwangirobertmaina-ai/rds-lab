@@ -33,6 +33,7 @@
       "taxPin": "CA123456789RT"
     }
   ],
+  "drivers": [],
   "products": [
     {
       "id": "p1",
@@ -65,6 +66,21 @@
       "price": 18,
       "currency": "CAD",
       "image": "https://images.unsplash.com/photo-1585109649139-366815a0d713?w=400&auto=format&fit=crop&q=80"
+    }
+  ],
+  "users": [
+    {
+      "id": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "USER",
+      "createdAt": 1789526748571
+    }
+  ],
+  "otp_sessions": [
+    {
+      "phone": "254721862397",
+      "otp": "1234",
+      "expires": 1789527037356
     }
   ],
   "orders": [
@@ -121,7 +137,6 @@
       "checkoutRequestId": "ws_CO_160920260014560721862397"
     }
   ],
-  "drivers": [],
   "ledger_entries": [],
   "payouts": [],
   "auditTrail": [],

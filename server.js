@@ -91,6 +91,7 @@ function processStage70FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, time
     currency: currencyCode.toUpperCase(),
     productAmount: itemsGross.value,          // 100% to Shop
     deliveryFee: deliveryFare.value,
+    platformDeliveryShare: platformDeliveryShare.value, // 5% platform delivery cut
     shopSurcharge2Percent: shopSurcharge.value, // 2% platform surcharge
     total: totalUserPaid.value,
     driverWalletCredit: driverAmount.value,   // 95% to Driver

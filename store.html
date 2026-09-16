@@ -369,7 +369,8 @@
             <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Commodities Amount (100% Shop):</span> <strong id="previewProduct">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery / Ride Fare (95% Driver):</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform Surcharge (2%):</span> <strong id="previewSurcharge" style="color:var(--stage-purple);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform Delivery Cut (5%):</span> <strong id="previewPlatformDelivery" style="color:var(--stage-purple);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform Surcharge (2% Shop):</span> <strong id="previewSurcharge" style="color:var(--stage-purple);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>KRA Tax (16% on Commission):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
                 <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total User Paid:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
@@ -683,6 +684,7 @@
                     const s = data.split;
                     document.getElementById('previewProduct').innerText = `${curr} ${s.productAmount.toFixed(2)}`;
                     document.getElementById('previewDelivery').innerText = `${curr} ${s.deliveryFee.toFixed(2)}`;
+                    document.getElementById('previewPlatformDelivery').innerText = `${curr} ${s.platformDeliveryShare.toFixed(2)}`;
                     document.getElementById('previewSurcharge').innerText = `${curr} ${s.shopSurcharge2Percent.toFixed(2)}`;
                     document.getElementById('previewKraTax').innerText = `${curr} ${s.kraTax16Percent.toFixed(2)}`;
                     document.getElementById('previewTotal').innerText = `${curr} ${s.total.toFixed(2)}`;
