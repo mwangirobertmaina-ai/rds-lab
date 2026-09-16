@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 81 | Hybrid Sovereign Super-App & Rider Wallet Engine</title>
+  <title>RDS 82 | Hybrid Sovereign Super-App & Rider Wallet Engine</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <!-- Leaflet CSS & JS for Real-World Maps -->
@@ -295,7 +295,7 @@
     <!-- AUTHENTICATION & FAST REGISTRATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 25px;">
-            <span>🔐 RDS STAGE 81 HYBRID INSTITUTIONAL OTP ENTRY</span>
+            <span>🔐 RDS STAGE 82 HYBRID INSTITUTIONAL OTP ENTRY</span>
         </div>
 
         <div class="checkout-panel" style="text-align: center; padding: 30px 20px;">
@@ -317,7 +317,7 @@
     <!-- HOME / SUPER-APP DASHBOARD -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 81 HYBRID RIDER & ESCROW ENGINE</span>
+            <span>🌐 RDS STAGE 82 HYBRID RIDER & ESCROW ENGINE</span>
             <span id="nodeLatency">Institutional • Active</span>
         </div>
 
@@ -332,7 +332,6 @@
             <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
         </div>
 
-        <!-- DYNAMIC UNLIMITED CORRIDORS & REGISTERED SHOPS SELECTOR -->
         <div class="corridor-selector" id="dynamicCorridorSelector">
             <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE Hub</div>
             <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK</div>
@@ -396,7 +395,7 @@
         </div>
 
         <div class="checkout-panel">
-            <h3>2. Dynamic Mathematical Split (calculateFinancials)</h3>
+            <h3>2. Dynamic Mathematical Split</h3>
             <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Product Amount (Base):</span> <strong id="previewProduct">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery Fee (Dynamic):</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
@@ -482,7 +481,7 @@
         <div class="checkout-panel">
             <h3>LEDGER FEED</h3>
             <div id="ledgerFeed" class="ledger-list">
-                <div class="ledger-item"><span>[ESCROWED] Stage 81 Hybrid Vault Online</span><span style="color:var(--neon-green);">Secure</span></div>
+                <div class="ledger-item"><span>[ESCROWED] Stage 82 Hybrid Vault Online</span><span style="color:var(--neon-green);">Secure</span></div>
             </div>
         </div>
     </div>
@@ -520,8 +519,9 @@
             </div>
         </div>
 
+        <!-- STAGE 82 DRIVER & VEHICLE KYC WITH FULL UPLOAD & DYNAMIC DOWNLOAD HUBS -->
         <div class="checkout-panel" id="driverSovereignRegisterPanel" style="margin-top: 15px;">
-            <h3>🚗🛵 Sovereign Driver & Vehicle Registration</h3>
+            <h3>🚗🛵 Sovereign Driver & Vehicle KYC Bundle</h3>
             <label style="font-size: 0.75rem; color: var(--text-dim);">Full Legal Name</label>
             <input type="text" id="regFullName" placeholder="e.g. John Kiprop">
             <label style="font-size: 0.75rem; color: var(--text-dim);">National ID Number</label>
@@ -535,7 +535,43 @@
             </select>
             <label style="font-size: 0.75rem; color: var(--text-dim);">Vehicle Number Plate</label>
             <input type="text" id="regNumberPlate" placeholder="e.g. KMXX 123A" style="text-transform: uppercase;">
+
+            <!-- MANDATORY KYC DOCUMENT UPLOADS -->
+            <div style="border-top: 1px solid #374151; margin-top:10px; padding-top:10px;">
+                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">1. Passport / Face Photo</label>
+                <input type="file" id="fileFace" accept="image/*">
+
+                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">2. Vehicle Logbook Copy</label>
+                <input type="file" id="fileLogbook" accept="image/*,application/pdf">
+
+                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">3. PSV Insurance Copy</label>
+                <input type="file" id="filePsvInsurance" accept="image/*,application/pdf">
+
+                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">4. PSV Badge Copy</label>
+                <input type="file" id="filePsvBadge" accept="image/*,application/pdf">
+
+                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">5. Vehicle Front (Number Plate Visible)</label>
+                <input type="file" id="fileVehicleFront" accept="image/*">
+
+                <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">6. Vehicle Behind (Number Plate Visible)</label>
+                <input type="file" id="fileVehicleBack" accept="image/*">
+            </div>
+
             <button onclick="submitSovereignDriverRegistration()" class="btn-cyan" style="margin-top: 10px; padding: 12px; font-weight: bold;">Submit Sovereign Registration</button>
+
+            <!-- DYNAMIC DOCUMENT DOWNLOAD PANEL -->
+            <div style="margin-top: 15px; border-top:1px dashed #374151; padding-top:10px;" id="documentDownloadSection">
+                <label style="font-size: 0.75rem; color: var(--gold); display:block; margin-bottom:6px;">📥 Dynamic Document Downloader</label>
+                <input type="text" id="downloadDriverIdInput" placeholder="Enter Driver ID (e.g. DRV_KYC...)">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+                    <button onclick="downloadDriverDoc('logbook')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download Logbook</button>
+                    <button onclick="downloadDriverDoc('psvInsurance')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download PSV Insur.</button>
+                    <button onclick="downloadDriverDoc('psvBadge')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download PSV Badge</button>
+                    <button onclick="downloadDriverDoc('vehicleFront')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download Front Plate</button>
+                    <button onclick="downloadDriverDoc('vehicleBack')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download Back Plate</button>
+                    <button onclick="downloadDriverDoc('facePhoto')" style="font-size:0.65rem; background:var(--panel-bg); border:1px solid #374151;">Download Passport</button>
+                </div>
+            </div>
         </div>
 
         <div class="checkout-panel" id="shopRegisterPanel" style="margin-top: 15px;">
@@ -660,7 +696,6 @@
             });
         });
 
-        // DYNAMICALLY FETCH AND RENDER UNLIMITED REGISTERED SHOPS & CORRIDORS
         async function loadDynamicShopsAndCorridors() {
             try {
                 const res = await fetch(`${API_BASE}/api/shops`);
@@ -822,6 +857,22 @@
             }
         }
 
+        // HELPER TO CONVERT FILE INPUT TO BASE64
+        function readFileAsBase64(fileInputId) {
+            return new Promise((resolve) => {
+                const input = document.getElementById(fileInputId);
+                if (!input || !input.files[0]) {
+                    resolve("");
+                    return;
+                }
+                const reader = new FileReader();
+                reader.readAsDataURL(input.files[0]);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => resolve("");
+            });
+        }
+
+        // STAGE 82 SOVEREIGN DRIVER & VEHICLE KYC WITH FULL FILE UPLOAD
         async function submitSovereignDriverRegistration() {
             const fullName = document.getElementById('regFullName').value.trim();
             const idNumber = document.getElementById('regIdNumber').value.trim();
@@ -835,13 +886,23 @@
             }
 
             try {
-                alert("Encrypting and submitting sovereign credentials...");
+                alert("Encoding KYC documents (Logbook, PSV Insurance, Badge, Photos) and submitting...");
+                
+                const facePhotoBase64 = await readFileAsBase64('fileFace');
+                const logbookBase64 = await readFileAsBase64('fileLogbook');
+                const psvInsuranceBase64 = await readFileAsBase64('filePsvInsurance');
+                const psvBadgeBase64 = await readFileAsBase64('filePsvBadge');
+                const vehicleFrontBase64 = await readFileAsBase64('fileVehicleFront');
+                const vehicleBackBase64 = await readFileAsBase64('fileVehicleBack');
+
                 const bizId = document.getElementById('storeBusinessId').value;
                 const payload = {
                     userId: currentUser ? currentUser.id : "USR_DEMO",
                     phone: currentUser ? currentUser.phone : "254700000000",
                     fullName, idNumber, licenseNumber, vehicleType, numberPlate,
-                    facePhotoBase64: "data:image/png;base64,demo", businessId: bizId
+                    facePhotoBase64: facePhotoBase64 || "data:image/png;base64,demo",
+                    logbookBase64, psvInsuranceBase64, psvBadgeBase64,
+                    vehicleFrontBase64, vehicleBackBase64, businessId: bizId
                 };
 
                 const res = await fetch(`${API_BASE}/api/driver/register-sovereign`, {
@@ -851,7 +912,8 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(data.message);
+                    alert(`${data.message}\nDriver ID: ${data.driverId} (Save this ID to test dynamic document downloads!)`);
+                    document.getElementById('downloadDriverIdInput').value = data.driverId;
                     document.getElementById('driverSovereignRegisterPanel').style.display = 'none';
                 } else {
                     alert("Registration failed: " + data.error);
@@ -861,7 +923,18 @@
             }
         }
 
-        // UNLIMITED AUTOMATIC SHOP REGISTRATION FRONTEND HANDLER
+        // STAGE 82 DYNAMIC DOCUMENT DOWNLOAD TRIGGER
+        function downloadDriverDoc(docType) {
+            const driverId = document.getElementById('downloadDriverIdInput').value.trim();
+            if (!driverId) {
+                alert("Please enter a valid Driver / Rider ID.");
+                return;
+            }
+            const bizId = document.getElementById('storeBusinessId').value;
+            const downloadUrl = `${API_BASE}/api/driver/documents/${driverId}/${docType}?businessId=${bizId}`;
+            window.open(downloadUrl, '_blank');
+        }
+
         async function registerShop() {
             const shopName = document.getElementById('regShopName').value.trim();
             const idNumber = document.getElementById('shopIdNumber').value.trim();

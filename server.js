@@ -1,8 +1,8 @@
 // ==========================================
-// RDS - STAGE 81 HYBRID SOVEREIGN ENGINE
+// RDS - STAGE 82 HYBRID SOVEREIGN ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Escrow Storage,
 // Multi-Wallet, 16% KRA Tax Allocation, Frictionless Phone OTP, End-to-End Autonomous Routing,
-// Comprehensive Driver/Vehicle KYC, CBK / World Bank Hardened Compliance & Dedicated Rider Payout Engine
+// Comprehensive Driver/Vehicle KYC & Dynamic Sovereign Document Download Hub
 // ==========================================
 
 const express = require("express");
@@ -57,7 +57,7 @@ function generateStage70MerkleProof(record) {
 }
 
 /**
- * Stage 81 Dynamic Financial Split Engine (Updated Business Logic)
+ * Stage 82 Dynamic Financial Split Engine
  * ✔ Shop receives 100% of product price (shopReceives = baseAmount)
  * ✔ Platform earns 2% user fee surcharge + 5% from rider delivery fee
  * ✔ Rider receives 95% of delivery fee
@@ -67,20 +67,13 @@ function calculateFinancials(order) {
     const baseAmount = Number(order.itemPriceTotal || 0);   
     const deliveryFee = Number(order.deliveryFee || 0);
 
-    // 🧾 USER PAYS (Product + 2% user fee surcharge + delivery fee)
     const surcharge2 = round(baseAmount * 0.02);
     const total = round(baseAmount + surcharge2 + deliveryFee);
-
-    // 🏪 SHOP (100% of product amount)
     const shopReceives = round(baseAmount);
-
-    // 🧾 TAX (16% statutory allocation on the base/surcharge volume)
     const tax = round(baseAmount * 0.16);
-
-    // 🚴 RIDER & PLATFORM FROM DELIVERY (95% to rider, 5% to platform)
     const riderReceives = round(deliveryFee * 0.95);
     const riderPlatform = round(deliveryFee * 0.05);
-    const platformFromProduct = 0; // Set to 0 since shop receives 100% of product price
+    const platformFromProduct = 0;
 
     return {
         currency: order.currency || "KES",
@@ -260,7 +253,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_81_HYBRID_SOVEREIGN_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_82_HYBRID_SOVEREIGN_ENGINE_ONLINE", time: Date.now() }));
 
 function createEscrow(orderId, businessId, amount, region) {
     const escrowEntry = {
@@ -480,7 +473,6 @@ app.post('/api/user/set-role', async (req, res) => {
     }
 });
 
-// UNLIMITED AUTOMATIC SHOP REGISTRATION ENDPOINT
 app.post('/api/shop/register', async (req, res) => {
     try {
         ensureState();
@@ -511,7 +503,6 @@ app.post('/api/shop/register', async (req, res) => {
 
         data.shops.push(newShop);
         
-        // Also add to businesses list dynamically so it appears as a selectable corridor/merchant node without limits
         if (!data.businesses.some(b => b.id === shopId)) {
             data.businesses.push({
                 id: shopId,
@@ -534,13 +525,14 @@ app.post('/api/shop/register', async (req, res) => {
     }
 });
 
+// STAGE 82 SOVEREIGN DRIVER & VEHICLE KYC WITH FULL DOCUMENT RECORDING
 app.post('/api/driver/register-sovereign', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
         const {
             userId, fullName, phone, licenseNumber, idNumber, vehicleType, numberPlate,
             facePhotoBase64, licenseFrontBase64, licenseBackBase64, vehicleFrontBase64,
-            vehicleBackBase64, psvTaxCopyBase64, insuranceCopyBase64
+            vehicleBackBase64, logbookBase64, psvInsuranceBase64, psvBadgeBase64
         } = req.body;
 
         if (!userId || !licenseNumber || !idNumber || !numberPlate || !facePhotoBase64) {
@@ -559,8 +551,14 @@ app.post('/api/driver/register-sovereign', enforceTenantIsolation, async (req, r
             licenseNumber, idNumber, vehicleType: vehicleType ? vehicleType.toUpperCase() : "MOTORBIKE",
             numberPlate: numberPlate.toUpperCase(),
             documents: {
-                facePhoto: facePhotoBase64, licenseFront: licenseFrontBase64, licenseBack: licenseBackBase64,
-                vehicleFront: vehicleFrontBase64, vehicleBack: vehicleBackBase64, psvTaxCopy: psvTaxCopyBase64, insuranceCopy: insuranceCopyBase64
+                facePhoto: facePhotoBase64 || "",
+                licenseFront: licenseFrontBase64 || "",
+                licenseBack: licenseBackBase64 || "",
+                vehicleFront: vehicleFrontBase64 || "",
+                vehicleBack: vehicleBackBase64 || "",
+                logbook: logbookBase64 || "",
+                psvInsurance: psvInsuranceBase64 || "",
+                psvBadge: psvBadgeBase64 || ""
             },
             verificationStatus: "PENDING_KRA_PSV_AUDIT", status: "OFFLINE", createdAt: Date.now()
         };
@@ -570,9 +568,39 @@ app.post('/api/driver/register-sovereign', enforceTenantIsolation, async (req, r
 
         return ok(res, {
             success: true,
-            message: "Sovereign Driver & Vehicle Registration submitted successfully.",
+            message: "Sovereign Driver & Vehicle Registration submitted successfully with full document bundle.",
             driverId
         });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+// STAGE 82 DYNAMIC DOCUMENT DOWNLOAD / VIEW ENDPOINT
+app.get('/api/driver/documents/:driverId/:docType', enforceTenantIsolation, async (req, res) => {
+    try {
+        ensureState();
+        const { driverId, docType } = req.params;
+        const driver = data.drivers.find(d => d.id === driverId || d.userId === driverId);
+        if (!driver) return fail(res, "Driver / Rider profile not found", 404);
+
+        if (!driver.documents || !driver.documents[docType]) {
+            return fail(res, `Requested document (${docType}) not found for this driver`, 404);
+        }
+
+        const base64Data = driver.documents[docType];
+        if (base64Data.startsWith("data:")) {
+            const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+            if (matches && matches.length === 3) {
+                const mimeType = matches[1];
+                const buffer = Buffer.from(matches[2], 'base64');
+                res.setHeader('Content-Type', mimeType);
+                res.setHeader('Content-Disposition', `attachment; filename="${driverId}_${docType}.${mimeType.split('/')[1] || 'bin'}"`);
+                return res.send(buffer);
+            }
+        }
+
+        return res.json({ success: true, driverId, docType, data: base64Data });
     } catch (err) {
         return fail(res, err.message, 500);
     }
@@ -667,7 +695,6 @@ app.get('/api/products', enforceTenantIsolation, (req, res) => {
   const { category } = req.query;
   let scopedProducts = data.products.filter(p => p.businessId === req.tenantId || (req.tenantObj && p.businessId === req.tenantObj.id));
   
-  // If scoped products are empty for a newly registered dynamic shop, check dynamic catalogs object
   if (scopedProducts.length === 0 && data.catalogs && data.catalogs[req.tenantId]) {
       scopedProducts = data.catalogs[req.tenantId];
   }
@@ -676,7 +703,6 @@ app.get('/api/products', enforceTenantIsolation, (req, res) => {
   ok(res, { success: true, businessId: req.tenantId, storeName: req.tenantObj.name, currency: req.tenantObj.currency || "KES", products: scopedProducts });
 });
 
-// DYNAMIC LIST ALL SHOPS ENDPOINT FOR UI CORRIDOR / SHOPS DROPDOWN
 app.get('/api/shops', (req, res) => {
     ensureState();
     const allShops = [...(data.businesses || []), ...(data.shops || [])];
@@ -710,7 +736,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST81");
+        const orderId = id("ORD_ST82");
         const assignedRiderId = riderId || "DRV_01";
 
         const order = {
@@ -735,9 +761,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         };
         data.orders.push(order);
 
-        // 🔐 CREATE ESCROW ENTRY (Total User Paid)
         createEscrow(orderId, tenant.id, split.userPays, tenant.region || "KE");
-
         await saveDB();
 
         if (currencyCode === "KES") {
@@ -756,7 +780,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS ${tenant.region || 'KE'}`,
-                    TransactionDesc: `Stage 81 Escrow Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 82 Escrow Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -802,7 +826,6 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
     }
 });
 
-// 🚴 DELIVERY COMPLETE → RELEASE ESCROW & DISTRIBUTE FUNDS USING UPDATED FINANCIAL ENGINE
 app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -814,14 +837,12 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
         const escrow = data.escrow.find(e => e.orderId === orderId && e.status === "HELD");
         if (!escrow) return fail(res, "Escrow not found or already released", 400);
 
-        // 🧮 DEPLOY STRICT UPDATED FINANCIAL MATHEMATICAL ENGINE
         const financials = calculateFinancials({
             itemPriceTotal: order.productAmount,
             deliveryFee: order.deliveryFee,
             currency: order.currency
         });
 
-        // 🧾 ENSURE WALLETS EXIST
         if (!data.wallets) data.wallets = [];
         if (!data.rider_wallets) data.rider_wallets = [];
 
@@ -845,13 +866,11 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
             data.rider_wallets.push(riderWallet);
         }
 
-        // 💰 DISTRIBUTE MONEY TO WALLETS ACCORDING TO UPDATED MODEL
         shopWallet.balance = round(shopWallet.balance + financials.shopReceives);
         platformWallet.balance = round(platformWallet.balance + financials.platformFromUserFee + financials.platformFromRider);
         taxWallet.balance = round(taxWallet.balance + financials.tax);
         riderWallet.balance = round(riderWallet.balance + financials.riderReceives);
 
-        // 📝 CREATE SETTLED LEDGER ENTRIES FOR MERKLE PROOF AUDIT
         const shopLedger = {
             id: id("LEDGER"), owner_id: order.businessId, orderId: order.id,
             amount: financials.shopReceives, entry_type: "CREDIT", currency: financials.currency,
@@ -868,11 +887,8 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
         riderLedger.merkleProof = generateStage70MerkleProof(riderLedger);
         data.ledger_entries.push(riderLedger);
 
-        // 🔐 UPDATE ESCROW
         escrow.status = "RELEASED";
         escrow.releasedAt = Date.now();
-
-        // 📦 UPDATE ORDER
         order.status = "COMPLETED";
 
         await saveDB();
@@ -954,5 +970,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, enforceCbkAmlAndKyc, as
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 81 HYBRID SOVEREIGN & RIDER ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 82 HYBRID SOVEREIGN & RIDER ENGINE ACTIVE ON PORT ${PORT}`);
 });
