@@ -72,7 +72,7 @@
     {
       "id": "USR_1789526748571_70704",
       "phone": "254721862397",
-      "role": "USER",
+      "role": "DRIVER",
       "createdAt": 1789526748571
     }
   ],
@@ -80,7 +80,7 @@
     {
       "phone": "254721862397",
       "otp": "1234",
-      "expires": 1789536735744
+      "expires": 1789538417073
     }
   ],
   "orders": [
@@ -135,9 +135,68 @@
       "createdAt": 1789506903835,
       "customerPhone": "254721862397",
       "checkoutRequestId": "ws_CO_160920260014560721862397"
+    },
+    {
+      "id": "ORD_ST73_1789538174715_22894",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 650,
+      "deliveryFee": 210,
+      "shopSurcharge2Percent": 13,
+      "total": 873,
+      "driverWalletCredit": 199.5,
+      "platformRevenue": 19.74,
+      "kraTax16Percent": 3.76,
+      "pickup": "Current GPS Location (Nairobi)",
+      "destination": "kasarani",
+      "vehicleType": "MOTORBIKE",
+      "driverId": "DRV_01",
+      "status": "COMPLETED",
+      "createdAt": 1789538174715,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_160920260856088721862397"
     }
   ],
-  "ledger_entries": [],
+  "ledger_entries": [
+    {
+      "id": "LEDGER_1789538185324_5072",
+      "owner_id": "BIZ-KE",
+      "orderId": "ORD_ST73_1789538174715_22894",
+      "amount": 650,
+      "entry_type": "CREDIT",
+      "currency": "KES",
+      "reference_id": "ORD_ST73_1789538174715_22894",
+      "status": "SETTLED",
+      "timestamp": 1789538185324,
+      "merkleProof": "222d54be08874f4242dc61d2078266117976da126ed60bced39c54f99410ab0e"
+    },
+    {
+      "id": "LEDGER_1789538230748_36531",
+      "owner_id": "DRV_01",
+      "orderId": "ORD_ST73_1789538174715_22894",
+      "amount": 199.5,
+      "entry_type": "CREDIT",
+      "currency": "KES",
+      "reference_id": "ORD_ST73_1789538174715_22894",
+      "status": "SETTLED",
+      "timestamp": 1789538230748,
+      "merkleProof": "791ad34378a7b5fd64f4ddb753dcfad9b27e48a8d34ebd95f90c51c2843208d4"
+    },
+    {
+      "id": "LEDGER_1789538280756_50959",
+      "owner_id": "BIZ-KE",
+      "orderId": "WTH_MPESA_1789538280756_72879",
+      "amount": 650,
+      "entry_type": "DEBIT",
+      "currency": "KES",
+      "reference_id": "WTH_MPESA_1789538280756_72879",
+      "destination": "MPESA",
+      "status": "SETTLED",
+      "timestamp": 1789538280756,
+      "merkleProof": "043e2f2ba192762fd2013b1d01bce545765e2ce1afdfbbd374a1939b6145e36a"
+    }
+  ],
   "shops": [],
   "catalogs": {},
   "driver_telemetry": {},
