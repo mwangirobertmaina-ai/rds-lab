@@ -4,9 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 71 | Sovereign Super-App & Fast OTP Auth</title>
+  <title>RDS 71 | Sovereign Super-App & Real-Time Driver GPS</title>
 
   <script src="/socket.io/socket.io.js"></script>
+  <!-- Leaflet CSS & JS for Real-World Maps -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
   <style>
     :root {
@@ -272,6 +275,15 @@
     .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
     .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
     .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
+
+    #mapContainer {
+      width: 100%;
+      height: 220px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid #374151;
+      z-index: 1;
+    }
   </style>
 </head>
 <body id="appBody">
@@ -330,6 +342,12 @@
             <button class="cat-btn" onclick="filterCategory('SUPERMARKET', this)">🏬 Supermarkets</button>
             <button class="cat-btn" onclick="filterCategory('TAXI', this)">🚕 Taxicab</button>
             <button class="cat-btn" onclick="filterCategory('BODA', this)">🏍️ Boda Rider</button>
+        </div>
+
+        <!-- REAL-TIME MAP CONTAINER -->
+        <div class="checkout-panel" style="padding: 10px;">
+            <h3>Live GPS Fleet Map</h3>
+            <div id="mapContainer"></div>
         </div>
 
         <div class="section-header">
@@ -458,6 +476,21 @@
             <p style="margin-top: 12px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
         </div>
 
+        <!-- DRIVER GPS TELEMETRY PANEL -->
+        <div class="checkout-panel" id="driverGpsPanel" style="margin-top: 15px;">
+            <h3>🛵 Driver Live GPS Navigation</h3>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">GPS Status: <span id="gpsStatus" style="color:var(--neon-green);">Inactive</span></div>
+            <input type="text" id="activeOrderId" placeholder="Active Order ID for GPS Tracking">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                <button onclick="startDriverTracking()" class="btn-cyan">Start GPS Feed</button>
+                <button onclick="stopDriverTracking()" style="background:var(--alert-red);">Stop GPS</button>
+            </div>
+            <div style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; font-size: 0.75rem;">
+                <div><strong>Current Lat:</strong> <span id="lblLat">0.0000</span></div>
+                <div><strong>Current Lng:</strong> <span id="lblLng">0.0000</span></div>
+            </div>
+        </div>
+
         <!-- SHOP OWNER REGISTRATION & PRODUCT ADDITION UI -->
         <div class="checkout-panel" id="shopRegisterPanel" style="margin-top: 15px;">
             <h3>Register Your Shop</h3>
@@ -512,6 +545,78 @@
         let activeCategory = 'ALL';
         let cart = {}; 
 
+        // Initialize Leaflet Map
+        let map = null;
+        let driverMarker = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            map = L.map('mapContainer').setView([-1.286389, 36.817223], 13); // Default Nairobi center
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            // Connect Socket.io for Real-Time Driver Map Telemetry
+            const socket = io();
+            socket.on('driverLocationUpdate', (data) => {
+                if (data && data.lat && data.lng) {
+                    const latLng = [data.lat, data.lng];
+                    if (!driverMarker) {
+                        driverMarker = L.marker(latLng).addTo(map).bindPopup(`Driver: ${data.driverId}`).openPopup();
+                    } else {
+                        driverMarker.setLatLng(latLng);
+                    }
+                    map.setView(latLng, 15);
+                }
+            });
+        });
+
+        let watchId = null;
+        function startDriverTracking() {
+            const driverId = currentUser ? currentUser.id : "DRV_01";
+            const orderId = document.getElementById('activeOrderId').value.trim();
+
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser");
+                return;
+            }
+
+            document.getElementById('gpsStatus').innerText = "Live Tracking Active 🟢";
+            watchId = navigator.geolocation.watchPosition(async (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+
+                document.getElementById('lblLat').innerText = lat.toFixed(5);
+                document.getElementById('lblLng').innerText = lng.toFixed(5);
+
+                const bizId = document.getElementById('storeBusinessId').value;
+                try {
+                    await fetch(`${API_BASE}/api/driver/telemetry`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "x-business-id": bizId },
+                        body: JSON.stringify({ driverId, lat, lng, orderId, status: "EN_ROUTE", businessId: bizId })
+                    });
+                } catch (e) {
+                    console.error("Telemetry sync failed", e);
+                }
+            }, (err) => {
+                alert("GPS Error: " + err.message);
+            }, {
+                enableHighAccuracy: true,
+                maximumAge: 10000,
+                timeout: 5000
+            });
+        }
+
+        function stopDriverTracking() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                document.getElementById('gpsStatus').innerText = "Stopped 🔴";
+                alert("Live tracking stopped.");
+            }
+        }
+
         async function requestOtp() {
             const phone = document.getElementById('authPhone').value.trim();
             if (!phone) { alert("Please enter phone number"); return; }
@@ -550,6 +655,7 @@
                 document.getElementById('bottomNav').style.display = 'flex';
                 switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
                 loadStoreCatalog();
+                setTimeout(() => { if(map) map.invalidateSize(); }, 300);
             } else { alert(data.error); }
         }
 
@@ -688,6 +794,7 @@
             if(el) el.classList.add('active');
             window.scrollTo(0, 0);
             if (viewId === 'viewWallet') fetchSovereignBalance();
+            if (viewId === 'viewHome' && map) setTimeout(() => { map.invalidateSize(); }, 200);
         }
 
         async function loadStoreCatalog() {

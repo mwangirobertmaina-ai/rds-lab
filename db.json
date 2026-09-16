@@ -80,7 +80,7 @@
     {
       "phone": "254721862397",
       "otp": "1234",
-      "expires": 1789528063877
+      "expires": 1789532188872
     }
   ],
   "orders": [
@@ -138,6 +138,8 @@
     }
   ],
   "ledger_entries": [],
+  "shops": [],
+  "catalogs": {},
   "payouts": [],
   "auditTrail": [],
   "ledger": [

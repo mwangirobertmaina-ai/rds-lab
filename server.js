@@ -152,7 +152,8 @@ function defaultDB() {
     orders: [], 
     ledger_entries: [],
     shops: [],
-    catalogs: {}
+    catalogs: {},
+    driver_telemetry: {}
   };
 }
 
@@ -169,6 +170,7 @@ function ensureState() {
   if (!Array.isArray(data.ledger_entries)) data.ledger_entries = [];
   if (!Array.isArray(data.shops)) data.shops = [];
   if (!data.catalogs || typeof data.catalogs !== 'object') data.catalogs = {};
+  if (!data.driver_telemetry || typeof data.driver_telemetry !== 'object') data.driver_telemetry = {};
 }
 
 ensureState();
@@ -442,6 +444,40 @@ app.get('/api/merchants/sub-wallets/audit', enforceTenantIsolation, async (req, 
         });
 
         return ok(res, { success: true, tenantId: req.tenantId, totalActiveShops: auditResults.length, subWallets: auditResults });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+// ==========================================
+// DRIVER GPS TELEMETRY & DISPATCH ENDPOINT
+// ==========================================
+app.post('/api/driver/telemetry', enforceTenantIsolation, async (req, res) => {
+    try {
+        ensureState();
+        const { driverId, lat, lng, orderId, status } = req.body;
+        if (!driverId) return fail(res, "Driver ID required", 400);
+
+        if (!data.driver_telemetry) data.driver_telemetry = {};
+        data.driver_telemetry[driverId] = {
+            lat: Number(lat),
+            lng: Number(lng),
+            updatedAt: Date.now()
+        };
+
+        if (orderId) {
+            const order = data.orders.find(o => o.id === orderId);
+            if (order && status) {
+                order.status = status;
+            }
+        }
+
+        await saveDB();
+        if (global.io) {
+            global.io.emit('driverLocationUpdate', { driverId, lat, lng, orderId, status });
+        }
+
+        return ok(res, { success: true, message: "Telemetry received successfully" });
     } catch (err) {
         return fail(res, err.message, 500);
     }
