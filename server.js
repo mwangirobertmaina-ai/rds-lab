@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 72 SOVEREIGN ENGINE
+// RDS - STAGE 73 SOVEREIGN ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Multi-Wallet,
-// 16% KRA Tax Allocation, Frictionless Phone OTP, & Automated GPS Navigation
+// 16% KRA Tax Allocation, Frictionless Phone OTP, & End-to-End Autonomous Routing
 // ==========================================
 
 const express = require("express");
@@ -51,7 +51,7 @@ function generateStage70MerkleProof(record) {
 }
 
 /**
- * Stage 70/71/72 Financial & KRA Tax Calculation Engine
+ * Stage 70/71/72/73 Financial & KRA Tax Calculation Engine
  */
 function processStage70FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, timeMinutes = 10, vehicleType = "MOTORBIKE", currencyCode = "KES") {
   const itemsGross = currency(num(itemPriceTotal));
@@ -223,7 +223,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_72_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_73_ENGINE_ONLINE", time: Date.now() }));
 
 app.post('/api/auth/send-otp', async (req, res) => {
     try {
@@ -410,7 +410,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.total <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST72");
+        const orderId = id("ORD_ST73");
         const order = {
             id: orderId,
             businessId: tenant.id,
@@ -455,7 +455,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl,
                     AccountReference: `RDS ${tenant.region || 'KE'}`,
-                    TransactionDesc: `Stage 72 Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 73 Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -607,5 +607,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 72 SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 73 SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
 });

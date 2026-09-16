@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 72 | Sovereign Super-App & Autonomous GPS Routing</title>
+  <title>RDS 73 | Sovereign Super-App & End-to-End Autonomous Routing</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <!-- Leaflet CSS & JS for Real-World Maps -->
@@ -291,7 +291,7 @@
     <!-- AUTHENTICATION & FAST REGISTRATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 25px;">
-            <span>🔐 RDS STAGE 72 FAST OTP ENTRY</span>
+            <span>🔐 RDS STAGE 73 FAST OTP ENTRY</span>
         </div>
 
         <div class="checkout-panel" style="text-align: center; padding: 30px 20px;">
@@ -313,7 +313,7 @@
     <!-- HOME / SUPER-APP DASHBOARD -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 72 AUTONOMOUS GPS ENGINE</span>
+            <span>🌐 RDS STAGE 73 END-TO-END GPS ENGINE</span>
             <span id="nodeLatency">Real-Time • Active</span>
         </div>
 
@@ -347,10 +347,17 @@
         <!-- REAL-TIME AUTOMATED NAVIGATION MAP CONTAINER -->
         <div class="checkout-panel" style="padding: 10px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <h3 style="margin:0;">Autonomous Fleet Navigation</h3>
+                <h3 style="margin:0;">Interactive Trip Guidance</h3>
                 <span id="navGuidanceStatus" style="font-size:0.65rem; color:var(--neon-green); font-weight:bold;">STANDBY</span>
             </div>
             <div id="mapContainer"></div>
+
+            <!-- STAGE 73 INTERACTIVE RIDER WORKFLOW BUTTONS -->
+            <div id="riderWorkflowPanel" style="margin-top: 10px; display: none; display:grid; grid-template-columns: 1fr; gap: 6px;">
+                <button id="btnReachedPickup" onclick="riderReachedPickup()" class="btn-cyan" style="display:none; font-weight:bold;">📍 Reached Pickup Location</button>
+                <button id="btnPickedTrip" onclick="riderPickedAndStartTrip()" style="background:var(--gold); color:#000; display:none; font-weight:bold;">📦 Picked & Start Trip to User</button>
+                <button id="btnReachedDestination" onclick="riderReachedDestination()" style="background:var(--neon-green); color:#000; display:none; font-weight:bold;">🏁 Reached Destination & Call User</button>
+            </div>
         </div>
 
         <div class="section-header">
@@ -511,7 +518,7 @@
             <button onclick="addProductToCatalog()" style="background: var(--neon-green); color: #000;">Add Product</button>
         </div>
 
-        <!-- STAGE 72 AUTOMATED CSV IMPORT EXTENSION PANEL -->
+        <!-- STAGE 73 AUTOMATED CSV IMPORT EXTENSION PANEL -->
         <div class="checkout-panel" id="csvExtensionPanel" style="margin-top: 15px;">
             <h3>📦 Bulk CSV Catalog Import</h3>
             <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">Format per line: Product Name, Price, Category</p>
@@ -548,12 +555,12 @@
         let activeCategory = 'ALL';
         let cart = {}; 
 
-        // Initialize Leaflet Map & Navigation State
+        // Initialize Leaflet Map & End-to-End Navigation State
         let map = null;
         let driverMarker = null;
         let pickupMarker = null;
         let destinationMarker = null;
-        let activeNavigationMode = "STANDBY"; // STANDBY, EN_ROUTE_TO_PICKUP, TRIP_IN_PROGRESS
+        let activeNavigationMode = "STANDBY"; // STANDBY, EN_ROUTE_TO_PICKUP, TRIP_IN_PROGRESS, COMPLETED
 
         window.addEventListener('DOMContentLoaded', () => {
             map = L.map('mapContainer').setView([-1.286389, 36.817223], 14); // Default Nairobi center
@@ -562,7 +569,7 @@
                 attribution: '© OpenStreetMap'
             }).addTo(map);
 
-            // Connect Socket.io for Real-Time Autonomous Navigation & Fleet Telemetry
+            // Connect Socket.io for Real-Time Fleet Telemetry & Order Status Updates
             const socket = io();
             socket.on('driverLocationUpdate', (data) => {
                 if (data && data.lat && data.lng) {
@@ -573,23 +580,13 @@
                         driverMarker.setLatLng(latLng);
                     }
 
-                    // Autonomous Proximity Geofencing Check
-                    if (activeNavigationMode === "EN_ROUTE_TO_PICKUP" && pickupMarker) {
-                        const distToPickup = map.distance(latLng, pickupMarker.getLatLng());
-                        if (distToPickup < 40) { // Within 40 meters of pickup
-                            activeNavigationMode = "TRIP_IN_PROGRESS";
-                            document.getElementById('navGuidanceStatus').innerText = "COMMODITY/USER LOADED ➔ TRIP TO DESTINATION";
-                            document.getElementById('navGuidanceStatus').style.color = "var(--cyan)";
-                            alert("Pickup reached! Commodity/User loaded automatically. Now guiding you to destination drop-off.");
-                            if (destinationMarker) map.setView(destinationMarker.getLatLng(), 15);
-                        }
-                    } else if (activeNavigationMode === "STANDBY") {
+                    if (activeNavigationMode === "STANDBY") {
                         map.setView(latLng, 15);
                     }
                 }
             });
 
-            // Automatic Dispatch Order Handler
+            // Automatic Dispatch Order Handler (Stage 73 End-to-End Flow)
             socket.on('orderStatusUpdate', (data) => {
                 if (data && data.status === 'DISPATCHED') {
                     activeNavigationMode = "EN_ROUTE_TO_PICKUP";
@@ -599,13 +596,17 @@
                     // Automatically switch to Home View map
                     switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
 
-                    // Simulate or set pickup and destination coordinates relative to current position
+                    // Show interactive workflow panel & pickup button
+                    document.getElementById('riderWorkflowPanel').style.display = 'grid';
+                    document.getElementById('btnReachedPickup').style.display = 'block';
+                    document.getElementById('btnPickedTrip').style.display = 'none';
+                    document.getElementById('btnReachedDestination').style.display = 'none';
+
                     if (navigator.geolocation) {
                         navigator.geolocation.getCurrentPosition((pos) => {
                             const curLat = pos.coords.latitude;
                             const curLng = pos.coords.longitude;
                             
-                            // Set Pickup and Destination markers
                             const pickupLatLng = [curLat + 0.002, curLng + 0.002];
                             const destLatLng = [curLat + 0.008, curLng + 0.008];
 
@@ -616,12 +617,52 @@
                             destinationMarker = L.marker(destLatLng, {title: "Destination Drop-off"}).addTo(map).bindPopup("🏁 Drop-off Destination");
 
                             map.setView(pickupLatLng, 16);
-                            alert("Order Dispatched! Map has automatically opened and is guiding you to the pickup point.");
+                            alert("Order Dispatched! Map is now automatically guiding you to the pickup point.");
                         });
                     }
                 }
             });
         });
+
+        // ==========================================
+        // STAGE 73 INTERACTIVE RIDER WORKFLOW FUNCTIONS
+        // ==========================================
+        function riderReachedPickup() {
+            document.getElementById('navGuidanceStatus').innerText = "AT PICKUP - READY TO LOAD 📦";
+            document.getElementById('navGuidanceStatus').style.color = "var(--gold)";
+            alert("You have reached the pickup location! Load the commodity or user.");
+
+            document.getElementById('btnReachedPickup').style.display = 'none';
+            document.getElementById('btnPickedTrip').style.display = 'block';
+        }
+
+        function riderPickedAndStartTrip() {
+            activeNavigationMode = "TRIP_IN_PROGRESS";
+            document.getElementById('navGuidanceStatus').innerText = "TRIP IN PROGRESS ➔ DELIVERING 🏁";
+            document.getElementById('navGuidanceStatus').style.color = "var(--cyan)";
+            
+            if (destinationMarker && map) {
+                map.setView(destinationMarker.getLatLng(), 16);
+                alert("Trip started! Map navigation has automatically switched to the drop-off destination.");
+            }
+
+            document.getElementById('btnPickedTrip').style.display = 'none';
+            document.getElementById('btnReachedDestination').style.display = 'block';
+        }
+
+        function riderReachedDestination() {
+            activeNavigationMode = "COMPLETED";
+            document.getElementById('navGuidanceStatus').innerText = "ARRIVED & CALLING USER ☎️";
+            document.getElementById('navGuidanceStatus').style.color = "var(--neon-green)";
+
+            const customerPhone = document.getElementById('custPhone').value || "Customer";
+            alert(`Reached destination! Calling user at ${customerPhone} to hand over the delivery.`);
+
+            // Automatically complete order and credit driver wallet
+            triggerDeliveryComplete();
+
+            document.getElementById('riderWorkflowPanel').style.display = 'none';
+        }
 
         let watchId = null;
         function startDriverTracking() {
@@ -646,7 +687,7 @@
                     await fetch(`${API_BASE}/api/driver/telemetry`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json", "x-business-id": bizId },
-                        body: JSON.stringify({ driverId, lat, lng, orderId, status: activeNavigationMode === "TRIP_IN_PROGRESS" ? "TRIP_IN_PROGRESS" : "EN_ROUTE", businessId: bizId })
+                        body: JSON.stringify({ driverId, lat, lng, orderId, status: activeNavigationMode, businessId: bizId })
                     });
                 } catch (e) {
                     console.error("Telemetry sync failed", e);
