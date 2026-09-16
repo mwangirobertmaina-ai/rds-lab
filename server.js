@@ -57,7 +57,11 @@ function generateStage70MerkleProof(record) {
 }
 
 /**
- * Stage 81 Dynamic Financial Split Engine (Zero Hardcoding)
+ * Stage 81 Dynamic Financial Split Engine (Updated Business Logic)
+ * ✔ Shop receives 100% of product price
+ * ✔ Platform earns 2% user fee surcharge + 5% from rider delivery fee
+ * ✔ Rider receives 95% of delivery fee
+ * ✔ Tax is recorded inside/on base amount
  */
 function calculateFinancials(order) {
     const baseAmount = Number(order.itemPriceTotal || 0);   
@@ -67,16 +71,13 @@ function calculateFinancials(order) {
     const surcharge2 = round(baseAmount * 0.02);
     const total = round(baseAmount + surcharge2 + deliveryFee);
 
-    // 💰 PLATFORM (PRODUCT SIDE)
-    const platformCommission = round(baseAmount * 0.05);
+    // 🏪 SHOP (100% of product amount)
+    const shopReceives = round(baseAmount);
 
-    // 🏪 SHOP
-    const shopReceives = round(baseAmount - platformCommission);
+    // 🧾 TAX
+    const tax = round(baseAmount * 0.16);
 
-    // 🧾 TAX (FROM PRODUCT COMMISSION)
-    const tax = round(platformCommission * 0.16);
-
-    // 🚴 RIDER
+    // 🚴 RIDER (95% of delivery fee)
     const riderReceives = round(deliveryFee * 0.95);
     const riderPlatform = round(deliveryFee * 0.05);
 
@@ -86,12 +87,11 @@ function calculateFinancials(order) {
         deliveryFee,
         userPays: total,
         shopReceives,
-        platformFromProduct: platformCommission,
         platformFromUserFee: surcharge2,
         platformFromRider: riderPlatform,
         tax,
         riderReceives,
-        netPlatformRevenue: round(platformCommission + surcharge2 + riderPlatform - tax)
+        netPlatformRevenue: round(surcharge2 + riderPlatform - tax)
     };
 }
 
@@ -751,7 +751,7 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
     }
 });
 
-// 🚴 DELIVERY COMPLETE → RELEASE ESCROW & DISTRIBUTE FUNDS USING DYNAMIC CALCULATEFINANCIALS()
+// 🚴 DELIVERY COMPLETE → RELEASE ESCROW & DISTRIBUTE FUNDS USING UPDATED FINANCIAL ENGINE
 app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -763,7 +763,7 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
         const escrow = data.escrow.find(e => e.orderId === orderId && e.status === "HELD");
         if (!escrow) return fail(res, "Escrow not found or already released", 400);
 
-        // 🧮 DEPLOY STRICT DYNAMIC FINANCIAlS MATHEMATICAL ENGINE
+        // 🧮 DEPLOY STRICT UPDATED FINANCIAL MATHEMATICAL ENGINE
         const financials = calculateFinancials({
             itemPriceTotal: order.productAmount,
             deliveryFee: order.deliveryFee,
@@ -794,9 +794,9 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
             data.rider_wallets.push(riderWallet);
         }
 
-        // 💰 DISTRIBUTE MONEY TO WALLETS ACCORDING TO FINANCIALS ENGINE
+        // 💰 DISTRIBUTE MONEY TO WALLETS ACCORDING TO UPDATED MODEL
         shopWallet.balance = round(shopWallet.balance + financials.shopReceives);
-        platformWallet.balance = round(platformWallet.balance + financials.platformFromProduct + financials.platformFromUserFee + financials.platformFromRider);
+        platformWallet.balance = round(platformWallet.balance + financials.platformFromUserFee + financials.platformFromRider);
         taxWallet.balance = round(taxWallet.balance + financials.tax);
         riderWallet.balance = round(riderWallet.balance + financials.riderReceives);
 
@@ -834,7 +834,7 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
 
         return res.json({
             success: true,
-            message: "Order completed, escrow released, and funds safely distributed via calculateFinancials()",
+            message: "Order completed, escrow released, and funds safely distributed using updated model",
             breakdown: financials
         });
 
