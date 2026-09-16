@@ -501,6 +501,57 @@
             </div>
         </div>
 
+        <!-- COMPREHENSIVE SOVEREIGN RIDER / DRIVER REGISTRATION PANEL -->
+        <div class="checkout-panel" id="driverSovereignRegisterPanel" style="margin-top: 15px;">
+            <h3>🚗🛵 Sovereign Driver & Vehicle Registration</h3>
+            <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 10px;">
+                Register operator credentials, license, vehicle number plate, PSV tax compliance, and insurance copies.
+            </p>
+
+            <label style="font-size: 0.75rem; color: var(--text-dim);">Full Legal Name</label>
+            <input type="text" id="regFullName" placeholder="e.g. John Kiprop">
+
+            <label style="font-size: 0.75rem; color: var(--text-dim);">National ID Number</label>
+            <input type="text" id="regIdNumber" placeholder="ID Number">
+
+            <label style="font-size: 0.75rem; color: var(--text-dim);">Driving License Number</label>
+            <input type="text" id="regLicenseNumber" placeholder="License Number">
+
+            <label style="font-size: 0.75rem; color: var(--text-dim);">Vehicle Category</label>
+            <select id="regVehicleType">
+                <option value="MOTORBIKE">🏍️ Motorbike (Boda)</option>
+                <option value="CAR">🚗 Car / Taxicab</option>
+            </select>
+
+            <label style="font-size: 0.75rem; color: var(--text-dim);">Vehicle Number Plate</label>
+            <input type="text" id="regNumberPlate" placeholder="e.g. KMXX 123A" style="text-transform: uppercase;">
+
+            <hr style="border:0; border-top:1px solid #374151; margin: 12px 0;">
+
+            <label style="font-size: 0.75rem; color: var(--cyan);">1. Driver's Face Photo</label>
+            <input type="file" id="fileFace" accept="image/*">
+
+            <label style="font-size: 0.75rem; color: var(--cyan);">2. Driving License (Front)</label>
+            <input type="file" id="fileLicFront" accept="image/*">
+
+            <label style="font-size: 0.75rem; color: var(--cyan);">3. Driving License (Back)</label>
+            <input type="file" id="fileLicBack" accept="image/*">
+
+            <label style="font-size: 0.75rem; color: var(--cyan);">4. Vehicle / Motorbike (Front with Number Plate)</label>
+            <input type="file" id="fileVehFront" accept="image/*">
+
+            <label style="font-size: 0.75rem; color: var(--cyan);">5. Vehicle / Motorbike (Behind with Number Plate)</label>
+            <input type="file" id="fileVehBack" accept="image/*">
+
+            <label style="font-size: 0.75rem; color: var(--gold);">6. PSV Tax Compliance Copy</label>
+            <input type="file" id="filePsvTax" accept="image/*,application/pdf">
+
+            <label style="font-size: 0.75rem; color: var(--gold);">7. Car / Motorbike Insurance Copy</label>
+            <input type="file" id="fileInsurance" accept="image/*,application/pdf">
+
+            <button onclick="submitSovereignDriverRegistration()" class="btn-cyan" style="margin-top: 10px; padding: 12px; font-weight: bold;">Submit Sovereign Registration</button>
+        </div>
+
         <!-- SHOP OWNER REGISTRATION & PRODUCT ADDITION UI -->
         <div class="checkout-panel" id="shopRegisterPanel" style="margin-top: 15px;">
             <h3>Register Your Shop</h3>
@@ -765,6 +816,78 @@
                 currentUser = data.user;
                 document.getElementById('profileRole').innerText = currentUser.role;
                 alert(`Role updated to ${currentUser.role}`);
+            }
+        }
+
+        // ==========================================
+        // SOVEREIGN DRIVER & VEHICLE REGISTRATION FUNCTIONS
+        // ==========================================
+        function convertFileToBase64(fileInputId) {
+            return new Promise((resolve, reject) => {
+                const fileInput = document.getElementById(fileInputId);
+                if (!fileInput || !fileInput.files[0]) { resolve(null); return; }
+                const reader = new FileReader();
+                reader.readAsDataURL(fileInput.files[0]);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function submitSovereignDriverRegistration() {
+            const fullName = document.getElementById('regFullName').value.trim();
+            const idNumber = document.getElementById('regIdNumber').value.trim();
+            const licenseNumber = document.getElementById('regLicenseNumber').value.trim();
+            const vehicleType = document.getElementById('regVehicleType').value;
+            const numberPlate = document.getElementById('regNumberPlate').value.trim();
+
+            if (!fullName || !idNumber || !licenseNumber || !numberPlate) {
+                alert("Please fill in all mandatory text fields (Name, ID, License Number, Number Plate).");
+                return;
+            }
+
+            try {
+                alert("Encrypting and submitting sovereign credentials and document copies...");
+                const facePhotoBase64 = await convertFileToBase64('fileFace');
+                const licenseFrontBase64 = await convertFileToBase64('fileLicFront');
+                const licenseBackBase64 = await convertFileToBase64('fileLicBack');
+                const vehicleFrontBase64 = await convertFileToBase64('fileVehFront');
+                const vehicleBackBase64 = await convertFileToBase64('fileVehBack');
+                const psvTaxCopyBase64 = await convertFileToBase64('filePsvTax');
+                const insuranceCopyBase64 = await convertFileToBase64('fileInsurance');
+
+                const bizId = document.getElementById('storeBusinessId').value;
+                const payload = {
+                    userId: currentUser ? currentUser.id : "USR_DEMO",
+                    phone: currentUser ? currentUser.phone : "254700000000",
+                    fullName,
+                    idNumber,
+                    licenseNumber,
+                    vehicleType,
+                    numberPlate,
+                    facePhotoBase64,
+                    licenseFrontBase64,
+                    licenseBackBase64,
+                    vehicleFrontBase64,
+                    vehicleBackBase64,
+                    psvTaxCopyBase64,
+                    insuranceCopyBase64,
+                    businessId: bizId
+                };
+
+                const res = await fetch(`${API_BASE}/api/driver/register-sovereign`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-business-id": bizId },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('driverSovereignRegisterPanel').style.display = 'none';
+                } else {
+                    alert("Registration failed: " + data.error);
+                }
+            } catch (err) {
+                alert("Error processing document uploads: " + err.message);
             }
         }
 

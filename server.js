@@ -1,7 +1,8 @@
 // ==========================================
-// RDS - STAGE 73 SOVEREIGN ENGINE
+// RDS - STAGE 73 & 74 SOVEREIGN ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Multi-Wallet,
-// 16% KRA Tax Allocation, Frictionless Phone OTP, & End-to-End Autonomous Routing
+// 16% KRA Tax Allocation, Frictionless Phone OTP, End-to-End Autonomous Routing,
+// & Comprehensive Driver/Vehicle KYC, License, PSV & Insurance Registration
 // ==========================================
 
 const express = require("express");
@@ -223,7 +224,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_73_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_74_ENGINE_ONLINE", time: Date.now() }));
 
 app.post('/api/auth/send-otp', async (req, res) => {
     try {
@@ -294,6 +295,76 @@ app.post('/api/shop/register', async (req, res) => {
         return res.json({ success: true, message: "Shop registered successfully", shopId });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ==========================================
+// STAGE 74 SOVEREIGN DRIVER & VEHICLE KYC ENDPOINT
+// ==========================================
+app.post('/api/driver/register-sovereign', enforceTenantIsolation, async (req, res) => {
+    try {
+        ensureState();
+        const {
+            userId,
+            fullName,
+            phone,
+            licenseNumber,
+            idNumber,
+            vehicleType, // "CAR" or "MOTORBIKE"
+            numberPlate,
+            facePhotoBase64,
+            licenseFrontBase64,
+            licenseBackBase64,
+            vehicleFrontBase64,
+            vehicleBackBase64,
+            psvTaxCopyBase64,
+            insuranceCopyBase64
+        } = req.body;
+
+        if (!userId || !licenseNumber || !idNumber || !numberPlate || !facePhotoBase64) {
+            return fail(res, "Missing mandatory operator KYC or vehicle registration data", 400);
+        }
+
+        if (!data.drivers) data.drivers = [];
+        const existingDriver = data.drivers.find(d => d.phone === phone || d.licenseNumber === licenseNumber || d.numberPlate === numberPlate);
+        if (existingDriver) {
+            return fail(res, "Driver, License, or Number Plate is already registered on the RDS Network.", 400);
+        }
+
+        const driverId = id("DRV_KYC");
+        const sovereignDriverProfile = {
+            id: driverId,
+            userId,
+            fullName: fullName || "Verified Operator",
+            phone: phone || "",
+            licenseNumber,
+            idNumber,
+            vehicleType: vehicleType ? vehicleType.toUpperCase() : "MOTORBIKE",
+            numberPlate: numberPlate.toUpperCase(),
+            documents: {
+                facePhoto: facePhotoBase64,
+                licenseFront: licenseFrontBase64,
+                licenseBack: licenseBackBase64,
+                vehicleFront: vehicleFrontBase64,
+                vehicleBack: vehicleBackBase64,
+                psvTaxCopy: psvTaxCopyBase64,
+                insuranceCopy: insuranceCopyBase64
+            },
+            verificationStatus: "PENDING_KRA_PSV_AUDIT",
+            status: "OFFLINE",
+            createdAt: Date.now()
+        };
+
+        data.drivers.push(sovereignDriverProfile);
+        await saveDB();
+
+        return ok(res, {
+            success: true,
+            message: "Sovereign Driver & Vehicle Registration submitted successfully. Pending automated KRA, PSV & Insurance compliance check.",
+            driverId
+        });
+    } catch (err) {
+        return fail(res, err.message, 500);
     }
 });
 
@@ -607,5 +678,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 73 SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
 });
