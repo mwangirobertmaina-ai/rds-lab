@@ -231,7 +231,7 @@ function enforceTenantIsolation(req, res, next) {
     const businessId = req.headers['x-business-id'] || req.query.businessId || req.body.businessId || "BIZ-KE";
     ensureState();
     req.tenantId = businessId;
-    req.tenantObj = data.businesses.find(b => b.id === businessId) || { id: businessId, name: "Merchant Node", currency: "KES", region: "KE" };
+    req.tenantObj = data.businesses.find(b => b.id === businessId) || data.shops.find(s => s.shopId === businessId) || { id: businessId, name: "Merchant Node", currency: "KES", region: "KE" };
     next();
 }
 
@@ -480,23 +480,55 @@ app.post('/api/user/set-role', async (req, res) => {
     }
 });
 
+// UNLIMITED AUTOMATIC SHOP REGISTRATION ENDPOINT
 app.post('/api/shop/register', async (req, res) => {
     try {
         ensureState();
-        const { userId, idNumber, shopImageBase64, location } = req.body;
-        if (!userId || !idNumber || !shopImageBase64) return res.status(400).json({ success: false, error: "Missing required fields" });
+        const { userId, shopName, idNumber, shopImageBase64, location, currency: shopCurrency, category } = req.body;
+        if (!userId || !idNumber) return res.status(400).json({ success: false, error: "Missing required identification fields" });
 
         if (!data.shops) data.shops = [];
-        const existing = data.shops.find(s => s.ownerId === userId);
-        if (existing) return res.status(400).json({ success: false, error: "Shop already registered" });
-
+        
         const shopId = id("SHOP");
-        const newShop = { shopId, ownerId: userId, idNumber, shopImage: shopImageBase64, location: location || {}, verified: false, createdAt: Date.now(), status: "ACTIVE" };
+        const resolvedShopName = shopName || `Independent Merchant #${Math.floor(Math.random() * 900 + 100)}`;
+        const resolvedCurrency = shopCurrency || "KES";
+
+        const newShop = { 
+            shopId, 
+            id: shopId,
+            ownerId: userId, 
+            name: resolvedShopName,
+            merchant: resolvedShopName,
+            currency: resolvedCurrency,
+            region: "KE",
+            idNumber, 
+            shopImage: shopImageBase64 || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80", 
+            location: location || { lat: -1.286389, lng: 36.817223 }, 
+            verified: true, 
+            createdAt: Date.now(), 
+            status: "ACTIVE" 
+        };
+
         data.shops.push(newShop);
+        
+        // Also add to businesses list dynamically so it appears as a selectable corridor/merchant node without limits
+        if (!data.businesses.some(b => b.id === shopId)) {
+            data.businesses.push({
+                id: shopId,
+                name: resolvedShopName,
+                region: "KE",
+                currency: resolvedCurrency,
+                ownerPhone: userId,
+                taxPin: "P055" + Math.floor(Math.random() * 899999 + 100000) + "Z",
+                custodianBank: "KCB-TRUST-001"
+            });
+        }
+
         if (!data.catalogs) data.catalogs = {};
-        data.catalogs[shopId] = [];
+        if (!data.catalogs[shopId]) data.catalogs[shopId] = [];
+
         await saveDB();
-        return res.json({ success: true, message: "Shop registered successfully", shopId });
+        return res.json({ success: true, message: "Shop registered automatically with no restrictions", shopId, shop: newShop });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -554,9 +586,13 @@ app.post('/api/products/add', (req, res) => {
     if (!data.catalogs) data.catalogs = {};
     if (!data.catalogs[shopId]) data.catalogs[shopId] = [];
 
+    const parentShop = data.shops.find(s => s.shopId === shopId) || data.businesses.find(b => b.id === shopId);
+    const merchantName = merchant || (parentShop ? parentShop.name : "Independent Merchant");
+    const itemCurrency = parentShop ? (parentShop.currency || "KES") : "KES";
+
     const newProduct = {
         id: id("PRD"), businessId: shopId, category: category || "RESTAURANT",
-        merchant: merchant || "My Shop", name, price: Number(price), currency: "KES",
+        merchant: merchantName, name, price: Number(price), currency: itemCurrency,
         image: image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80"
     };
 
@@ -630,8 +666,21 @@ app.get('/api/products', enforceTenantIsolation, (req, res) => {
   ensureState();
   const { category } = req.query;
   let scopedProducts = data.products.filter(p => p.businessId === req.tenantId || (req.tenantObj && p.businessId === req.tenantObj.id));
+  
+  // If scoped products are empty for a newly registered dynamic shop, check dynamic catalogs object
+  if (scopedProducts.length === 0 && data.catalogs && data.catalogs[req.tenantId]) {
+      scopedProducts = data.catalogs[req.tenantId];
+  }
+
   if (category && category !== 'ALL') scopedProducts = scopedProducts.filter(p => p.category === category);
-  ok(res, { success: true, businessId: req.tenantId, storeName: req.tenantObj.name, currency: req.tenantObj.currency, products: scopedProducts });
+  ok(res, { success: true, businessId: req.tenantId, storeName: req.tenantObj.name, currency: req.tenantObj.currency || "KES", products: scopedProducts });
+});
+
+// DYNAMIC LIST ALL SHOPS ENDPOINT FOR UI CORRIDOR / SHOPS DROPDOWN
+app.get('/api/shops', (req, res) => {
+    ensureState();
+    const allShops = [...(data.businesses || []), ...(data.shops || [])];
+    ok(res, { success: true, shops: allShops });
 });
 
 app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
@@ -640,7 +689,7 @@ app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
   const split = calculateFinancials({
     itemPriceTotal: Number(itemPriceTotal) || 0,
     deliveryFee,
-    currency: req.tenantObj.currency
+    currency: req.tenantObj.currency || "KES"
   });
   ok(res, { success: true, split });
 });
@@ -857,8 +906,8 @@ app.get('/wallets/:ownerId/balance', async (req, res) => {
             balance = entries.reduce((acc, entry) => entry.entry_type === 'CREDIT' ? acc + entry.amount : acc - entry.amount, 0);
         }
 
-        const tenant = data.businesses.find(b => b.id === ownerId);
-        const currencyCode = tenant ? tenant.currency : 'KES';
+        const tenant = data.businesses.find(b => b.id === ownerId) || data.shops.find(s => s.shopId === ownerId);
+        const currencyCode = tenant ? (tenant.currency || "KES") : 'KES';
         res.json({ success: true, ownerId, currency: currencyCode, balance: round(balance), last_reconciled: new Date().toISOString() });
     } catch (err) {
         res.status(500).json({ error: "Wallet calculation failed", details: err.message });

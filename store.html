@@ -68,21 +68,25 @@
     .location-text strong { font-size: 0.95rem; color: #fff; }
 
     .corridor-selector {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
       margin-bottom: 15px;
+      padding-bottom: 4px;
+      scrollbar-width: none;
     }
+    .corridor-selector::-webkit-scrollbar { display: none; }
     .corridor-btn {
       background: var(--panel-bg);
       border: 1px solid #374151;
       border-radius: 8px;
-      padding: 8px 4px;
+      padding: 8px 10px;
       text-align: center;
       cursor: pointer;
       color: var(--text-dim);
       font-size: 0.75rem;
       font-weight: 700;
+      white-space: nowrap;
     }
     .corridor-btn.active, .corridor-btn:hover {
       border-color: var(--stage-purple);
@@ -321,15 +325,16 @@
             <div class="location-box">
                 <span class="icon">📍</span>
                 <div class="location-text">
-                    <span>Active Corridor</span>
+                    <span>Active Corridor / Shop</span>
                     <strong id="corridorLabel">Nairobi, Kenya (KES)</strong>
                 </div>
             </div>
             <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
         </div>
 
-        <div class="corridor-selector">
-            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE</div>
+        <!-- DYNAMIC UNLIMITED CORRIDORS & REGISTERED SHOPS SELECTOR -->
+        <div class="corridor-selector" id="dynamicCorridorSelector">
+            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE Hub</div>
             <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK</div>
             <div class="corridor-btn" onclick="switchCorridor('BIZ-ES', 'Madrid, Spain', 'EUR', this)">🇪🇸 ES</div>
             <div class="corridor-btn" onclick="switchCorridor('BIZ-CA', 'Toronto, Canada', 'CAD', this)">🇨🇦 CA</div>
@@ -534,18 +539,30 @@
         </div>
 
         <div class="checkout-panel" id="shopRegisterPanel" style="margin-top: 15px;">
-            <h3>Register Your Shop</h3>
-            <input type="text" id="shopIdNumber" placeholder="ID Number">
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Shop Photo</label>
+            <h3>Register Your Shop (Unlimited Automatic)</h3>
+            <input type="text" id="regShopName" placeholder="Shop Name e.g. Nairobi SuperMart">
+            <input type="text" id="shopIdNumber" placeholder="National ID / Business Reg Number">
+            <select id="regShopCurrency">
+                <option value="KES">KES (Kenyan Shilling)</option>
+                <option value="USD">USD (US Dollar)</option>
+                <option value="EUR">EUR (Euro)</option>
+                <option value="GBP">GBP (British Pound)</option>
+            </select>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Shop Photo / Logo</label>
             <input type="file" id="shopImage" accept="image/*">
-            <button onclick="registerShop()" class="btn-cyan">Register Shop</button>
+            <button onclick="registerShop()" class="btn-cyan">Register Shop Automatically</button>
         </div>
 
         <div class="checkout-panel" id="productAddPanel" style="margin-top: 15px; display:none;">
-            <h3>Add Product to Catalog</h3>
+            <h3>Add Product to Your Catalog</h3>
             <input type="hidden" id="registeredShopId">
             <input type="text" id="newProdName" placeholder="Product Name e.g. Burger Combo">
             <input type="number" id="newProdPrice" placeholder="Price e.g. 450">
+            <select id="newProdCategory">
+                <option value="RESTAURANT">🍽️ Restaurant</option>
+                <option value="HOTEL">🏨 Hotel</option>
+                <option value="SUPERMARKET">🏬 Supermarket</option>
+            </select>
             <button onclick="addProductToCatalog()" style="background: var(--neon-green); color: #000;">Add Product</button>
         </div>
     </div>
@@ -590,6 +607,8 @@
                 maxZoom: 19,
                 attribution: '© OpenStreetMap'
             }).addTo(map);
+
+            loadDynamicShopsAndCorridors();
 
             const socket = io();
             socket.on('driverLocationUpdate', (data) => {
@@ -640,6 +659,26 @@
                 }
             });
         });
+
+        // DYNAMICALLY FETCH AND RENDER UNLIMITED REGISTERED SHOPS & CORRIDORS
+        async function loadDynamicShopsAndCorridors() {
+            try {
+                const res = await fetch(`${API_BASE}/api/shops`);
+                const data = await res.json();
+                if (data.success && data.shops) {
+                    const selector = document.getElementById('dynamicCorridorSelector');
+                    let html = '';
+                    data.shops.forEach(s => {
+                        const sId = s.id || s.shopId;
+                        const sName = s.name || s.merchant || "Shop Hub";
+                        const sCurr = s.currency || "KES";
+                        const isActive = document.getElementById('storeBusinessId').value === sId ? 'active' : '';
+                        html += `<div class="corridor-btn ${isActive}" onclick="switchCorridor('${sId}', '${sName}', '${sCurr}', this)">🏬 ${sName}</div>`;
+                    });
+                    selector.innerHTML = html;
+                }
+            } catch (e) {}
+        }
 
         async function runCbkLedgerAudit() {
             try {
@@ -783,17 +822,6 @@
             }
         }
 
-        function convertFileToBase64(fileInputId) {
-            return new Promise((resolve, reject) => {
-                const fileInput = document.getElementById(fileInputId);
-                if (!fileInput || !fileInput.files[0]) { resolve(null); return; }
-                const reader = new FileReader();
-                reader.readAsDataURL(fileInput.files[0]);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-            });
-        }
-
         async function submitSovereignDriverRegistration() {
             const fullName = document.getElementById('regFullName').value.trim();
             const idNumber = document.getElementById('regIdNumber').value.trim();
@@ -833,48 +861,97 @@
             }
         }
 
+        // UNLIMITED AUTOMATIC SHOP REGISTRATION FRONTEND HANDLER
         async function registerShop() {
+            const shopName = document.getElementById('regShopName').value.trim();
             const idNumber = document.getElementById('shopIdNumber').value.trim();
+            const shopCurrency = document.getElementById('regShopCurrency').value;
             const fileInput = document.getElementById('shopImage');
-            const file = fileInput.files[0];
-            if (!idNumber || !file) { alert("Provide ID number and shop photo."); return; }
+            
+            if (!shopName || !idNumber) { 
+                alert("Please provide your Shop Name and ID/Registration Number."); 
+                return; 
+            }
 
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                const shopImageBase64 = reader.result;
-                navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            const processShopRegistration = async (shopImageBase64, location) => {
+                try {
                     const res = await fetch(`${API_BASE}/api/shop/register`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ userId: localStorage.getItem("userId") || "USR_DEMO", idNumber, shopImageBase64, location })
+                        body: JSON.stringify({ 
+                            userId: currentUser ? currentUser.id : "USR_DEMO", 
+                            shopName, 
+                            idNumber, 
+                            currency: shopCurrency,
+                            shopImageBase64: shopImageBase64 || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80", 
+                            location 
+                        })
                     });
                     const data = await res.json();
                     if (data.success) {
-                        alert(data.message);
+                        alert(`Shop "${shopName}" registered automatically with unlimited catalog capability!`);
                         document.getElementById('registeredShopId').value = data.shopId;
                         document.getElementById('shopRegisterPanel').style.display = 'none';
                         document.getElementById('productAddPanel').style.display = 'block';
-                    } else { alert(data.error); }
-                });
+                        loadDynamicShopsAndCorridors();
+                        switchCorridor(data.shopId, shopName, shopCurrency, document.createElement('div'));
+                    } else { 
+                        alert("Shop registration failed: " + data.error); 
+                    }
+                } catch(ex) {
+                    alert("Error communicating with server: " + ex.message);
+                }
             };
+
+            let shopImageBase64 = null;
+            if (fileInput && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.readAsDataURL(fileInput.files[0]);
+                reader.onload = () => {
+                    shopImageBase64 = reader.result;
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                            processShopRegistration(shopImageBase64, { lat: pos.coords.latitude, lng: pos.coords.longitude });
+                        }, () => {
+                            processShopRegistration(shopImageBase64, { lat: -1.286389, lng: 36.817223 });
+                        });
+                    } else {
+                        processShopRegistration(shopImageBase64, { lat: -1.286389, lng: 36.817223 });
+                    }
+                };
+            } else {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                        processShopRegistration(null, { lat: pos.coords.latitude, lng: pos.coords.longitude });
+                    }, () => {
+                        processShopRegistration(null, { lat: -1.286389, lng: 36.817223 });
+                    });
+                } else {
+                    processShopRegistration(null, { lat: -1.286389, lng: 36.817223 });
+                }
+            }
         }
 
         async function addProductToCatalog() {
             const shopId = document.getElementById('registeredShopId').value;
             const name = document.getElementById('newProdName').value.trim();
             const price = document.getElementById('newProdPrice').value.trim();
-            if (!shopId || !name || !price) return;
+            const category = document.getElementById('newProdCategory').value;
+            if (!shopId || !name || !price) {
+                alert("Please fill in product name and price.");
+                return;
+            }
 
             const res = await fetch(`${API_BASE}/api/products/add`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ shopId, name, price })
+                body: JSON.stringify({ shopId, name, price, category })
             });
             const data = await res.json();
             if (data.success) {
                 alert(data.message);
+                document.getElementById('newProdName').value = "";
+                document.getElementById('newProdPrice').value = "";
                 loadStoreCatalog();
             }
         }
@@ -943,7 +1020,7 @@
         function renderCatalog(products) {
             const grid = document.getElementById('catalogGrid');
             if (!products || products.length === 0) {
-                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No items found.</em>';
+                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No catalog items found for this shop. Register products in your Profile!</em>';
                 return;
             }
             let html = '';
@@ -1028,7 +1105,7 @@
 
         function switchCorridor(tenantId, locationName, currencyCode, el) {
             document.querySelectorAll('.corridor-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
+            if (el && el.classList) el.classList.add('active');
             document.getElementById('storeBusinessId').value = tenantId;
             document.getElementById('storeCurrency').value = currencyCode;
             document.getElementById('tenantBadge').innerText = tenantId;
