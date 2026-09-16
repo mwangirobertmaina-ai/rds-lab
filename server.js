@@ -1,8 +1,8 @@
 // ==========================================
-// RDS - STAGE 83 HYBRID SOVEREIGN & PRECISION ROUTING ENGINE
+// RDS - STAGE 85 LIVE ORDER LIST & AUTOMATED SETTLEMENT ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Escrow Storage,
 // Multi-Wallet, 16% KRA Tax Allocation, Frictionless Phone OTP, End-to-End Autonomous Routing,
-// Comprehensive Driver/Vehicle KYC, Dynamic Sovereign Document Download Hub & Precise Haversine Distance Engine
+// Comprehensive Driver/Vehicle KYC, Dynamic Sovereign Document Download Hub & Live Order Feed
 // ==========================================
 
 const express = require("express");
@@ -48,7 +48,7 @@ function round(n) {
 }
 
 /**
- * Stage 83 Precise Haversine Formula for Real-World Distance Calculation (KM)
+ * Stage 85 Precise Haversine Formula for Real-World Distance Calculation (KM)
  */
 function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 3.0; // Fallback default
@@ -74,10 +74,10 @@ function generateStage70MerkleProof(record) {
 }
 
 /**
- * Stage 83 Dynamic Financial Split Engine
+ * Stage 85 Dynamic Financial Split Engine
  */
 function calculateFinancials(order) {
-    const baseAmount = Number(order.itemPriceTotal || 0);   
+    const baseAmount = Number(order.itemPriceTotal || 0);    
     const deliveryFee = Number(order.deliveryFee || 0);
 
     const surcharge2 = round(baseAmount * 0.02);
@@ -155,7 +155,7 @@ function defaultDB() {
     users: [],
     otp_sessions: [],
     orders: [], 
-    escrow: [],       
+    escrow: [],        
     wallets: [],      
     rider_wallets: [  
       { riderId: "DRV_01", balance: 0, currency: "KES" },
@@ -266,7 +266,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_83_HYBRID_SOVEREIGN_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_85_LIVE_ORDER_ENGINE_ONLINE", time: Date.now() }));
 
 function createEscrow(orderId, businessId, amount, region) {
     const escrowEntry = {
@@ -283,9 +283,6 @@ function createEscrow(orderId, businessId, amount, region) {
     return escrowEntry;
 }
 
-/**
- * Stage 83 Precise Pricing Engine based on exact distance and vehicle type
- */
 function calculateRide(distanceKm, type) {
     const km = num(distanceKm);
     const vType = type ? type.toUpperCase() : "MOTORBIKE";
@@ -316,20 +313,11 @@ app.post('/api/rider/register', async (req, res) => {
     }
 });
 
-app.post('/api/order/assign-rider', async (req, res) => {
+app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
-        const { orderId, riderId, distanceKm, vehicleType } = req.body;
-        const order = data.orders.find(o => o.id === orderId);
-        if (!order) return fail(res, "Order not found", 404);
-
-        const deliveryFee = calculateRide(distanceKm || 3.0, vehicleType || "MOTORBIKE");
-        order.riderId = riderId || "DRV_01";
-        order.deliveryFee = deliveryFee;
-        order.status = "RIDER_ASSIGNED";
-
-        await saveDB();
-        return ok(res, { success: true, deliveryFee, message: "Rider assigned successfully" });
+        const tenantOrders = data.orders.filter(o => o.businessId === req.tenantId || req.tenantId === "BIZ-KE");
+        return ok(res, { success: true, orders: tenantOrders });
     } catch (err) {
         return fail(res, err.message, 500);
     }
@@ -636,9 +624,6 @@ app.get('/api/shops', (req, res) => {
     ok(res, { success: true, shops: allShops });
 });
 
-/**
- * Stage 83 Precise Calculation Endpoint using real lat/lng coordinates
- */
 app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
   const { itemPriceTotal, pickupCoords, destinationCoords, vehicleType } = req.body;
   
@@ -677,7 +662,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST83");
+        const orderId = id("ORD_ST85");
         const assignedRiderId = riderId || "DRV_01";
 
         const order = {
@@ -697,6 +682,10 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         createEscrow(orderId, tenant.id, split.userPays, tenant.region || "KE");
         await saveDB();
 
+        if (global.io) {
+            global.io.emit('orderListUpdated', { orderId: order.id, status: order.status });
+        }
+
         if (currencyCode === "KES") {
             const sanitizedPhone = validateKenyanPhone(phone);
             if (!sanitizedPhone) return fail(res, "Invalid Kenyan phone number for M-Pesa", 400);
@@ -713,7 +702,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS ${tenant.region || 'KE'}`,
-                    TransactionDesc: `Stage 83 Escrow Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 85 Escrow Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -738,6 +727,9 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     }
 });
 
+/**
+ * STAGE 85 STAGED DISPATCH: Shop / Hotel / Naivas realizes product funds upon dispatch.
+ */
 app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -747,6 +739,34 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
         if (order.status === "DISPATCHED" || order.status === "COMPLETED") return fail(res, "Already dispatched.", 400);
 
         order.status = "DISPATCHED";
+
+        const financials = calculateFinancials({
+            itemPriceTotal: order.productAmount,
+            deliveryFee: order.deliveryFee,
+            currency: order.currency
+        });
+
+        if (!data.wallets) data.wallets = [];
+        function getWallet(ownerId, currency) {
+            let w = data.wallets.find(w => w.ownerId === ownerId);
+            if (!w) {
+                w = { ownerId, balance: 0, currency };
+                data.wallets.push(w);
+            }
+            return w;
+        }
+
+        const shopWallet = getWallet(order.businessId, financials.currency);
+        shopWallet.balance = round(shopWallet.balance + financials.shopReceives);
+
+        const shopLedger = {
+            id: id("LEDGER"), owner_id: order.businessId, orderId: order.id,
+            amount: financials.shopReceives, entry_type: "CREDIT", currency: financials.currency,
+            reference_id: order.id, status: "SETTLED", timestamp: Date.now()
+        };
+        shopLedger.merkleProof = generateStage70MerkleProof(shopLedger);
+        data.ledger_entries.push(shopLedger);
+
         await saveDB();
 
         if (global.io) {
@@ -755,13 +775,18 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
                 pickup: order.pickup, destination: order.destination,
                 pickupCoords: order.pickupCoords, destinationCoords: order.destinationCoords
             });
+            global.io.emit('orderListUpdated', { orderId: order.id, status: 'DISPATCHED' });
+            global.io.emit('walletUpdated', { ownerId: order.businessId, currency: financials.currency });
         }
-        return ok(res, { success: true, message: "Order dispatched with real coordinate routing. Funds held in escrow." });
+        return ok(res, { success: true, message: "Order dispatched. Shop/Hotel funds realized immediately into merchant wallet.", shopCredited: financials.shopReceives });
     } catch (err) {
         return fail(res, err.message, 500);
     }
 });
 
+/**
+ * STAGE 85 STAGED COMPLETE: Rider delivery fee realized and escrow released upon completion.
+ */
 app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -791,7 +816,6 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
             return w;
         }
 
-        const shopWallet = getWallet(order.businessId, financials.currency);
         const platformWallet = getWallet("PLATFORM", financials.currency);
         const taxWallet = getWallet("TAX", financials.currency);
         
@@ -802,18 +826,9 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
             data.rider_wallets.push(riderWallet);
         }
 
-        shopWallet.balance = round(shopWallet.balance + financials.shopReceives);
         platformWallet.balance = round(platformWallet.balance + financials.platformFromUserFee + financials.platformFromRider);
         taxWallet.balance = round(taxWallet.balance + financials.tax);
         riderWallet.balance = round(riderWallet.balance + financials.riderReceives);
-
-        const shopLedger = {
-            id: id("LEDGER"), owner_id: order.businessId, orderId: order.id,
-            amount: financials.shopReceives, entry_type: "CREDIT", currency: financials.currency,
-            reference_id: order.id, status: "SETTLED", timestamp: Date.now()
-        };
-        shopLedger.merkleProof = generateStage70MerkleProof(shopLedger);
-        data.ledger_entries.push(shopLedger);
 
         const riderLedger = {
             id: id("LEDGER"), owner_id: targetRiderId, orderId: order.id,
@@ -831,11 +846,11 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
 
         if (global.io) {
             global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'COMPLETED' });
-            global.io.emit('walletUpdated', { ownerId: order.businessId, currency: financials.currency });
+            global.io.emit('orderListUpdated', { orderId: order.id, status: 'COMPLETED' });
             global.io.emit('riderWalletUpdated', { riderId: targetRiderId, balance: riderWallet.balance });
         }
 
-        return res.json({ success: true, message: "Order completed and funds safely distributed.", breakdown: financials });
+        return res.json({ success: true, message: "Order completed. Rider earnings realized and escrow fully released.", breakdown: financials });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -898,5 +913,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, enforceCbkAmlAndKyc, as
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 83 HYBRID SOVEREIGN & PRECISION ROUTING ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 85 LIVE ORDER ENGINE ACTIVE ON PORT ${PORT}`);
 });

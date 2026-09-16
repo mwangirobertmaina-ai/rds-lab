@@ -89,7 +89,7 @@
     {
       "phone": "254721862397",
       "otp": "1234",
-      "expires": 1789590835460
+      "expires": 1789592556544
     }
   ],
   "orders": [
@@ -230,6 +230,121 @@
       "createdAt": 1789586898350,
       "customerPhone": "254721862397",
       "checkoutRequestId": "ws_CO_160920262228100721862397"
+    },
+    {
+      "id": "ORD_ST81_1789590905322_89288",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 650,
+      "deliveryFee": 280,
+      "shopSurcharge2Percent": 13,
+      "total": 943,
+      "driverWalletCredit": 266,
+      "platformRevenue": -77,
+      "kraTax16Percent": 104,
+      "pickup": "Nairobi CBD (Kenyatta Ave)",
+      "destination": "mwihoko",
+      "vehicleType": "CAR",
+      "riderId": "DRV_01",
+      "driverId": "DRV_01",
+      "status": "COMPLETED",
+      "createdAt": 1789590905323,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_160920262334584721862397"
+    },
+    {
+      "id": "ORD_ST84_1789592369528_6225",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 1300,
+      "deliveryFee": 332,
+      "distanceKm": 2.82,
+      "shopSurcharge2Percent": 26,
+      "total": 1658,
+      "driverWalletCredit": 315.4,
+      "platformRevenue": -165.4,
+      "kraTax16Percent": 208,
+      "pickup": "nairobi kainange street",
+      "destination": "mwihoko",
+      "pickupCoords": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "destinationCoords": {
+        "lat": -1.265556,
+        "lng": 36.802778
+      },
+      "vehicleType": "CAR",
+      "riderId": "DRV_01",
+      "driverId": "DRV_01",
+      "status": "COMPLETED",
+      "createdAt": 1789592369528,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_160920262359229721862397"
+    },
+    {
+      "id": "ORD_ST84_1789592373887_63008",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 1300,
+      "deliveryFee": 332,
+      "distanceKm": 2.82,
+      "shopSurcharge2Percent": 26,
+      "total": 1658,
+      "driverWalletCredit": 315.4,
+      "platformRevenue": -165.4,
+      "kraTax16Percent": 208,
+      "pickup": "nairobi kainange street",
+      "destination": "mwihoko",
+      "pickupCoords": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "destinationCoords": {
+        "lat": -1.265556,
+        "lng": 36.802778
+      },
+      "vehicleType": "CAR",
+      "riderId": "DRV_01",
+      "driverId": "DRV_01",
+      "status": "RIDER_ASSIGNED",
+      "createdAt": 1789592373887,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_160920262359265721862397"
+    },
+    {
+      "id": "ORD_ST84_1789592374127_33086",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 1300,
+      "deliveryFee": 332,
+      "distanceKm": 2.82,
+      "shopSurcharge2Percent": 26,
+      "total": 1658,
+      "driverWalletCredit": 315.4,
+      "platformRevenue": -165.4,
+      "kraTax16Percent": 208,
+      "pickup": "nairobi kainange street",
+      "destination": "mwihoko",
+      "pickupCoords": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "destinationCoords": {
+        "lat": -1.265556,
+        "lng": 36.802778
+      },
+      "vehicleType": "CAR",
+      "riderId": "DRV_01",
+      "driverId": "DRV_01",
+      "status": "RIDER_ASSIGNED",
+      "createdAt": 1789592374127,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_160920262359266721862397"
     }
   ],
   "escrow": [
@@ -260,6 +375,44 @@
       "region": "KE",
       "status": "HELD",
       "createdAt": 1789586898350
+    },
+    {
+      "escrowId": "ESC_1789590905323_89308",
+      "orderId": "ORD_ST81_1789590905322_89288",
+      "businessId": "BIZ-KE",
+      "amount": 943,
+      "region": "KE",
+      "status": "RELEASED",
+      "createdAt": 1789590905323,
+      "releasedAt": 1789590981096
+    },
+    {
+      "escrowId": "ESC_1789592369528_89608",
+      "orderId": "ORD_ST84_1789592369528_6225",
+      "businessId": "BIZ-KE",
+      "amount": 1658,
+      "region": "KE",
+      "status": "RELEASED",
+      "createdAt": 1789592369528,
+      "releasedAt": 1789592460512
+    },
+    {
+      "escrowId": "ESC_1789592373887_52543",
+      "orderId": "ORD_ST84_1789592373887_63008",
+      "businessId": "BIZ-KE",
+      "amount": 1658,
+      "region": "KE",
+      "status": "HELD",
+      "createdAt": 1789592373887
+    },
+    {
+      "escrowId": "ESC_1789592374127_45078",
+      "orderId": "ORD_ST84_1789592374127_33086",
+      "businessId": "BIZ-KE",
+      "amount": 1658,
+      "region": "KE",
+      "status": "HELD",
+      "createdAt": 1789592374127
     }
   ],
   "wallets": [
@@ -289,12 +442,12 @@
     },
     {
       "ownerId": "PLATFORM",
-      "balance": 45.5,
+      "balance": 115.1,
       "currency": "KES"
     },
     {
       "ownerId": "TAX",
-      "balance": 104,
+      "balance": 416,
       "currency": "KES"
     },
     {
@@ -306,7 +459,7 @@
   "rider_wallets": [
     {
       "riderId": "DRV_01",
-      "balance": 0,
+      "balance": 581.4,
       "currency": "KES"
     },
     {
@@ -414,11 +567,93 @@
         "hash": "085c576d50056fc49c633e908ec7daf8a6fd3d12e5382c131fc3f570e3ad4e0d",
         "salt": "9f721313f89fe83308bbf38082af72a0"
       }
+    },
+    {
+      "id": "LEDGER_1789590981042_84514",
+      "owner_id": "BIZ-KE",
+      "orderId": "ORD_ST81_1789590905322_89288",
+      "amount": 650,
+      "entry_type": "CREDIT",
+      "currency": "KES",
+      "reference_id": "ORD_ST81_1789590905322_89288",
+      "status": "SETTLED",
+      "timestamp": 1789590981042,
+      "merkleProof": {
+        "hash": "d2670ed1d007f16e6cd72639784525ff7f5c95bee99ce570db4e83d0cad39558",
+        "salt": "a4b007296e3263aa3bf3113ae4724e0c"
+      }
+    },
+    {
+      "id": "LEDGER_1789590981096_7330",
+      "owner_id": "DRV_01",
+      "orderId": "ORD_ST81_1789590905322_89288",
+      "amount": 266,
+      "entry_type": "CREDIT",
+      "currency": "KES",
+      "reference_id": "ORD_ST81_1789590905322_89288",
+      "status": "SETTLED",
+      "timestamp": 1789590981096,
+      "merkleProof": {
+        "hash": "c350c38f796214c9dce3331f7ea1d23f01ac50e0720a77d1758ba9cd3005579b",
+        "salt": "b6f34688422d960c63a9ec4d4f199751"
+      }
+    },
+    {
+      "id": "LEDGER_1789592418824_4757",
+      "owner_id": "BIZ-KE",
+      "orderId": "ORD_ST84_1789592369528_6225",
+      "amount": 1300,
+      "entry_type": "CREDIT",
+      "currency": "KES",
+      "reference_id": "ORD_ST84_1789592369528_6225",
+      "status": "SETTLED",
+      "timestamp": 1789592418824,
+      "merkleProof": {
+        "hash": "acdac32bcfd9bb4d1ff980d9bc90ea1cd01214621384f0253b21e822e76dad0d",
+        "salt": "d4840054f25786ac8d5f1a9932252819"
+      }
+    },
+    {
+      "id": "LEDGER_1789592460512_54313",
+      "owner_id": "DRV_01",
+      "orderId": "ORD_ST84_1789592369528_6225",
+      "amount": 315.4,
+      "entry_type": "CREDIT",
+      "currency": "KES",
+      "reference_id": "ORD_ST84_1789592369528_6225",
+      "status": "SETTLED",
+      "timestamp": 1789592460512,
+      "merkleProof": {
+        "hash": "7d22e42d985971d58c4827f6f74253162ff86325dab1766d03a97030fce660c4",
+        "salt": "c0180faaa5b0cf139a0d5915e092a4a6"
+      }
+    },
+    {
+      "id": "LEDGER_1789592521327_18201",
+      "owner_id": "BIZ-KE",
+      "orderId": "WTH_MPESA_1789592521327_31409",
+      "amount": 1950,
+      "entry_type": "DEBIT",
+      "currency": "KES",
+      "reference_id": "WTH_MPESA_1789592521327_31409",
+      "destination": "MPESA",
+      "status": "SETTLED",
+      "timestamp": 1789592521327,
+      "merkleProof": {
+        "hash": "701dee96de383b948f29bf20bb7b7e61b71137e1ed47349b731a9e6939874d5f",
+        "salt": "4a0a11bd4191e231a9015bbac93fe76d"
+      }
     }
   ],
   "shops": [],
   "catalogs": {},
-  "driver_telemetry": {},
+  "driver_telemetry": {
+    "USR_1789526748571_70704": {
+      "lat": -1.2135396176470588,
+      "lng": 36.95656726470588,
+      "updatedAt": 1789592799202
+    }
+  },
   "audit_logs": [
     {
       "id": "REC_1789542406186",
@@ -426,6 +661,13 @@
       "status": "FAILED",
       "discrepanciesCount": 5,
       "timestamp": 1789542406186
+    },
+    {
+      "id": "REC_1789592528967",
+      "type": "LEDGER_AUDIT",
+      "status": "FAILED",
+      "discrepanciesCount": 12,
+      "timestamp": 1789592528967
     }
   ],
   "trust_accounts": {

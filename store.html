@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 83 | Hybrid Sovereign Super-App & Precision Route Engine</title>
+  <title>RDS 85 | Live Order List & Staged Settlement Engine</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <!-- Leaflet CSS & JS for Real-World Maps & Routing -->
@@ -288,6 +288,23 @@
       border: 1px solid #374151;
       z-index: 1;
     }
+
+    /* Stage 85 Live Order Cards */
+    .live-order-card {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .live-order-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin-bottom: 6px;
+      color: var(--cyan);
+      font-weight: bold;
+    }
   </style>
 </head>
 <body id="appBody">
@@ -295,7 +312,7 @@
     <!-- AUTHENTICATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 25px;">
-            <span>🔐 RDS STAGE 83 INSTITUTIONAL OTP ENTRY</span>
+            <span>🔐 RDS STAGE 85 INSTITUTIONAL OTP ENTRY</span>
         </div>
 
         <div class="checkout-panel" style="text-align: center; padding: 30px 20px;">
@@ -317,7 +334,7 @@
     <!-- HOME DASHBOARD -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 83 PRECISION ROUTING & ESCROW</span>
+            <span>🌐 RDS STAGE 85 LIVE ORDER LIST & SETTLEMENT</span>
             <span id="nodeLatency">Institutional • Active</span>
         </div>
 
@@ -375,7 +392,7 @@
     <!-- UNIFIED CHECKOUT & PRECISION ROUTING VIEW -->
     <div id="viewOrders" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Unified Checkout & Precision Routing</h3>
+            <h3>Unified Checkout & Staged Settlement</h3>
         </div>
 
         <div class="checkout-panel">
@@ -407,13 +424,13 @@
         <div class="checkout-panel">
             <h3>2. Dynamic Mathematical Split (100% Correct)</h3>
             <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Product Amount (Base):</span> <strong id="previewProduct">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery Fee (Haversine):</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Shop Receives (100%):</span> <strong id="previewShopReceives" style="color:var(--neon-green);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Product Amount (Naivas/Hotel):</span> <strong id="previewProduct">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery Fee (Rider):</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Shop Receives (Realized on Dispatch):</span> <strong id="previewShopReceives" style="color:var(--neon-green);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform from User Fee (2%):</span> <strong id="previewPlatformUser" style="color:var(--stage-purple);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform from Rider (5%):</span> <strong id="previewPlatformRider" style="color:var(--stage-purple);">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Tax (16% KRA):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Rider Receives (95% Delivery):</span> <strong id="previewRiderReceives" style="color:var(--cyan);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Rider Receives (Realized on Complete):</span> <strong id="previewRiderReceives" style="color:var(--cyan);">0.00</strong></div>
                 <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total Paid by User:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
             </div>
@@ -426,12 +443,12 @@
             <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Authorize Payment & Hold Escrow</button>
         </div>
 
+        <!-- STAGE 85 AUTOMATED LIVE ORDER LIST (Replaces Manual typing) -->
         <div class="checkout-panel">
-            <h3>4. Lifecycle Actions</h3>
-            <input type="text" id="dispatchOrderIdInput" placeholder="Order ID">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
-                <button onclick="triggerShopDispatch()" style="background:var(--stage-purple);">1. Shop Dispatch</button>
-                <button onclick="triggerDeliveryComplete()" style="background:var(--neon-green); color:#000;">2. Complete & Release Escrow</button>
+            <h3>4. Live Order List & Automated Actions</h3>
+            <p style="font-size:0.7rem; color:var(--text-dim); margin-bottom:8px;">Orders appear automatically below. Use one-touch buttons per order—no manual typing required!</p>
+            <div id="liveOrderListContainer">
+                <em style="color:var(--text-dim); font-size:0.75rem;">No active orders. Place an order to see live interactive controls.</em>
             </div>
         </div>
 
@@ -446,7 +463,7 @@
     <!-- WALLET VIEW -->
     <div id="viewWallet" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Multi-Role Wallets & Rider Payouts</h3>
+            <h3>Multi-Role Wallets & Payouts</h3>
         </div>
 
         <div class="checkout-panel" style="background: rgba(168,85,247,0.05); border-color: var(--stage-purple);">
@@ -464,7 +481,7 @@
         <div class="checkout-panel">
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Wallet Owner / Role</label>
             <select id="walletOwnerSelect" onchange="fetchSovereignBalance()">
-                <option value="BIZ-KE">Shop / Business Wallet</option>
+                <option value="BIZ-KE">Shop / Business / Naivas Wallet</option>
                 <option value="DRV_01">Driver / Rider Wallet (John Kiprop)</option>
                 <option value="RDR_01">Dedicated Rider Wallet (RDR_01)</option>
                 <option value="PLATFORM">Platform Commission Wallet</option>
@@ -491,7 +508,7 @@
         <div class="checkout-panel">
             <h3>LEDGER FEED</h3>
             <div id="ledgerFeed" class="ledger-list">
-                <div class="ledger-item"><span>[ESCROWED] Stage 83 Precision Hybrid Vault Online</span><span style="color:var(--neon-green);">Secure</span></div>
+                <div class="ledger-item"><span>[ESCROWED] Stage 85 Live Settlement Online</span><span style="color:var(--neon-green);">Secure</span></div>
             </div>
         </div>
     </div>
@@ -529,7 +546,7 @@
             </div>
         </div>
 
-        <!-- STAGE 83 SOVEREIGN DRIVER & VEHICLE KYC WITH FULL UPLOAD & DYNAMIC DOWNLOAD HUBS -->
+        <!-- SOVEREIGN DRIVER & VEHICLE KYC -->
         <div class="checkout-panel" id="driverSovereignRegisterPanel" style="margin-top: 15px;">
             <h3>🚗🛵 Sovereign Driver & Vehicle KYC Bundle</h3>
             <label style="font-size: 0.75rem; color: var(--text-dim);">Full Legal Name</label>
@@ -546,7 +563,6 @@
             <label style="font-size: 0.75rem; color: var(--text-dim);">Vehicle Number Plate</label>
             <input type="text" id="regNumberPlate" placeholder="e.g. KMXX 123A" style="text-transform: uppercase;">
 
-            <!-- MANDATORY KYC DOCUMENT UPLOADS -->
             <div style="border-top: 1px solid #374151; margin-top:10px; padding-top:10px;">
                 <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:2px;">1. Passport / Face Photo</label>
                 <input type="file" id="fileFace" accept="image/*">
@@ -564,7 +580,6 @@
 
             <button onclick="submitSovereignDriverRegistration()" class="btn-cyan" style="margin-top: 10px; padding: 12px; font-weight: bold;">Submit Sovereign Registration</button>
 
-            <!-- DYNAMIC DOCUMENT DOWNLOAD PANEL -->
             <div style="margin-top: 15px; border-top:1px dashed #374151; padding-top:10px;" id="documentDownloadSection">
                 <label style="font-size: 0.75rem; color: var(--gold); display:block; margin-bottom:6px;">📥 Dynamic Document Downloader</label>
                 <input type="text" id="downloadDriverIdInput" placeholder="Enter Driver ID (e.g. DRV_KYC...)">
@@ -580,8 +595,8 @@
         </div>
 
         <div class="checkout-panel" id="shopRegisterPanel" style="margin-top: 15px;">
-            <h3>Register Your Shop (Unlimited Automatic)</h3>
-            <input type="text" id="regShopName" placeholder="Shop Name e.g. Nairobi SuperMart">
+            <h3>Register Your Shop / Naivas / Hotel</h3>
+            <input type="text" id="regShopName" placeholder="Shop Name e.g. Naivas Supermarket Express">
             <input type="text" id="shopIdNumber" placeholder="National ID / Business Reg Number">
             <select id="regShopCurrency">
                 <option value="KES">KES (Kenyan Shilling)</option>
@@ -597,8 +612,8 @@
         <div class="checkout-panel" id="productAddPanel" style="margin-top: 15px; display:none;">
             <h3>Add Product to Your Catalog</h3>
             <input type="hidden" id="registeredShopId">
-            <input type="text" id="newProdName" placeholder="Product Name e.g. Burger Combo">
-            <input type="number" id="newProdPrice" placeholder="Price e.g. 450">
+            <input type="text" id="newProdName" placeholder="Product Name e.g. Organic Basket">
+            <input type="number" id="newProdPrice" placeholder="Price e.g. 2100">
             <select id="newProdCategory">
                 <option value="RESTAURANT">🍽️ Restaurant</option>
                 <option value="HOTEL">🏨 Hotel</option>
@@ -650,7 +665,6 @@
                 attribution: '© OpenStreetMap'
             }).addTo(map);
 
-            // Click map to set destination dynamically
             map.on('click', (e) => {
                 document.getElementById('destLat').value = e.latlng.lat.toFixed(6);
                 document.getElementById('destLng').value = e.latlng.lng.toFixed(6);
@@ -661,6 +675,7 @@
 
             loadDynamicShopsAndCorridors();
             updateMapMarkersAndPolyline();
+            fetchLiveOrders();
 
             const socket = io();
             socket.on('driverLocationUpdate', (data) => {
@@ -677,11 +692,16 @@
                 }
             });
 
+            socket.on('orderListUpdated', () => {
+                fetchLiveOrders();
+            });
+
             socket.on('orderStatusUpdate', (data) => {
+                fetchLiveOrders();
                 if (data && data.status === 'DISPATCHED') {
                     activeNavigationMode = "EN_ROUTE_TO_PICKUP";
                     document.getElementById('navGuidanceStatus').innerText = "NAVIGATING TO PICKUP 🧭";
-                    document.getElementById('lifecycleStatus').innerText = "DISPATCHED (ESCROW SECURED)";
+                    document.getElementById('lifecycleStatus').innerText = "DISPATCHED (SHOP FUNDS REALIZED)";
                     
                     switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
 
@@ -705,11 +725,80 @@
                         routePolyline = L.polyline([[pLat, pLng], [dLat, dLng]], {color: '#00ff88', weight: 5, dashArray: '8, 8'}).addTo(map);
 
                         map.fitBounds(routePolyline.getBounds(), {padding: [50, 50]});
-                        alert("Order Dispatched! Precise real-world route mapped on Leaflet.");
                     }
                 }
             });
         });
+
+        async function fetchLiveOrders() {
+            const bizId = document.getElementById('storeBusinessId').value;
+            try {
+                const res = await fetch(`${API_BASE}/api/orders/live`, { headers: { "x-business-id": bizId } });
+                const data = await res.json();
+                if (data.success && data.orders) {
+                    renderLiveOrderList(data.orders);
+                }
+            } catch (e) {}
+        }
+
+        function renderLiveOrderList(orders) {
+            const container = document.getElementById('liveOrderListContainer');
+            if (!orders || orders.length === 0) {
+                container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No active orders. Place an order to see live interactive controls.</em>';
+                return;
+            }
+            let html = '';
+            orders.slice(-5).reverse().forEach(o => {
+                const statusColor = o.status === 'COMPLETED' ? 'var(--neon-green)' : (o.status === 'DISPATCHED' ? 'var(--cyan)' : 'var(--gold)');
+                html += `
+                    <div class="live-order-card">
+                        <div class="live-order-header">
+                            <span>🆔 ${o.id}</span>
+                            <span style="color: ${statusColor};">${o.status}</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #fff; margin-bottom: 6px;">
+                            <div>📍 ${o.pickup} ➔ ${o.destination}</div>
+                            <div>💰 Total: <strong>${o.currency} ${o.total}</strong></div>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                            <button onclick="dispatchOrderDirect('${o.id}')" style="background:var(--stage-purple); font-size:0.65rem; padding:6px;">1. Dispatch Order</button>
+                            <button onclick="completeOrderDirect('${o.id}')" style="background:var(--neon-green); color:#000; font-size:0.65rem; padding:6px;">2. Complete Trip</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        async function dispatchOrderDirect(orderId) {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const res = await fetch(`${API_BASE}/api/orders/${orderId}/dispatch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                body: JSON.stringify({ businessId: bizId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Order ${orderId} Dispatched! Shop funds realized.`);
+                fetchLiveOrders();
+                fetchSovereignBalance();
+            } else { alert(data.error); }
+        }
+
+        async function completeOrderDirect(orderId) {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const res = await fetch(`${API_BASE}/api/orders/${orderId}/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                body: JSON.stringify({ businessId: bizId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Order ${orderId} Completed! Rider earnings credited & escrow released.`);
+                fetchLiveOrders();
+                fetchSovereignBalance();
+            } else { alert(data.error); }
+        }
 
         function updateMapMarkersAndPolyline() {
             const pLat = Number(document.getElementById('pickupLat').value) || -1.286389;
@@ -799,15 +888,13 @@
             activeNavigationMode = "COMPLETED";
             document.getElementById('navGuidanceStatus').innerText = "DELIVERED & SETTLED 🟢";
             document.getElementById('navGuidanceStatus').style.color = "var(--neon-green)";
-            alert("Reached drop-off destination! Releasing escrow and completing order.");
-            triggerDeliveryComplete();
+            alert("Reached drop-off destination! Realizing rider earnings and releasing escrow.");
             document.getElementById('riderWorkflowPanel').style.display = 'none';
         }
 
         let watchId = null;
         function startDriverTracking() {
             const driverId = currentUser ? currentUser.id : "DRV_01";
-            const orderId = document.getElementById('activeOrderId').value.trim();
             if (!navigator.geolocation) { alert("Geolocation not supported"); return; }
             document.getElementById('gpsStatus').innerText = "Live Tracking Active 🟢";
             watchId = navigator.geolocation.watchPosition(async (pos) => {
@@ -820,7 +907,7 @@
                     await fetch(`${API_BASE}/api/driver/telemetry`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json", "x-business-id": bizId },
-                        body: JSON.stringify({ driverId, lat, lng, orderId, status: activeNavigationMode, businessId: bizId })
+                        body: JSON.stringify({ driverId, lat, lng, status: activeNavigationMode, businessId: bizId })
                     });
                 } catch (e) {}
             }, (err) => {}, { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
@@ -865,6 +952,7 @@
                 document.getElementById('bottomNav').style.display = 'flex';
                 switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
                 loadStoreCatalog();
+                fetchLiveOrders();
                 setTimeout(() => { if(map) map.invalidateSize(); }, 300);
             } else { alert(data.error); }
         }
@@ -961,7 +1049,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`Shop "${shopName}" registered successfully!`);
+                    alert(`Shop/Naivas/Hotel "${shopName}" registered successfully!`);
                     document.getElementById('registeredShopId').value = data.shopId;
                     document.getElementById('shopRegisterPanel').style.display = 'none';
                     document.getElementById('productAddPanel').style.display = 'block';
@@ -1006,6 +1094,7 @@
             if(el) el.classList.add('active');
             window.scrollTo(0, 0);
             if (viewId === 'viewWallet') fetchSovereignBalance();
+            if (viewId === 'viewOrders') fetchLiveOrders();
             if (viewId === 'viewHome' && map) setTimeout(() => { map.invalidateSize(); }, 200);
         }
 
@@ -1168,6 +1257,7 @@
             cart = {};
             recalculateCartSummary();
             loadStoreCatalog();
+            fetchLiveOrders();
         }
 
         async function triggerUnifiedCheckout() {
@@ -1198,46 +1288,11 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    document.getElementById('dispatchOrderIdInput').value = data.orderId;
-                    document.getElementById('activeOrderId').value = data.orderId;
                     alert(`Checkout initiated and Escrow secured! Distance: ${data.distanceKm} km, Total: ${curr} ${data.split.userPays}`);
                     document.getElementById('lifecycleStatus').innerText = "ESCROWED & RIDER_ASSIGNED";
+                    fetchLiveOrders();
                 } else { alert(data.error); }
             } catch (e) { alert("Checkout error."); }
-        }
-
-        async function triggerShopDispatch() {
-            const orderId = document.getElementById('dispatchOrderIdInput').value.trim();
-            const bizId = document.getElementById('storeBusinessId').value;
-            if (!orderId) return;
-            const res = await fetch(`${API_BASE}/api/orders/${orderId}/dispatch`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                body: JSON.stringify({ businessId: bizId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(data.message);
-                document.getElementById('lifecycleStatus').innerText = "DISPATCHED (ESCROW LOCKED)";
-                fetchSovereignBalance();
-            }
-        }
-
-        async function triggerDeliveryComplete() {
-            const orderId = document.getElementById('dispatchOrderIdInput').value.trim();
-            const bizId = document.getElementById('storeBusinessId').value;
-            if (!orderId) return;
-            const res = await fetch(`${API_BASE}/api/orders/${orderId}/complete`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                body: JSON.stringify({ businessId: bizId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(`${data.message}\nShop credited: ${data.breakdown.shopReceives}\nRider credited: ${data.breakdown.riderReceives}`);
-                document.getElementById('lifecycleStatus').innerText = "COMPLETED & DISTRIBUTED";
-                fetchSovereignBalance();
-            } else { alert(data.error); }
         }
 
         async function fetchSovereignBalance() {
