@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 70 | Sovereign Super-App & Fast OTP Auth</title>
+  <title>RDS 71 | Sovereign Super-App & Fast OTP Auth</title>
 
   <script src="/socket.io/socket.io.js"></script>
 
@@ -279,7 +279,7 @@
     <!-- AUTHENTICATION & FAST REGISTRATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 25px;">
-            <span>🔐 RDS STAGE 70 FAST OTP ENTRY</span>
+            <span>🔐 RDS STAGE 71 FAST OTP ENTRY</span>
         </div>
 
         <div class="checkout-panel" style="text-align: center; padding: 30px 20px;">
@@ -301,7 +301,7 @@
     <!-- HOME / SUPER-APP DASHBOARD -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 70 KRA TAX ENGINE</span>
+            <span>🌐 RDS STAGE 71 KRA TAX ENGINE</span>
             <span id="nodeLatency">10ms • Secured</span>
         </div>
 
@@ -458,7 +458,7 @@
             <p style="margin-top: 12px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
         </div>
 
-        <!-- NEW SHOP OWNER REGISTRATION & PRODUCT ADDITION UI -->
+        <!-- SHOP OWNER REGISTRATION & PRODUCT ADDITION UI -->
         <div class="checkout-panel" id="shopRegisterPanel" style="margin-top: 15px;">
             <h3>Register Your Shop</h3>
             <input type="text" id="shopIdNumber" placeholder="ID Number">
@@ -473,6 +473,14 @@
             <input type="text" id="newProdName" placeholder="Product Name e.g. Burger Combo">
             <input type="number" id="newProdPrice" placeholder="Price e.g. 450">
             <button onclick="addProductToCatalog()" style="background: var(--neon-green); color: #000;">Add Product</button>
+        </div>
+
+        <!-- STAGE 71 AUTOMATED CSV IMPORT EXTENSION PANEL -->
+        <div class="checkout-panel" id="csvExtensionPanel" style="margin-top: 15px;">
+            <h3>📦 Bulk CSV Catalog Import</h3>
+            <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">Format per line: Product Name, Price, Category</p>
+            <textarea id="csvInputText" rows="3" placeholder="Organic Apples, 150, SUPERMARKET&#10;Fresh Milk, 120, SUPERMARKET" style="width:100%; background:var(--dark-bg); border:1px solid #374151; color:#fff; padding:8px; border-radius:6px; font-size:0.8rem; margin-bottom:8px;"></textarea>
+            <button onclick="triggerCsvImport()" class="btn-cyan">Import CSV Batch</button>
         </div>
     </div>
 
@@ -561,7 +569,6 @@
             }
         }
 
-        // Shop Registration Handler
         async function registerShop() {
             const idNumber = document.getElementById('shopIdNumber').value.trim();
             const fileInput = document.getElementById('shopImage');
@@ -642,6 +649,35 @@
                 loadStoreCatalog();
             } else {
                 alert(data.error);
+            }
+        }
+
+        async function triggerCsvImport() {
+            const shopId = document.getElementById('registeredShopId').value || document.getElementById('storeBusinessId').value;
+            const csvData = document.getElementById('csvInputText').value.trim();
+
+            if (!csvData) {
+                alert("Please paste CSV data rows.");
+                return;
+            }
+
+            const bizId = document.getElementById('storeBusinessId').value;
+            try {
+                const res = await fetch(`${API_BASE}/api/shops/${shopId}/import-csv`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-business-id": bizId },
+                    body: JSON.stringify({ csvData, businessId: bizId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('csvInputText').value = "";
+                    loadStoreCatalog();
+                } else {
+                    alert(data.error);
+                }
+            } catch (e) {
+                alert("CSV import failed.");
             }
         }
 
