@@ -34,6 +34,15 @@
     }
   ],
   "drivers": [],
+  "riders": [
+    {
+      "riderId": "RDR_01",
+      "name": "John Kiprop",
+      "phone": "254711223344",
+      "vehicleType": "MOTORBIKE",
+      "status": "ACTIVE"
+    }
+  ],
   "products": [
     {
       "id": "p1",
@@ -80,7 +89,7 @@
     {
       "phone": "254721862397",
       "otp": "1234",
-      "expires": 1789542817109
+      "expires": 1789584770651
     }
   ],
   "orders": [
@@ -177,6 +186,28 @@
       "createdAt": 1789542283267,
       "customerPhone": "254721862397",
       "checkoutRequestId": "ws_CO_160920261004360721862397"
+    },
+    {
+      "id": "ORD_ST80_1789585110962_94515",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 650,
+      "deliveryFee": 280,
+      "shopSurcharge2Percent": 13,
+      "total": 873,
+      "driverWalletCredit": 199.5,
+      "platformRevenue": 19.74,
+      "kraTax16Percent": 3.76,
+      "pickup": "Shop Hub",
+      "destination": "Customer Destination",
+      "vehicleType": "MOTORBIKE",
+      "riderId": "DRV_01",
+      "driverId": "DRV_01",
+      "status": "RIDER_ASSIGNED",
+      "createdAt": 1789585110962,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_160920262158229721862397"
     }
   ],
   "escrow": [
@@ -189,6 +220,15 @@
       "status": "RELEASED",
       "createdAt": 1789542283267,
       "releasedAt": 1789542352981
+    },
+    {
+      "escrowId": "ESC_1789585110962_73943",
+      "orderId": "ORD_ST80_1789585110962_94515",
+      "businessId": "BIZ-KE",
+      "amount": 663,
+      "region": "KE",
+      "status": "HELD",
+      "createdAt": 1789585110962
     }
   ],
   "wallets": [
@@ -229,6 +269,18 @@
     {
       "ownerId": "DRV_01",
       "balance": 199.5,
+      "currency": "KES"
+    }
+  ],
+  "rider_wallets": [
+    {
+      "riderId": "DRV_01",
+      "balance": 0,
+      "currency": "KES"
+    },
+    {
+      "riderId": "RDR_01",
+      "balance": 0,
       "currency": "KES"
     }
   ],

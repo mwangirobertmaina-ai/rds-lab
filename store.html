@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 80 | Hybrid Sovereign Super-App & Rider Wallet Engine</title>
+  <title>RDS 81 | Hybrid Sovereign Super-App & Rider Wallet Engine</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <!-- Leaflet CSS & JS for Real-World Maps -->
@@ -291,7 +291,7 @@
     <!-- AUTHENTICATION & FAST REGISTRATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 25px;">
-            <span>🔐 RDS STAGE 80 HYBRID INSTITUTIONAL OTP ENTRY</span>
+            <span>🔐 RDS STAGE 81 HYBRID INSTITUTIONAL OTP ENTRY</span>
         </div>
 
         <div class="checkout-panel" style="text-align: center; padding: 30px 20px;">
@@ -313,7 +313,7 @@
     <!-- HOME / SUPER-APP DASHBOARD -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 80 HYBRID RIDER & ESCROW ENGINE</span>
+            <span>🌐 RDS STAGE 81 HYBRID RIDER & ESCROW ENGINE</span>
             <span id="nodeLatency">Institutional • Active</span>
         </div>
 
@@ -391,15 +391,18 @@
         </div>
 
         <div class="checkout-panel">
-            <h3>2. Mathematical Split & Escrow Breakdown</h3>
+            <h3>2. Dynamic Mathematical Split (calculateFinancials)</h3>
             <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Commodities Amount (Held in Escrow):</span> <strong id="previewProduct">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery / Ride Fare (95% Driver):</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform Delivery Cut (5%):</span> <strong id="previewPlatformDelivery" style="color:var(--stage-purple);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform Surcharge (2% Shop):</span> <strong id="previewSurcharge" style="color:var(--stage-purple);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>KRA Tax (16% on Commission):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Product Amount (Base):</span> <strong id="previewProduct">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery Fee (Dynamic):</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Shop Receives (95% of Base):</span> <strong id="previewShopReceives" style="color:var(--neon-green);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform from Product (5%):</span> <strong id="previewPlatformProduct" style="color:var(--stage-purple);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform from User Fee (2%):</span> <strong id="previewPlatformUser" style="color:var(--stage-purple);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform from Rider (5%):</span> <strong id="previewPlatformRider" style="color:var(--stage-purple);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Tax (16% on Commission):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Rider Receives (95% Delivery):</span> <strong id="previewRiderReceives" style="color:var(--cyan);">0.00</strong></div>
                 <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
-                <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total Paid to Secure Escrow:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total Paid by User:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
             </div>
         </div>
 
@@ -475,7 +478,7 @@
         <div class="checkout-panel">
             <h3>LEDGER FEED</h3>
             <div id="ledgerFeed" class="ledger-list">
-                <div class="ledger-item"><span>[ESCROWED] Stage 80 Hybrid Vault Online</span><span style="color:var(--neon-green);">Secure</span></div>
+                <div class="ledger-item"><span>[ESCROWED] Stage 81 Hybrid Vault Online</span><span style="color:var(--neon-green);">Secure</span></div>
             </div>
         </div>
     </div>
@@ -1014,10 +1017,13 @@
                     const s = data.split;
                     document.getElementById('previewProduct').innerText = `${curr} ${s.productAmount.toFixed(2)}`;
                     document.getElementById('previewDelivery').innerText = `${curr} ${s.deliveryFee.toFixed(2)}`;
-                    document.getElementById('previewPlatformDelivery').innerText = `${curr} ${s.platformDeliveryShare.toFixed(2)}`;
-                    document.getElementById('previewSurcharge').innerText = `${curr} ${s.shopSurcharge2Percent.toFixed(2)}`;
-                    document.getElementById('previewKraTax').innerText = `${curr} ${s.kraTax16Percent.toFixed(2)}`;
-                    document.getElementById('previewTotal').innerText = `${curr} ${s.total.toFixed(2)}`;
+                    document.getElementById('previewShopReceives').innerText = `${curr} ${s.shopReceives.toFixed(2)}`;
+                    document.getElementById('previewPlatformProduct').innerText = `${curr} ${s.platformFromProduct.toFixed(2)}`;
+                    document.getElementById('previewPlatformUser').innerText = `${curr} ${s.platformFromUserFee.toFixed(2)}`;
+                    document.getElementById('previewPlatformRider').innerText = `${curr} ${s.platformFromRider.toFixed(2)}`;
+                    document.getElementById('previewKraTax').innerText = `${curr} ${s.tax.toFixed(2)}`;
+                    document.getElementById('previewRiderReceives').innerText = `${curr} ${s.riderReceives.toFixed(2)}`;
+                    document.getElementById('previewTotal').innerText = `${curr} ${s.userPays.toFixed(2)}`;
                 }
             } catch (e) {}
         }
@@ -1056,7 +1062,7 @@
                 if (data.success) {
                     document.getElementById('dispatchOrderIdInput').value = data.orderId;
                     document.getElementById('activeOrderId').value = data.orderId;
-                    alert(`Checkout initiated and Escrow secured for total ${curr} ${data.split.total}!`);
+                    alert(`Checkout initiated and Escrow secured for total ${curr} ${data.split.userPays}!`);
                     document.getElementById('lifecycleStatus').innerText = "ESCROWED & RIDER_ASSIGNED";
                 } else { alert(data.error); }
             } catch (e) { alert("Checkout error."); }
@@ -1090,7 +1096,7 @@
             });
             const data = await res.json();
             if (data.success) {
-                alert(`${data.message}\nShop credited: ${data.breakdown.shop}\nRider wallet credited: ${data.breakdown.rider}`);
+                alert(`${data.message}\nShop credited: ${data.breakdown.shopReceives}\nRider wallet credited: ${data.breakdown.riderReceives}`);
                 document.getElementById('lifecycleStatus').innerText = "COMPLETED & DISTRIBUTED";
                 fetchSovereignBalance();
             } else {
@@ -1151,7 +1157,7 @@
                     document.getElementById('withdrawAmountInput').value = "";
                     fetchSovereignBalance();
                 } else {
-                    alert(data.error);
+                    alert(data.error.message || data.error);
                 }
             }
         }
