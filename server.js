@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 71 SOVEREIGN ENGINE
+// RDS - STAGE 72 SOVEREIGN ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Multi-Wallet,
-// 16% KRA Tax Allocation, Frictionless Phone OTP, & Bulk CSV / Sub-Wallet Routing
+// 16% KRA Tax Allocation, Frictionless Phone OTP, & Automated GPS Navigation
 // ==========================================
 
 const express = require("express");
@@ -51,7 +51,7 @@ function generateStage70MerkleProof(record) {
 }
 
 /**
- * Stage 70/71 Financial & KRA Tax Calculation Engine
+ * Stage 70/71/72 Financial & KRA Tax Calculation Engine
  */
 function processStage70FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, timeMinutes = 10, vehicleType = "MOTORBIKE", currencyCode = "KES") {
   const itemsGross = currency(num(itemPriceTotal));
@@ -73,15 +73,12 @@ function processStage70FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, time
   if (km < 0.2 || rawDeliveryFare < 100) rawDeliveryFare = 100;
 
   const deliveryFare = currency(rawDeliveryFare);
-  const shopSurcharge = itemsGross.multiply(SHOP_SURCHARGE_RATE); // 2% on commodities
+  const shopSurcharge = itemsGross.multiply(SHOP_SURCHARGE_RATE);
 
-  // Splits
-  const driverAmount = deliveryFare.multiply(DRIVER_SHARE_RATE); // 95% to driver
-  const platformDeliveryShare = deliveryFare.multiply(PLATFORM_DELIVERY_SHARE); // 5% delivery share
+  const driverAmount = deliveryFare.multiply(DRIVER_SHARE_RATE);
+  const platformDeliveryShare = deliveryFare.multiply(PLATFORM_DELIVERY_SHARE);
 
-  const totalPlatformCommission = platformDeliveryShare.add(shopSurcharge); // 5% delivery + 2% surcharge
-  
-  // 16% KRA Tax on Platform Commission (strictly for KES / Kenya corridor)
+  const totalPlatformCommission = platformDeliveryShare.add(shopSurcharge);
   const kraTax = currencyCode.toUpperCase() === "KES" ? totalPlatformCommission.multiply(KRA_TAX_RATE) : currency(0);
   const netPlatformRevenue = totalPlatformCommission.subtract(kraTax);
 
@@ -89,14 +86,14 @@ function processStage70FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, time
 
   return {
     currency: currencyCode.toUpperCase(),
-    productAmount: itemsGross.value,          // 100% to Shop
+    productAmount: itemsGross.value,
     deliveryFee: deliveryFare.value,
-    platformDeliveryShare: platformDeliveryShare.value, // 5% platform delivery cut
-    shopSurcharge2Percent: shopSurcharge.value, // 2% platform surcharge
+    platformDeliveryShare: platformDeliveryShare.value,
+    shopSurcharge2Percent: shopSurcharge.value,
     total: totalUserPaid.value,
-    driverWalletCredit: driverAmount.value,   // 95% to Driver
+    driverWalletCredit: driverAmount.value,
     platformCommission: totalPlatformCommission.value,
-    kraTax16Percent: kraTax.value,             // 16% KRA Tax breakdown
+    kraTax16Percent: kraTax.value,
     netPlatformRevenue: netPlatformRevenue.value
   };
 }
@@ -217,10 +214,6 @@ const saveDB = async () => {
 function enforceTenantIsolation(req, res, next) {
     const businessId = req.headers['x-business-id'] || req.query.businessId || req.body.businessId || "BIZ-KE";
     ensureState();
-    const tenantExists = data.businesses.some(b => b.id === businessId) || data.shops.some(s => s.shopId === businessId);
-    if (!tenantExists && businessId !== "BIZ-KE") {
-        // Allow valid shopIds as tenants too
-    }
     req.tenantId = businessId;
     req.tenantObj = data.businesses.find(b => b.id === businessId) || { id: businessId, name: "Merchant Node", currency: "KES", region: "KE" };
     next();
@@ -230,24 +223,18 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_71_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_72_ENGINE_ONLINE", time: Date.now() }));
 
-// ==========================================
-// AUTH & AUTO-REGISTRATION ENDPOINTS
-// ==========================================
 app.post('/api/auth/send-otp', async (req, res) => {
     try {
         ensureState();
         const { phone } = req.body;
         if (!phone) return fail(res, "Phone number required", 400);
-
-        const otp = "1234"; // Default testing code
+        const otp = "1234";
         const expires = Date.now() + 5 * 60 * 1000;
-
         data.otp_sessions = data.otp_sessions.filter(s => s.phone !== phone);
         data.otp_sessions.push({ phone, otp, expires });
         await saveDB();
-
         return ok(res, { success: true, message: "OTP sent successfully (Use 1234 for testing)" });
     } catch (err) {
         return fail(res, err.message, 500);
@@ -259,25 +246,15 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         ensureState();
         const { phone, otp } = req.body;
         const session = data.otp_sessions.find(s => s.phone === phone && s.otp === otp);
-
-        if (!session || Date.now() > session.expires) {
-            return fail(res, "Invalid or expired OTP", 400);
-        }
+        if (!session || Date.now() > session.expires) return fail(res, "Invalid or expired OTP", 400);
 
         let user = data.users.find(u => u.phone === phone);
         if (!user) {
-            user = {
-                id: id("USR"),
-                phone,
-                role: "USER",
-                createdAt: Date.now()
-            };
+            user = { id: id("USR"), phone, role: "USER", createdAt: Date.now() };
             data.users.push(user);
         }
-
         const token = crypto.randomBytes(32).toString('hex');
         await saveDB();
-
         return ok(res, { success: true, token, user });
     } catch (err) {
         return fail(res, err.message, 500);
@@ -290,7 +267,6 @@ app.post('/api/user/set-role', async (req, res) => {
         const { phone, role } = req.body;
         const user = data.users.find(u => u.phone === phone);
         if (!user) return fail(res, "User not found", 404);
-
         user.role = role || "USER";
         await saveDB();
         return ok(res, { success: true, user, message: `Role successfully updated to ${user.role}` });
@@ -299,51 +275,23 @@ app.post('/api/user/set-role', async (req, res) => {
     }
 });
 
-// ==========================================
-// SHOP OWNER REGISTRATION & PRODUCT ADDITION APIs
-// ==========================================
 app.post('/api/shop/register', async (req, res) => {
     try {
         ensureState();
         const { userId, idNumber, shopImageBase64, location } = req.body;
-
-        if (!userId || !idNumber || !shopImageBase64) {
-            return res.status(400).json({ success: false, error: "Missing required fields" });
-        }
+        if (!userId || !idNumber || !shopImageBase64) return res.status(400).json({ success: false, error: "Missing required fields" });
 
         if (!data.shops) data.shops = [];
-
         const existing = data.shops.find(s => s.ownerId === userId);
-        if (existing) {
-            return res.status(400).json({ success: false, error: "Shop already registered" });
-        }
+        if (existing) return res.status(400).json({ success: false, error: "Shop already registered" });
 
         const shopId = id("SHOP");
-
-        const newShop = {
-            shopId,
-            ownerId: userId,
-            idNumber,
-            shopImage: shopImageBase64,
-            location: location || {},
-            verified: false,
-            createdAt: Date.now(),
-            status: "ACTIVE"
-        };
-
+        const newShop = { shopId, ownerId: userId, idNumber, shopImage: shopImageBase64, location: location || {}, verified: false, createdAt: Date.now(), status: "ACTIVE" };
         data.shops.push(newShop);
-
         if (!data.catalogs) data.catalogs = {};
         data.catalogs[shopId] = [];
-
         await saveDB();
-
-        return res.json({
-            success: true,
-            message: "Shop registered successfully",
-            shopId
-        });
-
+        return res.json({ success: true, message: "Shop registered successfully", shopId });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -352,9 +300,7 @@ app.post('/api/shop/register', async (req, res) => {
 app.post('/api/products/add', (req, res) => {
     ensureState();
     const { shopId, name, price, category, merchant, image } = req.body;
-    if (!shopId || !name || !price) {
-        return res.status(400).json({ success: false, error: "Missing required product fields" });
-    }
+    if (!shopId || !name || !price) return res.status(400).json({ success: false, error: "Missing required product fields" });
 
     if (!data.catalogs) data.catalogs = {};
     if (!data.catalogs[shopId]) data.catalogs[shopId] = [];
@@ -373,24 +319,18 @@ app.post('/api/products/add', (req, res) => {
     data.catalogs[shopId].push(newProduct);
     data.products.push(newProduct);
     saveDB();
-
     res.json({ success: true, product: newProduct, message: "Product added successfully!" });
 });
 
-// ==========================================
-// STAGE 71 EXTENSIONS: AUTOMATED CSV & SUB-WALLETS
-// ==========================================
 app.post('/api/shops/:shopId/import-csv', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
         const { shopId } = req.params;
         const { csvData } = req.body;
-
         if (!csvData) return fail(res, "No CSV data provided", 400);
 
         const rows = csvData.split('\n');
         let importedCount = 0;
-
         if (!data.catalogs) data.catalogs = {};
         if (!data.catalogs[shopId]) data.catalogs[shopId] = [];
 
@@ -400,7 +340,6 @@ app.post('/api/shops/:shopId/import-csv', enforceTenantIsolation, async (req, re
                 const name = parts[0];
                 const price = Number(parts[1]);
                 const category = parts[2] || "RESTAURANT";
-
                 if (name && !isNaN(price)) {
                     const newProd = {
                         id: id("PRD_CSV"),
@@ -418,7 +357,6 @@ app.post('/api/shops/:shopId/import-csv', enforceTenantIsolation, async (req, re
                 }
             }
         }
-
         await saveDB();
         return ok(res, { success: true, message: `Successfully imported ${importedCount} products via CSV batch.`, count: importedCount });
     } catch (err) {
@@ -426,32 +364,6 @@ app.post('/api/shops/:shopId/import-csv', enforceTenantIsolation, async (req, re
     }
 });
 
-app.get('/api/merchants/sub-wallets/audit', enforceTenantIsolation, async (req, res) => {
-    try {
-        ensureState();
-        const scopedShops = data.shops || [];
-        const auditResults = scopedShops.map(shop => {
-            const entries = data.ledger_entries.filter(e => e.owner_id === shop.shopId && e.status === 'SETTLED');
-            const balance = entries.reduce((acc, e) => e.entry_type === 'CREDIT' ? acc + e.amount : acc - e.amount, 0);
-            return {
-                shopId: shop.shopId,
-                ownerId: shop.ownerId,
-                idNumber: shop.idNumber,
-                subWalletBalance: parseFloat(balance.toFixed(2)),
-                currency: req.tenantObj.currency || "KES",
-                merkleVerified: entries.every(e => e.merkleProof)
-            };
-        });
-
-        return ok(res, { success: true, tenantId: req.tenantId, totalActiveShops: auditResults.length, subWallets: auditResults });
-    } catch (err) {
-        return fail(res, err.message, 500);
-    }
-});
-
-// ==========================================
-// DRIVER GPS TELEMETRY & DISPATCH ENDPOINT
-// ==========================================
 app.post('/api/driver/telemetry', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -459,24 +371,15 @@ app.post('/api/driver/telemetry', enforceTenantIsolation, async (req, res) => {
         if (!driverId) return fail(res, "Driver ID required", 400);
 
         if (!data.driver_telemetry) data.driver_telemetry = {};
-        data.driver_telemetry[driverId] = {
-            lat: Number(lat),
-            lng: Number(lng),
-            updatedAt: Date.now()
-        };
+        data.driver_telemetry[driverId] = { lat: Number(lat), lng: Number(lng), updatedAt: Date.now() };
 
         if (orderId) {
             const order = data.orders.find(o => o.id === orderId);
-            if (order && status) {
-                order.status = status;
-            }
+            if (order && status) order.status = status;
         }
 
         await saveDB();
-        if (global.io) {
-            global.io.emit('driverLocationUpdate', { driverId, lat, lng, orderId, status });
-        }
-
+        if (global.io) global.io.emit('driverLocationUpdate', { driverId, lat, lng, orderId, status });
         return ok(res, { success: true, message: "Telemetry received successfully" });
     } catch (err) {
         return fail(res, err.message, 500);
@@ -487,9 +390,7 @@ app.get('/api/products', enforceTenantIsolation, (req, res) => {
   ensureState();
   const { category } = req.query;
   let scopedProducts = data.products.filter(p => p.businessId === req.tenantId || (req.tenantObj && p.businessId === req.tenantObj.id));
-  if (category && category !== 'ALL') {
-    scopedProducts = scopedProducts.filter(p => p.category === category);
-  }
+  if (category && category !== 'ALL') scopedProducts = scopedProducts.filter(p => p.category === category);
   ok(res, { success: true, businessId: req.tenantId, storeName: req.tenantObj.name, currency: req.tenantObj.currency, products: scopedProducts });
 });
 
@@ -505,12 +406,11 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         const { phone, itemPriceTotal, distanceKm, vehicleType, pickup, destination } = req.body;
         const tenant = req.tenantObj;
         const currencyCode = tenant.currency || "KES";
-
         const split = processStage70FinancialSplit(itemPriceTotal, distanceKm || 3.0, 10, vehicleType || "MOTORBIKE", currencyCode);
 
         if (split.total <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST71");
+        const orderId = id("ORD_ST72");
         const order = {
             id: orderId,
             businessId: tenant.id,
@@ -536,7 +436,6 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         if (currencyCode === "KES") {
             const sanitizedPhone = validateKenyanPhone(phone);
             if (!sanitizedPhone) return fail(res, "Invalid Kenyan phone number for M-Pesa", 400);
-
             order.customerPhone = sanitizedPhone;
             const accessToken = await getMpesaAccessToken();
             const date = new Date();
@@ -556,7 +455,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl,
                     AccountReference: `RDS ${tenant.region || 'KE'}`,
-                    TransactionDesc: `Stage 71 Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 72 Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -565,7 +464,6 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                 order.checkoutRequestId = stkResponse.data.CheckoutRequestID;
                 await saveDB();
             }
-
             return ok(res, { success: true, gateway: "M-PESA", darajaResponse: stkResponse.data, orderId, split });
         } else {
             const stripeAmount = Math.round(split.total * 100);
@@ -574,10 +472,8 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                 currency: currencyCode.toLowerCase(),
                 metadata: { orderId, businessId: tenant.id, region: tenant.region || "GLOBAL" }
             });
-
             order.checkoutRequestId = paymentIntent.id;
             await saveDB();
-
             return ok(res, { success: true, gateway: "STRIPE", clientSecret: paymentIntent.client_secret, orderId, split });
         }
     } catch (err) {
@@ -590,12 +486,10 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
         ensureState();
         const { orderId } = req.params;
         const order = data.orders.find(o => o.id === orderId);
-
         if (!order) return fail(res, "Order not found", 404);
         if (order.status === "DISPATCHED" || order.status === "COMPLETED") return fail(res, "Already dispatched.", 400);
 
         order.status = "DISPATCHED";
-
         if (order.productAmount > 0) {
             const shopLedger = {
                 id: id("LEDGER"),
@@ -614,11 +508,10 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
 
         await saveDB();
         if (global.io) {
-            global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'DISPATCHED' });
+            global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'DISPATCHED', pickup: order.pickup, destination: order.destination });
             global.io.emit('walletUpdated', { ownerId: order.businessId, currency: order.currency });
         }
-
-        return ok(res, { success: true, message: "Order dispatched! Shop credited 100% of commodity price." });
+        return ok(res, { success: true, message: "Order dispatched! Auto-navigation triggered to pickup." });
     } catch (err) {
         return fail(res, err.message, 500);
     }
@@ -629,12 +522,10 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
         ensureState();
         const { orderId } = req.params;
         const order = data.orders.find(o => o.id === orderId);
-
         if (!order) return fail(res, "Order not found", 404);
         if (order.status === "COMPLETED") return fail(res, "Already completed.", 400);
 
         order.status = "COMPLETED";
-
         const driverId = order.driverId || "DRV_01";
         const driverLedger = {
             id: id("LEDGER"),
@@ -655,7 +546,6 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
             global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'COMPLETED' });
             global.io.emit('walletUpdated', { ownerId: driverId, currency: order.currency });
         }
-
         return ok(res, { success: true, message: "Completed successfully! 95% credited to driver wallet.", driverCredit: order.driverWalletCredit });
     } catch (err) {
         return fail(res, err.message, 500);
@@ -710,7 +600,6 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
         await saveDB();
 
         if (global.io) global.io.emit('walletUpdated', { ownerId: targetOwner, currency: currencyCode });
-
         return ok(res, { success: true, message: `Successfully withdrew ${currencyCode} ${withdrawAmount} to ${destination}` });
     } catch (err) {
         return fail(res, err.message, 500);
@@ -718,5 +607,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 71 SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 72 SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
 });
