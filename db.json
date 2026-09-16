@@ -72,7 +72,7 @@
     {
       "id": "USR_1789526748571_70704",
       "phone": "254721862397",
-      "role": "DRIVER",
+      "role": "USER",
       "createdAt": 1789526748571
     }
   ],
@@ -80,7 +80,7 @@
     {
       "phone": "254721862397",
       "otp": "1234",
-      "expires": 1789539718666
+      "expires": 1789542817109
     }
   ],
   "orders": [
@@ -156,6 +156,80 @@
       "createdAt": 1789538174715,
       "customerPhone": "254721862397",
       "checkoutRequestId": "ws_CO_160920260856088721862397"
+    },
+    {
+      "id": "ORD_ST78_1789542283267_46358",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 650,
+      "deliveryFee": 210,
+      "shopSurcharge2Percent": 13,
+      "total": 873,
+      "driverWalletCredit": 199.5,
+      "platformRevenue": 19.74,
+      "kraTax16Percent": 3.76,
+      "pickup": "Current GPS Location (Nairobi)",
+      "destination": "kasarani",
+      "vehicleType": "MOTORBIKE",
+      "driverId": "DRV_01",
+      "status": "COMPLETED",
+      "createdAt": 1789542283267,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_160920261004360721862397"
+    }
+  ],
+  "escrow": [
+    {
+      "escrowId": "ESC_1789542283267_48869",
+      "orderId": "ORD_ST78_1789542283267_46358",
+      "businessId": "BIZ-KE",
+      "amount": 663,
+      "region": "KE",
+      "status": "RELEASED",
+      "createdAt": 1789542283267,
+      "releasedAt": 1789542352981
+    }
+  ],
+  "wallets": [
+    {
+      "ownerId": "BIZ-KE",
+      "balance": 0,
+      "currency": "KES",
+      "type": "SHOP"
+    },
+    {
+      "ownerId": "BIZ-UK",
+      "balance": 0,
+      "currency": "GBP",
+      "type": "SHOP"
+    },
+    {
+      "ownerId": "BIZ-ES",
+      "balance": 0,
+      "currency": "EUR",
+      "type": "SHOP"
+    },
+    {
+      "ownerId": "BIZ-CA",
+      "balance": 0,
+      "currency": "CAD",
+      "type": "SHOP"
+    },
+    {
+      "ownerId": "PLATFORM",
+      "balance": 45.5,
+      "currency": "KES"
+    },
+    {
+      "ownerId": "TAX",
+      "balance": 104,
+      "currency": "KES"
+    },
+    {
+      "ownerId": "DRV_01",
+      "balance": 199.5,
+      "currency": "KES"
     }
   ],
   "ledger_entries": [
@@ -195,11 +269,88 @@
       "status": "SETTLED",
       "timestamp": 1789538280756,
       "merkleProof": "043e2f2ba192762fd2013b1d01bce545765e2ce1afdfbbd374a1939b6145e36a"
+    },
+    {
+      "id": "LEDGER_1789542352980_97199",
+      "owner_id": "BIZ-KE",
+      "orderId": "ORD_ST78_1789542283267_46358",
+      "amount": 617.5,
+      "entry_type": "CREDIT",
+      "currency": "KES",
+      "reference_id": "ORD_ST78_1789542283267_46358",
+      "status": "SETTLED",
+      "timestamp": 1789542352980,
+      "merkleProof": {
+        "hash": "e1316ac097d44cfad1ace81ee514d1114bf81f008c4f1339492491e8f49683ac",
+        "salt": "5e53937ff37230ebb6155328c1460110"
+      }
+    },
+    {
+      "id": "LEDGER_1789542352980_5305",
+      "owner_id": "DRV_01",
+      "orderId": "ORD_ST78_1789542283267_46358",
+      "amount": 199.5,
+      "entry_type": "CREDIT",
+      "currency": "KES",
+      "reference_id": "ORD_ST78_1789542283267_46358",
+      "status": "SETTLED",
+      "timestamp": 1789542352980,
+      "merkleProof": {
+        "hash": "1489b7f7db0bd2ad8aa2bc7a70174067c79acd4382ebabfb411b72aea5a2806e",
+        "salt": "6ce7007115ebc7d59b0551ab1f9aee4b"
+      }
+    },
+    {
+      "id": "LEDGER_1789542448840_75965",
+      "owner_id": "BIZ-KE",
+      "orderId": "WTH_MPESA_1789542448840_78552",
+      "amount": 667,
+      "entry_type": "DEBIT",
+      "currency": "KES",
+      "reference_id": "WTH_MPESA_1789542448840_78552",
+      "destination": "MPESA",
+      "status": "SETTLED",
+      "timestamp": 1789542448840,
+      "merkleProof": {
+        "hash": "0f78f6b3b20d0ce13d6e3929ce5b7c2e2ea678f4093901f943dbc703d34a2653",
+        "salt": "018515189e0ad3c658b8f1045a4cd9d0"
+      }
+    },
+    {
+      "id": "LEDGER_1789542465215_18771",
+      "owner_id": "BIZ-KE",
+      "orderId": "WTH_MPESA_1789542465215_63399",
+      "amount": 0.5,
+      "entry_type": "DEBIT",
+      "currency": "KES",
+      "reference_id": "WTH_MPESA_1789542465215_63399",
+      "destination": "MPESA",
+      "status": "SETTLED",
+      "timestamp": 1789542465215,
+      "merkleProof": {
+        "hash": "085c576d50056fc49c633e908ec7daf8a6fd3d12e5382c131fc3f570e3ad4e0d",
+        "salt": "9f721313f89fe83308bbf38082af72a0"
+      }
     }
   ],
   "shops": [],
   "catalogs": {},
   "driver_telemetry": {},
+  "audit_logs": [
+    {
+      "id": "REC_1789542406186",
+      "type": "LEDGER_AUDIT",
+      "status": "FAILED",
+      "discrepanciesCount": 5,
+      "timestamp": 1789542406186
+    }
+  ],
+  "trust_accounts": {
+    "BIZ-KE": {
+      "segregatedBalance": 0,
+      "liabilityBalance": 0
+    }
+  },
   "payouts": [],
   "auditTrail": [],
   "ledger": [
@@ -212,32 +363,6 @@
       "reconciled": true,
       "timestamp": 1789503266923,
       "merkleProof": "cc02e608006c6c8358532734be0e5c3ca9e42643eb796c133911efb11400ab4b"
-    }
-  ],
-  "wallets": [
-    {
-      "ownerId": "BIZ-KE",
-      "balance": 50,
-      "currency": "KES",
-      "type": "SHOP"
-    },
-    {
-      "ownerId": "BIZ-UK",
-      "balance": 0,
-      "currency": "GBP",
-      "type": "SHOP"
-    },
-    {
-      "ownerId": "BIZ-ES",
-      "balance": 0,
-      "currency": "EUR",
-      "type": "SHOP"
-    },
-    {
-      "ownerId": "BIZ-CA",
-      "balance": 0,
-      "currency": "CAD",
-      "type": "SHOP"
     }
   ]
 }

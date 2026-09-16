@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 78 | Sovereign Super-App & Escrow Engine</title>
+  <title>RDS 80 | Hybrid Sovereign Super-App & Rider Wallet Engine</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <!-- Leaflet CSS & JS for Real-World Maps -->
@@ -291,11 +291,11 @@
     <!-- AUTHENTICATION & FAST REGISTRATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 25px;">
-            <span>🔐 RDS STAGE 78 INSTITUTIONAL & ESCROW OTP ENTRY</span>
+            <span>🔐 RDS STAGE 80 HYBRID INSTITUTIONAL OTP ENTRY</span>
         </div>
 
         <div class="checkout-panel" style="text-align: center; padding: 30px 20px;">
-            <h2 style="color: var(--cyan); margin-bottom: 8px; font-size: 1.3rem;">Welcome to RDS Escrow Super-App</h2>
+            <h2 style="color: var(--cyan); margin-bottom: 8px; font-size: 1.3rem;">Welcome to RDS Hybrid Super-App</h2>
             <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 20px;">Enter your phone number for instant login or auto-registration under CBK standards.</p>
 
             <div id="phoneStep">
@@ -313,7 +313,7 @@
     <!-- HOME / SUPER-APP DASHBOARD -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 78 ESCROW & NAVIGATION ENGINE</span>
+            <span>🌐 RDS STAGE 80 HYBRID RIDER & ESCROW ENGINE</span>
             <span id="nodeLatency">Institutional • Active</span>
         </div>
 
@@ -430,7 +430,7 @@
     <!-- WALLET VIEW -->
     <div id="viewWallet" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Multi-Role Wallets & Escrow</h3>
+            <h3>Multi-Role Wallets & Rider Payouts</h3>
         </div>
 
         <div class="checkout-panel" style="background: rgba(168,85,247,0.05); border-color: var(--stage-purple);">
@@ -446,10 +446,11 @@
         </div>
 
         <div class="checkout-panel">
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Wallet Owner</label>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Wallet Owner / Role</label>
             <select id="walletOwnerSelect" onchange="fetchSovereignBalance()">
                 <option value="BIZ-KE">Shop / Business Wallet</option>
                 <option value="DRV_01">Driver / Rider Wallet (John Kiprop)</option>
+                <option value="RDR_01">Dedicated Rider Wallet (RDR_01)</option>
                 <option value="PLATFORM">Platform Commission Wallet</option>
                 <option value="TAX">KRA Tax Collection Wallet</option>
             </select>
@@ -464,17 +465,17 @@
         <div class="checkout-panel">
             <h3>Withdraw Funds</h3>
             <select id="withdrawDestination">
-                <option value="MPESA">M-Pesa</option>
+                <option value="MPESA">M-Pesa B2C</option>
                 <option value="BANK">Bank Account</option>
             </select>
             <input type="number" id="withdrawAmountInput" placeholder="Amount">
-            <button onclick="triggerWalletWithdrawal()" style="background: var(--alert-red);">Withdraw</button>
+            <button onclick="triggerWalletWithdrawal()" style="background: var(--alert-red);">Withdraw Funds</button>
         </div>
 
         <div class="checkout-panel">
             <h3>LEDGER FEED</h3>
             <div id="ledgerFeed" class="ledger-list">
-                <div class="ledger-item"><span>[ESCROWED] Stage 78 Vault Online</span><span style="color:var(--neon-green);">Secure</span></div>
+                <div class="ledger-item"><span>[ESCROWED] Stage 80 Hybrid Vault Online</span><span style="color:var(--neon-green);">Secure</span></div>
             </div>
         </div>
     </div>
@@ -1070,7 +1071,7 @@
                 headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
                 body: JSON.stringify({ businessId: bizId })
             });
-            const data = json = await res.json();
+            const data = await res.json();
             if (data.success) {
                 alert(data.message);
                 document.getElementById('lifecycleStatus').innerText = "DISPATCHED (ESCROW LOCKED)";
@@ -1089,7 +1090,7 @@
             });
             const data = await res.json();
             if (data.success) {
-                alert(`${data.message}\nShop credited: ${data.breakdown.shop}\nDriver credited: ${data.breakdown.driver}`);
+                alert(`${data.message}\nShop credited: ${data.breakdown.shop}\nRider wallet credited: ${data.breakdown.rider}`);
                 document.getElementById('lifecycleStatus').innerText = "COMPLETED & DISTRIBUTED";
                 fetchSovereignBalance();
             } else {
@@ -1099,11 +1100,20 @@
 
         async function fetchSovereignBalance() {
             const ownerId = document.getElementById('walletOwnerSelect').value;
-            const response = await fetch(`${API_BASE}/wallets/${ownerId}/balance`);
-            const data = await response.json();
-            if (data.success) {
-                document.getElementById('walletCurrencyLabel').innerText = `BALANCE (${data.currency}) - ${ownerId}`;
-                document.getElementById('walletBalance').innerText = Number(data.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
+            if (ownerId.startsWith('RDR_')) {
+                const res = await fetch(`${API_BASE}/api/rider/wallet/${ownerId}`);
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('walletCurrencyLabel').innerText = `RIDER BALANCE (${data.wallet.currency}) - ${ownerId}`;
+                    document.getElementById('walletBalance').innerText = Number(data.wallet.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                }
+            } else {
+                const response = await fetch(`${API_BASE}/wallets/${ownerId}/balance`);
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('walletCurrencyLabel').innerText = `BALANCE (${data.currency}) - ${ownerId}`;
+                    document.getElementById('walletBalance').innerText = Number(data.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                }
             }
         }
 
@@ -1114,18 +1124,35 @@
             const amount = Number(document.getElementById('withdrawAmountInput').value) || 0;
             if (amount <= 0) return;
 
-            const res = await fetch(`${API_BASE}/api/wallet/withdraw`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                body: JSON.stringify({ amount, destination, ownerId, businessId: bizId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(data.message);
-                document.getElementById('withdrawAmountInput').value = "";
-                fetchSovereignBalance();
+            if (ownerId.startsWith('RDR_')) {
+                const phone = currentUser ? currentUser.phone : "254721862397";
+                const res = await fetch(`${API_BASE}/api/rider/withdraw`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ riderId: ownerId, amount, phone })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('withdrawAmountInput').value = "";
+                    fetchSovereignBalance();
+                } else {
+                    alert(data.error);
+                }
             } else {
-                alert(data.error);
+                const res = await fetch(`${API_BASE}/api/wallet/withdraw`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ amount, destination, ownerId, businessId: bizId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('withdrawAmountInput').value = "";
+                    fetchSovereignBalance();
+                } else {
+                    alert(data.error);
+                }
             }
         }
     </script>

@@ -1,8 +1,8 @@
 // ==========================================
-// RDS - STAGE 78 INSTITUTIONAL, ESCROW & COMPLIANCE ENGINE
+// RDS - STAGE 79 & 80 HYBRID SOVEREIGN ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Escrow Storage,
 // Multi-Wallet, 16% KRA Tax Allocation, Frictionless Phone OTP, End-to-End Autonomous Routing,
-// Comprehensive Driver/Vehicle KYC, & CBK / World Bank Hardened Compliance
+// Comprehensive Driver/Vehicle KYC, CBK / World Bank Hardened Compliance & Dedicated Rider Payout Engine
 // ==========================================
 
 const express = require("express");
@@ -41,7 +41,7 @@ const PLATFORM_DELIVERY_SHARE = 0.05;   // 5% platform share of delivery/ride fa
 const SHOP_SURCHARGE_RATE = 0.02;       // 2% platform surcharge on commodities
 const KRA_TAX_RATE = 0.16;              // 16% KRA tax applicable on platform commissions (KES corridor)
 
-// --- STAGE 75/76/77/78 INSTITUTIONAL COMPLIANCE CONSTANTS ---
+// --- STAGE 75/76/77/78/79/80 INSTITUTIONAL COMPLIANCE CONSTANTS ---
 const MAX_DAILY_ANONYMOUS_TX = 50000; // KES 50,000 AML threshold per CBK guidelines
 
 function num(v) {
@@ -51,7 +51,7 @@ function num(v) {
 
 function generateStage70MerkleProof(record) {
   const salt = process.env.SOVEREIGN_SALT || crypto.randomBytes(16).toString('hex');
-  const payload = `${record.id || record.escrowId}:${record.businessId || 'GLOBAL'}:${record.orderId || record.transactionId}:${record.total || record.amount}:${record.currency || 'KES'}:${record.timestamp || Date.now()}:${salt}`;
+  const payload = `${record.id || record.escrowId || record.riderId}:${record.businessId || 'GLOBAL'}:${record.orderId || record.transactionId}:${record.total || record.amount}:${record.currency || 'KES'}:${record.timestamp || Date.now()}:${salt}`;
   return {
     hash: crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_70_MASTER_KEY').update(payload).digest('hex'),
     salt
@@ -59,7 +59,7 @@ function generateStage70MerkleProof(record) {
 }
 
 /**
- * Stage 70/71/72/73/78 Financial & KRA Tax Calculation Engine
+ * Stage 70/71/72/73/78/79/80 Financial & KRA Tax Calculation Engine
  */
 function processStage70FinancialSplit(itemPriceTotal = 0, distanceKm = 1.0, timeMinutes = 10, vehicleType = "MOTORBIKE", currencyCode = "KES") {
   const itemsGross = currency(num(itemPriceTotal));
@@ -147,6 +147,9 @@ function defaultDB() {
     drivers: [
       { id: "DRV_01", name: "John Kiprop", vehicle: "Motorbike", plate: "KMXX 123A", status: "ONLINE", phone: "254711223344" }
     ],
+    riders: [
+      { riderId: "RDR_01", name: "John Kiprop", phone: "254711223344", vehicleType: "MOTORBIKE", status: "ACTIVE" }
+    ],
     products: [
       { id: "p1", businessId: "BIZ-KE", category: "RESTAURANT", merchant: "Nairobi Grill & Chicken", name: "2pc Chicken Meal (KES)", price: 650, currency: "KES", image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80" },
       { id: "p5", businessId: "BIZ-KE", category: "HOTEL", merchant: "Serena Luxury Suites", name: "Executive Suite Booking (1 Night)", price: 12500, currency: "KES", image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&auto=format&fit=crop&q=80" },
@@ -157,6 +160,10 @@ function defaultDB() {
     orders: [], 
     escrow: [],       // 🔐 STAGE 78 ESCROW STORAGE
     wallets: [],      // 💳 STAGE 78 MULTI-WALLET STORAGE
+    rider_wallets: [  // 🚴 STAGE 79/80 RIDER DEDICATED WALLETS
+      { riderId: "DRV_01", balance: 0, currency: "KES" },
+      { riderId: "RDR_01", balance: 0, currency: "KES" }
+    ],
     ledger_entries: [],
     shops: [],
     catalogs: {},
@@ -176,8 +183,10 @@ function ensureState() {
   if (!Array.isArray(data.otp_sessions)) data.otp_sessions = [];
   if (!Array.isArray(data.orders)) data.orders = [];
   if (!Array.isArray(data.drivers)) data.drivers = [];
+  if (!Array.isArray(data.riders)) data.riders = [];
   if (!Array.isArray(data.escrow)) data.escrow = [];
   if (!Array.isArray(data.wallets)) data.wallets = [];
+  if (!Array.isArray(data.rider_wallets)) data.rider_wallets = [];
   if (!Array.isArray(data.ledger_entries)) data.ledger_entries = [];
   if (!Array.isArray(data.shops)) data.shops = [];
   if (!Array.isArray(data.audit_logs)) data.audit_logs = [];
@@ -260,7 +269,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_78_ESCROW_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_80_HYBRID_SOVEREIGN_ENGINE_ONLINE", time: Date.now() }));
 
 // 🔐 STAGE 78 ESCROW CREATION HELPER
 function createEscrow(orderId, businessId, amount, region) {
@@ -278,15 +287,116 @@ function createEscrow(orderId, businessId, amount, region) {
     return escrowEntry;
 }
 
-// 🚴 STAGE 78 RIDE & DELIVERY CALCULATION ENGINE
+// 🚴 STAGE 78/79 RIDE & DELIVERY CALCULATION ENGINE
 function calculateRide(distanceKm, type) {
     const km = num(distanceKm);
     const vType = type ? type.toUpperCase() : "MOTORBIKE";
     if (km < 0.2 && vType === "BODA") return 100;
     let base = vType === "BODA" ? 50 : 100;
     let perKm = vType === "BODA" ? 30 : 60;
-    return base + (km * perKm);
+    return Math.round(base + (km * perKm));
 }
+
+// 🚴 STAGE 79/80 RIDER REGISTRATION ENDPOINT
+app.post('/api/rider/register', async (req, res) => {
+    try {
+        ensureState();
+        const { name, phone, vehicleType } = req.body;
+        if (!name || !phone) return fail(res, "Name and phone required", 400);
+
+        const riderId = id("RDR");
+        data.riders.push({
+            riderId,
+            name,
+            phone,
+            vehicleType: vehicleType ? vehicleType.toUpperCase() : "MOTORBIKE",
+            status: "ACTIVE",
+            createdAt: Date.now()
+        });
+
+        data.rider_wallets.push({
+            riderId,
+            balance: 0,
+            currency: "KES"
+        });
+
+        await saveDB();
+        return ok(res, { success: true, riderId, message: "Rider registered successfully with dedicated wallet" });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+// 📦 STAGE 79/80 ASSIGN RIDER TO ORDER
+app.post('/api/order/assign-rider', async (req, res) => {
+    try {
+        ensureState();
+        const { orderId, riderId, distanceKm, vehicleType } = req.body;
+        const order = data.orders.find(o => o.id === orderId);
+        if (!order) return fail(res, "Order not found", 404);
+
+        const deliveryFee = calculateRide(distanceKm || 3.0, vehicleType || "MOTORBIKE");
+
+        order.riderId = riderId || "DRV_01";
+        order.deliveryFee = deliveryFee;
+        order.status = "RIDER_ASSIGNED";
+
+        await saveDB();
+        return ok(res, { success: true, deliveryFee, message: "Rider assigned successfully" });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+// 💳 STAGE 79/80 CHECK RIDER WALLET
+app.get('/api/rider/wallet/:riderId', async (req, res) => {
+    try {
+        ensureState();
+        const { riderId } = req.params;
+        let wallet = data.rider_wallets.find(w => w.riderId === riderId);
+        if (!wallet) {
+            wallet = { riderId, balance: 0, currency: "KES" };
+            data.rider_wallets.push(wallet);
+            await saveDB();
+        }
+        return ok(res, { success: true, wallet });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+// 💸 STAGE 79/80 RIDER WITHDRAWAL ENDPOINT (M-Pesa B2C simulation)
+app.post('/api/rider/withdraw', async (req, res) => {
+    try {
+        ensureState();
+        const { riderId, amount, phone } = req.body;
+        const withdrawAmount = Number(amount);
+        if (withdrawAmount <= 0) return fail(res, "Invalid withdrawal amount", 400);
+
+        let wallet = data.rider_wallets.find(w => w.riderId === riderId);
+        if (!wallet) return fail(res, "Rider wallet not found", 404);
+
+        if (wallet.balance < withdrawAmount) return fail(res, "Insufficient rider wallet balance", 400);
+
+        wallet.balance -= withdrawAmount;
+
+        const referenceId = id("RDR_WTH");
+        const ledgerEntry = {
+            id: id("LEDGER"), owner_id: riderId, orderId: referenceId,
+            amount: withdrawAmount, entry_type: "DEBIT", currency: wallet.currency || "KES",
+            reference_id: referenceId, destination: phone || "M-Pesa", status: "SETTLED", timestamp: Date.now()
+        };
+        ledgerEntry.merkleProof = generateStage70MerkleProof(ledgerEntry);
+        data.ledger_entries.push(ledgerEntry);
+
+        await saveDB();
+        if (global.io) global.io.emit('riderWalletUpdated', { riderId, balance: wallet.balance });
+
+        return ok(res, { success: true, message: `Successfully withdrew KES ${withdrawAmount} to ${phone || 'M-Pesa'} (Simulated B2C Payout)` });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
 
 app.post('/api/compliance/reconcile-ledger', async (req, res) => {
   ensureState();
@@ -545,25 +655,28 @@ app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
   ok(res, { success: true, split });
 });
 
-// 💳 CHECKOUT FLOW WITH STAGE 78 ESCROW LOCK
+// 💳 CHECKOUT FLOW WITH STAGE 78/80 ESCROW LOCK
 app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
-        const { phone, itemPriceTotal, distanceKm, vehicleType, pickup, destination } = req.body;
+        const { phone, itemPriceTotal, distanceKm, vehicleType, pickup, destination, riderId } = req.body;
         const tenant = req.tenantObj;
         const currencyCode = tenant.currency || "KES";
         const split = processStage70FinancialSplit(itemPriceTotal, distanceKm || 3.0, 10, vehicleType || "MOTORBIKE", currencyCode);
 
         if (split.total <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST78");
+        const orderId = id("ORD_ST80");
+        const assignedRiderId = riderId || "DRV_01";
+        const deliveryFeeVal = calculateRide(distanceKm || 3.0, vehicleType || "MOTORBIKE");
+
         const order = {
             id: orderId,
             businessId: tenant.id,
             region: tenant.region || "KE",
             currency: currencyCode,
             productAmount: split.productAmount,
-            deliveryFee: split.deliveryFee,
+            deliveryFee: deliveryFeeVal,
             shopSurcharge2Percent: split.shopSurcharge2Percent,
             total: split.total,
             driverWalletCredit: split.driverWalletCredit,
@@ -572,13 +685,14 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
             pickup: pickup || "Shop Hub",
             destination: destination || "Customer Destination",
             vehicleType: vehicleType || "MOTORBIKE",
-            driverId: "DRV_01",
+            riderId: assignedRiderId,
+            driverId: assignedRiderId,
             status: "RIDER_ASSIGNED",
             createdAt: Date.now()
         };
         data.orders.push(order);
 
-        // 🔐 CREATE ESCROW ENTRY (HIDES MONEY FROM SHOP UNTIL DELIVERY COMPLETE)
+        // 🔐 CREATE ESCROW ENTRY
         const baseAmount = num(itemPriceTotal);
         const platformFeeVal = baseAmount * 0.02;
         const totalPaidEscrow = baseAmount + platformFeeVal;
@@ -602,7 +716,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.total),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS ${tenant.region || 'KE'}`,
-                    TransactionDesc: `Stage 78 Escrow Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 80 Escrow Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -628,7 +742,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// 📦 DISPATCH ENDPOINT (SHOP ACTION - NO EARLY FUNDS RELEASE)
+// 📦 DISPATCH ENDPOINT
 app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -649,7 +763,7 @@ app.post("/api/orders/:orderId/dispatch", enforceTenantIsolation, async (req, re
     }
 });
 
-// 🚴 5. DELIVERY COMPLETE → RELEASE ESCROW & DISTRIBUTE FUNDS (CORE ENGINE)
+// 🚴 DELIVERY COMPLETE → RELEASE ESCROW & DISTRIBUTE FUNDS TO SHOP, PLATFORM, TAX & RIDER WALLET
 app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -671,6 +785,7 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
 
         // 🧾 ENSURE WALLETS EXIST
         if (!data.wallets) data.wallets = [];
+        if (!data.rider_wallets) data.rider_wallets = [];
 
         function getWallet(ownerId, currency) {
             let w = data.wallets.find(w => w.ownerId === ownerId);
@@ -684,14 +799,21 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
         const shopWallet = getWallet(order.businessId, order.currency || "KES");
         const platformWallet = getWallet("PLATFORM", order.currency || "KES");
         const taxWallet = getWallet("TAX", order.currency || "KES");
-        const driverId = order.driverId || "DRV_01";
-        const driverWallet = getWallet(driverId, order.currency || "KES");
+        
+        const targetRiderId = order.riderId || order.driverId || "DRV_01";
+        let riderWallet = data.rider_wallets.find(w => w.riderId === targetRiderId);
+        if (!riderWallet) {
+            riderWallet = { riderId: targetRiderId, balance: 0, currency: order.currency || "KES" };
+            data.rider_wallets.push(riderWallet);
+        }
 
         // 💰 DISTRIBUTE MONEY TO WALLETS
         shopWallet.balance += shopAmount;
         platformWallet.balance += (platformCommission + platformFee);
         taxWallet.balance += tax;
-        driverWallet.balance += order.driverWalletCredit;
+        
+        const deliveryCredit = order.driverWalletCredit || order.deliveryFee || 100;
+        riderWallet.balance += deliveryCredit;
 
         // 📝 CREATE SETTLED LEDGER ENTRIES FOR MERKLE PROOF AUDIT
         const shopLedger = {
@@ -702,13 +824,13 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
         shopLedger.merkleProof = generateStage70MerkleProof(shopLedger);
         data.ledger_entries.push(shopLedger);
 
-        const driverLedger = {
-            id: id("LEDGER"), owner_id: driverId, orderId: order.id,
-            amount: order.driverWalletCredit, entry_type: "CREDIT", currency: order.currency,
+        const riderLedger = {
+            id: id("LEDGER"), owner_id: targetRiderId, orderId: order.id,
+            amount: deliveryCredit, entry_type: "CREDIT", currency: order.currency,
             reference_id: order.id, status: "SETTLED", timestamp: Date.now()
         };
-        driverLedger.merkleProof = generateStage70MerkleProof(driverLedger);
-        data.ledger_entries.push(driverLedger);
+        riderLedger.merkleProof = generateStage70MerkleProof(riderLedger);
+        data.ledger_entries.push(riderLedger);
 
         // 🔐 UPDATE ESCROW
         escrow.status = "RELEASED";
@@ -722,15 +844,15 @@ app.post("/api/orders/:orderId/complete", enforceTenantIsolation, async (req, re
         if (global.io) {
             global.io.emit('orderStatusUpdate', { orderId: order.id, status: 'COMPLETED' });
             global.io.emit('walletUpdated', { ownerId: order.businessId, currency: order.currency });
-            global.io.emit('walletUpdated', { ownerId: driverId, currency: order.currency });
+            global.io.emit('riderWalletUpdated', { riderId: targetRiderId, balance: riderWallet.balance });
         }
 
         return res.json({
             success: true,
-            message: "Order completed, escrow released, and funds distributed safely",
+            message: "Order completed, escrow released, and funds safely distributed to shop, platform, tax, and rider wallet",
             breakdown: {
                 shop: shopAmount,
-                driver: order.driverWalletCredit,
+                rider: deliveryCredit,
                 platform: platformCommission + platformFee,
                 tax: tax
             }
@@ -749,7 +871,6 @@ app.get('/wallets/:ownerId/balance', async (req, res) => {
         let w = data.wallets.find(wallet => wallet.ownerId === ownerId);
         let balance = w ? w.balance : 0;
         
-        // Fallback calculation from ledger if wallet entity is missing
         if (!w) {
             const entries = data.ledger_entries.filter(e => e.owner_id === ownerId && e.status === 'SETTLED');
             balance = entries.reduce((acc, entry) => entry.entry_type === 'CREDIT' ? acc + entry.amount : acc - entry.amount, 0);
@@ -803,5 +924,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, enforceCbkAmlAndKyc, as
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 78 ESCROW & SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 80 HYBRID SOVEREIGN & RIDER ENGINE ACTIVE ON PORT ${PORT}`);
 });
