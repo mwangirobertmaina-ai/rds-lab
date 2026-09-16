@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 66 | Sovereign Super-App & Ride Hailing</title>
+  <title>RDS 67 | Sovereign Super-App (Marketplace + Ride Hailing)</title>
 
   <script src="/socket.io/socket.io.js"></script>
 
@@ -162,6 +162,27 @@
     .product-title { font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 2px; }
     .product-price { font-size: 0.85rem; color: var(--stage-purple); font-weight: 700; margin-bottom: 8px; }
 
+    .quantity-stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--dark-bg);
+      border: 1px solid #374151;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .quantity-stepper button {
+      background: #222e3c;
+      color: #fff;
+      border: none;
+      padding: 6px 10px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .quantity-display { font-size: 0.8rem; font-weight: bold; color: var(--neon-green); padding: 0 8px; }
+
     button {
       background: var(--stage-purple);
       color: #fff;
@@ -175,6 +196,23 @@
       text-transform: uppercase;
     }
     button:hover { background: var(--cyan); color: #000; }
+
+    .floating-cart {
+      position: fixed;
+      bottom: 70px; left: 15px; right: 15px;
+      max-width: 450px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #111827, #1f2937);
+      border: 1px solid var(--stage-purple);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 999;
+      display: none;
+    }
+    .floating-cart.active { display: flex; }
 
     .checkout-panel {
       background: var(--panel-bg);
@@ -241,7 +279,7 @@
     <!-- HOME / SUPER-APP DASHBOARD -->
     <div id="viewHome" class="app-view active-view">
         <div class="telemetry-ribbon">
-            <span>🌐 RDS STAGE 66 RIDE-HAILING</span>
+            <span>🌐 RDS STAGE 67 UNIFIED ENGINE</span>
             <span id="nodeLatency">10ms • Secured</span>
         </div>
 
@@ -273,65 +311,62 @@
         </div>
 
         <div class="section-header">
-            <h3>Catalog & Ride Services</h3>
+            <h3 id="catalogTitle">Catalog & Services</h3>
             <span id="activeCurrencyLabel" style="font-size:0.75rem; color:var(--stage-purple);">KES</span>
         </div>
 
         <div class="catalog-grid" id="catalogGrid">
-            <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading...</em>
+            <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading catalog...</em>
         </div>
     </div>
 
-    <!-- RIDE BOOKING & WORKFLOW VIEW -->
+    <!-- UNIFIED CHECKOUT & RIDE VIEW -->
     <div id="viewOrders" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Ride Hailing Workflow</h3>
+            <h3>Unified Checkout & Logistics</h3>
         </div>
 
         <div class="checkout-panel">
-            <h3>1. Pickup Location</h3>
-            <select id="pickupMode" onchange="togglePickupInput()">
-                <option value="GPS">📍 Use My Current Location (GPS)</option>
-                <option value="MANUAL">✍️ Enter Pickup Manually</option>
-            </select>
-            <input type="text" id="pickupInput" value="Kawangware, Nairobi" placeholder="Enter pickup location...">
-        </div>
+            <h3>1. Pickup & Destination</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Pickup Location</label>
+            <input type="text" id="pickupInput" value="Current GPS Location (Nairobi)" placeholder="Pickup address...">
+            
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Destination</label>
+            <input type="text" id="destinationInput" placeholder="Where are you going? e.g. Westlands" oninput="recalculateUnifiedTotal()">
 
-        <div class="checkout-panel">
-            <h3>2. Destination</h3>
-            <input type="text" id="destinationInput" placeholder="Where are you going? e.g. Westlands">
-        </div>
-
-        <div class="checkout-panel">
-            <h3>3. Vehicle Selection</h3>
-            <select id="rideVehicleSelect">
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Vehicle / Transport Mode</label>
+            <select id="vehicleTypeSelect" onchange="recalculateUnifiedTotal()">
                 <option value="MOTORBIKE">🏍️ Boda (Motorbike)</option>
                 <option value="CAR">🚗 Taxi (Car)</option>
             </select>
-            <button onclick="requestRideEstimate()" class="btn-cyan">Calculate Price Automatically</button>
+            <input type="number" id="distanceKmInput" value="3.0" step="0.1" style="display:none;" oninput="recalculateUnifiedTotal()">
         </div>
 
-        <!-- Price Estimate & Confirmation Modal Box -->
-        <div class="checkout-panel" id="estimateBox" style="display:none; border: 1px solid var(--neon-green);">
-            <h3 style="color: var(--neon-green);">Ride Summary & Quote</h3>
-            <div style="font-size: 0.85rem; margin-bottom: 10px; line-height: 1.5;">
-                <div><strong>From:</strong> <span id="summaryPickup"></span></div>
-                <div><strong>To:</strong> <span id="summaryDestination"></span></div>
-                <div><strong>Vehicle:</strong> <span id="summaryVehicle"></span></div>
-                <div><strong>Distance:</strong> <span id="summaryDistance"></span> km (<span id="summaryTime"></span> mins)</div>
-                <div style="font-size: 1.1rem; margin-top: 8px; color: var(--neon-green);"><strong>Price:</strong> <span id="summaryPrice"></span></div>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                <button onclick="confirmAndDispatchRide()" style="background:var(--neon-green); color:#000;">✅ Confirm Ride</button>
-                <button onclick="cancelRideRequest()" style="background:var(--alert-red);">❌ Cancel</button>
+        <div class="checkout-panel">
+            <h3>2. Mathematical Split Breakdown</h3>
+            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Commodity / Items Amount (100% Shop):</span> <strong id="previewProduct">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery / Ride Fare (95% Driver):</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Platform Surcharge (2%):</span> <strong id="previewSurcharge" style="color:var(--stage-purple);">0.00</strong></div>
+                <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Total User Paid:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
             </div>
         </div>
 
-        <!-- Driver Assigned Details Box -->
-        <div class="checkout-panel" id="driverBox" style="display:none; border: 1px solid var(--cyan);">
-            <h3 style="color: var(--cyan);">🤖 Driver Assigned Automatically</h3>
-            <div style="font-size: 0.85rem; line-height: 1.6;" id="driverDetailsContent"></div>
-            <button onclick="completeCurrentRide()" style="background:var(--stage-purple); margin-top:10px;">Complete Trip & Release Payment</button>
+        <div class="checkout-panel">
+            <h3>3. Secure Payment</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">M-Pesa Phone Number</label>
+            <input type="text" id="custPhone" placeholder="2547XXXXXXXX" value="254721862397">
+            <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Authorize Payment</button>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>4. Lifecycle Actions</h3>
+            <input type="text" id="dispatchOrderIdInput" placeholder="Order ID">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+                <button onclick="triggerShopDispatch()" style="background:var(--stage-purple);">1. Shop Dispatch</button>
+                <button onclick="triggerDeliveryComplete()" style="background:var(--neon-green); color:#000;">2. Complete Order</button>
+            </div>
         </div>
 
         <div class="checkout-panel">
@@ -388,17 +423,24 @@
         <div class="checkout-panel">
             <p><strong>User:</strong> Robert Maina</p>
             <p style="margin-top: 8px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
-            <p style="margin-top: 8px;"><strong>Engine:</strong> RDS Stage 66 Ride Hailing</p>
+            <p style="margin-top: 8px;"><strong>Engine:</strong> RDS Stage 67 Sovereign Unified Engine</p>
         </div>
+    </div>
+
+    <div id="floatingCart" class="floating-cart" onclick="switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1])">
+        <div>
+            <strong id="cartItemCount" style="color: var(--neon-green); display: block; font-size: 0.85rem;">0 Items</strong>
+            <span id="cartTotalSum" style="font-size: 0.75rem; color: var(--text-dim);">0</span>
+        </div>
+        <button style="width: auto; padding: 6px 14px; font-size: 0.75rem;">Proceed ➔</button>
     </div>
 
     <input type="hidden" id="storeBusinessId" value="BIZ-KE">
     <input type="hidden" id="storeCurrency" value="KES">
-    <input type="hidden" id="activeRideId" value="">
 
     <div class="bottom-nav">
         <a class="nav-item active" onclick="switchTab('viewHome', this)"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</a>
-        <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Ride Book</a>
+        <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Checkout</a>
         <a class="nav-item" onclick="switchTab('viewWallet', this)"><svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>Wallets</a>
         <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
     </div>
@@ -408,8 +450,9 @@
         const CLOUD_API = "https://rds-lab.onrender.com";
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
+        let allProductsCache = [];
         let activeCategory = 'ALL';
-        let latestPricing = null;
+        let cart = {}; 
 
         function switchTab(viewId, el) {
             document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
@@ -425,15 +468,18 @@
             try {
                 const res = await fetch(`${API_BASE}/api/products?category=${activeCategory}`, { headers: { "x-business-id": bizId } });
                 const data = await res.json();
+                allProductsCache = (data && data.products) ? data.products : [];
                 document.getElementById('activeCurrencyLabel').innerText = data.currency || "KES";
                 document.getElementById('storeCurrency').value = data.currency || "KES";
 
-                if (activeCategory === 'TAXI' || activeCategory === 'BODA') {
-                    if (activeCategory === 'TAXI') document.getElementById('rideVehicleSelect').value = 'CAR';
-                    if (activeCategory === 'BODA') document.getElementById('rideVehicleSelect').value = 'MOTORBIKE';
-                    switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
+                if (activeCategory === 'TAXI') {
+                    document.getElementById('vehicleTypeSelect').value = 'CAR';
+                    renderRideHailingCard('TAXI', 'Taxicab Booking', 'Comfortable 4-Wheeled Ride', 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&auto=format&fit=crop&q=80');
+                } else if (activeCategory === 'BODA') {
+                    document.getElementById('vehicleTypeSelect').value = 'MOTORBIKE';
+                    renderRideHailingCard('MOTORBIKE', 'Boda Booking', 'Fast Motorbike Ride', 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=400&auto=format&fit=crop&q=80');
                 } else {
-                    renderCatalog(data.products || []);
+                    renderCatalog(allProductsCache);
                 }
                 fetchSovereignBalance();
             } catch (err) { console.error("Catalog load error", err); }
@@ -446,6 +492,30 @@
             loadStoreCatalog();
         }
 
+        function renderRideHailingCard(vType, title, subtitle, imgUrl) {
+            const grid = document.getElementById('catalogGrid');
+            grid.innerHTML = `
+                <div class="product-card" style="grid-column: span 2;">
+                    <div class="image-wrapper" style="height: 140px;"><span class="merchant-badge">RDS RIDE SERVICE</span><img src="${imgUrl}" class="product-img"></div>
+                    <div class="product-info">
+                        <div>
+                            <div class="product-title" style="font-size: 1rem; margin-bottom:4px;">${title}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">${subtitle}</div>
+                        </div>
+                        <button onclick="bookRideOnly('${vType}')" class="btn-cyan">Select ${title}</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function bookRideOnly(vType) {
+            cart = {
+                'ride_only': { name: `${vType} Ride`, price: 0, qty: 1 }
+            };
+            recalculateCartSummary();
+            switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
+        }
+
         function renderCatalog(products) {
             const grid = document.getElementById('catalogGrid');
             if (!products || products.length === 0) {
@@ -455,12 +525,19 @@
             let html = '';
             const curr = document.getElementById('storeCurrency').value;
             products.forEach(p => {
+                const realImage = p.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80';
+                const qty = cart[p.id] ? cart[p.id].qty : 0;
+                const unitPrice = Number(p.price) || 0;
                 html += `
                     <div class="product-card">
-                        <div class="image-wrapper"><span class="merchant-badge">${p.merchant || 'Vendor'}</span><img src="${p.image}" class="product-img"></div>
+                        <div class="image-wrapper"><span class="merchant-badge">${p.merchant || 'Vendor'}</span><img src="${realImage}" class="product-img"></div>
                         <div class="product-info">
-                            <div><div class="product-title">${p.name}</div><div class="product-price">${curr} ${Number(p.price).toFixed(2)}</div></div>
-                            <button onclick="switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1])" class="btn-cyan">Book Ride Instead</button>
+                            <div><div class="product-title">${p.name}</div><div class="product-price">${curr} ${unitPrice.toFixed(2)}</div></div>
+                            <div class="quantity-stepper">
+                                <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, -1)">-</button>
+                                <span class="quantity-display" id="qty-${p.id}">${qty}</span>
+                                <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, 1)">+</button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -468,99 +545,60 @@
             grid.innerHTML = html;
         }
 
-        function togglePickupInput() {
-            const mode = document.getElementById('pickupMode').value;
-            const input = document.getElementById('pickupInput');
-            if (mode === 'GPS') {
-                input.value = "Current GPS Location (Nairobi)";
-            } else {
-                input.value = "";
-                input.placeholder = "Type manual pickup address...";
-            }
+        function updateCart(id, name, price, change) {
+            if (!cart[id]) cart[id] = { name, price: Number(price), qty: 0 };
+            cart[id].qty += change;
+            if (cart[id].qty <= 0) delete cart[id];
+            const qEl = document.getElementById(`qty-${id}`);
+            if(qEl) qEl.innerText = cart[id] ? cart[id].qty : 0;
+            recalculateCartSummary();
         }
 
-        async function requestRideEstimate() {
-            const pickup = document.getElementById('pickupInput').value.trim();
-            const destination = document.getElementById('destinationInput').value.trim();
-            const vehicle = document.getElementById('rideVehicleSelect').value;
+        async function recalculateCartSummary() {
+            let totalQty = 0;
+            let totalPrice = 0;
+            const curr = document.getElementById('storeCurrency').value;
+
+            for (let id in cart) {
+                totalQty += cart[id].qty;
+                totalPrice += (cart[id].price || 0) * cart[id].qty;
+            }
+
+            const floatingBar = document.getElementById('floatingCart');
+            if (totalQty > 0) {
+                floatingBar.classList.add('active');
+                document.getElementById('cartItemCount').innerText = `${totalQty} Item(s)`;
+                document.getElementById('cartTotalSum').innerText = `${curr} ${totalPrice.toFixed(2)}`;
+            } else {
+                floatingBar.classList.remove('active');
+            }
+            await recalculateUnifiedTotal();
+        }
+
+        async function recalculateUnifiedTotal() {
+            let totalPrice = 0;
+            for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
+
+            const distanceKm = Number(document.getElementById('distanceKmInput').value) || 3.0;
+            const vehicleType = document.getElementById('vehicleTypeSelect').value;
             const bizId = document.getElementById('storeBusinessId').value;
             const curr = document.getElementById('storeCurrency').value;
 
-            if (!destination) { alert("Please enter a destination."); return; }
-
             try {
-                const res = await fetch(`${API_BASE}/api/calculate-ride`, {
+                const res = await fetch(`${API_BASE}/api/calculate-total`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ distanceKm: 5.2, timeMinutes: 12, vehicleType: vehicle, businessId: bizId })
+                    body: JSON.stringify({ itemPriceTotal: totalPrice, distanceKm, vehicleType, businessId: bizId })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    latestPricing = data.pricing;
-                    document.getElementById('summaryPickup').innerText = pickup;
-                    document.getElementById('summaryDestination').innerText = destination;
-                    document.getElementById('summaryVehicle').innerText = vehicle;
-                    document.getElementById('summaryDistance').innerText = latestPricing.distanceKm;
-                    document.getElementById('summaryTime').innerText = latestPricing.timeMinutes;
-                    document.getElementById('summaryPrice').innerText = `${curr} ${latestPricing.fare.toFixed(2)}`;
-                    document.getElementById('estimateBox').style.display = 'block';
+                    const s = data.split;
+                    document.getElementById('previewProduct').innerText = `${curr} ${s.productAmount.toFixed(2)}`;
+                    document.getElementById('previewDelivery').innerText = `${curr} ${s.deliveryFee.toFixed(2)}`;
+                    document.getElementById('previewSurcharge').innerText = `${curr} ${s.shopSurcharge2Percent.toFixed(2)}`;
+                    document.getElementById('previewTotal').innerText = `${curr} ${s.total.toFixed(2)}`;
                 }
-            } catch (e) { alert("Error calculating ride estimate."); }
-        }
-
-        async function confirmAndDispatchRide() {
-            const pickup = document.getElementById('summaryPickup').innerText;
-            const destination = document.getElementById('summaryDestination').innerText;
-            const vehicle = document.getElementById('summaryVehicle').innerText;
-            const bizId = document.getElementById('storeBusinessId').value;
-
-            try {
-                const res = await fetch(`${API_BASE}/api/confirm-ride`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ pickup, destination, vehicle, distanceKm: 5.2, timeMinutes: 12, businessId: bizId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('activeRideId').value = data.rideId;
-                    document.getElementById('estimateBox').style.display = 'none';
-                    document.getElementById('lifecycleStatus').innerText = "DRIVER_ASSIGNED";
-
-                    const d = data.driver;
-                    document.getElementById('driverDetailsContent').innerHTML = `
-                        <strong>Name:</strong> ${d.name}<br>
-                        <strong>Vehicle:</strong> ${d.vehicle}<br>
-                        <strong>Plate:</strong> ${d.plate}<br>
-                        <strong>ETA:</strong> ${d.eta} minutes
-                    `;
-                    document.getElementById('driverBox').style.display = 'block';
-                    alert("Driver assigned automatically!");
-                } else { alert(data.error); }
-            } catch (e) { alert("Error confirming ride."); }
-        }
-
-        function cancelRideRequest() {
-            document.getElementById('estimateBox').style.display = 'none';
-            document.getElementById('lifecycleStatus').innerText = "CANCELLED";
-        }
-
-        async function completeCurrentRide() {
-            const rideId = document.getElementById('activeRideId').value;
-            const bizId = document.getElementById('storeBusinessId').value;
-            if (!rideId) { alert("No active ride found."); return; }
-
-            const res = await fetch(`${API_BASE}/api/rides/${rideId}/complete`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                body: JSON.stringify({ businessId: bizId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(data.message);
-                document.getElementById('lifecycleStatus').innerText = "COMPLETED";
-                document.getElementById('driverBox').style.display = 'none';
-                fetchSovereignBalance();
-            } else { alert(data.error); }
+            } catch (e) { console.error("Calculation error", e); }
         }
 
         function switchCorridor(tenantId, locationName, currencyCode, el) {
@@ -571,7 +609,72 @@
             document.getElementById('tenantBadge').innerText = tenantId;
             document.getElementById('corridorLabel').innerText = locationName;
             document.getElementById('profileCorridor').innerText = `${locationName} (${currencyCode})`;
+            cart = {};
+            recalculateCartSummary();
             loadStoreCatalog();
+        }
+
+        async function triggerUnifiedCheckout() {
+            let totalPrice = 0;
+            for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
+
+            const bizId = document.getElementById('storeBusinessId').value;
+            const phone = document.getElementById('custPhone').value.trim();
+            const distanceKm = Number(document.getElementById('distanceKmInput').value) || 3.0;
+            const vehicleType = document.getElementById('vehicleTypeSelect').value;
+            const pickup = document.getElementById('pickupInput').value.trim();
+            const destination = document.getElementById('destinationInput').value.trim();
+            const curr = document.getElementById('storeCurrency').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/checkout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ phone, itemPriceTotal: totalPrice, distanceKm, vehicleType, pickup, destination, businessId: bizId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('dispatchOrderIdInput').value = data.orderId;
+                    alert(`Checkout initiated successfully for total ${curr} ${data.split.total}!`);
+                    document.getElementById('lifecycleStatus').innerText = "RIDER_ASSIGNED";
+                } else { alert(data.error); }
+            } catch (e) { alert("Checkout error."); }
+        }
+
+        async function triggerShopDispatch() {
+            const orderId = document.getElementById('dispatchOrderIdInput').value.trim();
+            const bizId = document.getElementById('storeBusinessId').value;
+            if (!orderId) { alert("Enter Order ID."); return; }
+
+            const res = await fetch(`${API_BASE}/api/orders/${orderId}/dispatch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                body: JSON.stringify({ businessId: bizId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('lifecycleStatus').innerText = "DISPATCHED";
+                fetchSovereignBalance();
+            } else { alert(data.error); }
+        }
+
+        async function triggerDeliveryComplete() {
+            const orderId = document.getElementById('dispatchOrderIdInput').value.trim();
+            const bizId = document.getElementById('storeBusinessId').value;
+            if (!orderId) { alert("Enter Order ID."); return; }
+
+            const res = await fetch(`${API_BASE}/api/orders/${orderId}/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                body: JSON.stringify({ businessId: bizId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('lifecycleStatus').innerText = "COMPLETED";
+                fetchSovereignBalance();
+            } else { alert(data.error); }
         }
 
         async function fetchSovereignBalance() {
