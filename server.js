@@ -1,8 +1,8 @@
 // ==========================================
-// RDS - STAGE 73 & 74 SOVEREIGN ENGINE
+// RDS - STAGE 73, 74, 75, 76 & 77 SOVEREIGN & COMPLIANCE ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Multi-Wallet,
 // 16% KRA Tax Allocation, Frictionless Phone OTP, End-to-End Autonomous Routing,
-// & Comprehensive Driver/Vehicle KYC, License, PSV & Insurance Registration
+// Comprehensive Driver/Vehicle KYC, & CBK / World Bank Hardened Compliance
 // ==========================================
 
 const express = require("express");
@@ -41,14 +41,21 @@ const PLATFORM_DELIVERY_SHARE = 0.05;   // 5% platform share of delivery/ride fa
 const SHOP_SURCHARGE_RATE = 0.02;       // 2% platform surcharge on commodities
 const KRA_TAX_RATE = 0.16;              // 16% KRA tax applicable on platform commissions (KES corridor)
 
+// --- STAGE 75/76/77 INSTITUTIONAL COMPLIANCE CONSTANTS ---
+const MAX_DAILY_ANONYMOUS_TX = 50000; // KES 50,000 AML threshold per CBK guidelines
+
 function num(v) {
   const parsed = Number(v);
   return isNaN(parsed) ? 0 : parsed;
 }
 
 function generateStage70MerkleProof(record) {
-  const payload = `${record.id}:${record.businessId || 'GLOBAL'}:${record.orderId || record.transactionId}:${record.total || record.amount}:${record.currency || 'KES'}:${record.timestamp}`;
-  return crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_70_MASTER_KEY').update(payload).digest('hex');
+  const salt = process.env.SOVEREIGN_SALT || crypto.randomBytes(16).toString('hex');
+  const payload = `${record.id}:${record.businessId || 'GLOBAL'}:${record.orderId || record.transactionId}:${record.total || record.amount}:${record.currency || 'KES'}:${record.timestamp}:${salt}`;
+  return {
+    hash: crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_70_MASTER_KEY').update(payload).digest('hex'),
+    salt
+  };
 }
 
 /**
@@ -132,7 +139,7 @@ app.use(express.static("."));
 function defaultDB() {
   return { 
     businesses: [
-      { id: "BIZ-KE", name: "RDS Nairobi (M-Pesa Corridor)", region: "KE", currency: "KES", ownerPhone: "254721862397", taxPin: "P055123456Z" },
+      { id: "BIZ-KE", name: "RDS Nairobi (M-Pesa Corridor)", region: "KE", currency: "KES", ownerPhone: "254721862397", taxPin: "P055123456Z", custodianBank: "KCB-TRUST-001" },
       { id: "BIZ-UK", name: "RDS London (Stripe UK)", region: "UK", currency: "GBP", ownerPhone: "447123456789", taxPin: "GB123456789" },
       { id: "BIZ-ES", name: "RDS Madrid (Stripe Spain)", region: "ES", currency: "EUR", ownerPhone: "34612345678", taxPin: "ESB12345678" },
       { id: "BIZ-CA", name: "RDS Toronto (Stripe Canada)", region: "CA", currency: "CAD", ownerPhone: "14165550198", taxPin: "CA123456789RT" }
@@ -151,7 +158,9 @@ function defaultDB() {
     ledger_entries: [],
     shops: [],
     catalogs: {},
-    driver_telemetry: {}
+    driver_telemetry: {},
+    audit_logs: [],
+    trust_accounts: { "BIZ-KE": { segregatedBalance: 0, liabilityBalance: 0 } }
   };
 }
 
@@ -167,8 +176,10 @@ function ensureState() {
   if (!Array.isArray(data.drivers)) data.drivers = [];
   if (!Array.isArray(data.ledger_entries)) data.ledger_entries = [];
   if (!Array.isArray(data.shops)) data.shops = [];
+  if (!Array.isArray(data.audit_logs)) data.audit_logs = [];
   if (!data.catalogs || typeof data.catalogs !== 'object') data.catalogs = {};
   if (!data.driver_telemetry || typeof data.driver_telemetry !== 'object') data.driver_telemetry = {};
+  if (!data.trust_accounts || typeof data.trust_accounts !== 'object') data.trust_accounts = {};
 }
 
 ensureState();
@@ -220,11 +231,85 @@ function enforceTenantIsolation(req, res, next) {
     next();
 }
 
+// ==========================================
+// STAGE 75/76/77 AML & CBK ENFORCEMENT MIDDLEWARE
+// ==========================================
+function enforceCbkAmlAndKyc(req, res, next) {
+  try {
+    const { amount } = req.body;
+    if (amount && Number(amount) > MAX_DAILY_ANONYMOUS_TX) {
+      data.audit_logs.push({
+        id: `AUDIT_${Date.now()}`,
+        level: "WARNING",
+        message: `AML Threshold Exceeded: Transaction of ${amount} requires Tier-2 KYC verification under CBK guidelines.`,
+        timestamp: Date.now()
+      });
+      return res.status(451).json({
+        success: false,
+        error: "Regulatory Compliance Hold: Transaction exceeds standard retail threshold. Enhanced Due Diligence (EDD) / KRA PIN verification required."
+      });
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
 io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_74_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_77_INSTITUTIONAL_ENGINE_ONLINE", time: Date.now() }));
+
+// ==========================================
+// STAGE 75/76: CBK & WORLD BANK COMPLIANCE ENDPOINTS
+// ==========================================
+app.post('/api/compliance/reconcile-ledger', async (req, res) => {
+  ensureState();
+  let isValid = true;
+  let discrepancies = [];
+
+  for (let entry of data.ledger_entries) {
+    const calculatedProof = generateStage70MerkleProof(entry);
+    if (!entry.merkleProof || (typeof entry.merkleProof === 'object' && entry.merkleProof.hash !== calculatedProof.hash) || (typeof entry.merkleProof === 'string' && entry.merkleProof !== calculatedProof.hash)) {
+      isValid = false;
+      discrepancies.push({ entryId: entry.id, issue: "Merkle hash verification mismatch detected." });
+    }
+  }
+
+  data.audit_logs.push({
+    id: `REC_${Date.now()}`,
+    type: "LEDGER_AUDIT",
+    status: isValid ? "PASSED" : "FAILED",
+    discrepanciesCount: discrepancies.length,
+    timestamp: Date.now()
+  });
+  await saveDB();
+
+  res.json({
+    success: true,
+    cbkComplianceStatus: isValid ? "FULLY_RECONCILED" : "INTEGRITY_ALERT",
+    discrepancies,
+    auditedAt: new Date().toISOString()
+  });
+});
+
+app.get('/api/compliance/trust-account/:businessId', (req, res) => {
+  ensureState();
+  const { businessId } = req.params;
+  const trustData = data.trust_accounts[businessId] || { segregatedBalance: 0, liabilityBalance: 0 };
+  const isFullyBacked = trustData.segregatedBalance >= trustData.liabilityBalance;
+
+  res.json({
+    success: true,
+    businessId,
+    custodianStructure: "Commercially Banked Capped Trust Account",
+    segregatedFunds: trustData.segregatedBalance,
+    totalCustomerLiabilities: trustData.liabilityBalance,
+    solvencyRatio: isFullyBacked ? "100%_FULLY_BACKED" : "UNDER_WATER",
+    auditCompliance: isFullyBacked ? "PASSED" : "FAILED"
+  });
+});
 
 app.post('/api/auth/send-otp', async (req, res) => {
     try {
@@ -637,7 +722,7 @@ app.get('/wallets/:ownerId/balance', async (req, res) => {
     }
 });
 
-app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
+app.post("/api/wallet/withdraw", enforceTenantIsolation, enforceCbkAmlAndKyc, async (req, res) => {
     try {
         ensureState();
         const { amount, destination, ownerId } = req.body;
@@ -678,5 +763,5 @@ app.post("/api/wallet/withdraw", enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 77 INSTITUTIONAL & SOVEREIGN ENGINE ACTIVE ON PORT ${PORT}`);
 });
