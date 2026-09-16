@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 88 | Complete Multi-Role KYC & Autonomous Super-App</title>
+  <title>RDS 89 | Automated ID & Biometric KYC Super-App</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <!-- Leaflet CSS & JS for Real-World Maps & Routing -->
@@ -313,15 +313,15 @@
 </head>
 <body id="appBody">
 
-    <!-- AUTHENTICATION & MULTI-ROLE ONBOARDING VIEW -->
+    <!-- AUTHENTICATION & STAGE 89 AUTOMATED BIOMETRIC KYC VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🚀 RDS STAGE 88 MULTI-ROLE KYC ONBOARDING</span>
+            <span>🚀 RDS STAGE 89 AUTOMATED ID/PASSPORT & BIOMETRIC KYC</span>
         </div>
 
         <div class="checkout-panel" style="padding: 20px;">
             <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Welcome to RDS Super-App</h2>
-            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Select your portal role and enter your ID, Email & Phone credentials.</p>
+            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Select your portal role and provide your official legal documents and face biometric.</p>
 
             <label style="font-size: 0.75rem; color: var(--stage-purple); display: block; margin-bottom: 6px; font-weight: bold;">Continue as:</label>
             <div class="role-select-grid">
@@ -331,14 +331,32 @@
             </div>
 
             <div id="registrationFormSection">
-                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">National ID Number</label>
-                <input type="text" id="authIdNumber" placeholder="ID Number e.g. 32456789" value="32456789">
+                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Actual Legal Full Name (As in ID / Passport)</label>
+                <input type="text" id="authFullName" placeholder="e.g. Robert Maina" value="Robert Maina">
+
+                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">ID Number or Passport Number</label>
+                <input type="text" id="authIdNumber" placeholder="ID or Passport No e.g. A1234567" value="32456789">
 
                 <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Email Address</label>
                 <input type="email" id="authEmail" placeholder="user@example.com" value="robert.maina@rds.com">
 
                 <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Phone Number (M-Pesa Corridor)</label>
                 <input type="text" id="authPhone" placeholder="2547XXXXXXXX" value="254721862397">
+
+                <!-- STAGE 89 AUTOMATED FILE & PHOTO UPLOADERS FOR ID AND FACE -->
+                <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px dashed var(--stage-purple);">
+                    <label style="font-size: 0.7rem; color: var(--neon-green); display:block; margin-bottom:4px; font-weight:bold;">📄 Upload ID Card / Passport Photo (From Phone or Files)</label>
+                    <input type="file" id="idDocumentFile" accept="image/*" onchange="convertFileToBase64(this, 'idDocPreview', 'idDocData')" style="font-size:0.7rem; padding:4px;">
+                    <div id="idDocPreview" style="font-size: 0.65rem; color: var(--text-dim);">No ID document selected.</div>
+                    <input type="hidden" id="idDocData">
+                </div>
+
+                <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 12px; border: 1px dashed var(--cyan);">
+                    <label style="font-size: 0.7rem; color: var(--cyan); display:block; margin-bottom:4px; font-weight:bold;">📸 Upload Face Biometric Photo (From Camera or Files)</label>
+                    <input type="file" id="facePhotoFile" accept="image/*" capture="user" onchange="convertFileToBase64(this, 'facePreview', 'faceData')" style="font-size:0.7rem; padding:4px;">
+                    <div id="facePreview" style="font-size: 0.65rem; color: var(--text-dim);">No face photo selected.</div>
+                    <input type="hidden" id="faceData">
+                </div>
 
                 <div id="phoneStep">
                     <button onclick="requestOtp()" class="btn-cyan" style="padding: 12px; font-weight: bold; margin-top: 5px;">Send Verification OTP</button>
@@ -356,7 +374,7 @@
     <!-- HOME DASHBOARD (User / Shop / Rider Segregated) -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span id="portalTitleBanner">🌐 RDS STAGE 88 USER PORTAL</span>
+            <span id="portalTitleBanner">🌐 RDS STAGE 89 USER PORTAL</span>
             <span id="nodeLatency">Secure • Active</span>
         </div>
 
@@ -482,7 +500,8 @@
             <h3>My Account Profile</h3>
         </div>
         <div class="checkout-panel">
-            <p><strong>ID Number:</strong> <span id="profileIdNumber">-</span></p>
+            <p><strong>Legal Full Name:</strong> <span id="profileFullName">-</span></p>
+            <p style="margin-top: 6px;"><strong>ID / Passport Number:</strong> <span id="profileIdNumber">-</span></p>
             <p style="margin-top: 6px;"><strong>Email:</strong> <span id="profileEmail">-</span></p>
             <p style="margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">-</span></p>
             <p style="margin-top: 6px;"><strong>Active Role:</strong> <span id="profileRole">USER</span></p>
@@ -529,7 +548,7 @@
         <div class="checkout-panel role-restricted-driver" id="driverSovereignRegisterPanel" style="margin-top: 15px; display: none;">
             <h3>🚗🛵 Complete Rider & Vehicle KYC</h3>
             <input type="text" id="regFullName" placeholder="Full Legal Name">
-            <input type="text" id="regDriverIdNumber" placeholder="National ID Number">
+            <input type="text" id="regDriverIdNumber" placeholder="National ID / Passport Number">
             <input type="text" id="regLicenseNumber" placeholder="Driving License Number">
             <input type="text" id="regNumberPlate" placeholder="Vehicle Number Plate e.g. KMXX 123A">
             <input type="text" id="regPassportPhoto" placeholder="Passport Photo URL/Base64" value="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400">
@@ -598,14 +617,32 @@
             if(el) el.classList.add('selected');
         }
 
+        function convertFileToBase64(inputElement, previewId, hiddenInputId) {
+            const file = inputElement.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64String = e.target.result;
+                document.getElementById(hiddenInputId).value = base64String;
+                document.getElementById(previewId).innerHTML = `<span style="color:var(--neon-green);">✓ Loaded: ${file.name}</span>`;
+            };
+            reader.readAsDataURL(file);
+        }
+
         async function requestOtp() {
             const phone = document.getElementById('authPhone').value.trim();
             const email = document.getElementById('authEmail').value.trim();
             const idNumber = document.getElementById('authIdNumber').value.trim();
-            if (!phone || !idNumber) { alert("Please enter phone number and ID number"); return; }
+            const fullName = document.getElementById('authFullName').value.trim();
+
+            if (!phone || !idNumber || !fullName) { 
+                alert("Please enter your legal full name, ID/Passport number, and phone number."); 
+                return; 
+            }
+
             const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, email, idNumber })
+                body: JSON.stringify({ phone, email, idNumber, fullName })
             });
             const data = await res.json();
             if (data.success) {
@@ -619,15 +656,23 @@
             const phone = document.getElementById('authPhone').value.trim();
             const email = document.getElementById('authEmail').value.trim();
             const idNumber = document.getElementById('authIdNumber').value.trim();
+            const fullName = document.getElementById('authFullName').value.trim();
             const otp = document.getElementById('authOtp').value.trim();
+            const idDocumentBase64 = document.getElementById('idDocData').value.trim();
+            const facePhotoBase64 = document.getElementById('faceData').value.trim();
+
             const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, otp, role: selectedOnboardingRole, email, idNumber })
+                body: JSON.stringify({ 
+                    phone, otp, role: selectedOnboardingRole, email, idNumber, 
+                    fullName, idDocumentBase64, facePhotoBase64 
+                })
             });
             const data = await res.json();
             if (data.success) {
                 currentUser = data.user;
                 localStorage.setItem("userId", currentUser.id);
+                document.getElementById('profileFullName').innerText = currentUser.fullName || fullName;
                 document.getElementById('profileIdNumber').innerText = currentUser.idNumber || idNumber;
                 document.getElementById('profileEmail').innerText = currentUser.email || email;
                 document.getElementById('profilePhone').innerText = currentUser.phone;
@@ -651,11 +696,11 @@
             shopPanels.forEach(p => p.style.display = (role === 'SHOP') ? 'block' : 'none');
 
             if (role === 'USER') {
-                document.getElementById('portalTitleBanner').innerText = '🌐 RDS STAGE 88 USER PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🌐 RDS STAGE 89 USER PORTAL';
             } else if (role === 'SHOP') {
-                document.getElementById('portalTitleBanner').innerText = '🏬 RDS STAGE 88 MERCHANT PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🏬 RDS STAGE 89 MERCHANT PORTAL';
             } else if (role === 'DRIVER') {
-                document.getElementById('portalTitleBanner').innerText = '🏍️ RDS STAGE 88 RIDER PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🏍️ RDS STAGE 89 RIDER PORTAL';
             }
         }
 
