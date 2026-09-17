@@ -4,483 +4,519 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS STAGE 55 SOVEREIGN MULTI-TENANT SUPER APP DRIVER TERMINAL</title>
+  <title>RDS | Sovereign Fleet & Rider Terminal</title>
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
   <style>
     :root {
       --neon-green: #00ff88;
       --dark-bg: #0b0f19;
       --panel-bg: #111827;
-      --card-bg: #181818;
+      --card-bg: #181824;
       --text-dim: #9ca3af;
       --cyan: #38bdf8;
       --alert-red: #ff3366;
-      --warn-yellow: #ffff00;
       --gold: #ffd700;
+      --stage-purple: #a855f7;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; touch-action: manipulation; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
 
     body {
       background-color: var(--dark-bg);
-      color: var(--neon-green);
-      padding: 10px;
+      color: #fff;
+      padding: 15px;
+      max-width: 480px;
+      margin: 0 auto;
+      padding-bottom: 110px;
     }
 
-    header {
+    .app-view { display: none; }
+    .app-view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .telemetry-ribbon {
+      background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(56,189,248,0.1));
+      border: 1px solid var(--stage-purple);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.65rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 2px solid var(--neon-green);
-      padding-bottom: 10px;
       margin-bottom: 12px;
-    }
-
-    h1 { font-size: 0.95rem; letter-spacing: 1px; color: var(--neon-green); }
-    .badge { background: var(--neon-green); color: var(--dark-bg); padding: 4px 8px; font-weight: bold; font-size: 0.7rem; border-radius: 4px; letter-spacing: 1px; }
-
-    .terminal-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .panel {
-      background: var(--panel-bg);
-      border: 1px solid var(--neon-green);
-      border-radius: 6px;
-      padding: 12px;
-      box-shadow: 0 0 10px rgba(0, 255, 136, 0.05);
-    }
-
-    .panel h2 { font-size: 0.85rem; margin-bottom: 8px; border-bottom: 1px dashed var(--neon-green); padding-bottom: 4px; text-transform: uppercase; color: var(--cyan); }
-
-    .stat-display { font-size: 1.4rem; font-weight: bold; color: var(--gold); margin-bottom: 6px; }
-    .stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-
-    button {
-      background: var(--neon-green);
-      color: var(--dark-bg);
-      border: none;
-      padding: 10px;
+      color: var(--stage-purple);
       font-weight: bold;
-      width: 100%;
-      cursor: pointer;
-      border-radius: 4px;
-      text-transform: uppercase;
-      font-family: monospace;
-      margin-top: 6px;
-      font-size: 0.8rem;
-      transition: opacity 0.2s, transform 0.1s;
     }
 
-    button:active { transform: scale(0.98); opacity: 0.85; }
-    .btn-cyan { background: var(--cyan); color: #000; }
-    .btn-red { background: var(--alert-red); color: #fff; }
-    .btn-gold { background: var(--gold); color: #000; }
+    .header-location {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .location-box { display: flex; align-items: center; gap: 8px; }
+    .location-text span { font-size: 0.75rem; color: var(--text-dim); display: block; }
+    .location-text strong { font-size: 0.95rem; color: #fff; }
+
+    .corridor-selector {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      margin-bottom: 15px;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .corridor-selector::-webkit-scrollbar { display: none; }
+    .corridor-btn {
+      background: var(--panel-bg);
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .corridor-btn.active, .corridor-btn:hover {
+      border-color: var(--stage-purple);
+      background: rgba(168, 85, 247, 0.1);
+      color: #fff;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .section-header h3 { font-size: 1rem; color: #fff; font-weight: 700; }
+
+    .checkout-panel {
+      background: var(--panel-bg);
+      border: 1px solid #222c3d;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .checkout-panel h3 { font-size: 0.9rem; margin-bottom: 12px; color: var(--cyan); text-transform: uppercase; }
 
     input, select {
       width: 100%;
       background: var(--dark-bg);
-      border: 1px solid var(--neon-green);
-      color: var(--neon-green);
-      padding: 8px;
-      margin-bottom: 8px;
-      border-radius: 4px;
-      font-family: monospace;
-      font-size: 0.85rem;
-    }
-
-    input::placeholder { color: #4b5563; }
-
-    #map {
-      height: 240px;
-      width: 100%;
-      border: 1px solid var(--neon-green);
-      border-radius: 4px;
-      background: #000;
-      margin-top: 5px;
-      z-index: 1;
-      position: relative;
-    }
-
-    .log-box {
-      background: #000;
-      border: 1px solid var(--neon-green);
-      padding: 8px;
-      height: 120px;
-      overflow-y: auto;
-      font-size: 0.75rem;
-      color: var(--neon-green);
-      border-radius: 4px;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-
-    .auth-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(11, 15, 25, 0.98);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-
-    .auth-card {
-      background: var(--panel-bg);
-      border: 2px solid var(--neon-green);
-      padding: 20px;
-      width: 320px;
-      border-radius: 8px;
-    }
-
-    .dispatch-card {
+      border: 1px solid #374151;
+      color: #fff;
       padding: 10px;
-      border: 1px solid #333;
-      border-radius: 4px;
-      margin-bottom: 8px;
-      background: var(--card-bg);
+      margin-bottom: 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--stage-purple); }
+
+    button {
+      background: var(--stage-purple);
+      color: #fff;
+      border: none;
+      padding: 9px;
+      font-weight: 700;
+      width: 100%;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+    button:hover { background: var(--cyan); color: #000; }
+
+    .btn-cyan { background: var(--cyan); color: #000; }
+    .btn-cyan:hover { background: var(--neon-green); }
+    .btn-gold { background: var(--gold); color: #000; }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--panel-bg);
+      border-top: 1px solid #222c3d;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      z-index: 1000;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
+    .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
+    .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
+
+    #mapContainer {
+      width: 100%;
+      height: 240px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #374151;
+      z-index: 1;
     }
 
-    .small { font-size: 0.75rem; color: var(--text-dim); }
-    .flex-row { display: flex; gap: 6px; }
+    .live-order-card {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .live-order-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin-bottom: 6px;
+      color: var(--cyan);
+      font-weight: bold;
+    }
   </style>
-  <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
 
-    <!-- STAGE 55 AUTHENTICATION & MULTI-TENANT NAMESPACE OVERLAY -->
-    <div class="auth-overlay" id="authOverlay">
-        <div class="auth-card">
-            <h2 style="color:var(--neon-green); margin-bottom: 10px; border-bottom:1px dashed var(--neon-green); padding-bottom:4px;">STAGE 55 SUPER APP AUTH</h2>
-            <input type="text" id="authPhone" placeholder="Phone (2547XXXXXXXX)" value="254708374149">
-            <input type="password" id="authPassword" placeholder="Password" value="securepassword123">
-            <button onclick="authenticateDriver()">Connect Sovereign Matrix</button>
-            <div id="authMsg" style="margin-top: 6px; font-size: 0.75rem; text-align: center; color: var(--cyan);"></div>
-        </div>
-    </div>
-
-    <header>
-        <h1>⚡ RDS STAGE 55 SUPER APP TERMINAL</h1>
-        <div class="badge" id="netBadge">TENANT_ISOLATED_ONLINE</div>
-    </header>
-
-    <div class="terminal-grid">
-        <!-- MULTI-WALLET & B2C LIQUIDITY -->
-        <div class="panel">
-            <h2>Multi-Wallet & Instant B2C</h2>
-            <div class="stat-label">Available Active Balance</div>
-            <div class="stat-display" id="walletBalance">KES 0.00</div>
-            <input type="text" id="payoutOwnerId" placeholder="Owner ID (e.g. DRV_... or BIZ_...)" value="DRV_001">
-            <input type="number" id="payoutAmount" placeholder="Amount to Withdraw (KES)" value="500">
-            <button onclick="triggerB2CPayout()" class="btn-gold">Execute Bank-Grade B2C</button>
+    <!-- AUTHENTICATION VIEW -->
+    <div id="viewAuth" class="app-view active-view">
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
+            <span>🚀 RIDER & FLEET TERMINAL LOGIN</span>
         </div>
 
-        <!-- HYBRID TELEMETRY & STATUS -->
-        <div class="panel">
-            <h2>Tenant Fleet Telemetry</h2>
-            <label for="statusSelect" class="small">Operational Status:</label>
-            <select id="statusSelect" onchange="updateDriverStatus()">
-                <option value="ONLINE">ONLINE (Active Spatial Sync)</option>
-                <option value="BUSY">BUSY (Secured in Transit)</option>
-                <option value="OFFLINE">OFFLINE</option>
-            </select>
-            <div class="flex-row">
-                <button onclick="startHyperGPS()" class="btn-cyan" style="flex:1;">🛰️ GPS Sync</button>
-                <button onclick="stopGPS()" class="btn-red" style="flex:1;">⛔ Pause</button>
+        <div class="checkout-panel" style="padding: 20px;">
+            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Driver Portal</h2>
+            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Sign in to sync real-time GPS telemetry, claim dispatches, and trigger instant B2C payouts.</p>
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Driver Email</label>
+            <input type="email" id="authEmail" value="driver@rds.com">
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Mobile Phone (M-Pesa Corridor)</label>
+            <input type="text" id="authPhone" value="254708374149">
+
+            <div id="phoneStep">
+                <button onclick="requestDriverOtp()" class="btn-cyan" style="padding: 12px; font-weight: bold; margin-top: 5px;">Send Verification OTP</button>
             </div>
-            <p id="gps" style="margin-top: 8px; font-size: 0.75rem; font-weight: bold; color: var(--cyan);">GPS: Standby Vector</p>
-        </div>
 
-        <!-- ACTIVE DISPATCHES & HANDOFF COMPLETION -->
-        <div class="panel">
-            <h2>Tenant Scoped Dispatches</h2>
-            <div id="driver-orders-list" style="max-height: 160px; overflow-y: auto;">
-                <span class="small">Scanning multi-tenant matrix for orders...</span>
+            <div id="otpStep" style="display: none; margin-top: 15px;">
+                <label style="font-size: 0.75rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP Code (Use 1234)</label>
+                <input type="text" id="authOtp" value="1234" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" maxlength="4">
+                <button onclick="verifyDriverOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch Fleet Terminal</button>
             </div>
         </div>
     </div>
 
-    <!-- LIVE LEAFLET MAP CONTAINER -->
-    <div class="panel">
-        <h2>🗺️ Zero-Latency Spatial Vector Map</h2>
-        <div id="map"></div>
-        <button onclick="refreshMap()" class="btn-cyan" style="margin-top: 8px;">Recenter Spatial Matrix</button>
+    <!-- MAP & GPS TELEMETRY VIEW -->
+    <div id="viewMap" class="app-view">
+        <div class="telemetry-ribbon">
+            <span>🛰️ 100% AUTOMATIC ZERO-ERROR GPS TRACKING</span>
+            <span id="nodeLatency">Secure • Active</span>
+        </div>
+
+        <div class="header-location">
+            <div class="location-box">
+                <span class="icon">📍</span>
+                <div class="location-text">
+                    <span>Active Corridor</span>
+                    <strong id="corridorLabel">Nairobi, Kenya (KES)</strong>
+                </div>
+            </div>
+            <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
+        </div>
+
+        <div class="corridor-selector" id="dynamicCorridorSelector">
+            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE Hub</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK Hub</div>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Live Spatial Vector Map</h3>
+            <div id="mapContainer"></div>
+            <div style="font-size: 0.75rem; color: var(--neon-green); margin-top: 8px;">GPS Status: <strong id="gpsStatusDisplay">Acquiring Vector...</strong></div>
+            <button onclick="recenterMap()" class="btn-cyan" style="margin-top: 8px;">Recenter GPS Vector</button>
+        </div>
     </div>
 
-    <!-- AUDIT STREAM LOG -->
-    <div class="panel">
-        <h2>📡 Stage 55 Immutable Audit Stream</h2>
-        <div class="log-box" id="logBox">[SYSTEM] Stage 55 Super App Driver Terminal initialized successfully.</div>
+    <!-- DISPATCH & FULFILLMENT VIEW -->
+    <div id="viewDispatches" class="app-view">
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
+            <span>📦 ASSIGNED DISPATCHES & ESCROW SETTLEMENT</span>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Active Tenant Dispatches</h3>
+            <div id="driverOrdersContainer">
+                <em style="color:var(--text-dim); font-size: 0.75rem;">Scanning multi-tenant matrix for dispatches...</em>
+            </div>
+        </div>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <!-- WALLET & B2C PAYOUT VIEW -->
+    <div id="viewWallet" class="app-view">
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
+            <span>💰 MULTI-WALLET & INSTANT B2C LIQUIDITY</span>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Available Earnings</h3>
+            <div style="font-size: 1.6rem; font-weight: bold; color: var(--gold); margin-bottom: 10px;" id="walletBalanceDisplay">KES 0.00</div>
+            
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Driver ID / Owner ID</label>
+            <input type="text" id="payoutOwnerId" value="DRV_001">
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Withdrawal Amount (<span id="walletCurrencyLabel">KES</span>)</label>
+            <input type="number" id="payoutAmount" value="500">
+
+            <button onclick="triggerB2CPayout()" class="btn-gold">Execute Bank-Grade M-Pesa B2C</button>
+        </div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div id="viewProfile" class="app-view">
+        <div class="section-header" style="margin-bottom: 20px;">
+            <h3>Rider Fleet Profile</h3>
+        </div>
+        <div class="checkout-panel">
+            <p><strong>Name:</strong> Sovereign Driver</p>
+            <p style="margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">254708374149</span></p>
+            <p style="margin-top: 6px;"><strong>Node Status:</strong> <span style="color: var(--neon-green);">Active Fleet Operator</span></p>
+        </div>
+    </div>
+
+    <input type="hidden" id="storeBusinessId" value="BIZ-KE">
+    <input type="hidden" id="storeCurrency" value="KES">
+
+    <div class="bottom-nav" id="bottomNav" style="display: none;">
+        <a class="nav-item active" onclick="switchTab('viewMap', this)"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>GPS Map</a>
+        <a class="nav-item" onclick="switchTab('viewDispatches', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Dispatches</a>
+        <a class="nav-item" onclick="switchTab('viewWallet', this)"><svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>Wallet</a>
+        <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
+    </div>
 
     <script>
         const LOCAL_API = "http://localhost:3000";
         const CLOUD_API = "https://rds-lab.onrender.com";
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
-        let currentOwnerId = localStorage.getItem('rds_owner_id') || 'DRV_001';
-        let authToken = localStorage.getItem('rds_token') || '';
-        let businessId = localStorage.getItem('rds_business_id') || 'BIZ-001';
+        let currentDriver = null;
         let map = null;
-        let marker = null;
-        let gpsWatch = null;
+        let driverMarker = null;
+        let gpsWatchId = null;
         let lastLat = -1.286389;
         let lastLng = 36.817223;
+        let socket = io();
 
-        document.getElementById('payoutOwnerId').value = currentOwnerId;
+        window.addEventListener('DOMContentLoaded', () => {
+            initMapSafely();
+            socket.on('orderListUpdated', () => { fetchDriverOrders(); });
+        });
 
-        if (authToken) {
-            document.getElementById('authOverlay').style.display = 'none';
-            initTerminal();
-        }
-
-        async function authenticateDriver() {
-            const phone = document.getElementById('authPhone').value;
-            const password = document.getElementById('authPassword').value;
-            
-            try {
-                const res = await fetch(`${API_BASE}/api/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, password })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    authToken = data.token;
-                    currentOwnerId = data.user.id;
-                    localStorage.setItem('rds_token', authToken);
-                    localStorage.setItem('rds_owner_id', currentOwnerId);
-                    document.getElementById('payoutOwnerId').value = currentOwnerId;
-                    document.getElementById('authOverlay').style.display = 'none';
-                    appendLog(`Authenticated successfully: ${data.user.name} (${data.user.role})`);
-                    initTerminal();
-                    return;
-                }
-            } catch (err) {
-                // Fallback offline sovereign bypass
-            }
-
-            localStorage.setItem('rds_token', 'offline_sovereign_token');
-            localStorage.setItem('rds_owner_id', 'DRV_001');
-            document.getElementById('authOverlay').style.display = 'none';
-            appendLog("Fallback Mode: Stage 55 local session initialized.");
-            initTerminal();
-        }
-
-        function appendLog(msg) {
-            const box = document.getElementById('logBox');
-            if (box) {
-                const time = new Date().toLocaleTimeString();
-                box.innerText = `[${time}] ${msg}\n` + box.innerText;
-            }
-        }
-
-        function initMap() {
+        function initMapSafely() {
             if (map) return;
-            const mapEl = document.getElementById("map");
-            if (!mapEl) return;
+            const container = document.getElementById('mapContainer');
+            if (!container) return;
 
-            map = L.map("map", {
-                zoomControl: false,
-                attributionControl: false,
-                fadeAnimation: false,
-                markerZoomAnimation: false
-            }).setView([lastLat, lastLng], 15);
-
-            L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png", {
-                subdomains: 'abcd',
-                maxZoom: 20,
-                updateWhenIdle: true,
-                keepBuffer: 1
-            }).addTo(map);
-
-            marker = L.marker([lastLat, lastLng]).addTo(map).bindPopup("<b>Super App Fleet Vector</b>");
-            setTimeout(() => map.invalidateSize(), 100);
+            map = L.map('mapContainer', { zoomControl: false, attributionControl: false }).setView([lastLat, lastLng], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+            driverMarker = L.marker([lastLat, lastLng]).addTo(map).bindPopup("🛵 Active Fleet Vector");
+            setTimeout(() => { if(map) map.invalidateSize(); }, 200);
         }
 
-        function refreshMap() {
-            if (map && marker) {
+        function recenterMap() {
+            if (map && driverMarker) {
                 map.invalidateSize();
-                map.setView(marker.getLatLng(), 17, { animate: false });
+                map.setView(driverMarker.getLatLng(), 17, { animate: false });
             }
         }
 
-        function initTerminal() {
-            initMap();
-            startHyperGPS();
-            refreshDriverOrders();
-
-            try {
-                const socket = io();
-                socket.on('connect', () => appendLog("Stage 55 WebSocket telemetry matrix connected."));
-                socket.on('orderStatusUpdate', (data) => {
-                    appendLog(`Order ${data.orderId} updated to: ${data.status}`);
-                    refreshDriverOrders();
-                });
-                socket.on('payoutProcessed', (data) => {
-                    if (data.ownerId === currentOwnerId) {
-                        appendLog(`💸 Instant B2C Payout settled for KES ${data.amount}`);
-                        refreshDriverOrders();
-                    }
-                });
-            } catch(e) {
-                appendLog("Socket running in local standalone mode.");
-            }
-        }
-
-        async function apiFetch(endpoint, options = {}) {
-            try {
-                const res = await fetch(`${API_BASE}${endpoint}`, {
-                    ...options,
-                    headers: { 
-                        "Content-Type": "application/json", 
-                        "x-business-id": businessId,
-                        ...(options.headers || {}) 
-                    }
-                });
-                if (res.ok) return await res.json();
-            } catch (err) {}
-            return null;
-        }
-
-        async function refreshDriverOrders() {
-            const activeOwnerId = document.getElementById('payoutOwnerId').value.trim() || currentOwnerId;
-            const data = await apiFetch('/orders');
-            const orders = (data && (data.orders || data.data)) || [];
-            
-            const assignedOrders = orders.filter(o => o.driverId === activeOwnerId || !o.driverId);
-            const container = document.getElementById('driver-orders-list');
-
-            if (assignedOrders.length === 0) {
-                container.innerHTML = `<span class="small">No active tenant dispatches found for ${activeOwnerId}.</span>`;
-            } else {
-                let html = "";
-                assignedOrders.forEach(o => {
-                    const isMerchantReleased = o.merchantReleased;
-                    const isDelivered = o.status.includes("DELIVERED");
-                    
-                    let actionButton = `<span class="small" style="color:var(--cyan);">Waiting Handoff Verification</span>`;
-                    if (isMerchantReleased && !isDelivered) {
-                        actionButton = `<button class="btn-gold" onclick="completeDelivery('${o.id}', '${activeOwnerId}')">Complete Delivery & Earn</button>`;
-                    } else if (isDelivered) {
-                        actionButton = `<span style="color:var(--neon-green); font-weight:bold;">Escrow Settled ✓</span>`;
-                    }
-
-                    html += `
-                        <div class="dispatch-card">
-                            <b>Order: ${o.id}</b><br>
-                            <span class="small">Status: <b>${o.status}</b> | Namespace: ${o.businessId || 'BIZ-001'}</span><br>
-                            <div style="margin-top: 6px;">${actionButton}</div>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            }
-
-            // Fetch live wallet balances from backend endpoint
-            const walletData = await apiFetch('/wallets');
-            if (walletData && walletData.wallets) {
-                const w = walletData.wallets.find(item => item.ownerId === activeOwnerId);
-                if (w) {
-                    document.getElementById('walletBalance').innerText = `KES ${Number(w.balance).toFixed(2)}`;
-                } else {
-                    document.getElementById('walletBalance').innerText = `KES 0.00`;
-                }
-            }
-        }
-
-        async function completeDelivery(orderId, currentDriverId) {
-            appendLog(`Confirming dropoff and releasing escrow for order ${orderId}...`);
-            const res = await apiFetch('/complete-delivery', {
-                method: 'POST',
-                body: JSON.stringify({ orderId, driverId: currentDriverId })
+        async function requestDriverOtp() {
+            const phone = document.getElementById('authPhone').value.trim();
+            const email = document.getElementById('authEmail').value.trim();
+            const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, email })
             });
-            if (res && res.success) {
-                appendLog(`Success! Delivery confirmed and driver wallet credited.`);
-                refreshDriverOrders();
-            } else {
-                appendLog(`Completion error: ${res?.error || 'Unknown failure'}`);
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('phoneStep').style.display = 'none';
+                document.getElementById('otpStep').style.display = 'block';
             }
         }
 
-        function startHyperGPS() {
-            if (!navigator.geolocation) return appendLog("GPS navigation unsupported.");
-            if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
+        async function verifyDriverOtpAndEnter() {
+            const phone = document.getElementById('authPhone').value.trim();
+            const email = document.getElementById('authEmail').value.trim();
+            const otp = document.getElementById('authOtp').value.trim();
+            const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, otp, role: 'RIDER', email })
+            });
+            const data = await res.json();
+            if (data.success) {
+                currentDriver = data.user;
+                document.getElementById('payoutOwnerId').value = currentDriver.id || 'DRV_001';
+                document.getElementById('profilePhone').innerText = phone;
+                document.getElementById('bottomNav').style.display = 'flex';
+                switchTab('viewMap', document.querySelectorAll('.bottom-nav .nav-item')[0]);
+                startAutomaticGpsTracking();
+                fetchDriverOrders();
+                setTimeout(() => { if(map) map.invalidateSize(); }, 300);
+            }
+        }
 
-            gpsWatch = navigator.geolocation.watchPosition(
+        function switchCorridor(tenantId, locationName, currencyCode, el) {
+            document.querySelectorAll('.corridor-btn').forEach(b => b.classList.remove('active'));
+            if(el) el.classList.add('active');
+            document.getElementById('storeBusinessId').value = tenantId;
+            document.getElementById('storeCurrency').value = currencyCode;
+            document.getElementById('walletCurrencyLabel').innerText = currencyCode;
+            document.getElementById('tenantBadge').innerText = tenantId;
+            document.getElementById('corridorLabel').innerText = locationName;
+            fetchDriverOrders();
+        }
+
+        function startAutomaticGpsTracking() {
+            if (!navigator.geolocation) {
+                document.getElementById('gpsStatusDisplay').innerText = "Geolocation not supported.";
+                return;
+            }
+            if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
+
+            gpsWatchId = navigator.geolocation.watchPosition(
                 (pos) => {
                     lastLat = pos.coords.latitude;
                     lastLng = pos.coords.longitude;
-                    document.getElementById("gps").innerText = `GPS: ${lastLat.toFixed(5)}, ${lastLng.toFixed(5)}`;
-                    if (map && marker) {
-                        marker.setLatLng([lastLat, lastLng]);
+                    document.getElementById('gpsStatusDisplay').innerText = `Locked (${lastLat.toFixed(4)}, ${lastLng.toFixed(4)})`;
+                    if (map && driverMarker) {
+                        driverMarker.setLatLng([lastLat, lastLng]);
                         map.setView([lastLat, lastLng], map.getZoom(), { animate: false });
                     }
-                    // Emit real-time spatial socket telemetry
                     try {
-                        const socket = io();
-                        socket.emit('driver_location_update', { driverId: currentOwnerId, lat: lastLat, lng: lastLng });
+                        socket.emit('driver_location_update', {
+                            driverId: currentDriver ? currentDriver.id : 'DRV_001',
+                            lat: lastLat, lng: lastLng
+                        });
                     } catch(e) {}
                 },
                 (err) => {
-                    appendLog("GPS signal standby. Using Nairobi coordinate vector.");
+                    document.getElementById('gpsStatusDisplay').innerText = "Standby (Using Nairobi Vector)";
                 },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
-            appendLog("Stage 55 Hyper-GPS telemetry tracking active.");
         }
 
-        function stopGPS() {
-            if (gpsWatch !== null) {
-                navigator.geolocation.clearWatch(gpsWatch);
-                gpsWatch = null;
-                document.getElementById("gps").innerText = "GPS: PAUSED";
-                appendLog("GPS tracker paused.");
+        async function fetchDriverOrders() {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const driverId = document.getElementById('payoutOwnerId').value.trim() || 'DRV_001';
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/orders/live`, { headers: { "x-business-id": bizId } });
+                const data = await res.json();
+                if (data.success && data.orders) {
+                    renderDriverOrders(data.orders, driverId);
+                }
+
+                // Fetch wallet balance
+                const walletRes = await fetch(`${API_BASE}/wallets`, { headers: { "x-business-id": bizId } });
+                const walletData = await walletRes.json();
+                if (walletData && walletData.wallets) {
+                    const w = walletData.wallets.find(item => item.ownerId === driverId);
+                    const curr = document.getElementById('storeCurrency').value;
+                    document.getElementById('walletBalanceDisplay').innerText = `${curr} ${w ? Number(w.balance).toFixed(2) : '0.00'}`;
+                }
+            } catch (e) {}
+        }
+
+        function renderDriverOrders(orders, driverId) {
+            const container = document.getElementById('driverOrdersContainer');
+            if (!orders || orders.length === 0) {
+                container.innerHTML = '<em style="color:var(--text-dim); font-size: 0.75rem;">No active tenant dispatches found.</em>';
+                return;
             }
+            let html = '';
+            orders.slice(-4).reverse().forEach(o => {
+                const isReleased = o.merchantReleased;
+                const isDelivered = o.status.includes("DELIVERED");
+
+                let actionBtn = `<span style="color:var(--cyan); font-size: 0.75rem;">Waiting Merchant Handoff</span>`;
+                if (isReleased && !isDelivered) {
+                    actionBtn = `<button onclick="completeDelivery('${o.id}', '${driverId}')" style="background:var(--gold); color:#000; padding:8px; font-size:0.7rem;">Complete Delivery & Earn</button>`;
+                } else if (isDelivered) {
+                    actionBtn = `<span style="color:var(--neon-green); font-size: 0.75rem; font-weight:bold;">Escrow Settled ✓</span>`;
+                }
+
+                html += `
+                    <div class="live-order-card">
+                        <div class="live-order-header">
+                            <span>🆔 ${o.id}</span>
+                            <span style="color: var(--neon-green);">${o.status}</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #fff; margin-bottom: 8px;">
+                            <div>📍 Pickup: ${o.pickup}</div>
+                            <div>🏁 Dropoff: ${o.destination}</div>
+                            <div>💰 Total: <strong>${o.currency} ${o.total}</strong></div>
+                        </div>
+                        ${actionBtn}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         }
 
-        function updateDriverStatus() {
-            const status = document.getElementById('statusSelect').value;
-            appendLog(`Tenant operational status updated: ${status}`);
+        async function completeDelivery(orderId, driverId) {
+            if (!confirm("Confirm successful drop-off and release escrow funds to your wallet?")) return;
+            const bizId = document.getElementById('storeBusinessId').value;
+            try {
+                const res = await fetch(`${API_BASE}/complete-delivery`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ orderId, driverId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("Delivery completed successfully! Driver wallet credited.");
+                    fetchDriverOrders();
+                } else { alert(data.error); }
+            } catch (e) { alert("Completion error."); }
         }
 
         async function triggerB2CPayout() {
-            const targetOwnerId = document.getElementById('payoutOwnerId').value.trim() || currentOwnerId;
+            const ownerId = document.getElementById('payoutOwnerId').value.trim();
             const amount = document.getElementById('payoutAmount').value;
+            const bizId = document.getElementById('storeBusinessId').value;
 
-            if (!targetOwnerId || !amount) {
-                alert("Provide valid Owner ID and payout amount.");
-                return;
-            }
+            if (!ownerId || !amount) { alert("Provide valid Owner ID and payout amount."); return; }
 
-            appendLog(`Initiating Stage 55 instant B2C payout for KES ${amount}...`);
-
-            const res = await apiFetch('/api/payouts/b2c', {
-                method: 'POST',
-                body: JSON.stringify({ ownerId: targetOwnerId, amount: Number(amount) })
-            });
-
-            if (res && res.success) {
-                appendLog(`💸 Instant B2C Payout successful! Ref: ${res.payoutRecord.id}`);
-                alert(`M-Pesa B2C Payout successful! Transaction ID: ${res.payoutRecord.id}`);
-                refreshDriverOrders();
-            } else {
-                appendLog(`Payout Error: ${res?.error || 'Insufficient wallet balance'}`);
-                alert(`Payout Error: ${res?.error || 'Insufficient wallet balance'}`);
-            }
+            try {
+                const res = await fetch(`${API_BASE}/api/payouts/b2c`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ ownerId, amount: Number(amount) })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`M-Pesa B2C Payout Successful! Ref ID: ${data.payoutRecord.id}`);
+                    fetchDriverOrders();
+                } else { alert(data.error || "Insufficient wallet balance."); }
+            } catch (e) { alert("Payout error."); }
         }
 
-        setTimeout(() => { if (map) map.invalidateSize(); }, 500);
-        setInterval(refreshDriverOrders, 8000);
+        function switchTab(viewId, el) {
+            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
+            document.getElementById(viewId).classList.add('active-view');
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
+            if(el) el.classList.add('active');
+            window.scrollTo(0, 0);
+            if (viewId === 'viewMap' && map) setTimeout(() => { map.invalidateSize(); }, 200);
+        }
     </script>
 </body>
 </html>
