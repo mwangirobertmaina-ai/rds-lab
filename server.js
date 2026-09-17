@@ -1,8 +1,8 @@
 // ==========================================
-// RDS - STAGE 89 AUTOMATED ID/PASSPORT & FACE BIOMETRIC KYC ENGINE
+// RDS - STAGE 89 FULLY AUTOMATED MULTI-ROLE KYC & SETTLEMENT ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Escrow Storage,
-// Multi-Wallet, 16% KRA Tax Allocation, Frictionless Phone/Email/ID OTP, Autonomous Routing,
-// Automated Legal Name Matching, ID/Passport & Facial Biometric Uploads
+// Multi-Wallet, 16% KRA Tax Allocation, Frictionless Phone/Email/ID/Passport & Face KYC via Profile,
+// Autonomous Routing, Comprehensive Driver/Shop KYC with Real-World Geolocation and Commodity Catalogs
 // ==========================================
 
 const express = require("express");
@@ -371,12 +371,12 @@ app.post('/api/rider/withdraw', async (req, res) => {
 app.post('/api/auth/send-otp', async (req, res) => {
     try {
         ensureState();
-        const { phone, email, idNumber, fullName } = req.body;
+        const { phone, email } = req.body;
         if (!phone) return fail(res, "Phone number required", 400);
         const otp = "1234";
         const expires = Date.now() + 5 * 60 * 1000;
         data.otp_sessions = data.otp_sessions.filter(s => s.phone !== phone);
-        data.otp_sessions.push({ phone, email: email || "", idNumber: idNumber || "", fullName: fullName || "", otp, expires });
+        data.otp_sessions.push({ phone, email: email || "", otp, expires });
         await saveDB();
         return ok(res, { success: true, message: "OTP sent successfully (Use 1234 for testing)" });
     } catch (err) {
@@ -387,37 +387,50 @@ app.post('/api/auth/send-otp', async (req, res) => {
 app.post('/api/auth/verify-otp', async (req, res) => {
     try {
         ensureState();
-        const { phone, otp, role, email, idNumber, fullName, idDocumentBase64, facePhotoBase64 } = req.body;
+        const { phone, otp, role, email } = req.body;
         const session = data.otp_sessions.find(s => s.phone === phone && s.otp === otp);
         if (!session || Date.now() > session.expires) return fail(res, "Invalid or expired OTP", 400);
 
         let user = data.users.find(u => u.phone === phone);
-        const resolvedName = fullName || session.fullName || "Verified Sovereign Citizen";
-        const resolvedIdNum = idNumber || session.idNumber || "";
-        const resolvedEmail = email || session.email || "";
-
         if (!user) {
             user = { 
                 id: id("USR"), phone, 
-                email: resolvedEmail, 
-                idNumber: resolvedIdNum,
-                fullName: resolvedName,
-                idDocument: idDocumentBase64 || "",
-                facePhoto: facePhotoBase64 || "",
+                email: email || session.email || "", 
+                fullName: "", idOrPassportNo: "", idOrPassportImage: "", facePhoto: "",
                 role: role || "USER", createdAt: Date.now() 
             };
             data.users.push(user);
         } else {
             if (role) user.role = role;
-            if (resolvedEmail) user.email = resolvedEmail;
-            if (resolvedIdNum) user.idNumber = resolvedIdNum;
-            if (resolvedName) user.fullName = resolvedName;
-            if (idDocumentBase64) user.idDocument = idDocumentBase64;
-            if (facePhotoBase64) user.facePhoto = facePhotoBase64;
+            if (email) user.email = email;
         }
         const token = crypto.randomBytes(32).toString('hex');
         await saveDB();
         return ok(res, { success: true, token, user });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+app.post('/api/user/update-profile-kyc', async (req, res) => {
+    try {
+        ensureState();
+        const { userId, fullName, idOrPassportNo, idOrPassportImage, facePhoto } = req.body;
+        if (!userId || !fullName || !idOrPassportNo) {
+            return fail(res, "Missing mandatory full name and ID/Passport identification fields", 400);
+        }
+
+        let user = data.users.find(u => u.id === userId);
+        if (!user) return fail(res, "User not found", 404);
+
+        user.fullName = fullName;
+        user.idOrPassportNo = idOrPassportNo;
+        user.idOrPassportImage = idOrPassportImage || "";
+        user.facePhoto = facePhoto || "";
+        user.kycVerified = true;
+
+        await saveDB();
+        return ok(res, { success: true, user, message: "Profile sovereign KYC verified successfully." });
     } catch (err) {
         return fail(res, err.message, 500);
     }
@@ -667,5 +680,5 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 89 AUTOMATED ID & BIOMETRIC KYC ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 89 MULTI-ROLE KYC ENGINE ACTIVE ON PORT ${PORT}`);
 });
