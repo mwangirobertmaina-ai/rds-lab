@@ -1,6 +1,6 @@
 // ==========================================
-// RDS - STAGE 94 SOVEREIGN ON-DEMAND COMMERCE & LOGISTICS SIMULATOR
-// Jumia Storefront Browsing + Uber Dispatch Telemetry + Orderly Dismissal & Rollback
+// RDS - STAGE 96 SOVEREIGN ON-DEMAND COMMERCE & LOGISTICS SIMULATOR
+// Jumia Storefront + Uber Dispatch + Orderly Dismissal + CBK/World Bank Compliance & AML
 // ==========================================
 
 const express = require("express");
@@ -122,7 +122,9 @@ function defaultDB() {
       { id: "p5", businessId: "BIZ-KE", category: "HOTEL", merchant: "Serena Luxury Suites", name: "Executive Suite Booking (1 Night)", price: 12500, currency: "KES", image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&auto=format&fit=crop&q=80" },
       { id: "p6", businessId: "BIZ-KE", category: "SUPERMARKET", merchant: "Naivas Supermarket Express", name: "Organic Fresh Basket", price: 2100, currency: "KES", image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80" }
     ], 
-    users: [],
+    users: [
+      { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", idOrPassportNo: "32456789", amlFlagged: false, riskScore: "0.8%" }
+    ],
     otp_sessions: [],
     orders: [], 
     escrow: [],        
@@ -207,13 +209,42 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_94_SUPER_APP_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_96_SUPER_APP_ONLINE", time: Date.now() }));
 
 app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
         const tenantOrders = data.orders.filter(o => o.businessId === req.tenantId || req.tenantId === "BIZ-KE");
         return ok(res, { success: true, orders: tenantOrders });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+// STAGE 96 NEW COMPLIANCE & AML ADMIN ENDPOINTS
+app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, res) => {
+    try {
+        ensureState();
+        const tenantOrders = data.orders.filter(o => o.businessId === req.tenantId || req.tenantId === "BIZ-KE");
+        return ok(res, { success: true, orders: tenantOrders, users: data.users });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+app.post('/api/admin/toggle-aml', enforceTenantIsolation, async (req, res) => {
+    try {
+        ensureState();
+        const { userId } = req.body;
+        const user = data.users.find(u => u.id === userId);
+        if (!user) return fail(res, "User not found", 404);
+        user.amlFlagged = !user.amlFlagged;
+        user.riskScore = user.amlFlagged ? "98.5% (HIGH)" : "1.2% (LOW)";
+        await saveDB();
+        if (global.io && user.amlFlagged) {
+            global.io.emit('amlAlertTriggered', { userId: user.id, name: user.fullName });
+        }
+        return ok(res, { success: true, user });
     } catch (err) {
         return fail(res, err.message, 500);
     }
@@ -248,7 +279,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
                 id: id("USR"), phone, 
                 email: email || session.email || "", 
                 fullName: "Robert Maina", idOrPassportNo: "32456789", 
-                role: role || "USER", createdAt: Date.now() 
+                role: role || "USER", amlFlagged: false, riskScore: "0.8%", createdAt: Date.now() 
             };
             data.users.push(user);
         } else {
@@ -302,6 +333,12 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         const tenant = req.tenantObj;
         const currencyCode = tenant.currency || "KES";
 
+        // AML check on checkout user
+        const checkingUser = data.users.find(u => u.id === userId);
+        if (checkingUser && checkingUser.amlFlagged) {
+            return fail(res, "Transaction blocked by AML compliance policy. Account under regulatory review.", 403);
+        }
+
         let distanceKm = calculateHaversineDistanceKm(
             pickupCoords?.lat, pickupCoords?.lng, 
             destinationCoords?.lat, destinationCoords?.lng
@@ -319,7 +356,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST94");
+        const orderId = id("ORD_ST96");
         const assignedRider = "DRV_01";
 
         const order = {
@@ -355,8 +392,8 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     BusinessShortCode: MPESA_CONFIG.shortCode, Password: password, Timestamp: timestamp,
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
-                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Stage 94`,
-                    TransactionDesc: `Stage 94 Escrow Checkout`
+                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Stage 96`,
+                    TransactionDesc: `Stage 96 Escrow Checkout`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -374,7 +411,6 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// ORDERLY DISMISSAL & ROLLBACK ENDPOINT
 app.post('/api/orders/dismiss', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -387,7 +423,6 @@ app.post('/api/orders/dismiss', enforceTenantIsolation, async (req, res) => {
         const order = data.orders[orderIndex];
         order.status = "ORDERLY_DISMISSED";
 
-        // Release Escrow
         const escrowIdx = data.escrow.findIndex(e => e.orderId === orderId);
         if (escrowIdx !== -1) {
             data.escrow[escrowIdx].status = "REFUNDED_RELEASED";
@@ -404,5 +439,5 @@ app.post('/api/orders/dismiss', enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 94 ON-DEMAND COMMERCE & LOGISTICS SIMULATOR ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 96 GLOBAL COMPLIANCE & COMMERCE SIMULATOR ACTIVE ON PORT ${PORT}`);
 });
