@@ -1,8 +1,8 @@
 // ==========================================
-// RDS - STAGE 91 SOVEREIGN MULTI-ROLE SUPER-APP ENGINE
+// RDS - STAGE 92 ENTERPRISE SOVEREIGN MULTI-ROLE SUPER-APP ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Escrow Storage,
 // Multi-Wallet, 16% KRA Tax Allocation, Profile-Locked ID/Passport & Face KYC,
-// Autonomous Routing, Comprehensive Driver/Shop KYC with Real-World Geolocation and Commodity Catalogs
+// Autonomous Routing, Unlimited Real Image Product Management & Instant Out-of-Stock Deletion
 // ==========================================
 
 const express = require("express");
@@ -48,7 +48,7 @@ function round(n) {
 }
 
 /**
- * Stage 91 Precise Haversine Formula for Real-World Distance Calculation (KM)
+ * Stage 92 Precise Haversine Formula for Real-World Distance Calculation (KM)
  */
 function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 3.0; // Fallback default
@@ -64,17 +64,17 @@ function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.max(round(distance), 0.5); // Minimum 0.5 km floor
 }
 
-function generateStage91MerkleProof(record) {
+function generateStage92MerkleProof(record) {
   const salt = process.env.SOVEREIGN_SALT || crypto.randomBytes(16).toString('hex');
   const payload = `${record.id || record.escrowId || record.riderId}:${record.businessId || 'GLOBAL'}:${record.orderId || record.transactionId}:${record.total || record.amount}:${record.currency || 'KES'}:${record.timestamp || Date.now()}:${salt}`;
   return {
-    hash: crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_91_MASTER_KEY').update(payload).digest('hex'),
+    hash: crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_92_MASTER_KEY').update(payload).digest('hex'),
     salt
   };
 }
 
 /**
- * Stage 91 Dynamic Financial Split Engine
+ * Stage 92 Dynamic Financial Split Engine
  */
 function calculateFinancials(order) {
     const baseAmount = Number(order.itemPriceTotal || 0);    
@@ -245,7 +245,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_91_SUPER_APP_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_92_SUPER_APP_ONLINE", time: Date.now() }));
 
 function createEscrow(orderId, businessId, amount, region) {
     const escrowEntry = {
@@ -410,6 +410,7 @@ app.post('/api/shop/register', async (req, res) => {
         }
 
         await saveDB();
+        if (global.io) global.io.emit('catalogUpdated', { shopId });
         return res.json({ success: true, message: "Shop registered successfully with catalog and geolocation", shopId, shop: newShop });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -482,7 +483,30 @@ app.post('/api/products/add', (req, res) => {
     data.catalogs[shopId].push(newProduct);
     data.products.push(newProduct);
     saveDB();
+    if (global.io) global.io.emit('catalogUpdated', { shopId });
     res.json({ success: true, product: newProduct, message: "Product added successfully!" });
+});
+
+app.delete('/api/products/:productId', async (req, res) => {
+    try {
+        ensureState();
+        const { productId } = req.params;
+        const { shopId } = req.body;
+
+        data.products = data.products.filter(p => p.id !== productId);
+        if (shopId && data.catalogs[shopId]) {
+            data.catalogs[shopId] = data.catalogs[shopId].filter(p => p.id !== productId);
+        } else {
+            for (let key in data.catalogs) {
+                data.catalogs[key] = data.catalogs[key].filter(p => p.id !== productId);
+            }
+        }
+        await saveDB();
+        if (global.io) global.io.emit('catalogUpdated', { shopId });
+        return ok(res, { success: true, message: "Product deleted successfully from inventory." });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
 });
 
 app.get('/api/products', enforceTenantIsolation, (req, res) => {
@@ -542,7 +566,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST91");
+        const orderId = id("ORD_ST92");
         const availableRiders = data.riders && data.riders.length > 0 ? data.riders : [{ riderId: "DRV_01" }];
         const assignedRider = riderId || availableRiders[Math.floor(Math.random() * availableRiders.length)].riderId;
 
@@ -583,7 +607,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS ${tenant.region || 'KE'}`,
-                    TransactionDesc: `Stage 91 Escrow Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 92 Escrow Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -609,5 +633,5 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 91 SUPER-APP ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 92 ENTERPRISE SUPER-APP ENGINE ACTIVE ON PORT ${PORT}`);
 });

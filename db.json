@@ -82,7 +82,8 @@
       "id": "USR_1789526748571_70704",
       "phone": "254721862397",
       "role": "USER",
-      "createdAt": 1789526748571
+      "createdAt": 1789526748571,
+      "email": "robert.maina@rds.com"
     },
     {
       "id": "USR_1789602032840_21629",
@@ -99,8 +100,9 @@
     },
     {
       "phone": "254721862397",
+      "email": "robert.maina@rds.com",
       "otp": "1234",
-      "expires": 1789604199290
+      "expires": 1789607138444
     }
   ],
   "orders": [
@@ -715,6 +717,11 @@
     },
     {
       "riderId": "RDR_01",
+      "balance": 0,
+      "currency": "KES"
+    },
+    {
+      "riderId": "USR_1789526748571_70704",
       "balance": 0,
       "currency": "KES"
     }

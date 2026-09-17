@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 91 | Sovereign Multi-Role Super-App</title>
+  <title>RDS 92 | Enterprise Sovereign Super-App</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <!-- Leaflet CSS & JS for Real-World Maps & Routing -->
@@ -309,6 +309,18 @@
       color: var(--cyan);
       font-weight: bold;
     }
+
+    .inventory-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--dark-bg);
+      border: 1px solid #374151;
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 0.75rem;
+    }
   </style>
 </head>
 <body id="appBody">
@@ -316,12 +328,12 @@
     <!-- AUTHENTICATION & ROLE SELECTION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🚀 RDS STAGE 91 SECURE PORTAL LOGIN</span>
+            <span>🚀 RDS STAGE 92 ENTERPRISE SECURE LOGIN</span>
         </div>
 
         <div class="checkout-panel" style="padding: 20px;">
-            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Welcome to RDS Super-App</h2>
-            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Select your portal role and sign in with email & phone. Legal ID/Passport KYC is completed securely inside your profile.</p>
+            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">RDS Enterprise Super-App</h2>
+            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Select your portal role and sign in with email & phone. Unlimited product management with real image gallery uploads.</p>
 
             <label style="font-size: 0.75rem; color: var(--stage-purple); display: block; margin-bottom: 6px; font-weight: bold;">Continue as:</label>
             <div class="role-select-grid">
@@ -353,7 +365,7 @@
     <!-- HOME DASHBOARD (User / Shop / Rider Segregated) -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span id="portalTitleBanner">🌐 RDS STAGE 91 USER PORTAL</span>
+            <span id="portalTitleBanner">🌐 RDS STAGE 92 USER PORTAL</span>
             <span id="nodeLatency">Secure • Active</span>
         </div>
 
@@ -486,7 +498,7 @@
             <p style="margin-top: 6px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
         </div>
 
-        <!-- USER SOVEREIGN KYC VERIFICATION PANEL (LOCKED INSIDE PROFILE) -->
+        <!-- USER SOVEREIGN KYC VERIFICATION PANEL -->
         <div class="checkout-panel" id="userKycProfilePanel" style="margin-top: 15px;">
             <h3 style="color: var(--neon-green);">🔒 Official ID/Passport & Face Verification</h3>
             <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px;">Enter your exact legal name as it appears on your official document and upload your ID/Passport card and face photo from your phone or file gallery.</p>
@@ -508,7 +520,7 @@
             <button onclick="submitUserSovereignKyc()" class="btn-cyan" style="margin-top: 5px;">Save & Verify Sovereign Identity</button>
         </div>
 
-        <!-- SHOP OWNER REGISTRATION PANEL -->
+        <!-- SHOP OWNER REGISTRATION & UNLIMITED PRODUCT/IMAGE MANAGER -->
         <div class="checkout-panel role-restricted-shop" id="shopRegisterPanel" style="margin-top: 15px; display: none;">
             <h3>🏬 Register Shop / Hotel / Supermarket</h3>
             <input type="text" id="regShopName" placeholder="Shop/Hotel/Supermarket Name">
@@ -522,26 +534,36 @@
             </div>
             <button type="button" onclick="autoDetectShopLocation()" style="background:#222e3c; color:var(--cyan); margin-bottom:10px;">📍 Auto-Detect Real Place Geolocation</button>
 
-            <h4 style="font-size:0.8rem; color:var(--neon-green); margin-bottom:6px;">Commodity Catalog Setup</h4>
-            <input type="text" id="catItemName" placeholder="Item Name e.g. Organic Fresh Basket">
-            <input type="number" id="catItemPrice" placeholder="Price e.g. 2100">
-            <select id="catItemCategory">
+            <button onclick="registerShopAccount()" class="btn-cyan">Complete Shop Registration</button>
+        </div>
+
+        <div class="checkout-panel role-restricted-shop" id="productAddPanel" style="margin-top: 15px; display:none;">
+            <h3>📸 Add Unlimited Products with Real Images & Prices</h3>
+            <input type="hidden" id="registeredShopId">
+            
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Product Name</label>
+            <input type="text" id="newProdName" placeholder="e.g. Organic Fresh Basket or Burger Combo">
+
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Product Price</label>
+            <input type="number" id="newProdPrice" placeholder="e.g. 1500">
+
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Category</label>
+            <select id="newProdCategory">
                 <option value="SUPERMARKET">Supermarket</option>
                 <option value="RESTAURANT">Restaurant</option>
                 <option value="HOTEL">Hotel</option>
             </select>
-            <button onclick="addCatalogItemToDraft()" style="background:var(--stage-purple); margin-bottom:10px;">+ Add Item to Catalog Draft</button>
-            <div id="catalogDraftList" style="font-size:0.75rem; color:var(--text-dim); margin-bottom:10px; max-height:100px; overflow-y:auto; border:1px solid #374151; padding:6px; border-radius:6px;">No items in draft yet.</div>
 
-            <button onclick="registerShopWithCatalog()" class="btn-cyan">Complete Shop & Catalog Registration</button>
-        </div>
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Upload Real Product Picture (From Device Gallery)</label>
+            <input type="file" id="newProdImageFile" accept="image/*" onchange="handleFileUpload(event, 'newProdImageInput')" style="padding: 6px; background:var(--dark-bg); margin-bottom:6px;">
+            <input type="text" id="newProdImageInput" placeholder="Image URL or Base64 data..." value="https://images.unsplash.com/photo-1542838132-92c53300491e?w=400">
 
-        <div class="checkout-panel role-restricted-shop" id="productAddPanel" style="margin-top: 15px; display:none;">
-            <h3>Add Product to Active Catalog</h3>
-            <input type="hidden" id="registeredShopId">
-            <input type="text" id="newProdName" placeholder="Product Name">
-            <input type="number" id="newProdPrice" placeholder="Price">
-            <button onclick="addProductToCatalog()" style="background: var(--neon-green); color: #000;">Add Product</button>
+            <button onclick="addProductToCatalog()" class="btn-cyan" style="margin-top: 5px;">+ Publish Product Instantly</button>
+
+            <h4 style="font-size:0.8rem; color:var(--neon-green); margin: 15px 0 6px 0;">Active Shop Inventory Manager (Instant Out-of-Stock Deletion)</h4>
+            <div id="shopInventoryList" style="max-height: 180px; overflow-y: auto;">
+                <em style="color:var(--text-dim); font-size:0.75rem;">Register shop to manage inventory.</em>
+            </div>
         </div>
 
         <!-- RIDER REGISTRATION PANEL -->
@@ -585,12 +607,12 @@
         let allProductsCache = [];
         let activeCategory = 'ALL';
         let cart = {}; 
-        let draftCatalog = [];
 
         let map = null;
         let pickupMarker = null;
         let destinationMarker = null;
         let routePolyline = null;
+        let socket = io();
 
         window.addEventListener('DOMContentLoaded', () => {
             map = L.map('mapContainer').setView([-1.286389, 36.817223], 13);
@@ -609,6 +631,16 @@
 
             loadDynamicShopsAndCorridors();
             updateMapMarkersAndPolyline();
+
+            socket.on('catalogUpdated', () => {
+                loadStoreCatalog();
+                const shopId = document.getElementById('registeredShopId').value;
+                if (shopId) loadShopInventory(shopId);
+            });
+
+            socket.on('orderListUpdated', () => {
+                fetchLiveOrders();
+            });
         });
 
         function selectOnboardingRole(role, el) {
@@ -665,7 +697,7 @@
             const reader = new FileReader();
             reader.onload = function(uploadEvent) {
                 document.getElementById(targetInputId).value = uploadEvent.target.result;
-                alert("File loaded successfully from device gallery/storage!");
+                alert("File loaded successfully from device storage!");
             };
             reader.readAsDataURL(file);
         }
@@ -703,11 +735,11 @@
             shopPanels.forEach(p => p.style.display = (role === 'SHOP') ? 'block' : 'none');
 
             if (role === 'USER') {
-                document.getElementById('portalTitleBanner').innerText = '🌐 RDS STAGE 91 USER PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🌐 RDS STAGE 92 USER PORTAL';
             } else if (role === 'SHOP') {
-                document.getElementById('portalTitleBanner').innerText = '🏬 RDS STAGE 91 MERCHANT PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🏬 RDS STAGE 92 MERCHANT PORTAL';
             } else if (role === 'DRIVER') {
-                document.getElementById('portalTitleBanner').innerText = '🏍️ RDS STAGE 91 RIDER PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🏍️ RDS STAGE 92 RIDER PORTAL';
             }
         }
 
@@ -793,27 +825,11 @@
                     document.getElementById('shopLat').value = position.coords.latitude.toFixed(6);
                     document.getElementById('shopLng').value = position.coords.longitude.toFixed(6);
                     alert("Real place geolocation successfully detected (100% precise)!");
-                }, () => { alert("Geolocation access denied or unavailable. Using default Nairobi coordinates."); });
+                }, () => { alert("Geolocation access denied. Using default Nairobi coordinates."); });
             } else { alert("Geolocation is not supported by this browser."); }
         }
 
-        function addCatalogItemToDraft() {
-            const name = document.getElementById('catItemName').value.trim();
-            const price = document.getElementById('catItemPrice').value.trim();
-            const category = document.getElementById('catItemCategory').value;
-            if (!name || !price) { alert("Enter item name and price"); return; }
-            draftCatalog.push({ name, price: Number(price), category });
-            
-            let html = '';
-            draftCatalog.forEach((item, idx) => {
-                html += `<div>${idx+1}. <strong>${item.name}</strong> - KES ${item.price} (${item.category})</div>`;
-            });
-            document.getElementById('catalogDraftList').innerHTML = html;
-            document.getElementById('catItemName').value = '';
-            document.getElementById('catItemPrice').value = '';
-        }
-
-        async function registerShopWithCatalog() {
+        async function registerShopAccount() {
             const shopName = document.getElementById('regShopName').value.trim();
             const idNumber = document.getElementById('shopIdNumber').value.trim() || (currentUser ? currentUser.idOrPassportNo : "12345");
             const shopImage = document.getElementById('regShopImage').value.trim();
@@ -828,8 +844,7 @@
                     userId: currentUser.id, shopName, idNumber,
                     email: currentUser.email, phone: currentUser.phone,
                     shopImageBase64: shopImage,
-                    location: { lat, lng },
-                    catalog: draftCatalog
+                    location: { lat, lng }
                 })
             });
             const data = await res.json();
@@ -839,8 +854,76 @@
                 document.getElementById('shopRegisterPanel').style.display = 'none';
                 document.getElementById('productAddPanel').style.display = 'block';
                 loadDynamicShopsAndCorridors();
+                loadShopInventory(data.shopId);
                 loadStoreCatalog();
             } else { alert(data.error); }
+        }
+
+        async function addProductToCatalog() {
+            const shopId = document.getElementById('registeredShopId').value;
+            const name = document.getElementById('newProdName').value.trim();
+            const price = document.getElementById('newProdPrice').value.trim();
+            const category = document.getElementById('newProdCategory').value;
+            const image = document.getElementById('newProdImageInput').value.trim();
+
+            if (!shopId || !name || !price) {
+                alert("Please provide product name and price.");
+                return;
+            }
+
+            const res = await fetch(`${API_BASE}/api/products/add`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ shopId, name, price, category, image })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('newProdName').value = '';
+                document.getElementById('newProdPrice').value = '';
+                loadStoreCatalog();
+                loadShopInventory(shopId);
+            } else { alert(data.error); }
+        }
+
+        async function loadShopInventory(shopId) {
+            try {
+                const res = await fetch(`${API_BASE}/api/products?shopId=${shopId}`, { headers: { "x-business-id": shopId } });
+                const data = await res.json();
+                const container = document.getElementById('shopInventoryList');
+                if (!data.success || !data.products || data.products.length === 0) {
+                    container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No products in inventory yet. Add your first product above.</em>';
+                    return;
+                }
+                let html = '';
+                data.products.forEach(p => {
+                    html += `
+                        <div class="inventory-item-row">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <img src="${p.image}" style="width:30px; height:30px; object-fit:cover; border-radius:4px;">
+                                <div><strong>${p.name}</strong><br><span style="color:var(--stage-purple);">${data.currency} ${p.price}</span></div>
+                            </div>
+                            <button onclick="deleteProductFromInventory('${p.id}', '${shopId}')" style="background:var(--alert-red); color:#fff; width:auto; padding:4px 8px; font-size:0.65rem;">🗑️ Out of Stock / Delete</button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) {}
+        }
+
+        async function deleteProductFromInventory(productId, shopId) {
+            if (!confirm("Remove this product instantly as out of stock?")) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/products/${productId}`, {
+                    method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ shopId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    loadStoreCatalog();
+                    loadShopInventory(shopId);
+                }
+            } catch (e) {}
         }
 
         async function submitSovereignDriverRegistration() {
@@ -868,23 +951,6 @@
             const data = await res.json();
             if (data.success) alert(data.message);
             else alert(data.error);
-        }
-
-        async function addProductToCatalog() {
-            const shopId = document.getElementById('registeredShopId').value;
-            const name = document.getElementById('newProdName').value.trim();
-            const price = document.getElementById('newProdPrice').value.trim();
-            if (!shopId || !name || !price) return;
-
-            const res = await fetch(`${API_BASE}/api/products/add`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ shopId, name, price })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(data.message);
-                loadStoreCatalog();
-            }
         }
 
         function switchTab(viewId, el) {
