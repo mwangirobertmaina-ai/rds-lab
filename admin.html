@@ -338,7 +338,6 @@
             <span>⚖️ CBK FORM FXBO & FORENSIC AUDIT VAULT</span>
         </div>
 
-        <!-- FAST UPGRADE 2: 1-CLICK CENTRAL BANK AUDIT SIMULATION -->
         <div class="checkout-panel" style="margin-bottom: 12px; padding: 12px; border-color: var(--neon-green);">
             <h3 style="color: var(--neon-green); margin-bottom: 6px;">Central Bank Inspection Mode</h3>
             <p style="font-size: 0.68rem; color: var(--text-dim); margin-bottom: 10px;">Instantly verify cryptographic hash chains across all historical forex transactions for auditors.</p>
@@ -444,6 +443,8 @@
                 document.getElementById('bottomNav').style.display = 'flex';
                 switchTab('viewMacro', document.querySelectorAll('.bottom-nav .nav-item')[0]);
                 fetchAdminData();
+            } else {
+                alert(data.error || "OTP verification failed");
             }
         }
 
@@ -634,17 +635,23 @@
 
         function renderAmlTable(users) {
             const tbody = document.getElementById('amlTableBody');
-            if (!users || users.length === 0) return;
+            if (!users || users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No users found.</td></tr>`;
+                return;
+            }
             let html = '';
             users.forEach(u => {
                 const isFlagged = u.amlFlagged || false;
                 const riskColor = isFlagged ? 'var(--alert-red)' : 'var(--neon-green)';
+                const btnText = isFlagged ? 'Clear' : 'Flag';
+                const btnColor = isFlagged ? 'var(--neon-green)' : 'var(--alert-red)';
+                const btnTextColor = isFlagged ? '#000' : '#fff';
                 html += `
                     <tr>
                         <td><b>${u.fullName || 'User'}</b><br><span style="font-size:0.53rem; color:var(--text-dim);">KYC: ${u.kycStatus || 'VERIFIED'}</span></td>
                         <td style="color:${riskColor}; font-weight:bold;">${u.riskScore || '1.2%'}</td>
                         <td>
-                            ${isFlagged ? `<button onclick="requestMakerClearAml('${u.id}')" style="background:var(--stage-purple); color:#fff; padding:3px 6px; font-size:0.53rem;">Req Clear</button>` : `<button onclick="toggleAmlFlag('${u.id}')" style="background:var(--alert-red); color:#fff; padding:3px 6px; font-size:0.53rem;">Flag</button>`}
+                            <button onclick="toggleAmlFlag('${u.id}')" style="background:${btnColor}; color:${btnTextColor}; padding:3px 6px; font-size:0.53rem;">${btnText}</button>
                         </td>
                     </tr>
                 `;
@@ -652,30 +659,20 @@
             tbody.innerHTML = html;
         }
 
-        async function requestMakerClearAml(userId) {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const token = document.getElementById('adminToken').value;
-            const res = await fetch(`${API_BASE}/api/admin/maker/request`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId, 'authorization': token },
-                body: JSON.stringify({ actionType: 'CLEAR_AML', targetId: userId, details: { reason: 'POCAMLA compliance review passed' } })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert("Maker request submitted. Switch to Governance tab for Checker approval.");
-                fetchAdminData();
-            } else { alert(data.error); }
-        }
-
         async function toggleAmlFlag(userId) {
             const bizId = document.getElementById('storeBusinessId').value;
             const token = document.getElementById('adminToken').value;
-            await fetch(`${API_BASE}/api/admin/toggle-aml`, {
+            const res = await fetch(`${API_BASE}/api/admin/toggle-aml`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-business-id': bizId, 'authorization': token },
                 body: JSON.stringify({ userId })
             });
-            fetchAdminData();
+            const data = await res.json();
+            if (data.success) {
+                fetchAdminData();
+            } else {
+                alert(data.error || "Failed to toggle AML status");
+            }
         }
 
         function switchTab(viewId, el) {

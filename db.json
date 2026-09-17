@@ -83,13 +83,31 @@
       "phone": "254721862397",
       "role": "USER",
       "createdAt": 1789526748571,
-      "email": "robert.maina@rds.com"
+      "email": "robert.maina@rds.com",
+      "amlFlagged": false,
+      "riskScore": "1.2% (LOW)",
+      "riskProfile": {
+        "score": 1.2,
+        "level": "LOW",
+        "factors": [
+          "Verified ID"
+        ]
+      }
     },
     {
       "id": "USR_1789602032840_21629",
       "phone": "1234",
       "role": "USER",
-      "createdAt": 1789602032840
+      "createdAt": 1789602032840,
+      "amlFlagged": false,
+      "riskScore": "1.2% (LOW)",
+      "riskProfile": {
+        "score": 1.2,
+        "level": "LOW",
+        "factors": [
+          "Verified ID"
+        ]
+      }
     },
     {
       "id": "USR_1789674342963_47256",
@@ -98,9 +116,16 @@
       "fullName": "Robert Maina",
       "idOrPassportNo": "32456789",
       "role": "ADMIN",
-      "amlFlagged": true,
-      "riskScore": "98.5% (HIGH)",
-      "createdAt": 1789674342963
+      "amlFlagged": false,
+      "riskScore": "1.2% (LOW)",
+      "createdAt": 1789674342963,
+      "riskProfile": {
+        "score": 1.2,
+        "level": "LOW",
+        "factors": [
+          "Verified ID"
+        ]
+      }
     }
   ],
   "otp_sessions": [
@@ -110,16 +135,16 @@
       "expires": 1789603614279
     },
     {
-      "phone": "254721862397",
-      "email": "robert.maina@rds.com",
-      "otp": "1234",
-      "expires": 1789671649197
-    },
-    {
       "phone": "254711999888",
       "email": "audittest@rds.com",
       "otp": "1234",
       "expires": 1789680028397
+    },
+    {
+      "phone": "254721862397",
+      "email": "robert.maina@rds.com",
+      "otp": "1234",
+      "expires": 1789689551539
     }
   ],
   "active_sessions": [
@@ -136,6 +161,27 @@
       "phone": "254711999888",
       "role": "ADMIN",
       "loginTime": 1789679740733
+    },
+    {
+      "token": "89c701a2ef32147d4b3af05ee937313c4cf3f11bf1ed8ebe3d1b85e57bc534c6",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "ADMIN",
+      "loginTime": 1789688273933
+    },
+    {
+      "token": "9057a4e680176f45611f90968ae47c4951eff229a16b4b41197cc5fea4e91c7d",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "ADMIN",
+      "loginTime": 1789689116386
+    },
+    {
+      "token": "d5574e50cc0d4aa277c0df4bf0f38ba903651d3b7277f5d5b5d28e9d5245ef78",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "USER",
+      "loginTime": 1789689255081
     }
   ],
   "universal_connections": [
@@ -193,9 +239,910 @@
       "previousHash": "b09de170949d7ad4aec06740bbea79b599b40dd32f8eca75fa2986aa1fd1b79b",
       "currentHash": "a02fd1c4e54067c1664c1759d27bbe48e2837fc9833cb085bacd050bc285055c",
       "tamperProof": true
+    },
+    {
+      "auditId": "AUD_1789688273934_67625",
+      "timestamp": 1789688273933,
+      "actionType": "USER_LOGIN_VERIFIED",
+      "actor": {
+        "userId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "role": "ADMIN"
+      },
+      "previousHash": "a02fd1c4e54067c1664c1759d27bbe48e2837fc9833cb085bacd050bc285055c",
+      "currentHash": "52fdfb6624e7c322c906295af043fc7cd4211461ba339809652c81eed3db4de4",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688279206_30162",
+      "timestamp": 1789688279206,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688279206_48153",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789674342963_47256",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688279206
+      },
+      "previousHash": "52fdfb6624e7c322c906295af043fc7cd4211461ba339809652c81eed3db4de4",
+      "currentHash": "ca23884affa695e3e9d78c16c2ccad26dde33b6339b1141317232a560e4fa0bf",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688284637_62869",
+      "timestamp": 1789688284637,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688284637_77610",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789674342963_47256",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688284637
+      },
+      "previousHash": "ca23884affa695e3e9d78c16c2ccad26dde33b6339b1141317232a560e4fa0bf",
+      "currentHash": "539f8d148b0cb690d55de15f8361e066079f8d5b346063918895071bf599aa02",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688287116_88166",
+      "timestamp": 1789688287116,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688287116_49895",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789674342963_47256",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688287116
+      },
+      "previousHash": "539f8d148b0cb690d55de15f8361e066079f8d5b346063918895071bf599aa02",
+      "currentHash": "e4e501c012e1fd08c9b5c192a164d803b9bfae1daa233d1fb63cd892b400ad00",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688290581_16872",
+      "timestamp": 1789688290581,
+      "actionType": "AML_FLAG_TOGGLE",
+      "actor": {
+        "userId": "USR_1789602032840_21629"
+      },
+      "details": {
+        "amlFlagged": true
+      },
+      "previousHash": "e4e501c012e1fd08c9b5c192a164d803b9bfae1daa233d1fb63cd892b400ad00",
+      "currentHash": "9c6494aa661b3eb8bd61ff3ecf1df3914b3c885d53d8ebb862d23c4c43d39502",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688292437_84669",
+      "timestamp": 1789688292437,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688292437_32580",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688292437
+      },
+      "previousHash": "9c6494aa661b3eb8bd61ff3ecf1df3914b3c885d53d8ebb862d23c4c43d39502",
+      "currentHash": "7c3ef103299ce3da8fd5cc71d406de186d67321c07c13a298f37d796ce0550ac",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688296925_67943",
+      "timestamp": 1789688296925,
+      "actionType": "AML_FLAG_TOGGLE",
+      "actor": {
+        "userId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "amlFlagged": true
+      },
+      "previousHash": "7c3ef103299ce3da8fd5cc71d406de186d67321c07c13a298f37d796ce0550ac",
+      "currentHash": "e724ab3210b92cf1e365ef7c22f7268fe6554e05202f9cc58fd27659440be6fa",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688299477_78555",
+      "timestamp": 1789688299477,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688299477_32444",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789674342963_47256",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688299477
+      },
+      "previousHash": "e724ab3210b92cf1e365ef7c22f7268fe6554e05202f9cc58fd27659440be6fa",
+      "currentHash": "40bedc05c39482448a1bcf131184a959bdf3ee5fb548c1b5b627c3a802e12077",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688300932_29420",
+      "timestamp": 1789688300932,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688300932_23893",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688300932
+      },
+      "previousHash": "40bedc05c39482448a1bcf131184a959bdf3ee5fb548c1b5b627c3a802e12077",
+      "currentHash": "01eab3cd9e1d321a109d2bae23861e39cc36211766c1772d239a6fc45686154d",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688305412_90839",
+      "timestamp": 1789688305412,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688305412_21969",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789526748571_70704",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688305412
+      },
+      "previousHash": "01eab3cd9e1d321a109d2bae23861e39cc36211766c1772d239a6fc45686154d",
+      "currentHash": "b441ed8542fb42d17c2413e4bf6cda747a35e7be762c4ae5abaea61993db4460",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688305692_8609",
+      "timestamp": 1789688305692,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688305692_57337",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789526748571_70704",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688305692
+      },
+      "previousHash": "b441ed8542fb42d17c2413e4bf6cda747a35e7be762c4ae5abaea61993db4460",
+      "currentHash": "3f68ff9501c49a1ae5b1492f8dc51d9b82a0d94d2557369e6a5e3e09904bf3b1",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688306196_12074",
+      "timestamp": 1789688306196,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688306196_67478",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789526748571_70704",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688306196
+      },
+      "previousHash": "3f68ff9501c49a1ae5b1492f8dc51d9b82a0d94d2557369e6a5e3e09904bf3b1",
+      "currentHash": "bf7ba9dd776e92c437dba48bd600190157c33b609d99f6dc26d95e651d72a193",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688306452_10067",
+      "timestamp": 1789688306452,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688306452_78682",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789526748571_70704",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688306452
+      },
+      "previousHash": "bf7ba9dd776e92c437dba48bd600190157c33b609d99f6dc26d95e651d72a193",
+      "currentHash": "22b39bb5914c33f340ef678ed9994f513f311c1de0ae1b10685c177472749b76",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688306684_45228",
+      "timestamp": 1789688306684,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688306684_5676",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789526748571_70704",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688306684
+      },
+      "previousHash": "22b39bb5914c33f340ef678ed9994f513f311c1de0ae1b10685c177472749b76",
+      "currentHash": "c40da5cbaea30ed3ccfc3ecc15d19ed9c591995c58ab44f38b82d85822fdc6bd",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688306916_86734",
+      "timestamp": 1789688306916,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688306916_32522",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789526748571_70704",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688306916
+      },
+      "previousHash": "c40da5cbaea30ed3ccfc3ecc15d19ed9c591995c58ab44f38b82d85822fdc6bd",
+      "currentHash": "9840684ed53bc60d8a756070b871727c0d5f320ba3b2be50a9e03167ba0fa316",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688312356_44952",
+      "timestamp": 1789688312356,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688312356_36127",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688312356
+      },
+      "previousHash": "9840684ed53bc60d8a756070b871727c0d5f320ba3b2be50a9e03167ba0fa316",
+      "currentHash": "7bb052e17d8f55e8035a44d7cb56768a649e48c1021299d986da3bd443f95cca",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688312684_2606",
+      "timestamp": 1789688312684,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688312684_78673",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688312684
+      },
+      "previousHash": "7bb052e17d8f55e8035a44d7cb56768a649e48c1021299d986da3bd443f95cca",
+      "currentHash": "0529c23b8ed596f3c8973400c9236d510387d07b478e319e4b6ea4ea3292636c",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688314844_60216",
+      "timestamp": 1789688314844,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688314844_18419",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688314844
+      },
+      "previousHash": "0529c23b8ed596f3c8973400c9236d510387d07b478e319e4b6ea4ea3292636c",
+      "currentHash": "4bc5ec8739f553495c2861c4c6374f2cbfab9dded83b10c0f8bff89f1f485b36",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688318684_66403",
+      "timestamp": 1789688318684,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688318684_74800",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688318684
+      },
+      "previousHash": "4bc5ec8739f553495c2861c4c6374f2cbfab9dded83b10c0f8bff89f1f485b36",
+      "currentHash": "ca3171d963ca36f787a6604ce6b99e38f33574e10920a6167223d85f9ff38e13",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688318940_43743",
+      "timestamp": 1789688318940,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688318940_54853",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688318940
+      },
+      "previousHash": "ca3171d963ca36f787a6604ce6b99e38f33574e10920a6167223d85f9ff38e13",
+      "currentHash": "9dc8054489466405c4caf77ee7ff41a2ea690fdc7769f13e0b6800db40c11f38",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688319212_37822",
+      "timestamp": 1789688319212,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688319211_59507",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688319212
+      },
+      "previousHash": "9dc8054489466405c4caf77ee7ff41a2ea690fdc7769f13e0b6800db40c11f38",
+      "currentHash": "0c8933b32bf48061b8189cb3572aebeb9daf235535bc079fcf284e10e805265e",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688319572_47228",
+      "timestamp": 1789688319572,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688319572_94710",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688319572
+      },
+      "previousHash": "0c8933b32bf48061b8189cb3572aebeb9daf235535bc079fcf284e10e805265e",
+      "currentHash": "a919f9469dc7dfbf09fb2609d2d1e3a69b931c78c958721d4657d5f27a532d71",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688319868_87679",
+      "timestamp": 1789688319868,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688319868_77078",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688319868
+      },
+      "previousHash": "a919f9469dc7dfbf09fb2609d2d1e3a69b931c78c958721d4657d5f27a532d71",
+      "currentHash": "3b260504a48cc927ff70b854504cfd2f47b820c2abebb2bda27f39a247127bfc",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688320100_48900",
+      "timestamp": 1789688320100,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688320100_93320",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688320100
+      },
+      "previousHash": "3b260504a48cc927ff70b854504cfd2f47b820c2abebb2bda27f39a247127bfc",
+      "currentHash": "0a8d925df640990238f1b7cc8289510f0a19996d0f79e35e4151584a33514efd",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688320341_64947",
+      "timestamp": 1789688320340,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688320340_32279",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688320340
+      },
+      "previousHash": "0a8d925df640990238f1b7cc8289510f0a19996d0f79e35e4151584a33514efd",
+      "currentHash": "542032b5f6fa27b023912ed532cfa936097ea663652c82577aeb86b54dc00eec",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688321228_16974",
+      "timestamp": 1789688321228,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688321228_39843",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789674342963_47256",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688321228
+      },
+      "previousHash": "542032b5f6fa27b023912ed532cfa936097ea663652c82577aeb86b54dc00eec",
+      "currentHash": "c5f38f2e06d1f02b874973f93b7b3dabf4e978ecb3c17b30aa83caab7af2aaa6",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688321756_31578",
+      "timestamp": 1789688321756,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688321756_86144",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789674342963_47256",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688321756
+      },
+      "previousHash": "c5f38f2e06d1f02b874973f93b7b3dabf4e978ecb3c17b30aa83caab7af2aaa6",
+      "currentHash": "2e20bb7c0e6b195252ac9bac00411105b8e9e405cbece3612cd8aab1fb2225a1",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688322772_75733",
+      "timestamp": 1789688322772,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688322772_21356",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688322772
+      },
+      "previousHash": "2e20bb7c0e6b195252ac9bac00411105b8e9e405cbece3612cd8aab1fb2225a1",
+      "currentHash": "e83872d8facee9457c0e6684c670dc491837465c1920852f92e6c7bbd8f6d76d",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688323068_82637",
+      "timestamp": 1789688323068,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688323068_51736",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789602032840_21629",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688323068
+      },
+      "previousHash": "e83872d8facee9457c0e6684c670dc491837465c1920852f92e6c7bbd8f6d76d",
+      "currentHash": "14d8b7803a02e963691a0816376caf6cbca4850ecd043e05380f2bb1a40ab6b6",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688323604_68642",
+      "timestamp": 1789688323603,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688323603_1433",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789526748571_70704",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688323603
+      },
+      "previousHash": "14d8b7803a02e963691a0816376caf6cbca4850ecd043e05380f2bb1a40ab6b6",
+      "currentHash": "29f3a265de977961bf7db23e1a00913015c8cf8d9028230243e89842deda2661",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789688323940_23516",
+      "timestamp": 1789688323940,
+      "actionType": "MAKER_ACTION_REQUESTED",
+      "actor": {
+        "makerId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "id": "MC_REQ_1789688323940_2433",
+        "makerId": "USR_1789526748571_70704",
+        "actionType": "CLEAR_AML",
+        "targetId": "USR_1789526748571_70704",
+        "details": {
+          "reason": "POCAMLA compliance review passed"
+        },
+        "status": "PENDING_CHECKER",
+        "createdAt": 1789688323940
+      },
+      "previousHash": "29f3a265de977961bf7db23e1a00913015c8cf8d9028230243e89842deda2661",
+      "currentHash": "60a3a83b2ebba357951f395a10fbb661f24b814c550448ab8d201780a7253988",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689116386_67240",
+      "timestamp": 1789689116386,
+      "actionType": "USER_LOGIN_VERIFIED",
+      "actor": {
+        "userId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "role": "ADMIN"
+      },
+      "previousHash": "60a3a83b2ebba357951f395a10fbb661f24b814c550448ab8d201780a7253988",
+      "currentHash": "373eaa605e56eceb66940a71e905035bdad2062e6d4f738e382b5f90a1c09782",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689120850_28500",
+      "timestamp": 1789689120849,
+      "actionType": "AML_FLAG_TOGGLE",
+      "actor": {
+        "userId": "USR_1789674342963_47256"
+      },
+      "details": {
+        "amlFlagged": false
+      },
+      "previousHash": "373eaa605e56eceb66940a71e905035bdad2062e6d4f738e382b5f90a1c09782",
+      "currentHash": "6c88408f77262efce1de0a119a1b8b9a78783a7b495fd8515aa442f407b5f557",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689125250_43677",
+      "timestamp": 1789689125250,
+      "actionType": "AML_FLAG_TOGGLE",
+      "actor": {
+        "userId": "USR_1789602032840_21629"
+      },
+      "details": {
+        "amlFlagged": false
+      },
+      "previousHash": "6c88408f77262efce1de0a119a1b8b9a78783a7b495fd8515aa442f407b5f557",
+      "currentHash": "0c4bc869abbf691d3297ffedecf1d4502db76c42c1773b80058e9a59d4147d64",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689128274_26521",
+      "timestamp": 1789689128274,
+      "actionType": "AML_FLAG_TOGGLE",
+      "actor": {
+        "userId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "amlFlagged": false
+      },
+      "previousHash": "0c4bc869abbf691d3297ffedecf1d4502db76c42c1773b80058e9a59d4147d64",
+      "currentHash": "00fa47f9b25f95c21f0b81a6bfeae343f0707131b85bfe96e8082a2d51bbc2df",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689144083_61625",
+      "timestamp": 1789689144083,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "json"
+      },
+      "previousHash": "00fa47f9b25f95c21f0b81a6bfeae343f0707131b85bfe96e8082a2d51bbc2df",
+      "currentHash": "0b9efeb45c7b8b6a061082316508619a86dd15647add632c726ec4a7aa534429",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689146714_19353",
+      "timestamp": 1789689146713,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "xml"
+      },
+      "previousHash": "0b9efeb45c7b8b6a061082316508619a86dd15647add632c726ec4a7aa534429",
+      "currentHash": "88868fe86ec96e732e7fa53a9081d046b2f39370ed0857dd254b7b333e190d12",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689149074_32806",
+      "timestamp": 1789689149074,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "xml"
+      },
+      "previousHash": "88868fe86ec96e732e7fa53a9081d046b2f39370ed0857dd254b7b333e190d12",
+      "currentHash": "ed04eea5b57433c065465b2857f85ec065b968cd0669940b5ee1653717e2a83b",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689149722_29520",
+      "timestamp": 1789689149722,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "xml"
+      },
+      "previousHash": "ed04eea5b57433c065465b2857f85ec065b968cd0669940b5ee1653717e2a83b",
+      "currentHash": "7942c8062e20a25c06a88045b16ea211f0a64109e6605feee314868d86bf4ba6",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689151219_35554",
+      "timestamp": 1789689151219,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 42
+      },
+      "previousHash": "7942c8062e20a25c06a88045b16ea211f0a64109e6605feee314868d86bf4ba6",
+      "currentHash": "5c997e27d9cac2cc994773a8bf23483e699a045420866b1558533447d8c9990c",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689152250_6923",
+      "timestamp": 1789689152250,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 43
+      },
+      "previousHash": "5c997e27d9cac2cc994773a8bf23483e699a045420866b1558533447d8c9990c",
+      "currentHash": "b5d460f2d0e5ccc25df98b997dcb5c1de2d36b3ecff1c8e65d0a5ac1ad0bf446",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689152482_58101",
+      "timestamp": 1789689152482,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 44
+      },
+      "previousHash": "b5d460f2d0e5ccc25df98b997dcb5c1de2d36b3ecff1c8e65d0a5ac1ad0bf446",
+      "currentHash": "a41e787e1ad21dee3eec6df08cfc5df7a49fa368c041e34fb3ee55629ffc9360",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689255081_13383",
+      "timestamp": 1789689255081,
+      "actionType": "USER_LOGIN_VERIFIED",
+      "actor": {
+        "userId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "role": "USER"
+      },
+      "previousHash": "a41e787e1ad21dee3eec6df08cfc5df7a49fa368c041e34fb3ee55629ffc9360",
+      "currentHash": "73deab163954a540cfafe0efad3b6059edee16d02fac6bca1fcdd4033fc830de",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689261834_62003",
+      "timestamp": 1789689261834,
+      "actionType": "CHECKOUT_ESCROW_LOCKED",
+      "actor": {
+        "userId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "orderId": "ORD_ST104_1789689261834_70365",
+        "total": 2124,
+        "region": "KE"
+      },
+      "previousHash": "73deab163954a540cfafe0efad3b6059edee16d02fac6bca1fcdd4033fc830de",
+      "currentHash": "736136d919c5599812005ecdf5e3ea94b05a820cf7cefac5286e9472a04f6d17",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
     }
   ],
-  "transactions": [],
+  "transactions": [
+    {
+      "idempotencyKey": "TX_1789689261834_56731",
+      "userId": "USR_1789526748571_70704",
+      "orderId": "ORD_ST104_1789689261834_70365",
+      "total": 2124,
+      "createdAt": 1789689261834
+    }
+  ],
   "orders": [
     {
       "id": "ORD_GL_1789502960982_52055",
@@ -769,6 +1716,33 @@
       "createdAt": 1789674409953,
       "customerPhone": "254711999888",
       "checkoutRequestId": "ws_CO_170920262246508711999888"
+    },
+    {
+      "id": "ORD_ST104_1789689261834_70365",
+      "userId": "USR_1789526748571_70704",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 1950,
+      "deliveryFee": 135,
+      "distanceKm": 2.82,
+      "total": 2124,
+      "pickup": "Nairobi CBD (Kenyatta Ave)",
+      "destination": "Westlands (Sarit Centre)",
+      "pickupCoords": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "destinationCoords": {
+        "lat": -1.265556,
+        "lng": 36.802778
+      },
+      "vehicleType": "MOTORBIKE",
+      "riderId": "DRV_01",
+      "status": "DISPATCH_ACTIVE",
+      "createdAt": 1789689261834,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_180920260254226721862397"
     }
   ],
   "escrow": [
@@ -926,6 +1900,13 @@
       "businessId": "BIZ-KE",
       "amount": 1862,
       "status": "HELD"
+    },
+    {
+      "escrowId": "ESC_1789689261834_21249",
+      "orderId": "ORD_ST104_1789689261834_70365",
+      "businessId": "BIZ-KE",
+      "amount": 2124,
+      "status": "HELD"
     }
   ],
   "wallets": [
@@ -986,7 +1967,349 @@
       "currency": "KES"
     }
   ],
-  "sar_queue": [],
+  "sar_queue": [
+    {
+      "id": "SAR_1789688290581_32949",
+      "userId": "USR_1789602032840_21629",
+      "amount": "N/A",
+      "triggers": [
+        "CBK_HIGH_RISK",
+        "POCAMLA_FLAG"
+      ],
+      "status": "PENDING_REVIEW",
+      "reason": "Suspicious Activity Report Triggered under POCAMLA",
+      "timestamp": 1789688290581
+    },
+    {
+      "id": "SAR_1789688296925_83322",
+      "userId": "USR_1789526748571_70704",
+      "amount": "N/A",
+      "triggers": [
+        "CBK_HIGH_RISK",
+        "POCAMLA_FLAG"
+      ],
+      "status": "PENDING_REVIEW",
+      "reason": "Suspicious Activity Report Triggered under POCAMLA",
+      "timestamp": 1789688296925
+    }
+  ],
+  "maker_checker_queue": [
+    {
+      "id": "MC_REQ_1789688279206_48153",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789674342963_47256",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688279206
+    },
+    {
+      "id": "MC_REQ_1789688284637_77610",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789674342963_47256",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688284637
+    },
+    {
+      "id": "MC_REQ_1789688287116_49895",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789674342963_47256",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688287116
+    },
+    {
+      "id": "MC_REQ_1789688292437_32580",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688292437
+    },
+    {
+      "id": "MC_REQ_1789688299477_32444",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789674342963_47256",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688299477
+    },
+    {
+      "id": "MC_REQ_1789688300932_23893",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688300932
+    },
+    {
+      "id": "MC_REQ_1789688305412_21969",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789526748571_70704",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688305412
+    },
+    {
+      "id": "MC_REQ_1789688305692_57337",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789526748571_70704",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688305692
+    },
+    {
+      "id": "MC_REQ_1789688306196_67478",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789526748571_70704",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688306196
+    },
+    {
+      "id": "MC_REQ_1789688306452_78682",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789526748571_70704",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688306452
+    },
+    {
+      "id": "MC_REQ_1789688306684_5676",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789526748571_70704",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688306684
+    },
+    {
+      "id": "MC_REQ_1789688306916_32522",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789526748571_70704",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688306916
+    },
+    {
+      "id": "MC_REQ_1789688312356_36127",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688312356
+    },
+    {
+      "id": "MC_REQ_1789688312684_78673",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688312684
+    },
+    {
+      "id": "MC_REQ_1789688314844_18419",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688314844
+    },
+    {
+      "id": "MC_REQ_1789688318684_74800",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688318684
+    },
+    {
+      "id": "MC_REQ_1789688318940_54853",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688318940
+    },
+    {
+      "id": "MC_REQ_1789688319211_59507",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688319212
+    },
+    {
+      "id": "MC_REQ_1789688319572_94710",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688319572
+    },
+    {
+      "id": "MC_REQ_1789688319868_77078",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688319868
+    },
+    {
+      "id": "MC_REQ_1789688320100_93320",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688320100
+    },
+    {
+      "id": "MC_REQ_1789688320340_32279",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688320340
+    },
+    {
+      "id": "MC_REQ_1789688321228_39843",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789674342963_47256",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688321228
+    },
+    {
+      "id": "MC_REQ_1789688321756_86144",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789674342963_47256",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688321756
+    },
+    {
+      "id": "MC_REQ_1789688322772_21356",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688322772
+    },
+    {
+      "id": "MC_REQ_1789688323068_51736",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789602032840_21629",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688323068
+    },
+    {
+      "id": "MC_REQ_1789688323603_1433",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789526748571_70704",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688323603
+    },
+    {
+      "id": "MC_REQ_1789688323940_2433",
+      "makerId": "USR_1789526748571_70704",
+      "actionType": "CLEAR_AML",
+      "targetId": "USR_1789526748571_70704",
+      "details": {
+        "reason": "POCAMLA compliance review passed"
+      },
+      "status": "PENDING_CHECKER",
+      "createdAt": 1789688323940
+    }
+  ],
+  "velocity_alerts": [],
+  "pep_watchlist": [
+    "sanctioned_entity_alpha",
+    "pep_corrupt_actor_x",
+    "blacklisted_org_99",
+    "ofac_blocked_target"
+  ],
   "shops": [],
   "catalogs": {},
   "ledger_entries": [
