@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 89 FULLY AUTOMATED MULTI-ROLE KYC & SETTLEMENT ENGINE
+// RDS - STAGE 91 SOVEREIGN MULTI-ROLE SUPER-APP ENGINE
 // Multi-Gateway (M-Pesa + Stripe), Immutable Merkle Ledgers, Explicit Escrow Storage,
-// Multi-Wallet, 16% KRA Tax Allocation, Frictionless Phone/Email/ID/Passport & Face KYC via Profile,
+// Multi-Wallet, 16% KRA Tax Allocation, Profile-Locked ID/Passport & Face KYC,
 // Autonomous Routing, Comprehensive Driver/Shop KYC with Real-World Geolocation and Commodity Catalogs
 // ==========================================
 
@@ -48,7 +48,7 @@ function round(n) {
 }
 
 /**
- * Stage 89 Precise Haversine Formula for Real-World Distance Calculation (KM)
+ * Stage 91 Precise Haversine Formula for Real-World Distance Calculation (KM)
  */
 function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 3.0; // Fallback default
@@ -64,17 +64,17 @@ function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.max(round(distance), 0.5); // Minimum 0.5 km floor
 }
 
-function generateStage70MerkleProof(record) {
+function generateStage91MerkleProof(record) {
   const salt = process.env.SOVEREIGN_SALT || crypto.randomBytes(16).toString('hex');
   const payload = `${record.id || record.escrowId || record.riderId}:${record.businessId || 'GLOBAL'}:${record.orderId || record.transactionId}:${record.total || record.amount}:${record.currency || 'KES'}:${record.timestamp || Date.now()}:${salt}`;
   return {
-    hash: crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_70_MASTER_KEY').update(payload).digest('hex'),
+    hash: crypto.createHmac('sha256', process.env.SOVEREIGN_SECRET_KEY || 'RDS_STAGE_91_MASTER_KEY').update(payload).digest('hex'),
     salt
   };
 }
 
 /**
- * Stage 89 Dynamic Financial Split Engine
+ * Stage 91 Dynamic Financial Split Engine
  */
 function calculateFinancials(order) {
     const baseAmount = Number(order.itemPriceTotal || 0);    
@@ -241,32 +241,11 @@ function enforceTenantIsolation(req, res, next) {
     next();
 }
 
-function enforceCbkAmlAndKyc(req, res, next) {
-  try {
-    const { amount } = req.body;
-    if (amount && Number(amount) > MAX_DAILY_ANONYMOUS_TX) {
-      data.audit_logs.push({
-        id: `AUDIT_${Date.now()}`,
-        level: "WARNING",
-        message: `AML Threshold Exceeded: Transaction of ${amount} requires Tier-2 KYC verification under CBK guidelines.`,
-        timestamp: Date.now()
-      });
-      return res.status(451).json({
-        success: false,
-        error: "Regulatory Compliance Hold: Transaction exceeds standard retail threshold. Enhanced Due Diligence (EDD) / KRA PIN verification required."
-      });
-    }
-    next();
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-}
-
 io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_89_LIVE_ORDER_ENGINE_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_91_SUPER_APP_ONLINE", time: Date.now() }));
 
 function createEscrow(orderId, businessId, amount, region) {
     const escrowEntry = {
@@ -292,27 +271,6 @@ function calculateRide(distanceKm, type) {
     return Math.round(base + (km * perKm));
 }
 
-app.post('/api/rider/register', async (req, res) => {
-    try {
-        ensureState();
-        const { name, phone, vehicleType } = req.body;
-        if (!name || !phone) return fail(res, "Name and phone required", 400);
-
-        const riderId = id("RDR");
-        data.riders.push({
-            riderId, name, phone,
-            vehicleType: vehicleType ? vehicleType.toUpperCase() : "MOTORBIKE",
-            status: "ACTIVE", createdAt: Date.now()
-        });
-
-        data.rider_wallets.push({ riderId, balance: 0, currency: "KES" });
-        await saveDB();
-        return ok(res, { success: true, riderId, message: "Rider registered successfully with dedicated wallet" });
-    } catch (err) {
-        return fail(res, err.message, 500);
-    }
-});
-
 app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -323,46 +281,17 @@ app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     }
 });
 
-app.get('/api/rider/wallet/:riderId', async (req, res) => {
+app.get('/wallets/:userId/balance', async (req, res) => {
     try {
         ensureState();
-        const { riderId } = req.params;
-        let wallet = data.rider_wallets.find(w => w.riderId === riderId);
+        const { userId } = req.params;
+        let wallet = data.rider_wallets.find(w => w.riderId === userId) || data.wallets.find(w => w.userId === userId);
         if (!wallet) {
-            wallet = { riderId, balance: 0, currency: "KES" };
+            wallet = { riderId: userId, balance: 0, currency: "KES" };
             data.rider_wallets.push(wallet);
             await saveDB();
         }
-        return ok(res, { success: true, wallet });
-    } catch (err) {
-        return fail(res, err.message, 500);
-    }
-});
-
-app.post('/api/rider/withdraw', async (req, res) => {
-    try {
-        ensureState();
-        const { riderId, amount, phone } = req.body;
-        const withdrawAmount = Number(amount);
-        if (withdrawAmount <= 0) return fail(res, "Invalid withdrawal amount", 400);
-
-        let wallet = data.rider_wallets.find(w => w.riderId === riderId);
-        if (!wallet) return fail(res, "Rider wallet not found", 404);
-        if (wallet.balance < withdrawAmount) return fail(res, "Insufficient rider wallet balance", 400);
-
-        wallet.balance -= withdrawAmount;
-        const referenceId = id("RDR_WTH");
-        const ledgerEntry = {
-            id: id("LEDGER"), owner_id: riderId, orderId: referenceId,
-            amount: withdrawAmount, entry_type: "DEBIT", currency: wallet.currency || "KES",
-            reference_id: referenceId, destination: phone || "M-Pesa", status: "SETTLED", timestamp: Date.now()
-        };
-        ledgerEntry.merkleProof = generateStage70MerkleProof(ledgerEntry);
-        data.ledger_entries.push(ledgerEntry);
-
-        await saveDB();
-        if (global.io) global.io.emit('riderWalletUpdated', { riderId, balance: wallet.balance });
-        return ok(res, { success: true, message: `Successfully withdrew KES ${withdrawAmount} to ${phone || 'M-Pesa'} (Simulated B2C Payout)` });
+        return ok(res, { success: true, balance: wallet.balance, currency: wallet.currency || "KES" });
     } catch (err) {
         return fail(res, err.message, 500);
     }
@@ -613,7 +542,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST89");
+        const orderId = id("ORD_ST91");
         const availableRiders = data.riders && data.riders.length > 0 ? data.riders : [{ riderId: "DRV_01" }];
         const assignedRider = riderId || availableRiders[Math.floor(Math.random() * availableRiders.length)].riderId;
 
@@ -654,7 +583,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
                     CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS ${tenant.region || 'KE'}`,
-                    TransactionDesc: `Stage 89 Escrow Checkout (${currencyCode})`
+                    TransactionDesc: `Stage 91 Escrow Checkout (${currencyCode})`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -680,5 +609,5 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 89 MULTI-ROLE KYC ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 91 SUPER-APP ENGINE ACTIVE ON PORT ${PORT}`);
 });

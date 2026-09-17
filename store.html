@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 89 | Profile-Locked Sovereign KYC & Super-App</title>
+  <title>RDS 91 | Sovereign Multi-Role Super-App</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <!-- Leaflet CSS & JS for Real-World Maps & Routing -->
@@ -316,7 +316,7 @@
     <!-- AUTHENTICATION & ROLE SELECTION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🚀 RDS STAGE 89 SECURE PORTAL LOGIN</span>
+            <span>🚀 RDS STAGE 91 SECURE PORTAL LOGIN</span>
         </div>
 
         <div class="checkout-panel" style="padding: 20px;">
@@ -353,7 +353,7 @@
     <!-- HOME DASHBOARD (User / Shop / Rider Segregated) -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span id="portalTitleBanner">🌐 RDS STAGE 89 USER PORTAL</span>
+            <span id="portalTitleBanner">🌐 RDS STAGE 91 USER PORTAL</span>
             <span id="nodeLatency">Secure • Active</span>
         </div>
 
@@ -703,11 +703,11 @@
             shopPanels.forEach(p => p.style.display = (role === 'SHOP') ? 'block' : 'none');
 
             if (role === 'USER') {
-                document.getElementById('portalTitleBanner').innerText = '🌐 RDS STAGE 89 USER PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🌐 RDS STAGE 91 USER PORTAL';
             } else if (role === 'SHOP') {
-                document.getElementById('portalTitleBanner').innerText = '🏬 RDS STAGE 89 MERCHANT PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🏬 RDS STAGE 91 MERCHANT PORTAL';
             } else if (role === 'DRIVER') {
-                document.getElementById('portalTitleBanner').innerText = '🏍️ RDS STAGE 89 RIDER PORTAL';
+                document.getElementById('portalTitleBanner').innerText = '🏍️ RDS STAGE 91 RIDER PORTAL';
             }
         }
 
