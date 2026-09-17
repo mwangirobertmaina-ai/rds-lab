@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS Stage 103 | World-Class Global Sovereign Compliance Engine</title>
+  <title>RDS Stage 104 | CBK Form FXBO & POCAMLA Sovereign Compliance Engine</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
@@ -44,16 +44,16 @@
     }
 
     .telemetry-ribbon {
-      background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(56,189,248,0.1));
+      background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(0,255,136,0.1));
       border: 1px solid var(--stage-purple);
       border-radius: 8px;
       padding: 6px 10px;
-      font-size: 0.60rem;
+      font-size: 0.58rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 12px;
-      color: var(--stage-purple);
+      color: var(--neon-green);
       font-weight: bold;
     }
 
@@ -189,27 +189,27 @@
     <!-- AUTHENTICATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🌐 STAGE 103 WORLD-CLASS GLOBAL LOGIN</span>
+            <span>🇰🇪 STAGE 104 FOREX BUREAU SOVEREIGN LOGIN</span>
         </div>
 
         <div class="checkout-panel" style="padding: 20px;">
-            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.1rem; text-align: center;">Global Sovereign Vault</h2>
-            <p style="color: var(--text-dim); font-size: 0.72rem; margin-bottom: 15px; text-align: center;">Authenticate to manage multi-corridor reserves across Kenya, UK, USA, EU, Canada, and Africa.</p>
+            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.1rem; text-align: center;">CBK FXBO Vault</h2>
+            <p style="color: var(--text-dim); font-size: 0.72rem; margin-bottom: 15px; text-align: center;">Authenticate as Compliance Officer for Central Bank of Kenya & POCAMLA Supervisory Clearance.</p>
 
-            <label style="font-size: 0.7rem; color: var(--text-dim); display:block; margin-bottom:2px;">Global Regulator Email</label>
-            <input type="email" id="authEmail" value="regulator@rds-global.org">
+            <label style="font-size: 0.7rem; color: var(--text-dim); display:block; margin-bottom:2px;">Compliance Officer Email</label>
+            <input type="email" id="authEmail" value="compliance@rds-forex.ke">
 
-            <label style="font-size: 0.7rem; color: var(--text-dim); display:block; margin-bottom:2px;">Secure Key / Phone</label>
+            <label style="font-size: 0.7rem; color: var(--text-dim); display:block; margin-bottom:2px;">Authorized Phone</label>
             <input type="text" id="authPhone" value="254721862397">
 
             <div id="phoneStep">
-                <button onclick="requestAdminOtp()" class="btn-cyan" style="padding: 12px; font-weight: bold; margin-top: 5px;">Send Global OTP</button>
+                <button onclick="requestAdminOtp()" class="btn-cyan" style="padding: 12px; font-weight: bold; margin-top: 5px;">Send Secure OTP</button>
             </div>
 
             <div id="otpStep" style="display: none; margin-top: 15px;">
                 <label style="font-size: 0.7rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP (Use 1234)</label>
                 <input type="text" id="authOtp" value="1234" style="text-align: center; font-size: 1.1rem; letter-spacing: 3px;" maxlength="4">
-                <button onclick="verifyAdminOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Authorize Global Vault</button>
+                <button onclick="verifyAdminOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Authorize Forex Vault</button>
             </div>
         </div>
     </div>
@@ -217,43 +217,40 @@
     <!-- GLOBAL MACRO & CORRIDOR OVERSIGHT VIEW -->
     <div id="viewMacro" class="app-view">
         <div class="telemetry-ribbon">
-            <span>🌐 GLOBAL MULTI-CORRIDOR OVERSIGHT</span>
-            <span id="nodeLatency">Secure • Worldwide</span>
+            <span>🇰🇪 CBK FXBO / POCAMLA COMPLIANCE ACTIVE</span>
+            <span id="nodeLatency">Secure • Real-Time</span>
         </div>
 
         <div class="header-location">
             <div class="location-box">
                 <span class="icon">📍</span>
                 <div class="location-text">
-                    <span>Active Global Corridor</span>
-                    <strong id="corridorLabel">RDS New York (USD)</strong>
+                    <span>Active Currency Corridor</span>
+                    <strong id="corridorLabel">RDS Nairobi Forex Bureau (KES)</strong>
                 </div>
             </div>
-            <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-US</div>
+            <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
         </div>
 
-        <!-- Global Corridor Selector (USA, UK, KE, EU, CA, ZA) -->
         <div class="corridor-selector" id="dynamicCorridorSelector">
-            <div class="corridor-btn active" onclick="switchCorridor('BIZ-US', 'RDS New York (USD)', 'USD', this)">🇺🇸 USA (USD)</div>
+            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'RDS Nairobi Forex Bureau (KES)', 'KES', this)">🇰🇪 KE (KES)</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-US', 'RDS New York (USD)', 'USD', this)">🇺🇸 USA (USD)</div>
             <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'RDS London (GBP)', 'GBP', this)">🇬🇧 UK (GBP)</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-KE', 'RDS Nairobi (KES)', 'KES', this)">🇰🇪 KE (KES)</div>
             <div class="corridor-btn" onclick="switchCorridor('BIZ-EU', 'RDS Frankfurt (EUR)', 'EUR', this)">🇪🇺 EU (EUR)</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-CA', 'RDS Toronto (CAD)', 'CAD', this)">🇨🇦 CA (CAD)</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-ZA', 'RDS Johannesburg (ZAR)', 'ZAR', this)">🇿🇦 ZA (ZAR)</div>
         </div>
 
         <div class="stat-box">
-            <div class="stat-title">Corridor Escrow Reserves</div>
-            <div class="stat-value" id="macroEscrowPool">USD 0.00</div>
+            <div class="stat-title">Branch Vault Escrow Reserves</div>
+            <div class="stat-value" id="macroEscrowPool">KES 0.00</div>
         </div>
 
         <div class="stat-box">
-            <div class="stat-title">Immutable Cryptographic Vault Seals</div>
+            <div class="stat-title">POCAMLA Immutable Vault Seals</div>
             <div class="stat-value" id="vaultIntegrityCount" style="color: var(--neon-green);">0 Sealed Blocks (100% Valid)</div>
         </div>
 
         <div class="checkout-panel" style="margin-top: 10px;">
-            <h3>Active Global User Sessions</h3>
+            <h3>Active Teller & Officer Sessions</h3>
             <div style="max-height: 120px; overflow-y: auto;">
                 <table class="aml-table">
                     <thead>
@@ -274,11 +271,11 @@
     <!-- MAKER-CHECKER & VELOCITY VIEW -->
     <div id="viewGovernance" class="app-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>🤝 GLOBAL MAKER-CHECKER & VELOCITY ENGINE</span>
+            <span>🤝 MAKER-CHECKER & SMURFING VELOCITY ENGINE</span>
         </div>
 
         <div class="checkout-panel">
-            <h3>Pending Multi-Sig Governance Requests</h3>
+            <h3>Pending Multi-Sig Trade & AML Approvals</h3>
             <div style="max-height: 140px; overflow-y: auto;">
                 <table class="aml-table">
                     <thead>
@@ -296,7 +293,7 @@
         </div>
 
         <div class="checkout-panel">
-            <h3>Global Structuring & Smurfing Alerts</h3>
+            <h3>CBK Structuring & Smurfing Alerts</h3>
             <div id="velocityAlertsContainer" style="font-size: 0.65rem; color: var(--warn-yellow); max-height: 130px; overflow-y: auto;">
                 <em>No structural velocity alerts triggered.</em>
             </div>
@@ -306,23 +303,23 @@
     <!-- SAR & AML VIEW -->
     <div id="viewAml" class="app-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>🔌 GLOBAL WATCHLIST & SAR QUEUE</span>
+            <span>🔌 AML / KYC CTF SCREENING & SAR QUEUE</span>
         </div>
 
         <div class="checkout-panel">
-            <h3>International SAR Queue (FATF Compliant)</h3>
+            <h3>Suspicious Activity Report (SAR) Queue</h3>
             <div id="sarQueueContainer" style="font-size: 0.65rem; color: var(--warn-yellow); max-height: 130px; overflow-y: auto;">
                 <em>No suspicious activity reports pending.</em>
             </div>
         </div>
 
         <div class="checkout-panel">
-            <h3>Global Registry & Risk Screening</h3>
+            <h3>Registry Risk Scoring (POCAMLA)</h3>
             <div style="max-height: 140px; overflow-y: auto;">
                 <table class="aml-table">
                     <thead>
                         <tr>
-                            <th>User / KYC</th>
+                            <th>Customer / KYC</th>
                             <th>Risk Score</th>
                             <th>Action</th>
                         </tr>
@@ -338,21 +335,28 @@
     <!-- AUDIT VAULT & REGULATORY BATCH EXPORT -->
     <div id="viewAudit" class="app-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>⚖️ GLOBAL AUDIT VAULT & REGULATORY EXPORT</span>
+            <span>⚖️ CBK FORM FXBO & FORENSIC AUDIT VAULT</span>
+        </div>
+
+        <!-- FAST UPGRADE 2: 1-CLICK CENTRAL BANK AUDIT SIMULATION -->
+        <div class="checkout-panel" style="margin-bottom: 12px; padding: 12px; border-color: var(--neon-green);">
+            <h3 style="color: var(--neon-green); margin-bottom: 6px;">Central Bank Inspection Mode</h3>
+            <p style="font-size: 0.68rem; color: var(--text-dim); margin-bottom: 10px;">Instantly verify cryptographic hash chains across all historical forex transactions for auditors.</p>
+            <button onclick="runCentralBankAuditSimulation()" class="btn-cyan" style="background: var(--neon-green); color: #000; font-weight: bold; font-size: 0.7rem;">Run Central Bank Forensic Audit Verification</button>
         </div>
 
         <div class="checkout-panel" style="margin-bottom: 12px; padding: 10px;">
-            <h3 style="margin-bottom: 6px;">Multi-National Regulatory Filing</h3>
+            <h3 style="margin-bottom: 6px;">CBK Form FXBO & Regulatory Filing</h3>
             <div style="display: flex; gap: 8px;">
-                <button onclick="exportRegulatoryBatch('json')" class="btn-cyan" style="font-size: 0.65rem;">JSON Batch</button>
-                <button onclick="exportRegulatoryBatch('xml')" class="btn-gold" style="font-size: 0.65rem;">XML (CBK/FCA/FinCEN)</button>
+                <button onclick="exportRegulatoryBatch('json')" class="btn-cyan" style="font-size: 0.65rem;">JSON Return</button>
+                <button onclick="exportRegulatoryBatch('xml')" class="btn-gold" style="font-size: 0.65rem;">XML (Form FXBO)</button>
             </div>
         </div>
 
         <div class="checkout-panel">
-            <h3>Forensic Forensic Search</h3>
+            <h3>POCAMLA Immutable Audit Search</h3>
             <input type="text" id="auditSearchQuery" placeholder="Search by action, hash, or user ID..." oninput="searchAuditVault()">
-            <div style="max-height: 220px; overflow-y: auto; margin-top: 8px;">
+            <div style="max-height: 180px; overflow-y: auto; margin-top: 8px;">
                 <table class="ledger-table">
                     <thead>
                         <tr>
@@ -372,18 +376,21 @@
     <!-- PROFILE VIEW -->
     <div id="viewProfile" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Global Compliance Profile</h3>
+            <h3>Forex Bureau Compliance Profile</h3>
         </div>
         <div class="checkout-panel">
-            <p><strong>Officer:</strong> Global Director of Financial Intelligence</p>
-            <p style="margin-top: 6px;"><strong>Email:</strong> regulator@rds-global.org</p>
-            <p style="margin-top: 6px;"><strong>Clearance:</strong> <span style="color: var(--neon-green);">Stage 103 World-Class Sovereign Vault</span></p>
-            <button onclick="triggerSystemAudit()" class="btn-cyan" style="margin-top: 15px;">Verify Global Chain of Custody</button>
+            <p><strong>Officer:</strong> Head of Compliance & AML Reporting</p>
+            <p style="margin-top: 6px;"><strong>Email:</strong> compliance@rds-forex.ke</p>
+            <p style="margin-top: 6px;"><strong>License Status:</strong> <span style="color: var(--neon-green);">CBK Form FXBO & POCAMLA Active</span></p>
+            <div style="margin-top: 15px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; border: 1px solid #374151;">
+                <strong style="color: var(--cyan); font-size: 0.75rem; display: block; margin-bottom: 4px;">Plug-and-Play RegTech Standalone Mode</strong>
+                <p style="font-size: 0.65rem; color: var(--text-dim);">This compliance engine can be licensed independently to external forex bureaus and financial institutions as an enterprise middleware API.</p>
+            </div>
         </div>
     </div>
 
-    <input type="hidden" id="storeBusinessId" value="BIZ-US">
-    <input type="hidden" id="storeCurrency" value="USD">
+    <input type="hidden" id="storeBusinessId" value="BIZ-KE">
+    <input type="hidden" id="storeCurrency" value="KES">
     <input type="hidden" id="adminToken" value="">
 
     <div class="bottom-nav" id="bottomNav" style="display: none;">
@@ -404,7 +411,7 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             socket.on('orderListUpdated', () => { fetchAdminData(); });
-            socket.on('sessionRevoked', () => { alert("⚠️ Your session was revoked by global administrator."); window.location.reload(); });
+            socket.on('sessionRevoked', () => { alert("⚠️ Your session was revoked by compliance officer."); window.location.reload(); });
         });
 
         async function requestAdminOtp() {
@@ -553,7 +560,7 @@
             }
             let html = '';
             alerts.slice(-5).reverse().forEach(al => {
-                html += `<div style="padding:4px 0; border-bottom:1px solid #222c3d;">⚡ [VEL #${al.id.slice(-5)}] User: ${al.userId.slice(-6)} • Rolling Vol: ${al.totalRollingAmount} • Count: ${al.transactionCount}</div>`;
+                html += `<div style="padding:4px 0; border-bottom:1px solid #222c3d;">⚡ [VEL #${al.id.slice(-5)}] User: ${al.userId.slice(-6)} • Vol: ${al.totalRollingAmount} • Count: ${al.transactionCount}</div>`;
             });
             container.innerHTML = html;
         }
@@ -566,9 +573,20 @@
             }
             let html = '';
             sarList.slice(-5).reverse().forEach(sar => {
-                html += `<div style="padding:4px 0; border-bottom:1px solid #222c3d;">🚨 [SAR #${sar.id.slice(-5)}] User: ${sar.userId.slice(-6)} • Triggers: ${(sar.triggers||[]).join(', ')} • Amt: ${sar.amount}</div>`;
+                html += `<div style="padding:4px 0; border-bottom:1px solid #222c3d;">🚨 [SAR #${sar.id.slice(-5)}] User: ${sar.userId.slice(-6)} • Triggers: ${(sar.triggers||[]).join(', ')}</div>`;
             });
             container.innerHTML = html;
+        }
+
+        async function runCentralBankAuditSimulation() {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const token = document.getElementById('adminToken').value;
+            const res = await fetch(`${API_BASE}/api/admin/audit/verify-chain`, {
+                headers: { "x-business-id": bizId, "authorization": token }
+            });
+            const data = await res.json();
+            alert(data.message + "\n\nTotal Blocks Cryptographically Verified: " + data.totalBlocksVerified);
+            fetchAdminData();
         }
 
         async function searchAuditVault() {
@@ -606,10 +624,10 @@
             });
             if (format === 'xml') {
                 const text = await res.text();
-                alert("Global XML Regulatory Report generated successfully:\n\n" + text.slice(0, 300) + "...");
+                alert("CBK Form FXBO XML Return Generated successfully:\n\n" + text.slice(0, 300) + "...");
             } else {
                 const data = await res.json();
-                alert("Global Regulatory JSON Batch Generated & Sealed.\nTotal Transactions: " + data.regulatoryReport.totalTransactions);
+                alert("CBK Form FXBO JSON Return Generated & POCAMLA Sealed.\nTotal Transactions: " + data.regulatoryReport.totalTransactions);
             }
             fetchAdminData();
         }
@@ -640,11 +658,11 @@
             const res = await fetch(`${API_BASE}/api/admin/maker/request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-business-id': bizId, 'authorization': token },
-                body: JSON.stringify({ actionType: 'CLEAR_AML', targetId: userId, details: { reason: 'Global compliance review passed' } })
+                body: JSON.stringify({ actionType: 'CLEAR_AML', targetId: userId, details: { reason: 'POCAMLA compliance review passed' } })
             });
             const data = await res.json();
             if (data.success) {
-                alert("Maker request submitted. Switch to Governance tab to approve.");
+                alert("Maker request submitted. Switch to Governance tab for Checker approval.");
                 fetchAdminData();
             } else { alert(data.error); }
         }
@@ -658,10 +676,6 @@
                 body: JSON.stringify({ userId })
             });
             fetchAdminData();
-        }
-
-        function triggerSystemAudit() {
-            alert("Stage 103 World-Class Verification Passed: Multi-national corridors active (USA, UK, KE, EU, CA, ZA), OFAC/UN/FCA/CBK watchlist screening operational, and cryptographic chain verified 100%.");
         }
 
         function switchTab(viewId, el) {
