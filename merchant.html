@@ -1,419 +1,471 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0b0f19">
-    <title>RDS STAGE 51+ SOVEREIGN MERCHANT PORTAL</title>
-    <script src="/socket.io/socket.io.js"></script>
-    <style>
-        :root {
-            --neon-green: #00ff66;
-            --dark-bg: #0b0f19;
-            --panel-bg: #111827;
-            --card-bg: #181818;
-            --text-dim: #9ca3af;
-            --alert-red: #ff3366;
-            --warn-yellow: #ffff00;
-            --gold: #ffd700;
-            --cyan: #38bdf8;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0b0f19">
+  <title>RDS | Sovereign Merchant & Vendor Console</title>
 
-        * { box-sizing: border-box; touch-action: manipulation; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
-        body {
-            background-color: var(--dark-bg);
-            color: var(--neon-green);
-            padding: 15px;
-            -webkit-tap-highlight-color: transparent;
-        }
+  <style>
+    :root {
+      --neon-green: #00ff88;
+      --dark-bg: #0b0f19;
+      --panel-bg: #111827;
+      --card-bg: #181824;
+      --text-dim: #9ca3af;
+      --cyan: #38bdf8;
+      --alert-red: #ff3366;
+      --gold: #ffd700;
+      --stage-purple: #a855f7;
+    }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--neon-green);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
 
-        h1 { font-size: 1.2rem; letter-spacing: 2px; color: var(--neon-green); }
-        h2 { font-size: 0.95rem; text-transform: uppercase; color: var(--neon-green); margin-bottom: 10px; border-bottom: 1px dashed var(--neon-green); padding-bottom: 5px; }
+    body {
+      background-color: var(--dark-bg);
+      color: #fff;
+      padding: 15px;
+      max-width: 480px;
+      margin: 0 auto;
+      padding-bottom: 110px;
+    }
 
-        .badge {
-            background: var(--neon-green);
-            color: var(--dark-bg);
-            padding: 5px 10px;
-            font-weight: bold;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-        }
+    .app-view { display: none; }
+    .app-view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
 
-        .panel {
-            border: 1px solid var(--neon-green);
-            background: var(--panel-bg);
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            box-shadow: 0 0 10px rgba(0, 255, 102, 0.05);
-        }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-        input, select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 8px;
-            background: var(--dark-bg);
-            border: 1px solid var(--neon-green);
-            color: var(--neon-green);
-            border-radius: 4px;
-            font-size: 0.85rem;
-        }
+    .telemetry-ribbon {
+      background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(56,189,248,0.1));
+      border: 1px solid var(--stage-purple);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.65rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      color: var(--stage-purple);
+      font-weight: bold;
+    }
 
-        input::placeholder { color: #4b5563; }
+    .header-location {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .location-box { display: flex; align-items: center; gap: 8px; }
+    .location-text span { font-size: 0.75rem; color: var(--text-dim); display: block; }
+    .location-text strong { font-size: 0.95rem; color: #fff; }
 
-        button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 6px;
-            background: var(--neon-green);
-            border: none;
-            color: var(--dark-bg);
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px;
-            text-transform: uppercase;
-            font-family: monospace;
-            font-size: 0.85rem;
-            transition: opacity 0.2s, transform 0.1s;
-        }
+    .corridor-selector {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      margin-bottom: 15px;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .corridor-selector::-webkit-scrollbar { display: none; }
+    .corridor-btn {
+      background: var(--panel-bg);
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .corridor-btn.active, .corridor-btn:hover {
+      border-color: var(--stage-purple);
+      background: rgba(168, 85, 247, 0.1);
+      color: #fff;
+    }
 
-        button:active { transform: scale(0.98); opacity: 0.85; }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .section-header h3 { font-size: 1rem; color: #fff; font-weight: 700; }
 
-        .btn-cyan { background: var(--cyan); color: var(--dark-bg); }
-        .btn-release { background: var(--gold); color: var(--dark-bg); }
+    .checkout-panel {
+      background: var(--panel-bg);
+      border: 1px solid #222c3d;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .checkout-panel h3 { font-size: 0.9rem; margin-bottom: 12px; color: var(--cyan); text-transform: uppercase; }
 
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
+    input, select {
+      width: 100%;
+      background: var(--dark-bg);
+      border: 1px solid #374151;
+      color: #fff;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--stage-purple); }
 
-        @media (max-width: 900px) {
-            .grid-layout { grid-template-columns: 1fr; }
-        }
+    button {
+      background: var(--stage-purple);
+      color: #fff;
+      border: none;
+      padding: 9px;
+      font-weight: 700;
+      width: 100%;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+    button:hover { background: var(--cyan); color: #000; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 0.8rem; }
-        th, td { border: 1px solid #1f2937; padding: 8px; text-align: left; }
-        th { color: var(--cyan); background: var(--dark-bg); }
-        td { color: #d1d5db; }
+    .btn-cyan { background: var(--cyan); color: #000; }
+    .btn-cyan:hover { background: var(--neon-green); }
 
-        .card {
-            padding: 8px;
-            border: 1px solid #333;
-            border-radius: 4px;
-            margin-bottom: 6px;
-            background: var(--card-bg);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--panel-bg);
+      border-top: 1px solid #222c3d;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      z-index: 1000;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
+    .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
+    .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
 
-        .console-box {
-            background: var(--dark-bg);
-            border: 1px solid var(--neon-green);
-            padding: 10px;
-            height: 130px;
-            overflow-y: auto;
-            font-size: 0.75rem;
-            color: var(--neon-green);
-            border-radius: 4px;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--dark-bg);
+      border: 1px solid #374151;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 0.8rem;
+    }
 
-        .small { font-size: 0.75rem; color: var(--text-dim); }
-        .flex-row { display: flex; gap: 6px; }
-    </style>
+    .live-order-card {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .live-order-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin-bottom: 6px;
+      color: var(--cyan);
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
 
-    <header>
-        <h1>🏪 RDS STAGE 51+ MERCHANT PORTAL</h1>
-        <div class="badge" id="route-badge">CONNECTING...</div>
-    </header>
-
-    <!-- CONFIGURATION & MERCHANT SELECTOR -->
-    <div class="panel">
-        <h2>1. Sovereign Merchant Control</h2>
-        <div class="flex-row">
-            <select id="businessSelect" onchange="onBusinessSelected()" style="flex: 2; margin-bottom: 0;"></select>
-            <button onclick="loadBusinesses()" class="btn-cyan" style="flex: 1; margin-bottom: 0;">🔄 Refresh</button>
+    <!-- AUTHENTICATION VIEW -->
+    <div id="viewAuth" class="app-view active-view">
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
+            <span>🛡️ MERCHANT VENDOR PORTAL LOGIN</span>
         </div>
-        <div style="margin-top: 10px;">
-            <input type="text" id="newBizName" placeholder="Onboard New Business Name (e.g. Java House)..." />
-            <button onclick="registerBusiness()" class="btn-cyan">➕ Register Business Entity</button>
-        </div>
-    </div>
 
-    <div class="grid-layout">
-        <!-- LEFT COLUMN: PRODUCT INVENTORY CATALOG -->
-        <div>
-            <div class="panel">
-                <h2>📦 Merchant Product Catalog</h2>
-                <input type="text" id="prodName" placeholder="Product Name..." />
-                <div class="flex-row">
-                    <input type="number" id="prodPrice" placeholder="Price (KES)" step="1" style="flex: 1;" />
-                    <input type="number" id="prodStock" placeholder="Stock Qty" value="50" style="flex: 1;" />
-                </div>
-                <button onclick="addProduct()">Publish Catalog Item</button>
-                <div id="productList" style="margin-top: 10px; max-height: 220px; overflow-y: auto;">
-                    <span class="small">Loading catalog...</span>
-                </div>
+        <div class="checkout-panel" style="padding: 20px;">
+            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Merchant Portal</h2>
+            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Manage live storefront inventory, publish catalog items, and fulfill incoming dispatches.</p>
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Merchant Email</label>
+            <input type="email" id="authEmail" value="merchant@rds.com">
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Vendor Phone / Node ID</label>
+            <input type="text" id="authPhone" value="254721862397">
+
+            <div id="phoneStep">
+                <button onclick="requestMerchantOtp()" class="btn-cyan" style="padding: 12px; font-weight: bold; margin-top: 5px;">Send Verification OTP</button>
             </div>
-        </div>
 
-        <!-- RIGHT COLUMN: LIVE ORDERS & HANDOFF DISPATCH -->
-        <div>
-            <div class="panel">
-                <h2>🧾 Incoming Paid Orders & Handoff Release</h2>
-                <div style="max-height: 250px; overflow-y: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Customer</th>
-                                <th>Gross (KES)</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="merchant-orders-body">
-                            <tr><td colspan="5" style="text-align:center; color:var(--text-dim);">Awaiting paid orders...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div id="otpStep" style="display: none; margin-top: 15px;">
+                <label style="font-size: 0.75rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP Code (Use 1234)</label>
+                <input type="text" id="authOtp" value="1234" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" maxlength="4">
+                <button onclick="verifyMerchantOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch Portal</button>
             </div>
         </div>
     </div>
 
-    <!-- CONSOLE TELEMETRY STREAM -->
-    <div class="panel">
-        <h2>📡 Sovereign Telemetry Console</h2>
-        <div class="console-box" id="merchant-console">
-            [MERCHANT] Initializing dual-routing client matrix (Local & Cloud)...<br>
+    <!-- CATALOG & INVENTORY MANAGEMENT VIEW -->
+    <div id="viewCatalog" class="app-view">
+        <div class="telemetry-ribbon">
+            <span>📦 MERCHANT CATALOG & INVENTORY MANAGEMENT</span>
+            <span id="nodeLatency">Secure • Active</span>
         </div>
+
+        <div class="header-location">
+            <div class="location-box">
+                <span class="icon">📍</span>
+                <div class="location-text">
+                    <span>Active Corridor Node</span>
+                    <strong id="corridorLabel">Nairobi, Kenya (KES)</strong>
+                </div>
+            </div>
+            <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
+        </div>
+
+        <div class="corridor-selector" id="dynamicCorridorSelector">
+            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE Hub</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK Hub</div>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Publish New Catalog Item</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Item Name</label>
+            <input type="text" id="adminProdName" placeholder="e.g. Deluxe Burger & Fries">
+            
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Price</label>
+            <input type="number" id="adminProdPrice" placeholder="850">
+            
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Category</label>
+            <select id="adminProdCategory">
+                <option value="RESTAURANT">Restaurant</option>
+                <option value="SUPERMARKET">Supermarket</option>
+                <option value="HOTEL">Hotel</option>
+            </select>
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Image URL</label>
+            <input type="text" id="adminProdImage" value="https://images.unsplash.com/photo-1562967914-608f82629710?w=400">
+            
+            <button onclick="adminAddProduct()">Publish Product to Live Network</button>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Active Store Inventory</h3>
+            <div id="adminInventoryList">
+                <em style="color:var(--text-dim); font-size: 0.75rem;">Loading catalog inventory...</em>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIVE DISPATCH ORDERS & FULFILLMENT VIEW -->
+    <div id="viewOrders" class="app-view">
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
+            <span>🚀 LIVE DISPATCH & ORDER FULFILLMENT</span>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Incoming Store Dispatches</h3>
+            <div id="merchantLiveOrdersContainer">
+                <em style="color:var(--text-dim); font-size: 0.75rem;">No active customer orders.</em>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div id="viewProfile" class="app-view">
+        <div class="section-header" style="margin-bottom: 20px;">
+            <h3>Merchant Vendor Profile</h3>
+        </div>
+        <div class="checkout-panel">
+            <p><strong>Node ID:</strong> <span id="profileBusinessId">BIZ-KE</span></p>
+            <p style="margin-top: 6px;"><strong>Email:</strong> merchant@rds.com</p>
+            <p style="margin-top: 6px;"><strong>Role:</strong> <span style="color: var(--neon-green);">Sovereign Merchant</span></p>
+        </div>
+    </div>
+
+    <input type="hidden" id="storeBusinessId" value="BIZ-KE">
+    <input type="hidden" id="storeCurrency" value="KES">
+
+    <div class="bottom-nav" id="bottomNav" style="display: none;">
+        <a class="nav-item active" onclick="switchTab('viewCatalog', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Catalog</a>
+        <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.03-.42 1.98-1.07 2.75z"/></svg>Dispatches</a>
+        <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
     </div>
 
     <script>
-        /* ========================================== */
-        /* AUTOMATIC LOCAL & CLOUD ENDPOINT ROUTER    */
-        /* ========================================== */
         const LOCAL_API = "http://localhost:3000";
         const CLOUD_API = "https://rds-lab.onrender.com";
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
-        let currentBusinessId = "BIZ-001";
-        const socket = io();
+        let currentMerchantUser = null;
+        let socket = io();
 
-        function logConsole(msg) {
-            const box = document.getElementById('merchant-console');
-            const time = new Date().toLocaleTimeString();
-            box.innerHTML += `[${time}] ${typeof msg === 'object' ? JSON.stringify(msg) : msg}<br>`;
-            box.scrollTop = box.scrollHeight;
-        }
-
-        async function resolveBackendRoute() {
-            try {
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 1000);
-                await fetch(`${LOCAL_API}/health`, { method: "GET", signal: controller.signal });
-                clearTimeout(timeout);
-                API_BASE = LOCAL_API;
-                document.getElementById("route-badge").innerText = "ROUTE: LOCAL (3000)";
-                logConsole("Connected to local sovereign node successfully.");
-            } catch (_) {
-                API_BASE = CLOUD_API;
-                document.getElementById("route-badge").innerText = "ROUTE: CLOUD (RENDER)";
-                logConsole("Local node offline. Switched to cloud sovereign gateway.");
-            }
-        }
-
-        async function apiFetch(endpoints, options = {}) {
-            const targetEndpoints = Array.isArray(endpoints) ? endpoints : [endpoints];
-            for (const ep of targetEndpoints) {
-                try {
-                    const res = await fetch(`${API_BASE}${ep}`, {
-                        ...options,
-                        headers: { "Content-Type": "application/json", ...(options.headers || {}) }
-                    });
-                    if (res.ok) return await res.json();
-                } catch (err) {}
-            }
-            return null;
-        }
-
-        socket.on('connect', () => {
-            logConsole("Real-time WebSocket telemetry socket linked.");
-            refreshMerchantPortal();
+        window.addEventListener('DOMContentLoaded', () => {
+            socket.on('orderListUpdated', () => { fetchMerchantOrders(); });
+            socket.on('catalogUpdated', () => { loadAdminInventory(); });
         });
 
-        socket.on('orderStatusUpdate', (data) => {
-            logConsole(`Order ${data.orderId} status changed to: ${data.status}`);
-            refreshMerchantPortal();
-        });
-
-        async function loadBusinesses() {
-            const data = await apiFetch(["/businesses", "/shops"]);
-            const select = document.getElementById("businessSelect");
-            select.innerHTML = "";
-
-            const bizList = (data && (data.businesses || data.shops)) || [];
-            if (bizList.length === 0) {
-                select.innerHTML = "<option value='BIZ-001'>BIZ-001 (Default Sovereign Store)</option>";
-                currentBusinessId = "BIZ-001";
-            } else {
-                bizList.forEach(b => {
-                    const opt = document.createElement("option");
-                    opt.value = b.id;
-                    opt.innerText = `${b.name} (${b.id})`;
-                    select.appendChild(opt);
-                });
-                if (!currentBusinessId) currentBusinessId = bizList[0].id;
-                select.value = currentBusinessId;
-            }
-            await refreshMerchantPortal();
-        }
-
-        function onBusinessSelected() {
-            currentBusinessId = document.getElementById("businessSelect").value;
-            logConsole(`Active Business ID switched to: ${currentBusinessId}`);
-            refreshMerchantPortal();
-        }
-
-        async function registerBusiness() {
-            const nameInput = document.getElementById("newBizName");
-            const name = nameInput.value.trim();
-            if (!name) return alert("Please enter a business name.");
-
-            const res = await apiFetch(["/business/add", "/api/businesses"], {
-                method: "POST",
-                body: JSON.stringify({ name, category: "Retail Store" })
+        async function requestMerchantOtp() {
+            const phone = document.getElementById('authPhone').value.trim();
+            const email = document.getElementById('authEmail').value.trim();
+            const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, email })
             });
-
-            if (res && res.success) {
-                logConsole(`Business entity successfully registered: ${name}`);
-                nameInput.value = "";
-                await loadBusinesses();
-            } else {
-                logConsole(`Failed to register business entity.`);
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('phoneStep').style.display = 'none';
+                document.getElementById('otpStep').style.display = 'block';
             }
         }
 
-        async function addProduct() {
-            const name = document.getElementById("prodName").value.trim();
-            const price = parseFloat(document.getElementById("prodPrice").value) || 0;
-            const stock = parseInt(document.getElementById("prodStock").value) || 50;
-
-            if (!name || price <= 0) return alert("Provide valid product name and price.");
-
-            const res = await apiFetch(["/api/products", "/product/add"], {
-                method: "POST",
-                body: JSON.stringify({ businessId: currentBusinessId, name, price, stock })
+        async function verifyMerchantOtpAndEnter() {
+            const phone = document.getElementById('authPhone').value.trim();
+            const email = document.getElementById('authEmail').value.trim();
+            const otp = document.getElementById('authOtp').value.trim();
+            const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, otp, role: 'MERCHANT', email })
             });
-
-            if (res && res.success) {
-                logConsole(`Published catalog item: ${name} (KES ${price})`);
-                document.getElementById("prodName").value = "";
-                document.getElementById("prodPrice").value = "";
-                refreshMerchantPortal();
-            } else {
-                logConsole(`Error publishing product to catalog.`);
+            const data = await res.json();
+            if (data.success) {
+                currentMerchantUser = data.user;
+                document.getElementById('bottomNav').style.display = 'flex';
+                switchTab('viewCatalog', document.querySelectorAll('.bottom-nav .nav-item')[0]);
+                loadAdminInventory();
+                fetchMerchantOrders();
             }
         }
 
-        async function refreshMerchantPortal() {
+        function switchCorridor(tenantId, locationName, currencyCode, el) {
+            document.querySelectorAll('.corridor-btn').forEach(b => b.classList.remove('active'));
+            if(el) el.classList.add('active');
+            document.getElementById('storeBusinessId').value = tenantId;
+            document.getElementById('storeCurrency').value = currencyCode;
+            document.getElementById('tenantBadge').innerText = tenantId;
+            document.getElementById('corridorLabel').innerText = locationName;
+            document.getElementById('profileBusinessId').innerText = tenantId;
+            loadAdminInventory();
+            fetchMerchantOrders();
+        }
+
+        async function loadAdminInventory() {
+            const bizId = document.getElementById('storeBusinessId').value;
             try {
-                // 1. Fetch Products
-                const prodData = await apiFetch(`/api/products`);
-                const products = (prodData && prodData.products) || [];
-                const bizProducts = products.filter(p => p.businessId === currentBusinessId || !p.businessId);
+                const res = await fetch(`${API_BASE}/api/products`, { headers: { "x-business-id": bizId } });
+                const data = await res.json();
+                const container = document.getElementById('adminInventoryList');
+                const curr = document.getElementById('storeCurrency').value;
 
-                const pContainer = document.getElementById("productList");
-                if (bizProducts.length === 0) {
-                    pContainer.innerHTML = "<span class='small'>No products registered in catalog.</span>";
-                } else {
-                    let pHtml = "";
-                    bizProducts.forEach(p => {
-                        pHtml += `
-                            <div class="card">
-                                <div><b>${p.name}</b><br><span class="small">KES ${p.price} | Stock: ${p.stock}</span></div>
-                                <span class="badge" style="background:var(--cyan); color:#000;">ACTIVE</span>
-                            </div>
-                        `;
-                    });
-                    pContainer.innerHTML = pHtml;
-                }
-
-                // 2. Fetch Orders & Render Handoff Dispatch Buttons
-                const orderData = await apiFetch(`/orders`);
-                const orders = (orderData && (orderData.orders || orderData.data)) || [];
-                const bizOrders = orders.filter(o => o.businessId === currentBusinessId || !o.businessId || currentBusinessId === "BIZ-001");
-
-                const tbody = document.getElementById("merchant-orders-body");
-                if (bizOrders.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-dim);">No orders found for ${currentBusinessId}.</td></tr>`;
+                if (!data.success || !data.products || data.products.length === 0) {
+                    container.innerHTML = '<em style="color:var(--text-dim); font-size: 0.75rem;">No active inventory registered.</em>';
                     return;
                 }
-
-                let oHtml = "";
-                bizOrders.forEach(o => {
-                    const isPaid = o.status === "STAGE_51_PAID" || o.status === "PAID";
-                    const isReleased = o.merchantReleased;
-                    
-                    let actionBtn = `<span class="small">Pending Pay</span>`;
-                    if (isPaid && !isReleased) {
-                        actionBtn = `<button class="btn-release" onclick="releaseOrder('${o.id}', '${currentBusinessId}')">Release Item</button>`;
-                    } else if (isReleased) {
-                        actionBtn = `<span style="color:var(--neon-green); font-weight:bold;">Released ✓</span>`;
-                    }
-
-                    oHtml += `
-                        <tr>
-                            <td>${o.id}</td>
-                            <td>${o.customerPhone || 'N/A'}</td>
-                            <td>KES ${o.total || o.gross || 0}</td>
-                            <td><b style="color:${isReleased ? 'var(--neon-green)' : 'var(--cyan)'}">${o.status}</b></td>
-                            <td>${actionBtn}</td>
-                        </tr>
+                let html = '';
+                data.products.forEach(p => {
+                    html += `
+                        <div class="item-row">
+                            <div><strong>${p.name}</strong><br><span style="color:var(--stage-purple);">${curr} ${p.price}</span> (${p.category || 'GENERAL'})</div>
+                            <button onclick="adminDeleteProduct('${p.id}')" style="background:var(--alert-red); color:#fff; width:auto; padding:6px 12px; font-size:0.65rem;">🗑️ Delete</button>
+                        </div>
                     `;
                 });
-                tbody.innerHTML = oHtml;
-
-            } catch (err) {
-                logConsole(`Polling refresh error: ${err.message}`);
-            }
+                container.innerHTML = html;
+            } catch (e) {}
         }
 
-        async function releaseOrder(orderId, businessId) {
-            logConsole(`Triggering physical handoff release for order ${orderId}...`);
-            const res = await apiFetch('/api/merchant/dispatch-release', {
-                method: 'POST',
-                body: JSON.stringify({ orderId, businessId })
+        async function adminAddProduct() {
+            const name = document.getElementById('adminProdName').value.trim();
+            const price = document.getElementById('adminProdPrice').value.trim();
+            const category = document.getElementById('adminProdCategory').value;
+            const image = document.getElementById('adminProdImage').value.trim();
+            const bizId = document.getElementById('storeBusinessId').value;
+            const curr = document.getElementById('storeCurrency').value;
+            const merchantName = bizId === 'BIZ-KE' ? 'Nairobi Grill & Chicken' : 'London Boutique Hub';
+
+            if (!name || !price) { alert("Provide name and price"); return; }
+
+            const res = await fetch(`${API_BASE}/api/products/add`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                body: JSON.stringify({ shopId: bizId, businessId: bizId, name, price, currency: curr, category, merchant: merchantName, image })
             });
-            if (res && res.success) {
-                logConsole(`Success! Funds released to merchant: KES ${res.merchantPayoutRecord.amount}`);
-                refreshMerchantPortal();
-            } else {
-                logConsole(`Handoff Release Error: ${res?.error || 'Unknown failure'}`);
+            const data = await res.json();
+            if (data.success) {
+                alert("Product published successfully to live catalog!");
+                document.getElementById('adminProdName').value = '';
+                document.getElementById('adminProdPrice').value = '';
+                loadAdminInventory();
+            } else { alert(data.error); }
+        }
+
+        async function adminDeleteProduct(productId) {
+            if (!confirm("Are you sure you want to remove this item from the active catalog?")) return;
+            const bizId = document.getElementById('storeBusinessId').value;
+            const res = await fetch(`${API_BASE}/api/products/${productId}`, {
+                method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                body: JSON.stringify({ shopId: bizId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert("Product successfully deleted!");
+                loadAdminInventory();
             }
         }
 
-        window.onload = async () => {
-            await resolveBackendRoute();
-            await loadBusinesses();
-            setInterval(refreshMerchantPortal, 6000);
-        };
+        async function fetchMerchantOrders() {
+            const bizId = document.getElementById('storeBusinessId').value;
+            try {
+                const res = await fetch(`${API_BASE}/api/orders/live`, { headers: { "x-business-id": bizId } });
+                const data = await res.json();
+                if (data.success && data.orders) {
+                    renderMerchantOrders(data.orders);
+                }
+            } catch (e) {}
+        }
+
+        function renderMerchantOrders(orders) {
+            const container = document.getElementById('merchantLiveOrdersContainer');
+            if (!orders || orders.length === 0) {
+                container.innerHTML = '<em style="color:var(--text-dim); font-size: 0.75rem;">No active customer orders.</em>';
+                return;
+            }
+            let html = '';
+            orders.slice(-4).reverse().forEach(o => {
+                html += `
+                    <div class="live-order-card">
+                        <div class="live-order-header">
+                            <span>🆔 ${o.id}</span>
+                            <span style="color: var(--neon-green);">${o.status}</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #fff; margin-bottom: 6px;">
+                            <div>📍 Pickup: ${o.pickup}</div>
+                            <div>🏁 Dropoff: ${o.destination}</div>
+                            <div>💰 Total: <strong>${o.currency} ${o.total}</strong></div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function switchTab(viewId, el) {
+            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
+            document.getElementById(viewId).classList.add('active-view');
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
+            if(el) el.classList.add('active');
+            window.scrollTo(0, 0);
+        }
     </script>
 </body>
 </html>
