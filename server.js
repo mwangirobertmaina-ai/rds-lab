@@ -1,6 +1,7 @@
 // ==========================================
-// RDS - STAGE 98 SOVEREIGN ON-DEMAND COMMERCE & LOGISTICS SIMULATOR
+// RDS - STAGE 100 SOVEREIGN ON-DEMAND COMMERCE & LOGISTICS SIMULATOR
 // Jumia Storefront + Uber Dispatch + Orderly Dismissal + Basel III & CBK Compliance
+// + Universal API Connector + Supreme Session Control + Immutable Cryptographic Audit Vault
 // ==========================================
 
 const express = require("express");
@@ -126,6 +127,9 @@ function defaultDB() {
       { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", idOrPassportNo: "32456789", amlFlagged: false, riskScore: "0.8%" }
     ],
     otp_sessions: [],
+    active_sessions: [],
+    universal_connections: [],
+    immutable_audit_vault: [],
     orders: [], 
     escrow: [],        
     wallets: [],      
@@ -147,6 +151,9 @@ function ensureState() {
   if (!Array.isArray(data.products)) data.products = [];
   if (!Array.isArray(data.users)) data.users = [];
   if (!Array.isArray(data.otp_sessions)) data.otp_sessions = [];
+  if (!Array.isArray(data.active_sessions)) data.active_sessions = [];
+  if (!Array.isArray(data.universal_connections)) data.universal_connections = [];
+  if (!Array.isArray(data.immutable_audit_vault)) data.immutable_audit_vault = [];
   if (!Array.isArray(data.orders)) data.orders = [];
   if (!Array.isArray(data.drivers)) data.drivers = [];
   if (!Array.isArray(data.riders)) data.riders = [];
@@ -162,6 +169,33 @@ ensureState();
 
 function id(prefix = "SYS") {
   return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 99999)}`;
+}
+
+// STAGE 100 IMMUTABLE CRYPTOGRAPHIC AUDIT VAULT SEALING
+async function recordImmutableAudit(actionType, actor, details) {
+    ensureState();
+    const timestamp = Date.now();
+    const previousHash = data.immutable_audit_vault.length > 0 
+        ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
+        : "GENESIS_ROOT_HASH_000000000000000000000000";
+    
+    const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}`;
+    const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
+
+    const auditRecord = {
+        auditId: id("AUD"),
+        timestamp,
+        actionType,
+        actor,
+        details,
+        previousHash,
+        currentHash,
+        tamperProof: true
+    };
+
+    data.immutable_audit_vault.push(auditRecord);
+    await saveDB();
+    return auditRecord;
 }
 
 function validateKenyanPhone(phone) {
@@ -211,7 +245,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_98_SUPER_APP_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_100_SOVEREIGN_SUPREME_ONLINE", time: Date.now() }));
 
 app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     try {
@@ -223,15 +257,84 @@ app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// STAGE 98 BASEL III & SAR COMPLIANCE DASHBOARD ENDPOINTS
+// STAGE 100 COMPLIANCE DASHBOARD, SESSION CONTROL & AUDIT ENDPOINTS
 app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
         const tenantOrders = data.orders.filter(o => o.businessId === req.tenantId || req.tenantId === "BIZ-KE");
-        return ok(res, { success: true, orders: tenantOrders, users: data.users, sarQueue: data.sar_queue });
+        return ok(res, { 
+            success: true, 
+            orders: tenantOrders, 
+            users: data.users, 
+            sarQueue: data.sar_queue,
+            activeSessions: data.active_sessions,
+            universalConnections: data.universal_connections,
+            immutableVaultCount: data.immutable_audit_vault.length
+        });
     } catch (err) {
         return fail(res, err.message, 500);
     }
+});
+
+// STAGE 100 SUPREME SESSION MANAGEMENT (Back-end Control of Logged-in Users)
+app.get('/api/admin/sessions', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    return ok(res, { success: true, activeSessions: data.active_sessions });
+});
+
+app.post('/api/admin/sessions/terminate', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    const { token, userId } = req.body;
+    data.active_sessions = data.active_sessions.filter(s => s.token !== token && s.userId !== userId);
+    await recordImmutableAudit("SESSION_TERMINATED", { admin: "SUPREME_REGULATOR" }, { token, userId });
+    await saveDB();
+    if (global.io) global.io.emit('sessionRevoked', { userId });
+    return ok(res, { success: true, message: "User session successfully terminated and revoked by compliance admin." });
+});
+
+// STAGE 100 UNIVERSAL API CONNECTOR (Connect to any API in the world automatically)
+app.post('/api/universal/connect', enforceTenantIsolation, async (req, res) => {
+    try {
+        ensureState();
+        const { targetApiUrl, apiKey, method, payload } = req.body;
+        if (!targetApiUrl) return fail(res, "Target API URL required", 400);
+
+        const response = await axios({
+            url: targetApiUrl,
+            method: method || "GET",
+            headers: { "Authorization": apiKey ? `Bearer ${apiKey}` : undefined, "Content-Type": "application/json" },
+            data: payload || {},
+            timeout: 10000
+        });
+
+        const connectionEntry = {
+            id: id("API_CONN"),
+            targetApiUrl,
+            status: "CONNECTED_SUCCESS",
+            timestamp: Date.now(),
+            responseSnippet: JSON.stringify(response.data).slice(0, 300)
+        };
+        data.universal_connections.push(connectionEntry);
+        await recordImmutableAudit("UNIVERSAL_API_INGESTION", { source: "EXTERNAL_SYSTEM" }, connectionEntry);
+        await saveDB();
+
+        return ok(res, { success: true, universalData: response.data, connectionId: connectionEntry.id });
+    } catch (err) {
+        return fail(res, `External API Connection Failed: ${err.message}`, 500);
+    }
+});
+
+// STAGE 100 LIGHTNING-FAST IMMUTABLE AUDIT SEARCH
+app.get('/api/audit/search', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    const query = (req.query.q || "").toLowerCase();
+    const results = data.immutable_audit_vault.filter(aud => 
+        aud.actionType.toLowerCase().includes(query) || 
+        JSON.stringify(aud.actor).toLowerCase().includes(query) ||
+        JSON.stringify(aud.details).toLowerCase().includes(query) ||
+        aud.currentHash.toLowerCase().includes(query)
+    );
+    return ok(res, { success: true, count: results.length, auditStream: results });
 });
 
 app.post('/api/admin/toggle-aml', enforceTenantIsolation, async (req, res) => {
@@ -253,6 +356,7 @@ app.post('/api/admin/toggle-aml', enforceTenantIsolation, async (req, res) => {
             });
         }
 
+        await recordImmutableAudit("AML_FLAG_TOGGLE", { userId: user.id }, { amlFlagged: user.amlFlagged });
         await saveDB();
         if (global.io && user.amlFlagged) {
             global.io.emit('amlAlertTriggered', { userId: user.id, name: user.fullName });
@@ -299,6 +403,17 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             if (role) user.role = role;
         }
         const token = crypto.randomBytes(32).toString('hex');
+        
+        // Track Active Session for Supreme Back-End Control
+        data.active_sessions.push({
+            token,
+            userId: user.id,
+            phone: user.phone,
+            role: user.role,
+            loginTime: Date.now()
+        });
+
+        await recordImmutableAudit("USER_LOGIN_VERIFIED", { userId: user.id }, { role: user.role });
         await saveDB();
         return ok(res, { success: true, token, user });
     } catch (err) {
@@ -369,7 +484,6 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        // Basel III Threshold Check for Automatic SAR Generation (> 1,000,000 threshold simulation or high velocity)
         if (split.userPays >= 1000000) {
             data.sar_queue.push({
                 id: id("SAR"),
@@ -380,7 +494,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
             });
         }
 
-        const orderId = id("ORD_ST98");
+        const orderId = id("ORD_ST100");
         const assignedRider = "DRV_01";
 
         const order = {
@@ -395,6 +509,8 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         };
         data.orders.push(order);
         data.escrow.push({ escrowId: id("ESC"), orderId, businessId: tenant.id, amount: split.userPays, status: "HELD" });
+        
+        await recordImmutableAudit("CHECKOUT_ESCROW_LOCKED", { userId: userId || "ANONYMOUS" }, { orderId, total: split.userPays });
         await saveDB();
 
         if (global.io) {
@@ -416,8 +532,8 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     BusinessShortCode: MPESA_CONFIG.shortCode, Password: password, Timestamp: timestamp,
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
-                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Stage 98`,
-                    TransactionDesc: `Stage 98 Escrow Checkout`
+                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Stage 100`,
+                    TransactionDesc: `Stage 100 Escrow Checkout`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -452,6 +568,7 @@ app.post('/api/orders/dismiss', enforceTenantIsolation, async (req, res) => {
             data.escrow[escrowIdx].status = "REFUNDED_RELEASED";
         }
 
+        await recordImmutableAudit("ORDER_DISMISSED_REFUNDED", { orderId }, { status: "ORDERLY_DISMISSED" });
         await saveDB();
         if (global.io) {
             global.io.emit('orderListUpdated', { orderId, status: "ORDERLY_DISMISSED" });
@@ -463,5 +580,5 @@ app.post('/api/orders/dismiss', enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 98 BASEL III & GLOBAL COMPLIANCE SIMULATOR ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 100 SOVEREIGN SUPREME COMPLIANCE & AUDIT ENGINE ACTIVE ON PORT ${PORT}`);
 });
