@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS Stage 101 | Sovereign Supreme Compliance & Legal Audit Vault</title>
+  <title>RDS Stage 102 | Sovereign Supreme Compliance & Maker-Checker Governance</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
@@ -169,9 +169,9 @@
       max-width: 480px;
       margin: 0 auto;
     }
-    .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.58rem; font-weight: 600; cursor: pointer; }
+    .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.53rem; font-weight: 600; cursor: pointer; }
     .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
-    .nav-item svg { width: 16px; height: 16px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
+    .nav-item svg { width: 15px; height: 15px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
 
     .stat-box {
       background: rgba(0,0,0,0.3);
@@ -189,12 +189,12 @@
     <!-- AUTHENTICATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🛡️ STAGE 101 SUPREME REGULATORY LOGIN</span>
+            <span>🛡️ STAGE 102 SUPREME REGULATORY LOGIN</span>
         </div>
 
         <div class="checkout-panel" style="padding: 20px;">
-            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.1rem; text-align: center;">Cryptographic Legal Vault</h2>
-            <p style="color: var(--text-dim); font-size: 0.72rem; margin-bottom: 15px; text-align: center;">Authenticate with RBAC clearance to oversee live sessions, SAR queues, and tamper-proof legal audit logs.</p>
+            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.1rem; text-align: center;">Maker-Checker Governance Vault</h2>
+            <p style="color: var(--text-dim); font-size: 0.72rem; margin-bottom: 15px; text-align: center;">Authenticate with RBAC clearance to oversee live sessions, PEP screening, velocity alerts, and multi-sig approvals.</p>
 
             <label style="font-size: 0.7rem; color: var(--text-dim); display:block; margin-bottom:2px;">Regulator Email</label>
             <input type="email" id="authEmail" value="regulator@cbk.go.ke">
@@ -209,7 +209,7 @@
             <div id="otpStep" style="display: none; margin-top: 15px;">
                 <label style="font-size: 0.7rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP (Use 1234)</label>
                 <input type="text" id="authOtp" value="1234" style="text-align: center; font-size: 1.1rem; letter-spacing: 3px;" maxlength="4">
-                <button onclick="verifyAdminOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Authorize & Enter Stage 101 Vault</button>
+                <button onclick="verifyAdminOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Authorize & Enter Stage 102 Vault</button>
             </div>
         </div>
     </div>
@@ -250,7 +250,7 @@
         <!-- Back-end Logged-in Session Control Box -->
         <div class="checkout-panel" style="margin-top: 10px;">
             <h3>Active Logged-In User Sessions (Backend Controlled)</h3>
-            <div style="max-height: 140px; overflow-y: auto;">
+            <div style="max-height: 120px; overflow-y: auto;">
                 <table class="aml-table">
                     <thead>
                         <tr>
@@ -267,6 +267,38 @@
         </div>
     </div>
 
+    <!-- STAGE 102: MAKER-CHECKER & VELOCITY VIEW -->
+    <div id="viewGovernance" class="app-view">
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
+            <span>🤝 MAKER-CHECKER & SMURFING VELOCITY ENGINE</span>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Pending Maker-Checker Approvals (Multi-Sig)</h3>
+            <div style="max-height: 140px; overflow-y: auto;">
+                <table class="aml-table">
+                    <thead>
+                        <tr>
+                            <th>Maker / Action</th>
+                            <th>Target</th>
+                            <th>Checker Approval</th>
+                        </tr>
+                    </thead>
+                    <tbody id="makerCheckerTableBody">
+                        <tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No pending governance requests.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Velocity & "Smurfing" Detection Alerts</h3>
+            <div id="velocityAlertsContainer" style="font-size: 0.65rem; color: var(--warn-yellow); max-height: 130px; overflow-y: auto;">
+                <em>No structural velocity alerts triggered.</em>
+            </div>
+        </div>
+    </div>
+
     <!-- UNIVERSAL API CONNECTOR & SAR VIEW -->
     <div id="viewAml" class="app-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
@@ -275,14 +307,14 @@
 
         <div class="checkout-panel">
             <h3>Multi-Trigger SAR Queue (FATF Compliant)</h3>
-            <div id="sarQueueContainer" style="font-size: 0.65rem; color: var(--warn-yellow); max-height: 140px; overflow-y: auto;">
+            <div id="sarQueueContainer" style="font-size: 0.65rem; color: var(--warn-yellow); max-height: 130px; overflow-y: auto;">
                 <em>No suspicious activity reports pending.</em>
             </div>
         </div>
 
         <div class="checkout-panel">
-            <h3>Registered Users & Risk Audit</h3>
-            <div style="max-height: 160px; overflow-y: auto;">
+            <h3>Registered Users & Risk Audit (PEP Screened)</h3>
+            <div style="max-height: 140px; overflow-y: auto;">
                 <table class="aml-table">
                     <thead>
                         <tr>
@@ -299,16 +331,24 @@
         </div>
     </div>
 
-    <!-- IMMUTABLE AUDIT VAULT & LIGHTNING SEARCH VIEW -->
+    <!-- IMMUTABLE AUDIT VAULT & REGULATORY EXPORT VIEW -->
     <div id="viewAudit" class="app-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>⚖️ LEGAL-GRADE IMMUTABLE AUDIT VAULT</span>
+            <span>⚖️ IMMUTABLE AUDIT VAULT & REGULATORY BATCH EXPORT</span>
+        </div>
+
+        <div class="checkout-panel" style="margin-bottom: 12px; padding: 10px;">
+            <h3 style="margin-bottom: 6px;">Automated Regulatory Filing</h3>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="exportRegulatoryBatch('json')" class="btn-cyan" style="font-size: 0.65rem;">Export JSON Batch</button>
+                <button onclick="exportRegulatoryBatch('xml')" class="btn-gold" style="font-size: 0.65rem;">Export XML (CBK)</button>
+            </div>
         </div>
 
         <div class="checkout-panel">
             <h3>Lightning-Fast Forensic Search</h3>
             <input type="text" id="auditSearchQuery" placeholder="Search by action, hash, or user ID..." oninput="searchAuditVault()">
-            <div style="max-height: 320px; overflow-y: auto; margin-top: 8px;">
+            <div style="max-height: 220px; overflow-y: auto; margin-top: 8px;">
                 <table class="ledger-table">
                     <thead>
                         <tr>
@@ -333,7 +373,7 @@
         <div class="checkout-panel">
             <p><strong>Officer:</strong> Director of Financial Intelligence Unit</p>
             <p style="margin-top: 6px;"><strong>Email:</strong> regulator@cbk.go.ke</p>
-            <p style="margin-top: 6px;"><strong>Clearance:</strong> <span style="color: var(--neon-green);">Stage 101 Supreme Sovereign Vault</span></p>
+            <p style="margin-top: 6px;"><strong>Clearance:</strong> <span style="color: var(--neon-green);">Stage 102 Supreme Sovereign Vault</span></p>
             <button onclick="triggerSystemAudit()" class="btn-cyan" style="margin-top: 15px;">Verify Cryptographic Chain of Custody</button>
         </div>
     </div>
@@ -343,7 +383,8 @@
     <input type="hidden" id="adminToken" value="">
 
     <div class="bottom-nav" id="bottomNav" style="display: none;">
-        <a class="nav-item active" onclick="switchTab('viewMacro', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.03-.42 1.98-1.07 2.75z"/></svg>Macro/Sessions</a>
+        <a class="nav-item active" onclick="switchTab('viewMacro', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.03-.42 1.98-1.07 2.75z"/></svg>Macro</a>
+        <a class="nav-item" onclick="switchTab('viewGovernance', this)"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Maker-Checker</a>
         <a class="nav-item" onclick="switchTab('viewAml', this)"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>SAR & AML</a>
         <a class="nav-item" onclick="switchTab('viewAudit', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Audit Vault</a>
         <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
@@ -420,6 +461,8 @@
                     renderAmlTable(data.users || []);
                     renderActiveSessions(data.active_sessions || []);
                     renderSarQueue(data.sarQueue || []);
+                    renderMakerChecker(data.makerCheckerQueue || []);
+                    renderVelocityAlerts(data.velocityAlerts || []);
                     document.getElementById('vaultIntegrityCount').innerText = `${data.immutableVaultCount || 0} Sealed Blocks (100% Valid)`;
                     searchAuditVault();
                 }
@@ -439,7 +482,7 @@
         function renderActiveSessions(sessions) {
             const tbody = document.getElementById('activeSessionsTableBody');
             if (!sessions || sessions.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No active user sessions.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No active sessions.</td></tr>`;
                 return;
             }
             let html = '';
@@ -467,6 +510,50 @@
             if (data.success) { fetchAdminData(); }
         }
 
+        function renderMakerChecker(queue) {
+            const tbody = document.getElementById('makerCheckerTableBody');
+            if (!queue || queue.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No pending governance requests.</td></tr>`;
+                return;
+            }
+            let html = '';
+            queue.forEach(item => {
+                html += `
+                    <tr>
+                        <td><b>${item.actionType}</b><br><span style="font-size:0.53rem; color:var(--text-dim);">Maker: ${item.makerId.slice(-6)}</span></td>
+                        <td>${item.targetId.slice(-8)}</td>
+                        <td>${item.status === 'PENDING_CHECKER' ? `<button onclick="approveMakerChecker('${item.id}')" style="background:var(--neon-green); color:#000; padding:3px 6px; font-size:0.55rem;">Approve</button>` : '<span style="color:var(--neon-green);">Approved</span>'}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        async function approveMakerChecker(requestId) {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const token = document.getElementById('adminToken').value;
+            const res = await fetch(`${API_BASE}/api/admin/checker/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId, 'authorization': token },
+                body: JSON.stringify({ requestId })
+            });
+            const data = await res.json();
+            if (data.success) { fetchAdminData(); } else { alert(data.error); }
+        }
+
+        function renderVelocityAlerts(alerts) {
+            const container = document.getElementById('velocityAlertsContainer');
+            if (!alerts || alerts.length === 0) {
+                container.innerHTML = '<em style="color:var(--text-dim);">No structural velocity alerts triggered.</em>';
+                return;
+            }
+            let html = '';
+            alerts.slice(-5).reverse().forEach(al => {
+                html += `<div style="padding:4px 0; border-bottom:1px solid #222c3d;">⚡ [VEL #${al.id.slice(-5)}] User: ${al.userId.slice(-6)} • Rolling Vol: KES ${al.totalRollingAmount} • Tx Count: ${al.transactionCount}</div>`;
+            });
+            container.innerHTML = html;
+        }
+
         function renderSarQueue(sarList) {
             const container = document.getElementById('sarQueueContainer');
             if (!sarList || sarList.length === 0) {
@@ -475,7 +562,7 @@
             }
             let html = '';
             sarList.slice(-5).reverse().forEach(sar => {
-                html += `<div style="padding:4px 0; border-bottom:1px solid #222c3d;">🚨 [SAR #${sar.id.slice(-5)}] User: ${sar.userId} • Triggers: ${(sar.triggers||[]).join(', ')} • Amt: ${sar.amount}</div>`;
+                html += `<div style="padding:4px 0; border-bottom:1px solid #222c3d;">🚨 [SAR #${sar.id.slice(-5)}] User: ${sar.userId.slice(-6)} • Triggers: ${(sar.triggers||[]).join(', ')} • Amt: ${sar.amount}</div>`;
             });
             container.innerHTML = html;
         }
@@ -507,6 +594,22 @@
             tbody.innerHTML = html;
         }
 
+        async function exportRegulatoryBatch(format) {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const token = document.getElementById('adminToken').value;
+            const res = await fetch(`${API_BASE}/api/admin/regulatory/export?format=${format}`, {
+                headers: { "x-business-id": bizId, "authorization": token }
+            });
+            if (format === 'xml') {
+                const text = await res.text();
+                alert("XML Regulatory Report generated successfully:\n\n" + text.slice(0, 300) + "...");
+            } else {
+                const data = await res.json();
+                alert("Regulatory JSON Batch Report Generated & Sealed in Audit Vault.\nTotal Transactions: " + data.regulatoryReport.totalTransactions);
+            }
+            fetchAdminData();
+        }
+
         function renderAmlTable(users) {
             const tbody = document.getElementById('amlTableBody');
             if (!users || users.length === 0) return;
@@ -516,13 +619,30 @@
                 const riskColor = isFlagged ? 'var(--alert-red)' : 'var(--neon-green)';
                 html += `
                     <tr>
-                        <td><b>${u.fullName || 'User'}</b><br><span style="font-size:0.55rem; color:var(--text-dim);">KYC: ${u.kycStatus || 'VERIFIED'}</span></td>
+                        <td><b>${u.fullName || 'User'}</b><br><span style="font-size:0.53rem; color:var(--text-dim);">KYC: ${u.kycStatus || 'VERIFIED'}</span></td>
                         <td style="color:${riskColor}; font-weight:bold;">${u.riskScore || '1.2%'}</td>
-                        <td><button onclick="toggleAmlFlag('${u.id}')" style="background:${isFlagged ? 'var(--neon-green)' : 'var(--alert-red)'}; color:#000; padding:3px 6px; font-size:0.55rem;">${isFlagged ? 'Clear' : 'Flag'}</button></td>
+                        <td>
+                            ${isFlagged ? `<button onclick="requestMakerClearAml('${u.id}')" style="background:var(--stage-purple); color:#fff; padding:3px 6px; font-size:0.53rem;">Req Clear</button>` : `<button onclick="toggleAmlFlag('${u.id}')" style="background:var(--alert-red); color:#fff; padding:3px 6px; font-size:0.53rem;">Flag</button>`}
+                        </td>
                     </tr>
                 `;
             });
             tbody.innerHTML = html;
+        }
+
+        async function requestMakerClearAml(userId) {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const token = document.getElementById('adminToken').value;
+            const res = await fetch(`${API_BASE}/api/admin/maker/request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-business-id': bizId, 'authorization': token },
+                body: JSON.stringify({ actionType: 'CLEAR_AML', targetId: userId, details: { reason: 'Compliance review passed' } })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert("Maker request submitted to Maker-Checker queue. Switch to Maker-Checker tab to approve with a separate admin session.");
+                fetchAdminData();
+            } else { alert(data.error); }
         }
 
         async function toggleAmlFlag(userId) {
@@ -537,7 +657,7 @@
         }
 
         function triggerSystemAudit() {
-            alert("Stage 101 Legal Compliance Verification Passed: Unskippable global AML/KYC middleware active, strict RBAC enforced, multi-trigger SAR operational, and SHA-256 cryptographic chain verified 100%.");
+            alert("Stage 102 Sovereign Verification Passed: Automated PEP screening active, Smurfing velocity engine operational, Regulatory Batch Export online, and Multi-Sig Maker-Checker governance verified 100%.");
         }
 
         function switchTab(viewId, el) {

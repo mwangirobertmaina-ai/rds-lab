@@ -97,7 +97,7 @@
       "email": "audittest@rds.com",
       "fullName": "Robert Maina",
       "idOrPassportNo": "32456789",
-      "role": "USER",
+      "role": "ADMIN",
       "amlFlagged": true,
       "riskScore": "98.5% (HIGH)",
       "createdAt": 1789674342963
@@ -119,7 +119,7 @@
       "phone": "254711999888",
       "email": "audittest@rds.com",
       "otp": "1234",
-      "expires": 1789677198669
+      "expires": 1789680028397
     }
   ],
   "active_sessions": [
@@ -129,6 +129,13 @@
       "phone": "254711999888",
       "role": "USER",
       "loginTime": 1789676933070
+    },
+    {
+      "token": "f2706fdaa6d6e2466281ab3a192146006a0e6c7bf50c4f8761c8e83da2ce47bb",
+      "userId": "USR_1789674342963_47256",
+      "phone": "254711999888",
+      "role": "ADMIN",
+      "loginTime": 1789679740733
     }
   ],
   "universal_connections": [
@@ -172,8 +179,23 @@
       "previousHash": "08345bf0f89a94251495751be022bd64a8d7d253b0af811724322a5f04c8f061",
       "currentHash": "b09de170949d7ad4aec06740bbea79b599b40dd32f8eca75fa2986aa1fd1b79b",
       "tamperProof": true
+    },
+    {
+      "auditId": "AUD_1789679740733_26321",
+      "timestamp": 1789679740733,
+      "actionType": "USER_LOGIN_VERIFIED",
+      "actor": {
+        "userId": "USR_1789674342963_47256"
+      },
+      "details": {
+        "role": "ADMIN"
+      },
+      "previousHash": "b09de170949d7ad4aec06740bbea79b599b40dd32f8eca75fa2986aa1fd1b79b",
+      "currentHash": "a02fd1c4e54067c1664c1759d27bbe48e2837fc9833cb085bacd050bc285055c",
+      "tamperProof": true
     }
   ],
+  "transactions": [],
   "orders": [
     {
       "id": "ORD_GL_1789502960982_52055",

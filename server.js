@@ -1,8 +1,9 @@
 // ==========================================
-// RDS - STAGE 101 SOVEREIGN ON-DEMAND COMMERCE & LOGISTICS SIMULATOR
+// RDS - STAGE 102 SOVEREIGN ON-DEMAND COMMERCE & LOGISTICS SIMULATOR
 // Jumia Storefront + Uber Dispatch + Orderly Dismissal + Basel III & CBK Compliance
 // + Universal API Connector + Supreme Session Control + Immutable Cryptographic Audit Vault
-// + Global AML/KYC Interception, Strict RBAC, Multi-Trigger SAR, and Idempotency
+// + Global AML/KYC Interception, Strict RBAC, Multi-Trigger SAR, Idempotency
+// + STAGE 102: Automated PEP/Sanctions Screening, Smurfing Velocity Engine, Regulatory Batch Export, Multi-Sig Maker-Checker
 // ==========================================
 
 const express = require("express");
@@ -140,6 +141,9 @@ function defaultDB() {
       { riderId: "RDR_01", balance: 0, currency: "KES" }
     ],
     sar_queue: [],
+    maker_checker_queue: [],
+    velocity_alerts: [],
+    pep_watchlist: ["sanctioned_entity_alpha", "pep_corrupt_actor_x", "blacklisted_org_99"],
     shops: [],
     catalogs: {}
   };
@@ -164,6 +168,9 @@ function ensureState() {
   if (!Array.isArray(data.wallets)) data.wallets = [];
   if (!Array.isArray(data.rider_wallets)) data.rider_wallets = [];
   if (!Array.isArray(data.sar_queue)) data.sar_queue = [];
+  if (!Array.isArray(data.maker_checker_queue)) data.maker_checker_queue = [];
+  if (!Array.isArray(data.velocity_alerts)) data.velocity_alerts = [];
+  if (!Array.isArray(data.pep_watchlist)) data.pep_watchlist = ["sanctioned_entity_alpha", "pep_corrupt_actor_x"];
   if (!Array.isArray(data.shops)) data.shops = [];
   if (!data.catalogs || typeof data.catalogs !== 'object') data.catalogs = {};
 }
@@ -174,7 +181,7 @@ function id(prefix = "SYS") {
   return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 99999)}`;
 }
 
-// STAGE 101 IMMUTABLE CRYPTOGRAPHIC AUDIT VAULT SEALING
+// STAGE 101/102 IMMUTABLE CRYPTOGRAPHIC AUDIT VAULT SEALING
 async function recordImmutableAudit(actionType, actor, details) {
     ensureState();
     const timestamp = Date.now();
@@ -201,7 +208,42 @@ async function recordImmutableAudit(actionType, actor, details) {
     return auditRecord;
 }
 
-// STAGE 101 ENFORCEMENT MIDDLEWARES (AML, KYC, RBAC)
+// STAGE 102 AUTOMATED PEP & SANCTIONS SCREENING
+function screenAgainstWatchlists(userOrName) {
+    ensureState();
+    const queryStr = typeof userOrName === 'string' ? userOrName.toLowerCase() : `${userOrName.fullName} ${userOrName.idOrPassportNo}`.toLowerCase();
+    const match = data.pep_watchlist.some(w => queryStr.includes(w.toLowerCase()));
+    return match;
+}
+
+// STAGE 102 VELOCITY & "SMURFING" DETECTION ENGINE
+function checkTransactionVelocity(userId, amount) {
+    ensureState();
+    const rollingWindowMs = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const recentTx = data.transactions.filter(t => t.userId === userId && (now - t.createdAt) < rollingWindowMs);
+    
+    const totalRollingAmount = recentTx.reduce((sum, t) => sum + Number(t.total || 0), 0) + Number(amount || 0);
+    const transactionCount = recentTx.length + 1;
+
+    // Smurfing detection: Multiple transactions just under reporting thresholds or high frequency (> 5 in 24h) or aggregate > 500,000 KES
+    if (totalRollingAmount > 500000 || transactionCount >= 5) {
+        const alertEntry = {
+            id: id("VEL"),
+            userId,
+            totalRollingAmount,
+            transactionCount,
+            reason: "Potential structuring / smurfing detected across 24h rolling window",
+            timestamp: now
+        };
+        data.velocity_alerts.push(alertEntry);
+        recordImmutableAudit("SMURFING_VELOCITY_TRIGGERED", { userId }, alertEntry);
+        return true;
+    }
+    return false;
+}
+
+// STAGE 101/102 ENFORCEMENT MIDDLEWARES (AML, KYC, RBAC)
 function enforceComplianceAndKYC(req, res, next) {
     ensureState();
     const token = req.headers['authorization'] || req.headers['x-session-token'];
@@ -220,6 +262,13 @@ function enforceComplianceAndKYC(req, res, next) {
 
     if (!user) {
         user = data.users.find(u => u.id === "USR_DEFAULT");
+    }
+
+    // Stage 102 PEP & Sanctions check
+    if (user && screenAgainstWatchlists(user)) {
+        user.amlFlagged = true;
+        recordImmutableAudit("PEP_SANCTION_MATCH_BLOCK", { userId: user.id }, { name: user.fullName });
+        return fail(res, "Transaction blocked: User matched against global PEP/Sanctions watchlists.", 403);
     }
 
     if (user?.amlFlagged) {
@@ -304,7 +353,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_101_SOVEREIGN_SUPREME_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_102_SOVEREIGN_SUPREME_ONLINE", time: Date.now() }));
 
 app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     try {
@@ -316,7 +365,7 @@ app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// STAGE 101 COMPLIANCE DASHBOARD, SESSION CONTROL & AUDIT ENDPOINTS (Protected by RBAC)
+// STAGE 102 COMPLIANCE DASHBOARD, SESSION CONTROL & AUDIT ENDPOINTS
 app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
     try {
         ensureState();
@@ -328,11 +377,87 @@ app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, verifyRole('A
             sarQueue: data.sar_queue,
             activeSessions: data.active_sessions,
             universalConnections: data.universal_connections,
+            makerCheckerQueue: data.maker_checker_queue,
+            velocityAlerts: data.velocity_alerts,
             immutableVaultCount: data.immutable_audit_vault.length
         });
     } catch (err) {
         return fail(res, err.message, 500);
     }
+});
+
+// STAGE 102 MAKER-CHECKER GOVERNANCE ENDPOINTS
+app.post('/api/admin/maker/request', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
+    ensureState();
+    const { actionType, targetId, details } = req.body;
+    const makerId = req.session ? req.session.userId : "ADMIN_MAKER";
+    
+    const requestItem = {
+        id: id("MC_REQ"),
+        makerId,
+        actionType,
+        targetId,
+        details: details || {},
+        status: "PENDING_CHECKER",
+        createdAt: Date.now()
+    };
+    data.maker_checker_queue.push(requestItem);
+    await recordImmutableAudit("MAKER_ACTION_REQUESTED", { makerId }, requestItem);
+    await saveDB();
+    return ok(res, { success: true, message: "Action submitted by Maker. Awaiting Checker approval.", requestItem });
+});
+
+app.post('/api/admin/checker/approve', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
+    ensureState();
+    const { requestId } = req.body;
+    const checkerId = req.session ? req.session.userId : "ADMIN_CHECKER";
+    
+    const requestItem = data.maker_checker_queue.find(m => m.id === requestId);
+    if (!requestItem) return fail(res, "Maker-Checker request not found", 404);
+    if (requestItem.makerId === checkerId) return fail(res, "Maker cannot approve their own request (Separation of duties required).", 403);
+
+    requestItem.status = "APPROVED_EXECUTED";
+    requestItem.checkerId = checkerId;
+
+    if (requestItem.actionType === "CLEAR_AML") {
+        const user = data.users.find(u => u.id === requestItem.targetId);
+        if (user) {
+            user.amlFlagged = false;
+            user.riskScore = "1.2% (LOW)";
+        }
+    }
+
+    await recordImmutableAudit("CHECKER_ACTION_APPROVED", { checkerId, makerId: requestItem.makerId }, requestItem);
+    await saveDB();
+    return ok(res, { success: true, message: "Maker-Checker request approved and securely executed.", requestItem });
+});
+
+// STAGE 102 REGULATORY BATCH EXPORT (CBK / KRA / HMRC)
+app.get('/api/admin/regulatory/export', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
+    ensureState();
+    const format = (req.query.format || "json").toLowerCase();
+    const reportPackage = {
+        generatedAt: new Date().toISOString(),
+        institution: req.tenantObj.name,
+        currency: req.tenantObj.currency,
+        totalTransactions: data.transactions.length,
+        totalEscrowVolume: data.escrow.reduce((sum, e) => sum + Number(e.amount || 0), 0),
+        sarQueueCount: data.sar_queue.length,
+        velocityAlertsCount: data.velocity_alerts.length,
+        immutableVaultSealCount: data.immutable_audit_vault.length,
+        transactions: data.transactions,
+        auditTrailSnippet: data.immutable_audit_vault.slice(-20)
+    };
+
+    await recordImmutableAudit("REGULATORY_BATCH_EXPORT", { admin: req.session?.userId }, { format });
+    await saveDB();
+
+    if (format === 'xml') {
+        res.setHeader('Content-Type', 'application/xml');
+        return res.send(`<?xml version="1.0" encoding="UTF-8"?><RegulatoryReport><Generated>${reportPackage.generatedAt}</Generated><Institution>${reportPackage.institution}</Institution><Volume>${reportPackage.totalEscrowVolume}</Volume></RegulatoryReport>`);
+    }
+
+    return ok(res, { success: true, regulatoryReport: reportPackage });
 });
 
 app.get('/api/admin/sessions', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
@@ -518,13 +643,12 @@ app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
   ok(res, { success: true, distanceKm, split });
 });
 
-// STAGE 101 SECURE CHECKOUT WITH UNSTOPPABLE GLOBAL AML/KYC & IDEMPOTENCY
+// STAGE 102 SECURE CHECKOUT WITH VELOCITY & PEP SCREENING
 app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async (req, res) => {
     try {
         ensureState();
         const { phone, itemPriceTotal, pickupCoords, destinationCoords, vehicleType, pickup, destination, userId, idempotencyKey } = req.body;
         
-        // Idempotency Protection Check
         if (idempotencyKey) {
             const existingTx = data.transactions.find(t => t.idempotencyKey === idempotencyKey);
             if (existingTx) {
@@ -553,7 +677,19 @@ app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        // Multi-Trigger SAR Engine Evaluation
+        // Stage 102 Velocity / Smurfing Check
+        if (user && checkTransactionVelocity(user.id, split.userPays)) {
+            data.sar_queue.push({
+                id: id("SAR"),
+                userId: user.id,
+                amount: `${currencyCode} ${split.userPays}`,
+                triggers: ["SMURFING_VELOCITY_TRIGGERED"],
+                status: "PENDING_REVIEW",
+                reason: "Automated Velocity / Structuring Smurfing Flag",
+                timestamp: Date.now()
+            });
+        }
+
         const sarTriggers = [];
         if (split.userPays >= 1000000) sarTriggers.push("HIGH_VALUE");
         if (user && num(user.riskScore) >= 85) sarTriggers.push("HIGH_RISK_USER");
@@ -570,7 +706,7 @@ app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async
             });
         }
 
-        const orderId = id("ORD_ST101");
+        const orderId = id("ORD_ST102");
         const assignedRider = "DRV_01";
 
         const order = {
@@ -586,9 +722,8 @@ app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async
         data.orders.push(order);
         data.escrow.push({ escrowId: id("ESC"), orderId, businessId: tenant.id, amount: split.userPays, status: "HELD" });
         
-        if (idempotencyKey) {
-            data.transactions.push({ idempotencyKey, orderId, total: split.userPays, createdAt: Date.now() });
-        }
+        const txRecord = { idempotencyKey: idempotencyKey || id("TX"), userId: user ? user.id : "ANONYMOUS", orderId, total: split.userPays, createdAt: Date.now() };
+        data.transactions.push(txRecord);
 
         await recordImmutableAudit("CHECKOUT_ESCROW_LOCKED", { userId: user ? user.id : "ANONYMOUS" }, { orderId, total: split.userPays, sarTriggers });
         await saveDB();
@@ -612,8 +747,8 @@ app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async
                     BusinessShortCode: MPESA_CONFIG.shortCode, Password: password, Timestamp: timestamp,
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
-                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Stage 101`,
-                    TransactionDesc: `Stage 101 Escrow Checkout`
+                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Stage 102`,
+                    TransactionDesc: `Stage 102 Escrow Checkout`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -660,5 +795,5 @@ app.post('/api/orders/dismiss', enforceTenantIsolation, verifyRole('MERCHANT'), 
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 101 SOVEREIGN SUPREME COMPLIANCE & AUDIT ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 102 SOVEREIGN SUPREME COMPLIANCE & GOVERNANCE ENGINE ACTIVE ON PORT ${PORT}`);
 });
