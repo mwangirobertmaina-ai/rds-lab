@@ -1,7 +1,8 @@
 // ==========================================
-// RDS - STAGE 100 SOVEREIGN ON-DEMAND COMMERCE & LOGISTICS SIMULATOR
+// RDS - STAGE 101 SOVEREIGN ON-DEMAND COMMERCE & LOGISTICS SIMULATOR
 // Jumia Storefront + Uber Dispatch + Orderly Dismissal + Basel III & CBK Compliance
 // + Universal API Connector + Supreme Session Control + Immutable Cryptographic Audit Vault
+// + Global AML/KYC Interception, Strict RBAC, Multi-Trigger SAR, and Idempotency
 // ==========================================
 
 const express = require("express");
@@ -124,12 +125,13 @@ function defaultDB() {
       { id: "p6", businessId: "BIZ-KE", category: "SUPERMARKET", merchant: "Naivas Supermarket Express", name: "Organic Fresh Basket", price: 2100, currency: "KES", image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80" }
     ], 
     users: [
-      { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", idOrPassportNo: "32456789", amlFlagged: false, riskScore: "0.8%" }
+      { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", idOrPassportNo: "32456789", amlFlagged: false, riskScore: "0.8%", kycStatus: "VERIFIED", riskProfile: { score: 0.8, level: "LOW", factors: ["Verified ID", "Consistent pattern"] } }
     ],
     otp_sessions: [],
     active_sessions: [],
     universal_connections: [],
     immutable_audit_vault: [],
+    transactions: [],
     orders: [], 
     escrow: [],        
     wallets: [],      
@@ -154,6 +156,7 @@ function ensureState() {
   if (!Array.isArray(data.active_sessions)) data.active_sessions = [];
   if (!Array.isArray(data.universal_connections)) data.universal_connections = [];
   if (!Array.isArray(data.immutable_audit_vault)) data.immutable_audit_vault = [];
+  if (!Array.isArray(data.transactions)) data.transactions = [];
   if (!Array.isArray(data.orders)) data.orders = [];
   if (!Array.isArray(data.drivers)) data.drivers = [];
   if (!Array.isArray(data.riders)) data.riders = [];
@@ -171,7 +174,7 @@ function id(prefix = "SYS") {
   return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 99999)}`;
 }
 
-// STAGE 100 IMMUTABLE CRYPTOGRAPHIC AUDIT VAULT SEALING
+// STAGE 101 IMMUTABLE CRYPTOGRAPHIC AUDIT VAULT SEALING
 async function recordImmutableAudit(actionType, actor, details) {
     ensureState();
     const timestamp = Date.now();
@@ -196,6 +199,62 @@ async function recordImmutableAudit(actionType, actor, details) {
     data.immutable_audit_vault.push(auditRecord);
     await saveDB();
     return auditRecord;
+}
+
+// STAGE 101 ENFORCEMENT MIDDLEWARES (AML, KYC, RBAC)
+function enforceComplianceAndKYC(req, res, next) {
+    ensureState();
+    const token = req.headers['authorization'] || req.headers['x-session-token'];
+    const userIdFromBody = req.body.userId;
+
+    let user = null;
+    if (token) {
+        const session = data.active_sessions.find(s => s.token === token);
+        if (session) {
+            user = data.users.find(u => u.id === session.userId);
+        }
+    }
+    if (!user && userIdFromBody) {
+        user = data.users.find(u => u.id === userIdFromBody);
+    }
+
+    if (!user) {
+        user = data.users.find(u => u.id === "USR_DEFAULT");
+    }
+
+    if (user?.amlFlagged) {
+        recordImmutableAudit("AML_BLOCK_INTERCEPTED", { userId: user.id }, { path: req.path });
+        return fail(res, "Transaction blocked by AML compliance policy. Account under regulatory review.", 403);
+    }
+
+    if (user && user.kycStatus && user.kycStatus !== "VERIFIED" && req.path.includes('/checkout')) {
+        return fail(res, "KYC verification required before transacting. Current status: " + user.kycStatus, 403);
+    }
+
+    req.currentUser = user;
+    next();
+}
+
+function verifyRole(requiredRole) {
+    return (req, res, next) => {
+        ensureState();
+        const token = req.headers['authorization'] || req.headers['x-session-token'];
+        const session = data.active_sessions.find(s => s.token === token);
+
+        if (!session && requiredRole !== 'USER') {
+            return fail(res, "Unauthorized: Valid session token required for clearance.", 401);
+        }
+
+        const userRole = session ? session.role : "USER";
+        const roleHierarchy = { ADMIN: 3, MERCHANT: 2, USER: 1 };
+
+        if ((roleHierarchy[userRole] || 1) < (roleHierarchy[requiredRole] || 1)) {
+            return fail(res, "Access denied: Insufficient RBAC clearance privileges.", 403);
+        }
+
+        req.session = session;
+        next();
+    };
 }
 
 function validateKenyanPhone(phone) {
@@ -245,7 +304,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_100_SOVEREIGN_SUPREME_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_101_SOVEREIGN_SUPREME_ONLINE", time: Date.now() }));
 
 app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     try {
@@ -257,8 +316,8 @@ app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// STAGE 100 COMPLIANCE DASHBOARD, SESSION CONTROL & AUDIT ENDPOINTS
-app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, res) => {
+// STAGE 101 COMPLIANCE DASHBOARD, SESSION CONTROL & AUDIT ENDPOINTS (Protected by RBAC)
+app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
     try {
         ensureState();
         const tenantOrders = data.orders.filter(o => o.businessId === req.tenantId || req.tenantId === "BIZ-KE");
@@ -276,13 +335,12 @@ app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, r
     }
 });
 
-// STAGE 100 SUPREME SESSION MANAGEMENT (Back-end Control of Logged-in Users)
-app.get('/api/admin/sessions', enforceTenantIsolation, async (req, res) => {
+app.get('/api/admin/sessions', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
     ensureState();
     return ok(res, { success: true, activeSessions: data.active_sessions });
 });
 
-app.post('/api/admin/sessions/terminate', enforceTenantIsolation, async (req, res) => {
+app.post('/api/admin/sessions/terminate', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
     ensureState();
     const { token, userId } = req.body;
     data.active_sessions = data.active_sessions.filter(s => s.token !== token && s.userId !== userId);
@@ -292,8 +350,7 @@ app.post('/api/admin/sessions/terminate', enforceTenantIsolation, async (req, re
     return ok(res, { success: true, message: "User session successfully terminated and revoked by compliance admin." });
 });
 
-// STAGE 100 UNIVERSAL API CONNECTOR (Connect to any API in the world automatically)
-app.post('/api/universal/connect', enforceTenantIsolation, async (req, res) => {
+app.post('/api/universal/connect', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
     try {
         ensureState();
         const { targetApiUrl, apiKey, method, payload } = req.body;
@@ -324,8 +381,7 @@ app.post('/api/universal/connect', enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// STAGE 100 LIGHTNING-FAST IMMUTABLE AUDIT SEARCH
-app.get('/api/audit/search', enforceTenantIsolation, async (req, res) => {
+app.get('/api/audit/search', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
     ensureState();
     const query = (req.query.q || "").toLowerCase();
     const results = data.immutable_audit_vault.filter(aud => 
@@ -337,7 +393,7 @@ app.get('/api/audit/search', enforceTenantIsolation, async (req, res) => {
     return ok(res, { success: true, count: results.length, auditStream: results });
 });
 
-app.post('/api/admin/toggle-aml', enforceTenantIsolation, async (req, res) => {
+app.post('/api/admin/toggle-aml', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
     try {
         ensureState();
         const { userId } = req.body;
@@ -345,12 +401,19 @@ app.post('/api/admin/toggle-aml', enforceTenantIsolation, async (req, res) => {
         if (!user) return fail(res, "User not found", 404);
         user.amlFlagged = !user.amlFlagged;
         user.riskScore = user.amlFlagged ? "98.5% (HIGH)" : "1.2% (LOW)";
+        user.riskProfile = {
+            score: user.amlFlagged ? 98.5 : 1.2,
+            level: user.amlFlagged ? "HIGH" : "LOW",
+            factors: user.amlFlagged ? ["Manual Regulatory Flag", "High-Risk Status"] : ["Verified ID", "Clean status"]
+        };
         
         if (user.amlFlagged) {
             data.sar_queue.push({
                 id: id("SAR"),
                 userId: user.id,
                 amount: "N/A (Manual Flag)",
+                triggers: ["HIGH_RISK_USER", "MANUAL_AML_FLAG"],
+                status: "PENDING_REVIEW",
                 reason: "Regulatory AML/PEP High-Risk Flag Triggered",
                 timestamp: Date.now()
             });
@@ -396,7 +459,9 @@ app.post('/api/auth/verify-otp', async (req, res) => {
                 id: id("USR"), phone, 
                 email: email || session.email || "", 
                 fullName: "Robert Maina", idOrPassportNo: "32456789", 
-                role: role || "USER", amlFlagged: false, riskScore: "0.8%", createdAt: Date.now() 
+                role: role || "USER", amlFlagged: false, riskScore: "0.8%", 
+                kycStatus: "VERIFIED", riskProfile: { score: 0.8, level: "LOW", factors: ["New OTP Session"] },
+                createdAt: Date.now() 
             };
             data.users.push(user);
         } else {
@@ -404,7 +469,6 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         }
         const token = crypto.randomBytes(32).toString('hex');
         
-        // Track Active Session for Supreme Back-End Control
         data.active_sessions.push({
             token,
             userId: user.id,
@@ -454,18 +518,23 @@ app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
   ok(res, { success: true, distanceKm, split });
 });
 
-app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
+// STAGE 101 SECURE CHECKOUT WITH UNSTOPPABLE GLOBAL AML/KYC & IDEMPOTENCY
+app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async (req, res) => {
     try {
         ensureState();
-        const { phone, itemPriceTotal, pickupCoords, destinationCoords, vehicleType, pickup, destination, userId } = req.body;
+        const { phone, itemPriceTotal, pickupCoords, destinationCoords, vehicleType, pickup, destination, userId, idempotencyKey } = req.body;
+        
+        // Idempotency Protection Check
+        if (idempotencyKey) {
+            const existingTx = data.transactions.find(t => t.idempotencyKey === idempotencyKey);
+            if (existingTx) {
+                return ok(res, { success: true, duplicateDetected: true, message: "Idempotent replay blocked. Returning existing transaction.", ...existingTx });
+            }
+        }
+
         const tenant = req.tenantObj;
         const currencyCode = tenant.currency || "KES";
-
-        // AML & Risk Check
-        const checkingUser = data.users.find(u => u.id === userId);
-        if (checkingUser && checkingUser.amlFlagged) {
-            return fail(res, "Transaction blocked by AML compliance policy. Account under regulatory review.", 403);
-        }
+        const user = req.currentUser || data.users.find(u => u.id === userId);
 
         let distanceKm = calculateHaversineDistanceKm(
             pickupCoords?.lat, pickupCoords?.lng, 
@@ -484,21 +553,28 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        if (split.userPays >= 1000000) {
+        // Multi-Trigger SAR Engine Evaluation
+        const sarTriggers = [];
+        if (split.userPays >= 1000000) sarTriggers.push("HIGH_VALUE");
+        if (user && num(user.riskScore) >= 85) sarTriggers.push("HIGH_RISK_USER");
+
+        if (sarTriggers.length > 0) {
             data.sar_queue.push({
                 id: id("SAR"),
-                userId: userId || "ANONYMOUS",
+                userId: user ? user.id : (userId || "ANONYMOUS"),
                 amount: `${currencyCode} ${split.userPays}`,
-                reason: "High-Value Transaction Threshold Breached (>1M)",
+                triggers: sarTriggers,
+                status: "PENDING_REVIEW",
+                reason: `Multi-trigger SAR flags: ${sarTriggers.join(', ')}`,
                 timestamp: Date.now()
             });
         }
 
-        const orderId = id("ORD_ST100");
+        const orderId = id("ORD_ST101");
         const assignedRider = "DRV_01";
 
         const order = {
-            id: orderId, userId: userId || "ANONYMOUS", businessId: tenant.id, region: tenant.region || "KE",
+            id: orderId, userId: user ? user.id : (userId || "ANONYMOUS"), businessId: tenant.id, region: tenant.region || "KE",
             currency: currencyCode, productAmount: split.productAmount,
             deliveryFee: split.deliveryFee, distanceKm,
             total: split.userPays, pickup: pickup || "Pickup Location",
@@ -510,7 +586,11 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         data.orders.push(order);
         data.escrow.push({ escrowId: id("ESC"), orderId, businessId: tenant.id, amount: split.userPays, status: "HELD" });
         
-        await recordImmutableAudit("CHECKOUT_ESCROW_LOCKED", { userId: userId || "ANONYMOUS" }, { orderId, total: split.userPays });
+        if (idempotencyKey) {
+            data.transactions.push({ idempotencyKey, orderId, total: split.userPays, createdAt: Date.now() });
+        }
+
+        await recordImmutableAudit("CHECKOUT_ESCROW_LOCKED", { userId: user ? user.id : "ANONYMOUS" }, { orderId, total: split.userPays, sarTriggers });
         await saveDB();
 
         if (global.io) {
@@ -532,8 +612,8 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     BusinessShortCode: MPESA_CONFIG.shortCode, Password: password, Timestamp: timestamp,
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
-                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Stage 100`,
-                    TransactionDesc: `Stage 100 Escrow Checkout`
+                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Stage 101`,
+                    TransactionDesc: `Stage 101 Escrow Checkout`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -551,7 +631,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
     }
 });
 
-app.post('/api/orders/dismiss', enforceTenantIsolation, async (req, res) => {
+app.post('/api/orders/dismiss', enforceTenantIsolation, verifyRole('MERCHANT'), async (req, res) => {
     try {
         ensureState();
         const { orderId } = req.body;
@@ -580,5 +660,5 @@ app.post('/api/orders/dismiss', enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 100 SOVEREIGN SUPREME COMPLIANCE & AUDIT ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 101 SOVEREIGN SUPREME COMPLIANCE & AUDIT ENGINE ACTIVE ON PORT ${PORT}`);
 });

@@ -119,7 +119,59 @@
       "phone": "254711999888",
       "email": "audittest@rds.com",
       "otp": "1234",
-      "expires": 1789674629281
+      "expires": 1789677198669
+    }
+  ],
+  "active_sessions": [
+    {
+      "token": "a3d0f9cce4e5bce3b8ddc30f11c52fa6422dcac23fe1bbfd5e7815685c5d485a",
+      "userId": "USR_1789674342963_47256",
+      "phone": "254711999888",
+      "role": "USER",
+      "loginTime": 1789676933070
+    }
+  ],
+  "universal_connections": [
+    {
+      "id": "API_CONN_1789677068357_39559",
+      "targetApiUrl": "https://httpbin.org/json",
+      "status": "CONNECTED_SUCCESS",
+      "timestamp": 1789677068357,
+      "responseSnippet": "{\"slideshow\":{\"author\":\"Yours Truly\",\"date\":\"date of publication\",\"slides\":[{\"title\":\"Wake up to WonderWidgets!\",\"type\":\"all\"},{\"items\":[\"Why <em>WonderWidgets</em> are great\",\"Who <em>buys</em> WonderWidgets\"],\"title\":\"Overview\",\"type\":\"all\"}],\"title\":\"Sample Slide Show\"}}"
+    }
+  ],
+  "immutable_audit_vault": [
+    {
+      "auditId": "AUD_1789676933071_69511",
+      "timestamp": 1789676933070,
+      "actionType": "USER_LOGIN_VERIFIED",
+      "actor": {
+        "userId": "USR_1789674342963_47256"
+      },
+      "details": {
+        "role": "USER"
+      },
+      "previousHash": "GENESIS_ROOT_HASH_000000000000000000000000",
+      "currentHash": "08345bf0f89a94251495751be022bd64a8d7d253b0af811724322a5f04c8f061",
+      "tamperProof": true
+    },
+    {
+      "auditId": "AUD_1789677068357_52302",
+      "timestamp": 1789677068357,
+      "actionType": "UNIVERSAL_API_INGESTION",
+      "actor": {
+        "source": "EXTERNAL_SYSTEM"
+      },
+      "details": {
+        "id": "API_CONN_1789677068357_39559",
+        "targetApiUrl": "https://httpbin.org/json",
+        "status": "CONNECTED_SUCCESS",
+        "timestamp": 1789677068357,
+        "responseSnippet": "{\"slideshow\":{\"author\":\"Yours Truly\",\"date\":\"date of publication\",\"slides\":[{\"title\":\"Wake up to WonderWidgets!\",\"type\":\"all\"},{\"items\":[\"Why <em>WonderWidgets</em> are great\",\"Who <em>buys</em> WonderWidgets\"],\"title\":\"Overview\",\"type\":\"all\"}],\"title\":\"Sample Slide Show\"}}"
+      },
+      "previousHash": "08345bf0f89a94251495751be022bd64a8d7d253b0af811724322a5f04c8f061",
+      "currentHash": "b09de170949d7ad4aec06740bbea79b599b40dd32f8eca75fa2986aa1fd1b79b",
+      "tamperProof": true
     }
   ],
   "orders": [
@@ -912,6 +964,7 @@
       "currency": "KES"
     }
   ],
+  "sar_queue": [],
   "shops": [],
   "catalogs": {},
   "ledger_entries": [
