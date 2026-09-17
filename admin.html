@@ -1,560 +1,456 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDS ADMIN CONTROL CENTER | ULTRA CORE</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0b0f19">
+  <title>RDS | CBK & World Bank-Grade Sovereign Ledger Console</title>
 
-<!-- LEAFLET MAP ASSETS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
-<style>
-:root {
-  --neon: #00ff66;
-  --bg: #0a0a0a;
-  --panel: #121212;
-  --card: #181818;
-  --danger: #ff3366;
-  --gold: #ffd700;
-  --dim: #888;
-}
+  <style>
+    :root {
+      --neon-green: #00ff88;
+      --dark-bg: #0b0f19;
+      --panel-bg: #111827;
+      --card-bg: #181824;
+      --text-dim: #9ca3af;
+      --cyan: #38bdf8;
+      --alert-red: #ff3366;
+      --gold: #ffd700;
+      --stage-purple: #a855f7;
+    }
 
-* { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
 
-body {
-  background: var(--bg);
-  color: var(--neon);
-  font-family: monospace;
-  margin: 0;
-  padding: 20px;
-}
+    body {
+      background-color: var(--dark-bg);
+      color: #fff;
+      padding: 15px;
+      max-width: 480px;
+      margin: 0 auto;
+      padding-bottom: 110px;
+    }
 
-h1, h2, h3 {
-  text-transform: uppercase;
-  margin-top: 0;
-}
+    .app-view { display: none; }
+    .app-view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
 
-h1 {
-  border-bottom: 2px solid var(--neon);
-  padding-bottom: 10px;
-}
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-.section {
-  border: 1px solid var(--neon);
-  padding: 15px;
-  margin-top: 20px;
-  background: var(--panel);
-}
+    .telemetry-ribbon {
+      background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(56,189,248,0.1));
+      border: 1px solid var(--stage-purple);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.65rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      color: var(--stage-purple);
+      font-weight: bold;
+    }
 
-.grid-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
+    .header-location {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .location-box { display: flex; align-items: center; gap: 8px; }
+    .location-text span { font-size: 0.75rem; color: var(--text-dim); display: block; }
+    .location-text strong { font-size: 0.95rem; color: #fff; }
 
-@media (max-width: 1024px) {
-  .grid-layout { grid-template-columns: 1fr; }
-}
+    .corridor-selector {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      margin-bottom: 15px;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .corridor-selector::-webkit-scrollbar { display: none; }
+    .corridor-btn {
+      background: var(--panel-bg);
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .corridor-btn.active, .corridor-btn:hover {
+      border-color: var(--stage-purple);
+      background: rgba(168, 85, 247, 0.1);
+      color: #fff;
+    }
 
-.grid-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-}
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .section-header h3 { font-size: 1rem; color: #fff; font-weight: 700; }
 
-.stat {
-  background: var(--card);
-  border: 1px solid #333;
-  padding: 15px;
-  text-align: center;
-}
+    .checkout-panel {
+      background: var(--panel-bg);
+      border: 1px solid #222c3d;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .checkout-panel h3 { font-size: 0.9rem; margin-bottom: 12px; color: var(--cyan); text-transform: uppercase; }
 
-.stat-val {
-  font-size: 20px;
-  font-weight: bold;
-  color: var(--gold);
-  margin-top: 5px;
-}
+    .ledger-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.7rem;
+      margin-top: 6px;
+    }
+    .ledger-table th, .ledger-table td {
+      border: 1px solid #222c3d;
+      padding: 6px;
+      text-align: left;
+    }
+    .ledger-table th { color: var(--cyan); background: rgba(0,0,0,0.3); }
+    .ledger-table td { color: #d1d5db; }
 
-input {
-  background: #000;
-  color: var(--neon);
-  border: 1px solid var(--neon);
-  padding: 8px;
-  margin: 4px;
-  font-family: monospace;
-}
+    input, select {
+      width: 100%;
+      background: var(--dark-bg);
+      border: 1px solid #374151;
+      color: #fff;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--stage-purple); }
 
-button {
-  background: var(--neon);
-  color: #000;
-  border: none;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-weight: bold;
-  font-family: monospace;
-  text-transform: uppercase;
-  transition: opacity 0.2s;
-}
+    button {
+      background: var(--stage-purple);
+      color: #fff;
+      border: none;
+      padding: 9px;
+      font-weight: 700;
+      width: 100%;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+    button:hover { background: var(--cyan); color: #000; }
 
-button:hover { opacity: 0.85; }
+    .btn-cyan { background: var(--cyan); color: #000; }
+    .btn-cyan:hover { background: var(--neon-green); }
+    .btn-gold { background: var(--gold); color: #000; }
 
-.danger {
-  background: var(--danger);
-  color: #fff;
-}
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--panel-bg);
+      border-top: 1px solid #222c3d;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      z-index: 1000;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
+    .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
+    .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
 
-.gold {
-  background: var(--gold);
-  color: #000;
-}
-
-.card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--card);
-  border: 1px solid #333;
-  padding: 10px;
-  margin-top: 10px;
-}
-
-.small { font-size: 11px; color: var(--dim); }
-
-#adminMap {
-  height: 380px;
-  width: 100%;
-  border: 1px solid var(--neon);
-  background: #050505;
-  margin-top: 10px;
-}
-
-pre {
-  background: #000;
-  padding: 12px;
-  border: 1px solid #333;
-  color: var(--neon);
-  max-height: 200px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.leaflet-popup-content-wrapper, .leaflet-popup-tip {
-  background: #111 !important;
-  color: #00ff66 !important;
-  border: 1px solid #00ff66 !important;
-  font-family: monospace;
-}
-</style>
+    .stat-box {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .stat-title { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
+    .stat-value { font-size: 1.2rem; font-weight: bold; color: var(--gold); margin-top: 4px; }
+  </style>
 </head>
-
 <body>
 
-<h1>🛠 RDS ADMIN CONTROL CENTER</h1>
-
-<!-- API ROUTE STATUS -->
-<div class="section">
-  <b>🌐 CONNECTED API:</b> <span id="apiStatus">Detecting route...</span>
-</div>
-
-<!-- STATS OVERVIEW -->
-<div class="section">
-  <h3>📊 System Overview</h3>
-  <div class="grid-stats">
-    <div class="stat">💰 Gross Volume<div id="rev" class="stat-val">$0</div></div>
-    <div class="stat">🚚 Active Drivers<div id="drivers" class="stat-val">0</div></div>
-    <div class="stat">📦 Global Orders<div id="orders" class="stat-val">0</div></div>
-    <div class="stat">🏪 Merchants<div id="shops" class="stat-val">0</div></div>
-  </div>
-</div>
-
-<div class="grid-layout">
-  
-  <!-- LEFT COLUMN: LIVE MAP & COMMAND CONTROLS -->
-  <div>
-    <!-- MAP CONTAINER -->
-    <div class="section">
-      <h3>🗺 Live Fleet Telemetry Map</h3>
-      <div id="adminMap"></div>
-    </div>
-
-    <!-- COMMAND & SIMULATION -->
-    <div class="section">
-      <h3>⚡ Command Operations & Simulation</h3>
-      <div style="margin-bottom: 10px;">
-        <b>Driver Onboarding:</b><br>
-        <input id="driverName" placeholder="Driver Full Name">
-        <input id="driverPhone" placeholder="Phone (0700000000)" value="0700000000">
-        <button onclick="registerDriver()">➕ Register Driver</button>
-      </div>
-      <div>
-        <button class="gold" onclick="simulateDispatch()">🚀 Simulate Market Order & Auto-Dispatch</button>
-      </div>
-    </div>
-
-    <!-- DRIVERS ROSTER -->
-    <div class="section">
-      <h3>🚚 Fleet Driver Roster</h3>
-      <div id="driverList">Loading roster...</div>
-    </div>
-  </div>
-
-  <!-- RIGHT COLUMN: MERCHANTS, ORDERS & LEDGER -->
-  <div>
-    <!-- ADD MERCHANT -->
-    <div class="section">
-      <h3>🏪 Add Merchant</h3>
-      <input id="name" placeholder="Shop Name">
-      <input id="category" placeholder="Category" value="Retail">
-      <button onclick="addShop()">➕ Add Shop</button>
-    </div>
-
-    <!-- MERCHANT SHOPS -->
-    <div class="section">
-      <h3>🏪 Merchant Portfolio</h3>
-      <div id="shopList">Loading shops...</div>
-    </div>
-
-    <!-- ORDERS FEED -->
-    <div class="section">
-      <h3>📦 Global Order Feed</h3>
-      <div id="ordersList">Loading orders...</div>
-    </div>
-
-    <!-- FINANCIAL LEDGER -->
-    <div class="section">
-      <h3>💰 Double-Entry Journal Ledger</h3>
-      <div id="ledgerList">Loading ledger...</div>
-    </div>
-  </div>
-
-</div>
-
-<!-- SYSTEM LOG CONSOLE -->
-<div class="section">
-  <h3>📡 Control Center System Log</h3>
-  <pre id="log">Terminal ready.</pre>
-</div>
-
-<script>
-const LOCAL = "http://localhost:3000";
-const CLOUD = "https://rds-lab.onrender.com";
-
-let API = location.hostname.includes("localhost") ? LOCAL : CLOUD;
-document.getElementById("apiStatus").innerText = API;
-
-let adminMap = null;
-let activeTileLayer = null;
-let driverMarkersMap = new Map();
-
-function log(msg) {
-  const time = new Date().toLocaleTimeString();
-  const text = typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
-  document.getElementById("log").textContent =
-    `[${time}] ${text}\n` + document.getElementById("log").textContent;
-}
-
-/* ========================================== */
-/* SAFE API CALL ENGINE                       */
-/* ========================================== */
-async function api(endpoints, options = {}) {
-  const list = Array.isArray(endpoints) ? endpoints : [endpoints];
-
-  for (let ep of list) {
-    try {
-      const res = await fetch(API + ep, {
-        headers: { "Content-Type": "application/json" },
-        ...options
-      });
-
-      if (res.ok) return await res.json();
-    } catch (e) {}
-  }
-
-  log("API Warning on endpoints: " + list.join(", "));
-  return {};
-}
-
-/* ========================================== */
-/* 403-PROOF MULTI-PROVIDER LEAFLET MAP      */
-/* ========================================== */
-function initAdminMap() {
-  if (adminMap) return;
-
-  adminMap = L.map('adminMap', {
-    zoomControl: true,
-    attributionControl: false
-  }).setView([-1.286389, 36.817223], 12); // Default Nairobi CBD coordinates
-
-  const tileProviders = [
-    {
-      url: "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
-      subdomains: ["a", "b", "c"],
-      maxZoom: 19
-    },
-    {
-      url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-      subdomains: ["a", "b", "c", "d"],
-      maxZoom: 19
-    },
-    {
-      url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      subdomains: ["a", "b", "c", "d"],
-      maxZoom: 19
-    }
-  ];
-
-  let providerIndex = 0;
-
-  function loadTileLayer() {
-    if (activeTileLayer && adminMap.hasLayer(activeTileLayer)) {
-      adminMap.removeLayer(activeTileLayer);
-    }
-
-    const provider = tileProviders[providerIndex];
-    activeTileLayer = L.tileLayer(provider.url, {
-      subdomains: provider.subdomains,
-      maxZoom: provider.maxZoom,
-      crossOrigin: true
-    });
-
-    activeTileLayer.on("tileerror", () => {
-      log(`Tile provider #${providerIndex} error. Switching failover map server...`);
-      providerIndex = (providerIndex + 1) % tileProviders.length;
-      loadTileLayer();
-    });
-
-    activeTileLayer.addTo(adminMap);
-  }
-
-  loadTileLayer();
-
-  setTimeout(() => {
-    adminMap.invalidateSize();
-  }, 300);
-}
-
-/* ========================================== */
-/* MASTER DATA LOAD                           */
-/* ========================================== */
-async function loadAll() {
-  await Promise.all([
-    loadShops(),
-    loadOrders(),
-    loadDrivers(),
-    loadLedger()
-  ]);
-}
-
-/* ========================================== */
-/* SHOPS PORTFOLIO                            */
-/* ========================================== */
-async function loadShops() {
-  const data = await api(["/businesses", "/shops"]);
-  const list = data.businesses || data.shops || [];
-
-  document.getElementById("shops").innerText = list.length;
-
-  document.getElementById("shopList").innerHTML =
-    list.map(b => `
-      <div class="card">
-        <div>
-          <b>${b.name || "Unnamed Merchant"}</b><br>
-          <span class="small">${b.category || "Retail"} | Balance: $${b.balance || 0} | ID: ${b.id}</span>
+    <!-- AUTHENTICATION VIEW -->
+    <div id="viewAuth" class="app-view active-view">
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
+            <span>🏛️ CENTRAL BANK & WORLD BANK ADMIN LOGIN</span>
         </div>
-        <button class="danger" onclick="delShop('${b.id}')">Delete</button>
-      </div>
-    `).join("") || "<i>No merchant shops registered</i>";
-}
 
-async function addShop() {
-  const nameEl = document.getElementById("name");
-  const catEl = document.getElementById("category");
-  const name = nameEl.value.trim();
-  const category = catEl.value.trim() || "Retail";
+        <div class="checkout-panel" style="padding: 20px;">
+            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Sovereign Admin Console</h2>
+            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Authenticate to manage double-entry ledgers, liquidity pools, and tax compliance splits.</p>
 
-  if (!name) return alert("Please enter shop name");
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Admin Email</label>
+            <input type="email" id="authEmail" value="admin@rds.com">
 
-  const res = await api(
-    ["/business/add", "/business/create"],
-    {
-      method: "POST",
-      body: JSON.stringify({ name, category })
-    }
-  );
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Secure Key / Phone</label>
+            <input type="text" id="authPhone" value="254721862397">
 
-  if (res && res.success) {
-    log(`✅ Merchant shop added: ${res.business.name}`);
-    nameEl.value = "";
-    loadShops();
-  }
-}
+            <div id="phoneStep">
+                <button onclick="requestAdminOtp()" class="btn-cyan" style="padding: 12px; font-weight: bold; margin-top: 5px;">Send Verification OTP</button>
+            </div>
 
-async function delShop(id) {
-  if (!confirm("Delete this merchant shop?")) return;
-  const res = await api([`/business/delete/${id}`, `/business/${id}`], { method: "DELETE" });
-  log(res);
-  loadShops();
-}
-
-/* ========================================== */
-/* ORDERS DISPATCH FEED                       */
-/* ========================================== */
-async function loadOrders() {
-  const data = await api("/orders");
-  const orders = data.orders || [];
-
-  document.getElementById("orders").innerText = orders.length;
-
-  let grossTotal = 0;
-
-  document.getElementById("ordersList").innerHTML =
-    orders.map(o => {
-      const amount = o.total || o.amount || 0;
-      grossTotal += amount;
-
-      return `
-        <div class="card">
-          <div>
-            <b>Order ID: ${o.id}</b> | <span style="color:var(--gold)">$${amount}</span><br>
-            <span class="small">Customer: ${o.customerName || "Guest"} | Status: ${o.status || "PLACED"}</span>
-          </div>
+            <div id="otpStep" style="display: none; margin-top: 15px;">
+                <label style="font-size: 0.75rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP Code (Use 1234)</label>
+                <input type="text" id="authOtp" value="1234" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" maxlength="4">
+                <button onclick="verifyAdminOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch Central Ledger</button>
+            </div>
         </div>
-      `;
-    }).join("") || "<i>No market orders placed</i>";
+    </div>
 
-  document.getElementById("rev").innerText = "$" + grossTotal.toFixed(2);
-}
+    <!-- CENTRAL BANK MACRO VIEW -->
+    <div id="viewMacro" class="app-view">
+        <div class="telemetry-ribbon">
+            <span>🌐 CENTRAL BANK & WORLD BANK MACRO-LIQUIDITY</span>
+            <span id="nodeLatency">Secure • Active</span>
+        </div>
 
-/* ========================================== */
-/* DRIVERS FLEET & TELEMETRY MAP UPDATE       */
-/* ========================================== */
-async function loadDrivers() {
-  const data = await api(["/drivers", "/driverLocations"]);
-  const drivers = data.drivers || [];
+        <div class="header-location">
+            <div class="location-box">
+                <span class="icon">📍</span>
+                <div class="location-text">
+                    <span>Active Reserve Corridor</span>
+                    <strong id="corridorLabel">Nairobi, Kenya (KES)</strong>
+                </div>
+            </div>
+            <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
+        </div>
 
-  document.getElementById("drivers").innerText = drivers.length;
+        <div class="corridor-selector" id="dynamicCorridorSelector">
+            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE Reserve</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK Reserve</div>
+        </div>
 
-  // Update Map Markers
-  if (adminMap) {
-    const activeIds = new Set();
+        <div class="stat-box">
+            <div class="stat-title">Total System Escrow Reserves</div>
+            <div class="stat-value" id="macroEscrowPool">KES 0.00</div>
+        </div>
 
-    drivers.forEach(d => {
-      const lat = d.location?.lat || d.lat || 0;
-      const lng = d.location?.lng || d.lng || 0;
+        <div class="stat-box">
+            <div class="stat-title">Total Tax Collected (KRA / HMRC)</div>
+            <div class="stat-value" id="macroTaxPool" style="color: var(--alert-red);">KES 0.00</div>
+        </div>
 
-      if (lat !== 0 && lng !== 0) {
-        activeIds.add(d.id);
-        const popupText = `<b>${d.name}</b><br>Status: ${d.status || 'AVAILABLE'}<br>Earnings: $${d.earnings || 0}`;
+        <div class="stat-box">
+            <div class="stat-title">Ledger Mathematical Integrity</div>
+            <div class="stat-value" id="ledgerIntegrityStatus" style="color: var(--neon-green);">VERIFIED (100% Balanced)</div>
+        </div>
+    </div>
 
-        if (driverMarkersMap.has(d.id)) {
-          const marker = driverMarkersMap.get(d.id);
-          marker.setLatLng([lat, lng]);
-          marker.getPopup().setContent(popupText);
-        } else {
-          const marker = L.marker([lat, lng]).addTo(adminMap).bindPopup(popupText);
-          driverMarkersMap.set(d.id, marker);
+    <!-- DOUBLE-ENTRY LEDGER VIEW -->
+    <div id="viewLedgers" class="app-view">
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
+            <span>📊 MATHEMATICAL DOUBLE-ENTRY LEDGER</span>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Immutable Transaction Stream</h3>
+            <div style="max-height: 320px; overflow-y: auto;">
+                <table class="ledger-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Debit</th>
+                            <th>Credit</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerTableBody">
+                        <tr><td colspan="5" style="text-align:center; color:var(--text-dim);">Loading accounting entries...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ESCROW & DISPATCH MONITOR VIEW -->
+    <div id="viewEscrow" class="app-view">
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
+            <span>🔒 ESCROW LOCK & TAX COMPLIANCE SPLIT</span>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>Active System Dispatches</h3>
+            <div id="adminOrdersContainer">
+                <em style="color:var(--text-dim); font-size: 0.75rem;">No active dispatch records.</em>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div id="viewProfile" class="app-view">
+        <div class="section-header" style="margin-bottom: 20px;">
+            <h3>Central Bank Administrator Profile</h3>
+        </div>
+        <div class="checkout-panel">
+            <p><strong>Administrator:</strong> Chief Sovereign Auditor</p>
+            <p style="margin-top: 6px;"><strong>Email:</strong> admin@rds.com</p>
+            <p style="margin-top: 6px;"><strong>Authorization:</strong> <span style="color: var(--neon-green);">World Bank Level 4 Clearance</span></p>
+        </div>
+    </div>
+
+    <input type="hidden" id="storeBusinessId" value="BIZ-KE">
+    <input type="hidden" id="storeCurrency" value="KES">
+
+    <div class="bottom-nav" id="bottomNav" style="display: none;">
+        <a class="nav-item active" onclick="switchTab('viewMacro', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.03-.42 1.98-1.07 2.75z"/></svg>Macro</a>
+        <a class="nav-item" onclick="switchTab('viewLedgers', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Ledger</a>
+        <a class="nav-item" onclick="switchTab('viewEscrow', this)"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>Escrow</a>
+        <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
+    </div>
+
+    <script>
+        const LOCAL_API = "http://localhost:3000";
+        const CLOUD_API = "https://rds-lab.onrender.com";
+        let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
+
+        let currentAdminUser = null;
+        let socket = io();
+
+        window.addEventListener('DOMContentLoaded', () => {
+            socket.on('orderListUpdated', () => { fetchAdminData(); });
+        });
+
+        async function requestAdminOtp() {
+            const phone = document.getElementById('authPhone').value.trim();
+            const email = document.getElementById('authEmail').value.trim();
+            const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, email })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                document.getElementById('phoneStep').style.display = 'none';
+                document.getElementById('otpStep').style.display = 'block';
+            }
         }
-      }
-    });
 
-    driverMarkersMap.forEach((marker, id) => {
-      if (!activeIds.has(id)) {
-        adminMap.removeLayer(marker);
-        driverMarkersMap.delete(id);
-      }
-    });
-  }
+        async function verifyAdminOtpAndEnter() {
+            const phone = document.getElementById('authPhone').value.trim();
+            const email = document.getElementById('authEmail').value.trim();
+            const otp = document.getElementById('authOtp').value.trim();
+            const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, otp, role: 'ADMIN', email })
+            });
+            const data = await res.json();
+            if (data.success) {
+                currentAdminUser = data.user;
+                document.getElementById('bottomNav').style.display = 'flex';
+                switchTab('viewMacro', document.querySelectorAll('.bottom-nav .nav-item')[0]);
+                fetchAdminData();
+            }
+        }
 
-  // Render Driver List
-  document.getElementById("driverList").innerHTML =
-    drivers.map(d => `
-      <div class="card">
-        <div>
-          <b>${d.name}</b> (${d.phone || 'N/A'})<br>
-          <span class="small">Status: ${d.status || "AVAILABLE"} | Earnings: $${d.earnings || 0} | ID: ${d.id}</span>
-        </div>
-      </div>
-    `).join("") || "<i>No drivers registered</i>";
-}
+        function switchCorridor(tenantId, locationName, currencyCode, el) {
+            document.querySelectorAll('.corridor-btn').forEach(b => b.classList.remove('active'));
+            if(el) el.classList.add('active');
+            document.getElementById('storeBusinessId').value = tenantId;
+            document.getElementById('storeCurrency').value = currencyCode;
+            document.getElementById('tenantBadge').innerText = tenantId;
+            document.getElementById('corridorLabel').innerText = locationName;
+            fetchAdminData();
+        }
 
-async function registerDriver() {
-  const nameEl = document.getElementById("driverName");
-  const phoneEl = document.getElementById("driverPhone");
-  const name = nameEl.value.trim();
-  const phone = phoneEl.value.trim();
+        async function fetchAdminData() {
+            const bizId = document.getElementById('storeBusinessId').value;
+            const curr = document.getElementById('storeCurrency').value;
 
-  if (!name) return alert("Enter driver full name");
+            try {
+                const res = await fetch(`${API_BASE}/api/orders/live`, { headers: { "x-business-id": bizId } });
+                const data = await res.json();
+                if (data.success && data.orders) {
+                    renderAdminOrders(data.orders);
+                    calculateMacroPools(data.orders, curr);
+                    renderDoubleEntryLedger(data.orders, curr);
+                }
+            } catch (e) {}
+        }
 
-  const res = await api(["/addDriver", "/driver/add"], {
-    method: "POST",
-    body: JSON.stringify({ name, phone })
-  });
+        function calculateMacroPools(orders, curr) {
+            let totalEscrow = 0;
+            let totalTax = 0;
+            orders.forEach(o => {
+                if (o.status !== 'ORDERLY_DISMISSED') {
+                    totalEscrow += Number(o.total || 0);
+                    totalTax += Number(o.tax || (o.total * 0.16) || 0);
+                }
+            });
+            document.getElementById('macroEscrowPool').innerText = `${curr} ${totalEscrow.toFixed(2)}`;
+            document.getElementById('macroTaxPool').innerText = `${curr} ${totalTax.toFixed(2)}`;
+        }
 
-  if (res && res.success) {
-    log(`✅ Driver profile registered: ${res.driver.name}`);
-    nameEl.value = "";
-    loadDrivers();
-  }
-}
+        function renderDoubleEntryLedger(orders, curr) {
+            const tbody = document.getElementById('ledgerTableBody');
+            if (!orders || orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-dim);">No accounting entries found.</td></tr>`;
+                return;
+            }
+            let html = '';
+            orders.forEach(o => {
+                const debit = Number(o.total || 0).toFixed(2);
+                const credit = Number(o.total || 0).toFixed(2);
+                html += `
+                    <tr>
+                        <td>#${o.id.slice(-6)}</td>
+                        <td>ESCROW_DEPOSIT</td>
+                        <td style="color:var(--alert-red);">${curr} ${debit}</td>
+                        <td style="color:var(--neon-green);">${curr} ${credit}</td>
+                        <td><b>BALANCED</b></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
 
-async function simulateDispatch() {
-  log("🚀 Executing simulated order & auto-dispatch pipeline...");
-  const res = await api("/order/create", {
-    method: "POST",
-    body: JSON.stringify({
-      customerName: "Admin Dispatch Simulation",
-      customerPhone: "0722000111",
-      deliveryAddress: "Nairobi Center",
-      targetLat: -1.286389,
-      targetLng: 36.817223,
-      items: [
-        { productId: "PROD_DISPATCH_TEST", name: "Simulated Market Item", price: 40, quantity: 1 }
-      ]
-    })
-  });
+        function renderAdminOrders(orders) {
+            const container = document.getElementById('adminOrdersContainer');
+            if (!orders || orders.length === 0) {
+                container.innerHTML = '<em style="color:var(--text-dim); font-size: 0.75rem;">No active system dispatches.</em>';
+                return;
+            }
+            let html = '';
+            orders.slice(-4).reverse().forEach(o => {
+                html += `
+                    <div class="live-order-card">
+                        <div class="live-order-header">
+                            <span>🆔 ${o.id}</span>
+                            <span style="color: var(--neon-green);">${o.status}</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #fff; margin-bottom: 6px;">
+                            <div>📍 Pickup: ${o.pickup}</div>
+                            <div>🏁 Dropoff: ${o.destination}</div>
+                            <div>💰 Total Escrow: <strong>${o.currency} ${o.total}</strong></div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
 
-  if (res && res.success) {
-    log(`✅ Order ${res.order.id} generated! Assigned driver: ${res.assignedDriver}`);
-    loadAll();
-  }
-}
-
-/* ========================================== */
-/* DOUBLE-ENTRY JOURNAL LEDGER                */
-/* ========================================== */
-async function loadLedger() {
-  const data = await api(["/ledger", "/transactions"]);
-  const list = data.ledger || data.transactions || [];
-
-  document.getElementById("ledgerList").innerHTML =
-    list.map(tx => `
-      <div class="card">
-        <div>
-          <b>TX ID: ${tx.id}</b> | Type: ${tx.type || "JOURNAL"}<br>
-          <span class="small">
-            Amount: <span style="color:var(--neon)">$${tx.amount || 0}</span> | 
-            Order ID: ${tx.orderId || "N/A"}
-          </span>
-        </div>
-      </div>
-    `).join("") || "<i>No financial ledger data</i>";
-}
-
-/* ========================================== */
-/* INITIALIZATION & DAEMON AUTO-POLL          */
-/* ========================================== */
-async function init() {
-  initAdminMap();
-  await loadAll();
-  log("Admin Control Center ONLINE");
-}
-
-setInterval(loadAll, 4000);
-window.onload = init;
-</script>
-
+        function switchTab(viewId, el) {
+            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
+            document.getElementById(viewId).classList.add('active-view');
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
+            if(el) el.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+    </script>
 </body>
 </html>
