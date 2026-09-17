@@ -4,10 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 92 | Enterprise Sovereign Super-App</title>
+  <title>RDS 94 | Sovereign On-Demand Commerce & Logistics Simulator</title>
 
   <script src="/socket.io/socket.io.js"></script>
-  <!-- Leaflet CSS & JS for Real-World Maps & Routing -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
@@ -246,29 +245,6 @@
     .btn-cyan { background: var(--cyan); color: #000; }
     .btn-cyan:hover { background: var(--neon-green); }
 
-    .role-select-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-    .role-card-btn {
-      background: var(--dark-bg);
-      border: 2px solid #374151;
-      border-radius: 8px;
-      padding: 12px;
-      text-align: left;
-      cursor: pointer;
-      color: #fff;
-      font-weight: bold;
-      font-size: 0.85rem;
-    }
-    .role-card-btn.selected {
-      border-color: var(--neon-green);
-      background: rgba(0, 255, 136, 0.05);
-      color: var(--neon-green);
-    }
-
     .bottom-nav {
       position: fixed;
       bottom: 0; left: 0; right: 0;
@@ -287,7 +263,7 @@
 
     #mapContainer {
       width: 100%;
-      height: 240px;
+      height: 220px;
       border-radius: 8px;
       margin-bottom: 10px;
       border: 1px solid #374151;
@@ -309,63 +285,42 @@
       color: var(--cyan);
       font-weight: bold;
     }
-
-    .inventory-item-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--dark-bg);
-      border: 1px solid #374151;
-      padding: 8px;
-      border-radius: 6px;
-      margin-bottom: 6px;
-      font-size: 0.75rem;
-    }
   </style>
 </head>
 <body id="appBody">
 
-    <!-- AUTHENTICATION & ROLE SELECTION VIEW -->
+    <!-- AUTHENTICATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🚀 RDS STAGE 92 ENTERPRISE SECURE LOGIN</span>
+            <span>🚀 RDS STAGE 94 SECURE ON-DEMAND LOGIN</span>
         </div>
 
         <div class="checkout-panel" style="padding: 20px;">
-            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">RDS Enterprise Super-App</h2>
-            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Select your portal role and sign in with email & phone. Unlimited product management with real image gallery uploads.</p>
+            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Unified Commerce Simulator</h2>
+            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Sign in to access Jumia storefront browsing and live Uber logistics dispatch.</p>
 
-            <label style="font-size: 0.75rem; color: var(--stage-purple); display: block; margin-bottom: 6px; font-weight: bold;">Continue as:</label>
-            <div class="role-select-grid">
-                <div class="role-card-btn selected" id="roleCardUser" onclick="selectOnboardingRole('USER', this)">👤 [ User ] (Shop, Ride & Deliver)</div>
-                <div class="role-card-btn" id="roleCardShop" onclick="selectOnboardingRole('SHOP', this)">🏬 [ Shop Owner ] (Merchant Node)</div>
-                <div class="role-card-btn" id="roleCardRider" onclick="selectOnboardingRole('DRIVER', this)">🏍️ [ Rider ] (Delivery Fleet)</div>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Email Address</label>
+            <input type="email" id="authEmail" value="robert.maina@rds.com">
+
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Phone Number (M-Pesa Corridor)</label>
+            <input type="text" id="authPhone" value="254721862397">
+
+            <div id="phoneStep">
+                <button onclick="requestOtp()" class="btn-cyan" style="padding: 12px; font-weight: bold; margin-top: 5px;">Send Verification OTP</button>
             </div>
 
-            <div id="registrationFormSection">
-                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Email Address</label>
-                <input type="email" id="authEmail" placeholder="user@example.com" value="robert.maina@rds.com">
-
-                <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Phone Number (M-Pesa Corridor)</label>
-                <input type="text" id="authPhone" placeholder="2547XXXXXXXX" value="254721862397">
-
-                <div id="phoneStep">
-                    <button onclick="requestOtp()" class="btn-cyan" style="padding: 12px; font-weight: bold; margin-top: 5px;">Send Verification OTP</button>
-                </div>
-
-                <div id="otpStep" style="display: none; margin-top: 15px;">
-                    <label style="font-size: 0.75rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP Code (Use 1234)</label>
-                    <input type="text" id="authOtp" placeholder="1234" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" maxlength="4">
-                    <button onclick="verifyOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch Portal</button>
-                </div>
+            <div id="otpStep" style="display: none; margin-top: 15px;">
+                <label style="font-size: 0.75rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP Code (Use 1234)</label>
+                <input type="text" id="authOtp" value="1234" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" maxlength="4">
+                <button onclick="verifyOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch Simulator</button>
             </div>
         </div>
     </div>
 
-    <!-- HOME DASHBOARD (User / Shop / Rider Segregated) -->
+    <!-- HOME STOREFRONT VIEW (JUMIA STYLE) -->
     <div id="viewHome" class="app-view">
         <div class="telemetry-ribbon">
-            <span id="portalTitleBanner">🌐 RDS STAGE 92 USER PORTAL</span>
+            <span>🛒 JUMIA-STYLE STOREFRONT BROWSING</span>
             <span id="nodeLatency">Secure • Active</span>
         </div>
 
@@ -373,7 +328,7 @@
             <div class="location-box">
                 <span class="icon">📍</span>
                 <div class="location-text">
-                    <span>Active Corridor / Shop</span>
+                    <span>Active Corridor</span>
                     <strong id="corridorLabel">Nairobi, Kenya (KES)</strong>
                 </div>
             </div>
@@ -382,30 +337,18 @@
 
         <div class="corridor-selector" id="dynamicCorridorSelector">
             <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE Hub</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-ES', 'Madrid, Spain', 'EUR', this)">🇪🇸 ES</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-CA', 'Toronto, Canada', 'CAD', this)">🇨🇦 CA</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK Hub</div>
         </div>
 
         <div class="category-filter-bar">
-            <button class="cat-btn active" onclick="filterCategory('ALL', this)">🛒 All</button>
-            <button class="cat-btn" onclick="filterCategory('RESTAURANT', this)">🍽️ Restaurants</button>
-            <button class="cat-btn" onclick="filterCategory('HOTEL', this)">🏨 Hotels</button>
-            <button class="cat-btn" onclick="filterCategory('SUPERMARKET', this)">🏬 Supermarkets</button>
-            <button class="cat-btn" onclick="filterCategory('TAXI', this)">🚕 Taxicab</button>
-            <button class="cat-btn" onclick="filterCategory('BODA', this)">🏍️ Boda Rider</button>
-        </div>
-
-        <div class="checkout-panel" style="padding: 10px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <h3 style="margin:0;">Precision Map & Live Routing</h3>
-                <span id="navGuidanceStatus" style="font-size:0.65rem; color:var(--neon-green); font-weight:bold;">STANDBY</span>
-            </div>
-            <div id="mapContainer"></div>
+            <button class="cat-btn active" onclick="filterCategory('ALL', this)">🛒 All Products</button>
+            <button class="cat-btn" onclick="filterCategory('RESTAURANT', this)">🍽️ Restaurant</button>
+            <button class="cat-btn" onclick="filterCategory('HOTEL', this)">🏨 Hotel</button>
+            <button class="cat-btn" onclick="filterCategory('SUPERMARKET', this)">🏬 Supermarket</button>
         </div>
 
         <div class="section-header">
-            <h3 id="catalogTitle">Catalog & Services</h3>
+            <h3 id="catalogTitle">Product Catalog</h3>
             <span id="activeCurrencyLabel" style="font-size:0.75rem; color:var(--stage-purple);">KES</span>
         </div>
 
@@ -414,40 +357,32 @@
         </div>
     </div>
 
-    <!-- UNIFIED CHECKOUT & PRECISION ROUTING VIEW -->
+    <!-- UBER DISPATCH & LOGISTICS TRACKER VIEW -->
     <div id="viewOrders" class="app-view">
-        <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Unified Checkout & Staged Settlement</h3>
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
+            <span>🚗 UBER-STYLE DISPATCH & LIVE LOGISTICS MAP</span>
         </div>
 
         <div class="checkout-panel">
-            <h3>1. Interactive Pickup & Drop-Off Coordinates</h3>
-            <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 8px;">Click anywhere on the map or use presets to set precise coordinates without any mathematical error.</p>
+            <h3>1. Interactive Map & Delivery Telemetry</h3>
+            <div id="mapContainer"></div>
             
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Pickup Address / Name</label>
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-top:6px;">Pickup Location</label>
             <input type="text" id="pickupInput" value="Nairobi CBD (Kenyatta Ave)" oninput="updateCoordsFromInputs()">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-bottom:8px;">
-                <input type="number" id="pickupLat" value="-1.286389" step="0.000001" placeholder="Pickup Lat" oninput="recalculateUnifiedTotal()">
-                <input type="number" id="pickupLng" value="36.817223" step="0.000001" placeholder="Pickup Lng" oninput="recalculateUnifiedTotal()">
-            </div>
             
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Drop-off Destination</label>
-            <input type="text" id="destinationInput" value="Westlands (Sarit Centre)" placeholder="Destination name..." oninput="updateCoordsFromInputs()">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-bottom:8px;">
-                <input type="number" id="destLat" value="-1.265556" step="0.000001" placeholder="Dest Lat" oninput="recalculateUnifiedTotal()">
-                <input type="number" id="destLng" value="36.802778" step="0.000001" placeholder="Dest Lng" oninput="recalculateUnifiedTotal()">
-            </div>
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Drop-off Destination</label>
+            <input type="text" id="destinationInput" value="Westlands (Sarit Centre)" oninput="updateCoordsFromInputs()">
 
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">Vehicle / Transport Mode</label>
-            <select id="vehicleTypeSelect" onchange="recalculateUnifiedTotal()">
-                <option value="MOTORBIKE">🏍️ Boda (Motorbike - Fast & Precise)</option>
-                <option value="CAR">🚗 Car / Taxicab (Comfortable)</option>
-            </select>
+            <input type="hidden" id="pickupLat" value="-1.286389">
+            <input type="hidden" id="pickupLng" value="36.817223">
+            <input type="hidden" id="destLat" value="-1.265556">
+            <input type="hidden" id="destLng" value="36.802778">
+
             <div style="font-size: 0.75rem; color: var(--neon-green); margin-top:4px;">Calculated Haversine Distance: <strong id="calculatedDistanceDisplay">3.5 km</strong></div>
         </div>
 
         <div class="checkout-panel">
-            <h3>2. Dynamic Mathematical Split</h3>
+            <h3>2. Dynamic Settlement & Financial Split</h3>
             <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Product Amount:</span> <strong id="previewProduct">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Delivery Fee:</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
@@ -458,124 +393,30 @@
         </div>
 
         <div class="checkout-panel">
-            <h3>3. Secure Payment</h3>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">M-Pesa Phone Number</label>
-            <input type="text" id="custPhone" placeholder="2547XXXXXXXX" value="254721862397">
-            <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Authorize Payment & Hold Escrow</button>
+            <h3>3. Secure Dispatch Checkout</h3>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:4px;">M-Pesa / Mobile Phone</label>
+            <input type="text" id="custPhone" value="254721862397">
+            <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Engage Uber Dispatch & Escrow</button>
         </div>
 
         <div class="checkout-panel">
-            <h3>4. Your Active Orders & Status</h3>
+            <h3>4. Active Dispatch & Orderly Dismissal</h3>
             <div id="liveOrderListContainer">
-                <em style="color:var(--text-dim); font-size:0.75rem;">No active orders. Place an order to see status updates.</em>
+                <em style="color:var(--text-dim); font-size:0.75rem;">No active dispatch. Place order from storefront.</em>
             </div>
         </div>
     </div>
 
-    <!-- WALLET VIEW -->
-    <div id="viewWallet" class="app-view">
-        <div class="section-header" style="margin-bottom: 20px;">
-            <h3>User Balance & Transactions</h3>
-        </div>
-
-        <div class="checkout-panel" style="text-align: center; padding: 25px 15px;">
-            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px;" id="walletCurrencyLabel">ACCOUNT BALANCE</p>
-            <h2 style="font-size: 2rem; color: var(--neon-green); margin-bottom: 8px;"><span id="walletBalance">0.00</span></h2>
-            <div style="font-size: 0.65rem; color: var(--text-dim);" id="auditStatus">Synced & Reconciled</div>
-        </div>
-    </div>
-
-    <!-- PROFILE VIEW WITH SECURE USER ID/PASSPORT & FACE KYC -->
+    <!-- PROFILE & STATE VIEW -->
     <div id="viewProfile" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>My Account Profile & Sovereign KYC</h3>
+            <h3>User Profile & Session State</h3>
         </div>
-        
         <div class="checkout-panel">
-            <p><strong>Email:</strong> <span id="profileEmail">-</span></p>
-            <p style="margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">-</span></p>
-            <p style="margin-top: 6px;"><strong>Active Role:</strong> <span id="profileRole">USER</span></p>
-            <p style="margin-top: 6px;"><strong>Active Corridor:</strong> <span id="profileCorridor">Kenya (KES)</span></p>
-        </div>
-
-        <!-- USER SOVEREIGN KYC VERIFICATION PANEL -->
-        <div class="checkout-panel" id="userKycProfilePanel" style="margin-top: 15px;">
-            <h3 style="color: var(--neon-green);">🔒 Official ID/Passport & Face Verification</h3>
-            <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px;">Enter your exact legal name as it appears on your official document and upload your ID/Passport card and face photo from your phone or file gallery.</p>
-            
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Full Name (As in ID / Passport)</label>
-            <input type="text" id="profileFullName" placeholder="e.g. Robert Maina" value="Robert Maina">
-
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">ID Card or Passport Number</label>
-            <input type="text" id="profileIdOrPassportNo" placeholder="e.g. A1234567 or 32456789" value="32456789">
-
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Upload ID Card / Passport Document</label>
-            <input type="file" id="profileIdDocFile" accept="image/*" onchange="handleFileUpload(event, 'idDocPreviewInput')" style="padding: 6px; background:var(--dark-bg); margin-bottom:6px;">
-            <input type="text" id="idDocPreviewInput" placeholder="Document image data URL..." value="https://images.unsplash.com/photo-1544717305-2782549b5136?w=400">
-
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Upload Face Photo (Passport / Selfie)</label>
-            <input type="file" id="profileFaceFile" accept="image/*" onchange="handleFileUpload(event, 'facePreviewInput')" style="padding: 6px; background:var(--dark-bg); margin-bottom:6px;">
-            <input type="text" id="facePreviewInput" placeholder="Face photo image data URL..." value="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400">
-
-            <button onclick="submitUserSovereignKyc()" class="btn-cyan" style="margin-top: 5px;">Save & Verify Sovereign Identity</button>
-        </div>
-
-        <!-- SHOP OWNER REGISTRATION & UNLIMITED PRODUCT/IMAGE MANAGER -->
-        <div class="checkout-panel role-restricted-shop" id="shopRegisterPanel" style="margin-top: 15px; display: none;">
-            <h3>🏬 Register Shop / Hotel / Supermarket</h3>
-            <input type="text" id="regShopName" placeholder="Shop/Hotel/Supermarket Name">
-            <input type="text" id="shopIdNumber" placeholder="Business ID Number" value="">
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Shop Photo Link (Base64 or URL)</label>
-            <input type="text" id="regShopImage" placeholder="https://images.unsplash.com/..." value="https://images.unsplash.com/photo-1542838132-92c53300491e?w=400">
-            
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:8px;">
-                <input type="number" id="shopLat" value="-1.286389" step="0.000001" placeholder="Shop Lat">
-                <input type="number" id="shopLng" value="36.817223" step="0.000001" placeholder="Shop Lng">
-            </div>
-            <button type="button" onclick="autoDetectShopLocation()" style="background:#222e3c; color:var(--cyan); margin-bottom:10px;">📍 Auto-Detect Real Place Geolocation</button>
-
-            <button onclick="registerShopAccount()" class="btn-cyan">Complete Shop Registration</button>
-        </div>
-
-        <div class="checkout-panel role-restricted-shop" id="productAddPanel" style="margin-top: 15px; display:none;">
-            <h3>📸 Add Unlimited Products with Real Images & Prices</h3>
-            <input type="hidden" id="registeredShopId">
-            
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Product Name</label>
-            <input type="text" id="newProdName" placeholder="e.g. Organic Fresh Basket or Burger Combo">
-
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Product Price</label>
-            <input type="number" id="newProdPrice" placeholder="e.g. 1500">
-
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Category</label>
-            <select id="newProdCategory">
-                <option value="SUPERMARKET">Supermarket</option>
-                <option value="RESTAURANT">Restaurant</option>
-                <option value="HOTEL">Hotel</option>
-            </select>
-
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-bottom:2px;">Upload Real Product Picture (From Device Gallery)</label>
-            <input type="file" id="newProdImageFile" accept="image/*" onchange="handleFileUpload(event, 'newProdImageInput')" style="padding: 6px; background:var(--dark-bg); margin-bottom:6px;">
-            <input type="text" id="newProdImageInput" placeholder="Image URL or Base64 data..." value="https://images.unsplash.com/photo-1542838132-92c53300491e?w=400">
-
-            <button onclick="addProductToCatalog()" class="btn-cyan" style="margin-top: 5px;">+ Publish Product Instantly</button>
-
-            <h4 style="font-size:0.8rem; color:var(--neon-green); margin: 15px 0 6px 0;">Active Shop Inventory Manager (Instant Out-of-Stock Deletion)</h4>
-            <div id="shopInventoryList" style="max-height: 180px; overflow-y: auto;">
-                <em style="color:var(--text-dim); font-size:0.75rem;">Register shop to manage inventory.</em>
-            </div>
-        </div>
-
-        <!-- RIDER REGISTRATION PANEL -->
-        <div class="checkout-panel role-restricted-driver" id="driverSovereignRegisterPanel" style="margin-top: 15px; display: none;">
-            <h3>🚗🛵 Complete Rider & Vehicle KYC</h3>
-            <input type="text" id="regFullName" placeholder="Full Legal Name">
-            <input type="text" id="regDriverIdNumber" placeholder="National ID Number">
-            <input type="text" id="regLicenseNumber" placeholder="Driving License Number">
-            <input type="text" id="regNumberPlate" placeholder="Vehicle Number Plate e.g. KMXX 123A">
-            <input type="text" id="regPassportPhoto" placeholder="Passport Photo URL/Base64" value="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400">
-            <input type="text" id="regPsvBadge" placeholder="PSV Badge Number">
-            <button onclick="submitSovereignDriverRegistration()" class="btn-cyan" style="margin-top: 10px;">Submit Full Rider KYC</button>
+            <p><strong>Email:</strong> <span id="profileEmail">robert.maina@rds.com</span></p>
+            <p style="margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">254721862397</span></p>
+            <p style="margin-top: 6px;"><strong>Name:</strong> Robert Maina</p>
+            <p style="margin-top: 6px;"><strong>KYC Status:</strong> <span style="color: var(--neon-green);">Sovereign Verified</span></p>
         </div>
     </div>
 
@@ -584,16 +425,15 @@
             <strong id="cartItemCount" style="color: var(--neon-green); display: block; font-size: 0.85rem;">0 Items</strong>
             <span id="cartTotalSum" style="font-size: 0.75rem; color: var(--text-dim);">0</span>
         </div>
-        <button style="width: auto; padding: 6px 14px; font-size: 0.75rem;">Proceed ➔</button>
+        <button style="width: auto; padding: 6px 14px; font-size: 0.75rem;">Proceed to Dispatch ➔</button>
     </div>
 
     <input type="hidden" id="storeBusinessId" value="BIZ-KE">
     <input type="hidden" id="storeCurrency" value="KES">
 
     <div class="bottom-nav" id="bottomNav" style="display: none;">
-        <a class="nav-item active" onclick="switchTab('viewHome', this)"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</a>
-        <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Checkout</a>
-        <a class="nav-item" onclick="switchTab('viewWallet', this)"><svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>Wallets</a>
+        <a class="nav-item active" onclick="switchTab('viewHome', this)"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Storefront</a>
+        <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Dispatch Tracker</a>
         <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
     </div>
 
@@ -603,7 +443,6 @@
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
         let currentUser = null;
-        let selectedOnboardingRole = 'USER';
         let allProductsCache = [];
         let activeCategory = 'ALL';
         let cart = {}; 
@@ -616,10 +455,7 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             map = L.map('mapContainer').setView([-1.286389, 36.817223], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
 
             map.on('click', (e) => {
                 document.getElementById('destLat').value = e.latlng.lat.toFixed(6);
@@ -629,30 +465,13 @@
                 recalculateUnifiedTotal();
             });
 
-            loadDynamicShopsAndCorridors();
             updateMapMarkersAndPolyline();
-
-            socket.on('catalogUpdated', () => {
-                loadStoreCatalog();
-                const shopId = document.getElementById('registeredShopId').value;
-                if (shopId) loadShopInventory(shopId);
-            });
-
-            socket.on('orderListUpdated', () => {
-                fetchLiveOrders();
-            });
+            socket.on('orderListUpdated', () => { fetchLiveOrders(); });
         });
-
-        function selectOnboardingRole(role, el) {
-            selectedOnboardingRole = role;
-            document.querySelectorAll('.role-card-btn').forEach(b => b.classList.remove('selected'));
-            if(el) el.classList.add('selected');
-        }
 
         async function requestOtp() {
             const phone = document.getElementById('authPhone').value.trim();
             const email = document.getElementById('authEmail').value.trim();
-            if (!phone) { alert("Please enter phone number"); return; }
             const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone, email })
@@ -662,7 +481,7 @@
                 alert(data.message);
                 document.getElementById('phoneStep').style.display = 'none';
                 document.getElementById('otpStep').style.display = 'block';
-            } else { alert(data.error); }
+            }
         }
 
         async function verifyOtpAndEnter() {
@@ -671,112 +490,17 @@
             const otp = document.getElementById('authOtp').value.trim();
             const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, otp, role: selectedOnboardingRole, email })
+                body: JSON.stringify({ phone, otp, role: 'USER', email })
             });
             const data = await res.json();
             if (data.success) {
                 currentUser = data.user;
-                localStorage.setItem("userId", currentUser.id);
-                document.getElementById('profileEmail').innerText = currentUser.email || email;
-                document.getElementById('profilePhone').innerText = currentUser.phone;
-                document.getElementById('profileRole').innerText = currentUser.role;
-
-                applyRolePortalLayout(currentUser.role);
-
                 document.getElementById('bottomNav').style.display = 'flex';
                 switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
                 loadStoreCatalog();
                 fetchLiveOrders();
                 setTimeout(() => { if(map) map.invalidateSize(); }, 300);
-            } else { alert(data.error); }
-        }
-
-        function handleFileUpload(event, targetInputId) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(uploadEvent) {
-                document.getElementById(targetInputId).value = uploadEvent.target.result;
-                alert("File loaded successfully from device storage!");
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function submitUserSovereignKyc() {
-            if (!currentUser) return;
-            const fullName = document.getElementById('profileFullName').value.trim();
-            const idOrPassportNo = document.getElementById('profileIdOrPassportNo').value.trim();
-            const idOrPassportImage = document.getElementById('idDocPreviewInput').value.trim();
-            const facePhoto = document.getElementById('facePreviewInput').value.trim();
-
-            if (!fullName || !idOrPassportNo) {
-                alert("Please provide your full legal name and ID/Passport number.");
-                return;
             }
-
-            const res = await fetch(`${API_BASE}/api/user/update-profile-kyc`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: currentUser.id, fullName, idOrPassportNo, idOrPassportImage, facePhoto })
-            });
-            const data = await res.json();
-            if (data.success) {
-                currentUser = data.user;
-                alert(data.message);
-            } else {
-                alert(data.error);
-            }
-        }
-
-        function applyRolePortalLayout(role) {
-            const driverPanels = document.querySelectorAll('.role-restricted-driver');
-            const shopPanels = document.querySelectorAll('.role-restricted-shop');
-
-            driverPanels.forEach(p => p.style.display = (role === 'DRIVER') ? 'block' : 'none');
-            shopPanels.forEach(p => p.style.display = (role === 'SHOP') ? 'block' : 'none');
-
-            if (role === 'USER') {
-                document.getElementById('portalTitleBanner').innerText = '🌐 RDS STAGE 92 USER PORTAL';
-            } else if (role === 'SHOP') {
-                document.getElementById('portalTitleBanner').innerText = '🏬 RDS STAGE 92 MERCHANT PORTAL';
-            } else if (role === 'DRIVER') {
-                document.getElementById('portalTitleBanner').innerText = '🏍️ RDS STAGE 92 RIDER PORTAL';
-            }
-        }
-
-        async function fetchLiveOrders() {
-            const bizId = document.getElementById('storeBusinessId').value;
-            try {
-                const res = await fetch(`${API_BASE}/api/orders/live`, { headers: { "x-business-id": bizId } });
-                const data = await res.json();
-                if (data.success && data.orders) {
-                    renderLiveOrderList(data.orders);
-                }
-            } catch (e) {}
-        }
-
-        function renderLiveOrderList(orders) {
-            const container = document.getElementById('liveOrderListContainer');
-            if (!orders || orders.length === 0) {
-                container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No active orders. Place an order to see status updates.</em>';
-                return;
-            }
-            let html = '';
-            orders.slice(-5).reverse().forEach(o => {
-                const statusColor = o.status === 'COMPLETED' ? 'var(--neon-green)' : (o.status === 'DISPATCHED' ? 'var(--cyan)' : 'var(--gold)');
-                html += `
-                    <div class="live-order-card">
-                        <div class="live-order-header">
-                            <span>🆔 ${o.id}</span>
-                            <span style="color: ${statusColor};">${o.status}</span>
-                        </div>
-                        <div style="font-size: 0.75rem; color: #fff;">
-                            <div>📍 ${o.pickup} ➔ ${o.destination}</div>
-                            <div>💰 Total: <strong>${o.currency} ${o.total}</strong></div>
-                        </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
         }
 
         function updateMapMarkersAndPolyline() {
@@ -789,10 +513,10 @@
             if (destinationMarker) map.removeLayer(destinationMarker);
             if (routePolyline) map.removeLayer(routePolyline);
 
-            pickupMarker = L.marker([pLat, pLng], {title: "Pickup"}).addTo(map).bindPopup("📦 Pickup Point");
-            destinationMarker = L.marker([dLat, dLng], {title: "Destination"}).addTo(map).bindPopup("🏁 Drop-off Destination");
+            pickupMarker = L.marker([pLat, pLng]).addTo(map).bindPopup("📦 Jumia Storefront Hub");
+            destinationMarker = L.marker([dLat, dLng]).addTo(map).bindPopup("🏁 Uber Delivery Destination");
             routePolyline = L.polyline([[pLat, pLng], [dLat, dLng]], {color: '#38bdf8', weight: 4}).addTo(map);
-            map.fitBounds(routePolyline.getBounds(), {padding: [50, 50]});
+            map.fitBounds(routePolyline.getBounds(), {padding: [40, 40]});
         }
 
         function updateCoordsFromInputs() {
@@ -800,168 +524,16 @@
             recalculateUnifiedTotal();
         }
 
-        async function loadDynamicShopsAndCorridors() {
-            try {
-                const res = await fetch(`${API_BASE}/api/shops`);
-                const data = await res.json();
-                if (data.success && data.shops) {
-                    const selector = document.getElementById('dynamicCorridorSelector');
-                    let html = '';
-                    data.shops.forEach(s => {
-                        const sId = s.id || s.shopId;
-                        const sName = s.name || s.merchant || "Shop Hub";
-                        const sCurr = s.currency || "KES";
-                        const isActive = document.getElementById('storeBusinessId').value === sId ? 'active' : '';
-                        html += `<div class="corridor-btn ${isActive}" onclick="switchCorridor('${sId}', '${sName}', '${sCurr}', this)">🏬 ${sName}</div>`;
-                    });
-                    selector.innerHTML = html;
-                }
-            } catch (e) {}
-        }
-
-        function autoDetectShopLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    document.getElementById('shopLat').value = position.coords.latitude.toFixed(6);
-                    document.getElementById('shopLng').value = position.coords.longitude.toFixed(6);
-                    alert("Real place geolocation successfully detected (100% precise)!");
-                }, () => { alert("Geolocation access denied. Using default Nairobi coordinates."); });
-            } else { alert("Geolocation is not supported by this browser."); }
-        }
-
-        async function registerShopAccount() {
-            const shopName = document.getElementById('regShopName').value.trim();
-            const idNumber = document.getElementById('shopIdNumber').value.trim() || (currentUser ? currentUser.idOrPassportNo : "12345");
-            const shopImage = document.getElementById('regShopImage').value.trim();
-            const lat = Number(document.getElementById('shopLat').value);
-            const lng = Number(document.getElementById('shopLng').value);
-
-            if (!shopName) { alert("Shop name is required"); return; }
-
-            const res = await fetch(`${API_BASE}/api/shop/register`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    userId: currentUser.id, shopName, idNumber,
-                    email: currentUser.email, phone: currentUser.phone,
-                    shopImageBase64: shopImage,
-                    location: { lat, lng }
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(data.message);
-                document.getElementById('registeredShopId').value = data.shopId;
-                document.getElementById('shopRegisterPanel').style.display = 'none';
-                document.getElementById('productAddPanel').style.display = 'block';
-                loadDynamicShopsAndCorridors();
-                loadShopInventory(data.shopId);
-                loadStoreCatalog();
-            } else { alert(data.error); }
-        }
-
-        async function addProductToCatalog() {
-            const shopId = document.getElementById('registeredShopId').value;
-            const name = document.getElementById('newProdName').value.trim();
-            const price = document.getElementById('newProdPrice').value.trim();
-            const category = document.getElementById('newProdCategory').value;
-            const image = document.getElementById('newProdImageInput').value.trim();
-
-            if (!shopId || !name || !price) {
-                alert("Please provide product name and price.");
-                return;
-            }
-
-            const res = await fetch(`${API_BASE}/api/products/add`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ shopId, name, price, category, image })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(data.message);
-                document.getElementById('newProdName').value = '';
-                document.getElementById('newProdPrice').value = '';
-                loadStoreCatalog();
-                loadShopInventory(shopId);
-            } else { alert(data.error); }
-        }
-
-        async function loadShopInventory(shopId) {
-            try {
-                const res = await fetch(`${API_BASE}/api/products?shopId=${shopId}`, { headers: { "x-business-id": shopId } });
-                const data = await res.json();
-                const container = document.getElementById('shopInventoryList');
-                if (!data.success || !data.products || data.products.length === 0) {
-                    container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No products in inventory yet. Add your first product above.</em>';
-                    return;
-                }
-                let html = '';
-                data.products.forEach(p => {
-                    html += `
-                        <div class="inventory-item-row">
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <img src="${p.image}" style="width:30px; height:30px; object-fit:cover; border-radius:4px;">
-                                <div><strong>${p.name}</strong><br><span style="color:var(--stage-purple);">${data.currency} ${p.price}</span></div>
-                            </div>
-                            <button onclick="deleteProductFromInventory('${p.id}', '${shopId}')" style="background:var(--alert-red); color:#fff; width:auto; padding:4px 8px; font-size:0.65rem;">🗑️ Out of Stock / Delete</button>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            } catch (e) {}
-        }
-
-        async function deleteProductFromInventory(productId, shopId) {
-            if (!confirm("Remove this product instantly as out of stock?")) return;
-            try {
-                const res = await fetch(`${API_BASE}/api/products/${productId}`, {
-                    method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ shopId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    loadStoreCatalog();
-                    loadShopInventory(shopId);
-                }
-            } catch (e) {}
-        }
-
-        async function submitSovereignDriverRegistration() {
-            const fullName = document.getElementById('regFullName').value.trim();
-            const idNumber = document.getElementById('regDriverIdNumber').value.trim() || currentUser.idOrPassportNo;
-            const licenseNumber = document.getElementById('regLicenseNumber').value.trim();
-            const numberPlate = document.getElementById('regNumberPlate').value.trim();
-            const psvBadge = document.getElementById('regPsvBadge').value.trim();
-            const passportPhoto = document.getElementById('regPassportPhoto').value.trim();
-            const bizId = document.getElementById('storeBusinessId').value;
-
-            if (!fullName || !licenseNumber || !numberPlate) {
-                alert("Please fill in all mandatory Rider KYC fields.");
-                return;
-            }
-
-            const res = await fetch(`${API_BASE}/api/driver/register-sovereign`, {
-                method: "POST", headers: { "Content-Type": "application/json", "x-business-id": bizId },
-                body: JSON.stringify({
-                    userId: currentUser.id, fullName, idNumber, licenseNumber, numberPlate,
-                    email: currentUser.email, phone: currentUser.phone,
-                    facePhotoBase64: passportPhoto, psvBadgeBase64: psvBadge, businessId: bizId
-                })
-            });
-            const data = await res.json();
-            if (data.success) alert(data.message);
-            else alert(data.error);
-        }
-
-        function switchTab(viewId, el) {
-            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
-            document.getElementById(viewId).classList.add('active-view');
-            document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
+        function switchCorridor(tenantId, locationName, currencyCode, el) {
+            document.querySelectorAll('.corridor-btn').forEach(b => b.classList.remove('active'));
             if(el) el.classList.add('active');
-            window.scrollTo(0, 0);
-            if (viewId === 'viewWallet') fetchSovereignBalance();
-            if (viewId === 'viewOrders') fetchLiveOrders();
-            if (viewId === 'viewHome' && map) setTimeout(() => { map.invalidateSize(); }, 200);
+            document.getElementById('storeBusinessId').value = tenantId;
+            document.getElementById('storeCurrency').value = currencyCode;
+            document.getElementById('tenantBadge').innerText = tenantId;
+            document.getElementById('corridorLabel').innerText = locationName;
+            cart = {};
+            recalculateCartSummary();
+            loadStoreCatalog();
         }
 
         async function loadStoreCatalog() {
@@ -973,7 +545,6 @@
                 document.getElementById('activeCurrencyLabel').innerText = data.currency || "KES";
                 document.getElementById('storeCurrency').value = data.currency || "KES";
                 renderCatalog(allProductsCache);
-                fetchSovereignBalance();
             } catch (err) {}
         }
 
@@ -993,12 +564,11 @@
             let html = '';
             const curr = document.getElementById('storeCurrency').value;
             products.forEach(p => {
-                const realImage = p.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80';
                 const qty = cart[p.id] ? cart[p.id].qty : 0;
                 const unitPrice = Number(p.price) || 0;
                 html += `
                     <div class="product-card">
-                        <div class="image-wrapper"><span class="merchant-badge">${p.merchant || 'Vendor'}</span><img src="${realImage}" class="product-img"></div>
+                        <div class="image-wrapper"><span class="merchant-badge">${p.merchant || 'Vendor'}</span><img src="${p.image}" class="product-img"></div>
                         <div class="product-info">
                             <div><div class="product-title">${p.name}</div><div class="product-price">${curr} ${unitPrice.toFixed(2)}</div></div>
                             <div class="quantity-stepper">
@@ -1049,8 +619,6 @@
             const pLng = Number(document.getElementById('pickupLng').value) || 36.817223;
             const dLat = Number(document.getElementById('destLat').value) || -1.265556;
             const dLng = Number(document.getElementById('destLng').value) || 36.802778;
-
-            const vehicleType = document.getElementById('vehicleTypeSelect').value;
             const bizId = document.getElementById('storeBusinessId').value;
             const curr = document.getElementById('storeCurrency').value;
 
@@ -1062,7 +630,7 @@
                         itemPriceTotal: totalPrice,
                         pickupCoords: { lat: pLat, lng: pLng },
                         destinationCoords: { lat: dLat, lng: dLng },
-                        vehicleType, businessId: bizId
+                        vehicleType: "MOTORBIKE", businessId: bizId
                     })
                 });
                 const data = await res.json();
@@ -1077,26 +645,13 @@
             } catch (e) {}
         }
 
-        function switchCorridor(tenantId, locationName, currencyCode, el) {
-            document.querySelectorAll('.corridor-btn').forEach(b => b.classList.remove('active'));
-            if (el && el.classList) el.classList.add('active');
-            document.getElementById('storeBusinessId').value = tenantId;
-            document.getElementById('storeCurrency').value = currencyCode;
-            document.getElementById('tenantBadge').innerText = tenantId;
-            document.getElementById('corridorLabel').innerText = locationName;
-            document.getElementById('profileCorridor').innerText = `${locationName} (${currencyCode})`;
-            cart = {};
-            recalculateCartSummary();
-            loadStoreCatalog();
-            fetchLiveOrders();
-        }
-
         async function triggerUnifiedCheckout() {
             let totalPrice = 0;
             for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
+            if (totalPrice <= 0) { alert("Please add items to your Jumia cart first!"); return; }
+
             const bizId = document.getElementById('storeBusinessId').value;
             const phone = currentUser ? currentUser.phone : document.getElementById('custPhone').value.trim();
-            const vehicleType = document.getElementById('vehicleTypeSelect').value;
             const pickup = document.getElementById('pickupInput').value.trim();
             const destination = document.getElementById('destinationInput').value.trim();
 
@@ -1114,29 +669,81 @@
                         phone, itemPriceTotal: totalPrice,
                         pickupCoords: { lat: pLat, lng: pLng },
                         destinationCoords: { lat: dLat, lng: dLng },
-                        vehicleType, pickup, destination, businessId: bizId,
+                        vehicleType: "MOTORBIKE", pickup, destination, businessId: bizId,
                         userId: currentUser ? currentUser.id : 'ANONYMOUS'
                     })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`Checkout initiated and Escrow secured! Distance: ${data.distanceKm} km, Total: ${curr} ${data.split.userPays}`);
+                    alert(`Uber Dispatch Engaged! Order ID: ${data.orderId} secured in Escrow.`);
+                    switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
                     fetchLiveOrders();
                 } else { alert(data.error); }
-            } catch (e) { alert("Checkout error."); }
+            } catch (e) { alert("Checkout dispatch error."); }
         }
 
-        async function fetchSovereignBalance() {
-            if (!currentUser) return;
-            const ownerId = currentUser.id;
+        async function fetchLiveOrders() {
+            const bizId = document.getElementById('storeBusinessId').value;
             try {
-                const response = await fetch(`${API_BASE}/wallets/${ownerId}/balance`);
-                const data = await response.json();
-                if (data.success) {
-                    document.getElementById('walletCurrencyLabel').innerText = `ACCOUNT BALANCE (${data.currency})`;
-                    document.getElementById('walletBalance').innerText = Number(data.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                const res = await fetch(`${API_BASE}/api/orders/live`, { headers: { "x-business-id": bizId } });
+                const data = await res.json();
+                if (data.success && data.orders) {
+                    renderLiveOrderList(data.orders);
                 }
             } catch (e) {}
+        }
+
+        function renderLiveOrderList(orders) {
+            const container = document.getElementById('liveOrderListContainer');
+            if (!orders || orders.length === 0) {
+                container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No active dispatch. Place order from storefront.</em>';
+                return;
+            }
+            let html = '';
+            orders.slice(-4).reverse().forEach(o => {
+                const isDismissed = o.status === 'ORDERLY_DISMISSED';
+                const statusColor = isDismissed ? 'var(--alert-red)' : 'var(--neon-green)';
+                html += `
+                    <div class="live-order-card">
+                        <div class="live-order-header">
+                            <span>🆔 ${o.id}</span>
+                            <span style="color: ${statusColor};">${o.status}</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #fff; margin-bottom: 6px;">
+                            <div>📍 ${o.pickup} ➔ ${o.destination}</div>
+                            <div>💰 Total: <strong>${o.currency} ${o.total}</strong></div>
+                        </div>
+                        ${!isDismissed ? `<button onclick="dismissOrder('${o.id}')" style="background:var(--alert-red); color:#fff; padding:6px; font-size:0.65rem;">🛑 Orderly Dismissal & Rollback</button>` : '<em style="color:var(--text-dim); font-size:0.65rem;">Process safely rolled back & refunded.</em>'}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        async function dismissOrder(orderId) {
+            if (!confirm("Are you sure you want to dismiss this dispatch request? This will safely roll back processing steps, release escrow, and return you to the storefront.")) return;
+            const bizId = document.getElementById('storeBusinessId').value;
+            try {
+                const res = await fetch(`${API_BASE}/api/orders/dismiss`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ orderId, businessId: bizId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    fetchLiveOrders();
+                } else { alert(data.error); }
+            } catch (e) { alert("Dismissal error."); }
+        }
+
+        function switchTab(viewId, el) {
+            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
+            document.getElementById(viewId).classList.add('active-view');
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
+            if(el) el.classList.add('active');
+            window.scrollTo(0, 0);
+            if (viewId === 'viewOrders' && map) setTimeout(() => { map.invalidateSize(); }, 200);
         }
     </script>
 </body>

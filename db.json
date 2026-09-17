@@ -102,7 +102,7 @@
       "phone": "254721862397",
       "email": "robert.maina@rds.com",
       "otp": "1234",
-      "expires": 1789607138444
+      "expires": 1789666358810
     }
   ],
   "orders": [
@@ -509,7 +509,7 @@
       "vehicleType": "MOTORBIKE",
       "riderId": "DRV_01",
       "driverId": "DRV_01",
-      "status": "RIDER_ASSIGNED",
+      "status": "ORDERLY_DISMISSED",
       "createdAt": 1789594081323,
       "customerPhone": "254721862397",
       "checkoutRequestId": "ws_CO_170920260027522721862397"
@@ -540,10 +540,90 @@
       "vehicleType": "MOTORBIKE",
       "riderId": "DRV_01",
       "driverId": "DRV_01",
-      "status": "RIDER_ASSIGNED",
+      "status": "ORDERLY_DISMISSED",
       "createdAt": 1789600490750,
       "customerPhone": "254721862397",
       "checkoutRequestId": "ws_CO_170920260214424721862397"
+    },
+    {
+      "id": "ORD_ST94_1789665897132_32390",
+      "userId": "USR_1789526748571_70704",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 650,
+      "deliveryFee": 332,
+      "distanceKm": 2.82,
+      "total": 995,
+      "pickup": "Nairobi CBD (Kenyatta Ave)",
+      "destination": "Westlands (Sarit Centre)",
+      "pickupCoords": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "destinationCoords": {
+        "lat": -1.265556,
+        "lng": 36.802778
+      },
+      "vehicleType": "MOTORBIKE",
+      "riderId": "DRV_01",
+      "status": "ORDERLY_DISMISSED",
+      "createdAt": 1789665897132,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_170920262024591721862397"
+    },
+    {
+      "id": "ORD_ST94_1789665917204_71715",
+      "userId": "USR_1789526748571_70704",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 650,
+      "deliveryFee": 332,
+      "distanceKm": 2.82,
+      "total": 995,
+      "pickup": "Nairobi CBD (Kenyatta Ave)",
+      "destination": "Westlands (Sarit Centre)",
+      "pickupCoords": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "destinationCoords": {
+        "lat": -1.265556,
+        "lng": 36.802778
+      },
+      "vehicleType": "MOTORBIKE",
+      "riderId": "DRV_01",
+      "status": "ORDERLY_DISMISSED",
+      "createdAt": 1789665917204,
+      "customerPhone": "254721862397"
+    },
+    {
+      "id": "ORD_ST94_1789666161296_61746",
+      "userId": "USR_1789526748571_70704",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 1360,
+      "deliveryFee": 332,
+      "distanceKm": 2.82,
+      "total": 1719.2,
+      "pickup": "Nairobi CBD (Kenyatta Ave)",
+      "destination": "Westlands (Sarit Centre)",
+      "pickupCoords": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "destinationCoords": {
+        "lat": -1.265556,
+        "lng": 36.802778
+      },
+      "vehicleType": "MOTORBIKE",
+      "riderId": "DRV_01",
+      "status": "UBER_DISPATCH_ACTIVE",
+      "createdAt": 1789666161296,
+      "customerPhone": "254721862397",
+      "checkoutRequestId": "ws_CO_170920262029262721862397"
     }
   ],
   "escrow": [
@@ -655,7 +735,7 @@
       "businessId": "BIZ-KE",
       "amount": 1658,
       "region": "KE",
-      "status": "HELD",
+      "status": "REFUNDED_RELEASED",
       "createdAt": 1789594081323
     },
     {
@@ -664,8 +744,29 @@
       "businessId": "BIZ-KE",
       "amount": 332,
       "region": "KE",
-      "status": "HELD",
+      "status": "REFUNDED_RELEASED",
       "createdAt": 1789600490750
+    },
+    {
+      "escrowId": "ESC_1789665897132_96558",
+      "orderId": "ORD_ST94_1789665897132_32390",
+      "businessId": "BIZ-KE",
+      "amount": 995,
+      "status": "REFUNDED_RELEASED"
+    },
+    {
+      "escrowId": "ESC_1789665917204_62438",
+      "orderId": "ORD_ST94_1789665917204_71715",
+      "businessId": "BIZ-KE",
+      "amount": 995,
+      "status": "REFUNDED_RELEASED"
+    },
+    {
+      "escrowId": "ESC_1789666161296_98856",
+      "orderId": "ORD_ST94_1789666161296_61746",
+      "businessId": "BIZ-KE",
+      "amount": 1719.2,
+      "status": "HELD"
     }
   ],
   "wallets": [
@@ -726,6 +827,8 @@
       "currency": "KES"
     }
   ],
+  "shops": [],
+  "catalogs": {},
   "ledger_entries": [
     {
       "id": "LEDGER_1789538185324_5072",
@@ -903,8 +1006,6 @@
       }
     }
   ],
-  "shops": [],
-  "catalogs": {},
   "driver_telemetry": {
     "USR_1789526748571_70704": {
       "lat": -1.2135396176470588,
