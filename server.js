@@ -1,6 +1,6 @@
 // ==========================================
-// RDS - STAGE 96 SOVEREIGN ON-DEMAND COMMERCE & LOGISTICS SIMULATOR
-// Jumia Storefront + Uber Dispatch + Orderly Dismissal + CBK/World Bank Compliance & AML
+// RDS - STAGE 98 SOVEREIGN ON-DEMAND COMMERCE & LOGISTICS SIMULATOR
+// Jumia Storefront + Uber Dispatch + Orderly Dismissal + Basel III & CBK Compliance
 // ==========================================
 
 const express = require("express");
@@ -133,6 +133,7 @@ function defaultDB() {
       { riderId: "DRV_01", balance: 0, currency: "KES" },
       { riderId: "RDR_01", balance: 0, currency: "KES" }
     ],
+    sar_queue: [],
     shops: [],
     catalogs: {}
   };
@@ -152,6 +153,7 @@ function ensureState() {
   if (!Array.isArray(data.escrow)) data.escrow = [];
   if (!Array.isArray(data.wallets)) data.wallets = [];
   if (!Array.isArray(data.rider_wallets)) data.rider_wallets = [];
+  if (!Array.isArray(data.sar_queue)) data.sar_queue = [];
   if (!Array.isArray(data.shops)) data.shops = [];
   if (!data.catalogs || typeof data.catalogs !== 'object') data.catalogs = {};
 }
@@ -209,7 +211,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_96_SUPER_APP_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_98_SUPER_APP_ONLINE", time: Date.now() }));
 
 app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     try {
@@ -221,12 +223,12 @@ app.get('/api/orders/live', enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// STAGE 96 NEW COMPLIANCE & AML ADMIN ENDPOINTS
+// STAGE 98 BASEL III & SAR COMPLIANCE DASHBOARD ENDPOINTS
 app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
         const tenantOrders = data.orders.filter(o => o.businessId === req.tenantId || req.tenantId === "BIZ-KE");
-        return ok(res, { success: true, orders: tenantOrders, users: data.users });
+        return ok(res, { success: true, orders: tenantOrders, users: data.users, sarQueue: data.sar_queue });
     } catch (err) {
         return fail(res, err.message, 500);
     }
@@ -240,6 +242,17 @@ app.post('/api/admin/toggle-aml', enforceTenantIsolation, async (req, res) => {
         if (!user) return fail(res, "User not found", 404);
         user.amlFlagged = !user.amlFlagged;
         user.riskScore = user.amlFlagged ? "98.5% (HIGH)" : "1.2% (LOW)";
+        
+        if (user.amlFlagged) {
+            data.sar_queue.push({
+                id: id("SAR"),
+                userId: user.id,
+                amount: "N/A (Manual Flag)",
+                reason: "Regulatory AML/PEP High-Risk Flag Triggered",
+                timestamp: Date.now()
+            });
+        }
+
         await saveDB();
         if (global.io && user.amlFlagged) {
             global.io.emit('amlAlertTriggered', { userId: user.id, name: user.fullName });
@@ -333,7 +346,7 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
         const tenant = req.tenantObj;
         const currencyCode = tenant.currency || "KES";
 
-        // AML check on checkout user
+        // AML & Risk Check
         const checkingUser = data.users.find(u => u.id === userId);
         if (checkingUser && checkingUser.amlFlagged) {
             return fail(res, "Transaction blocked by AML compliance policy. Account under regulatory review.", 403);
@@ -356,7 +369,18 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
 
         if (split.userPays <= 0) return fail(res, "Invalid checkout amount", 400);
 
-        const orderId = id("ORD_ST96");
+        // Basel III Threshold Check for Automatic SAR Generation (> 1,000,000 threshold simulation or high velocity)
+        if (split.userPays >= 1000000) {
+            data.sar_queue.push({
+                id: id("SAR"),
+                userId: userId || "ANONYMOUS",
+                amount: `${currencyCode} ${split.userPays}`,
+                reason: "High-Value Transaction Threshold Breached (>1M)",
+                timestamp: Date.now()
+            });
+        }
+
+        const orderId = id("ORD_ST98");
         const assignedRider = "DRV_01";
 
         const order = {
@@ -392,8 +416,8 @@ app.post("/api/checkout", enforceTenantIsolation, async (req, res) => {
                     BusinessShortCode: MPESA_CONFIG.shortCode, Password: password, Timestamp: timestamp,
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
-                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Stage 96`,
-                    TransactionDesc: `Stage 96 Escrow Checkout`
+                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Stage 98`,
+                    TransactionDesc: `Stage 98 Escrow Checkout`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
@@ -439,5 +463,5 @@ app.post('/api/orders/dismiss', enforceTenantIsolation, async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 96 GLOBAL COMPLIANCE & COMMERCE SIMULATOR ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 98 BASEL III & GLOBAL COMPLIANCE SIMULATOR ACTIVE ON PORT ${PORT}`);
 });

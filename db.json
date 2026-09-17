@@ -90,6 +90,17 @@
       "phone": "1234",
       "role": "USER",
       "createdAt": 1789602032840
+    },
+    {
+      "id": "USR_1789674342963_47256",
+      "phone": "254711999888",
+      "email": "audittest@rds.com",
+      "fullName": "Robert Maina",
+      "idOrPassportNo": "32456789",
+      "role": "USER",
+      "amlFlagged": true,
+      "riskScore": "98.5% (HIGH)",
+      "createdAt": 1789674342963
     }
   ],
   "otp_sessions": [
@@ -103,6 +114,12 @@
       "email": "robert.maina@rds.com",
       "otp": "1234",
       "expires": 1789671649197
+    },
+    {
+      "phone": "254711999888",
+      "email": "audittest@rds.com",
+      "otp": "1234",
+      "expires": 1789674629281
     }
   ],
   "orders": [
@@ -624,6 +641,60 @@
       "createdAt": 1789666161296,
       "customerPhone": "254721862397",
       "checkoutRequestId": "ws_CO_170920262029262721862397"
+    },
+    {
+      "id": "ORD_ST96_1789674369481_85893",
+      "userId": "YOUR_USER_ID",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 1500,
+      "deliveryFee": 332,
+      "distanceKm": 2.82,
+      "total": 1862,
+      "pickup": "Pickup Location",
+      "destination": "Drop-off Destination",
+      "pickupCoords": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "destinationCoords": {
+        "lat": -1.265556,
+        "lng": 36.802778
+      },
+      "vehicleType": "MOTORBIKE",
+      "riderId": "DRV_01",
+      "status": "UBER_DISPATCH_ACTIVE",
+      "createdAt": 1789674369481,
+      "customerPhone": "254711999888",
+      "checkoutRequestId": "ws_CO_170920262246102711999888"
+    },
+    {
+      "id": "ORD_ST96_1789674409953_31943",
+      "userId": "YOUR_USER_ID",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 1500,
+      "deliveryFee": 332,
+      "distanceKm": 2.82,
+      "total": 1862,
+      "pickup": "Pickup Location",
+      "destination": "Drop-off Destination",
+      "pickupCoords": {
+        "lat": -1.286389,
+        "lng": 36.817223
+      },
+      "destinationCoords": {
+        "lat": -1.265556,
+        "lng": 36.802778
+      },
+      "vehicleType": "MOTORBIKE",
+      "riderId": "DRV_01",
+      "status": "UBER_DISPATCH_ACTIVE",
+      "createdAt": 1789674409953,
+      "customerPhone": "254711999888",
+      "checkoutRequestId": "ws_CO_170920262246508711999888"
     }
   ],
   "escrow": [
@@ -766,6 +837,20 @@
       "orderId": "ORD_ST94_1789666161296_61746",
       "businessId": "BIZ-KE",
       "amount": 1719.2,
+      "status": "HELD"
+    },
+    {
+      "escrowId": "ESC_1789674369481_19090",
+      "orderId": "ORD_ST96_1789674369481_85893",
+      "businessId": "BIZ-KE",
+      "amount": 1862,
+      "status": "HELD"
+    },
+    {
+      "escrowId": "ESC_1789674409953_17152",
+      "orderId": "ORD_ST96_1789674409953_31943",
+      "businessId": "BIZ-KE",
+      "amount": 1862,
       "status": "HELD"
     }
   ],
