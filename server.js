@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 120 FULLY HARDENED SOVEREIGN OS & INTER-BANK CLEARINGHOUSE
+// RDS - STAGE 121 INTERACTIVE SHADOW-TRAP MANAGEMENT & COMPLIANCE ENGINE
 // Universal Support: Kenya (DCI/CID, FRC goAML v5.0.2, CBK RTGS), SWIFT ISO 20022
-// + 100% Functional Buttons + Shadow-Trap Protocol + Continuous Serving & SAR Generation
+// + Interactive Shadow-Trap Resolution + Disable/Clear Controls + Audit Integration
 // ==========================================
 
 const express = require("express");
@@ -99,7 +99,7 @@ async function recordImmutableAudit(actionType, actor, details) {
         ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
         : "GENESIS_ROOT_HASH_000000000000000000000000";
     
-    const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_120_HARDENED`;
+    const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_121_HARDENED`;
     const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
     const auditRecord = {
@@ -111,7 +111,7 @@ async function recordImmutableAudit(actionType, actor, details) {
         previousHash,
         currentHash,
         tamperProof: true,
-        cryptographicStandard: "STAGE_120_SHADOW_TRAP_VERIFIED"
+        cryptographicStandard: "STAGE_121_SHADOW_TRAP_RESOLVER"
     };
 
     data.immutable_audit_vault.push(auditRecord);
@@ -144,7 +144,27 @@ const saveDB = async () => {
   } catch (err) { console.error("DB save error", err); }
 };
 
-// 100% WORKING ENDPOINT: ISO 20022 WIRE DISPATCH WITH SHADOW-TRAP
+// ENDPOINT: FETCH ACTIVE SHADOW-TRAPS
+app.get('/api/admin/shadow-traps', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    return ok(res, { success: true, shadowTraps: data.shadow_trap_flags });
+});
+
+// ENDPOINT: RESOLVE AND DISABLE SHADOW-TRAP
+app.post('/api/admin/shadow-traps/resolve', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    const { trapId } = req.body;
+    const index = data.shadow_trap_flags.findIndex(t => t.trapId === trapId);
+    if (index !== -1) {
+        const resolved = data.shadow_trap_flags.splice(index, 1)[0];
+        await recordImmutableAudit("SHADOW_TRAP_RESOLVED_AND_DISABLED", { tenant: req.tenantId }, resolved);
+        await saveDB();
+        return ok(res, { success: true, message: `Shadow trap ${trapId} successfully resolved and disabled.` });
+    }
+    return fail(res, "Shadow trap not found", 404);
+});
+
+// ISO 20022 WIRE DISPATCH WITH SHADOW-TRAP
 app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -176,6 +196,8 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
             const trapRecord = {
                 trapId: id("TRAP"),
                 wireId,
+                amount: numericAmount,
+                beneficiary: beneficiaryName,
                 reason: "High-value velocity threshold crossed. Shadow-trap engaged for law enforcement capture.",
                 timestamp: Date.now()
             };
@@ -203,7 +225,7 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
     }
 });
 
-// 100% WORKING ENDPOINT: INTER-BANK CLEARING
+// INTER-BANK CLEARING
 app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -226,7 +248,7 @@ app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (re
     }
 });
 
-// 100% WORKING ENDPOINT: AI ENFORCEMENT AGENT
+// AI ENFORCEMENT AGENT
 app.post('/api/ai/autonomous-enforcement', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -251,7 +273,7 @@ app.post('/api/ai/autonomous-enforcement', enforceTenantIsolation, async (req, r
     }
 });
 
-// 100% WORKING ENDPOINT: DID PASS MINTING
+// DID PASS MINTING
 app.post('/api/did/register-pass', async (req, res) => {
     try {
         ensureState();
@@ -279,7 +301,7 @@ app.post('/api/did/register-pass', async (req, res) => {
     }
 });
 
-// 100% WORKING ENDPOINT: COMPLIANCE DASHBOARD
+// COMPLIANCE DASHBOARD
 app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -300,7 +322,7 @@ app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, r
     }
 });
 
-// 100% WORKING ENDPOINT: PRINTABLE AUDIT REPORT
+// PRINTABLE AUDIT REPORT
 app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -320,7 +342,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
         return res.send(`<!DOCTYPE html>
         <html>
         <head>
-            <title>RDS Stage 120 Official Sovereign Audit Report - ${req.tenantId}</title>
+            <title>RDS Stage 121 Official Sovereign Audit Report - ${req.tenantId}</title>
             <style>
                 body { font-family: Arial, sans-serif; color: #111; padding: 40px; margin: 0; }
                 h1 { font-size: 22px; margin-bottom: 5px; }
@@ -334,7 +356,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
         <body>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h1>RDS Sovereign Financial Operating System — Stage 120 Hardened Audit Report</h1>
+                    <h1>RDS Sovereign Financial Operating System — Stage 121 Hardened Audit Report</h1>
                     <div class="meta">Node Corridor: <strong>${req.tenantObj.name} (${req.tenantId})</strong> | Generated: ${new Date().toUTCString()}</div>
                 </div>
                 <button onclick="window.print()" style="background: #dc2626; color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">Print / Save PDF</button>
@@ -354,7 +376,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
                 </tbody>
             </table>
             <div class="footer">
-                <p><strong>Compliance & Regulatory Standard:</strong> FRC goAML v5.0.2 / CBK RTGS / SWIFT ISO 20022 / Shadow-Trap Hardened.</p>
+                <p><strong>Compliance & Regulatory Standard:</strong> FRC goAML v5.0.2 / CBK RTGS / SWIFT ISO 20022 / Shadow-Trap Managed.</p>
                 <p>This document is cryptographically immutable and legally binding for official regulatory and law enforcement verification.</p>
             </div>
         </body>
@@ -364,7 +386,6 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
     }
 });
 
-// 100% WORKING ENDPOINT: CHAIN VERIFICATION
 app.get('/api/admin/audit/verify-chain', async (req, res) => {
     ensureState();
     let isValid = true;
@@ -380,10 +401,9 @@ app.get('/api/admin/audit/verify-chain', async (req, res) => {
         }
     }
 
-    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "✅ Stage 120 Hardened Sovereign Lattice Cryptographic Chain 100% Valid." });
+    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "✅ Stage 121 Hardened Sovereign Lattice Cryptographic Chain 100% Valid." });
 });
 
-// 100% WORKING ENDPOINT: AUDIT SEARCH
 app.get('/api/audit/search', (req, res) => {
     ensureState();
     const query = (req.query.q || "").toLowerCase();
@@ -408,8 +428,8 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_120_HARDENED_OS_ACTIVE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_121_HARDENED_OS_ACTIVE", time: Date.now() }));
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 120 HARDENED SOVEREIGN OS (SHADOW-TRAP + GOAML) ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 121 HARDENED SOVEREIGN OS (SHADOW-TRAP MANAGER) ACTIVE ON PORT ${PORT}`);
 });
