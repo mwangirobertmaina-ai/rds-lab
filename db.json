@@ -126,6 +126,23 @@
           "Verified ID"
         ]
       }
+    },
+    {
+      "id": "USR_1789693049670_38715",
+      "fullName": "Robert Maina",
+      "phone": "254700000000",
+      "idOrPassportNo": "32456789",
+      "amlFlagged": false,
+      "riskScore": "1.1% (LOW)",
+      "kycStatus": "VERIFIED",
+      "riskProfile": {
+        "score": 1.1,
+        "level": "LOW",
+        "factors": [
+          "Third-Party Farbit API Sync"
+        ]
+      },
+      "createdAt": 1789693049670
     }
   ],
   "otp_sessions": [
@@ -144,7 +161,7 @@
       "phone": "254721862397",
       "email": "compliance@rds-forex.ke",
       "otp": "1234",
-      "expires": 1789691009985
+      "expires": 1789693367945
     }
   ],
   "active_sessions": [
@@ -203,6 +220,20 @@
       "phone": "254721862397",
       "role": "ADMIN",
       "loginTime": 1789690715817
+    },
+    {
+      "token": "8f6b8e68f42da4249413ee0f2c2e8a9987ed52c7853d094fc70836a4bb06215c",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "ADMIN",
+      "loginTime": 1789692820906
+    },
+    {
+      "token": "a21d1e4fd9640046b4920666adbcf97e62c0ca4ad9a401a83801b03dfb1f3215",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "ADMIN",
+      "loginTime": 1789693069104
     }
   ],
   "universal_connections": [
@@ -2518,6 +2549,72 @@
       "currentHash": "e03d9a176694bb0b6b2497e8648e3619eba3b0d6e52eeda63863bfa189234d3f",
       "tamperProof": true,
       "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789692820907_15868",
+      "timestamp": 1789692820906,
+      "actionType": "USER_LOGIN_VERIFIED",
+      "actor": {
+        "userId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "role": "ADMIN"
+      },
+      "previousHash": "e03d9a176694bb0b6b2497e8648e3619eba3b0d6e52eeda63863bfa189234d3f",
+      "currentHash": "68c8328fd712670880b2b0ccf4c98043f3f58c9f4bf3b2024b748549e30cb9a6",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789693049670_54150",
+      "timestamp": 1789693049670,
+      "actionType": "SMURFING_VELOCITY_TRIGGERED",
+      "actor": {
+        "userId": "USR_1789693049670_38715"
+      },
+      "details": {
+        "id": "VEL_1789693049670_13562",
+        "userId": "USR_1789693049670_38715",
+        "totalRollingAmount": 12000,
+        "transactionCount": 1,
+        "reason": "CBK/POCAMLA 24h Cross-Border Structuring & Smurfing Threshold Exceeded",
+        "timestamp": 1789693049670
+      },
+      "previousHash": "68c8328fd712670880b2b0ccf4c98043f3f58c9f4bf3b2024b748549e30cb9a6",
+      "currentHash": "9506d96dbce6d2a1c1cd51251437bf330b480463936823d07afc2f5edbd8be6a",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789693049671_13805",
+      "timestamp": 1789693049671,
+      "actionType": "THIRD_PARTY_TRANSACTION_SYNCED",
+      "actor": {
+        "source": "Farbit Test Simulation"
+      },
+      "details": {
+        "orderId": "ORD_ST106_1789693049671_5922",
+        "total": 12000
+      },
+      "previousHash": "9506d96dbce6d2a1c1cd51251437bf330b480463936823d07afc2f5edbd8be6a",
+      "currentHash": "93538126adce0ecf89a788d555061aff470b37430cabdbf92a7529da56a4092e",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789693069104_79992",
+      "timestamp": 1789693069104,
+      "actionType": "USER_LOGIN_VERIFIED",
+      "actor": {
+        "userId": "USR_1789526748571_70704"
+      },
+      "details": {
+        "role": "ADMIN"
+      },
+      "previousHash": "93538126adce0ecf89a788d555061aff470b37430cabdbf92a7529da56a4092e",
+      "currentHash": "adffdb8e9eb4161b245e8c7ac639fe8893e64131a7134303920bb3018303946e",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
     }
   ],
   "transactions": [
@@ -2527,6 +2624,13 @@
       "orderId": "ORD_ST104_1789689261834_70365",
       "total": 2124,
       "createdAt": 1789689261834
+    },
+    {
+      "idempotencyKey": "TX_1789693049671_93102",
+      "userId": "USR_1789693049670_38715",
+      "orderId": "ORD_ST106_1789693049671_5922",
+      "total": 12000,
+      "createdAt": 1789693049671
     }
   ],
   "orders": [
@@ -3129,6 +3233,22 @@
       "createdAt": 1789689261834,
       "customerPhone": "254721862397",
       "checkoutRequestId": "ws_CO_180920260254226721862397"
+    },
+    {
+      "id": "ORD_ST106_1789693049671_5922",
+      "userId": "USR_1789693049670_38715",
+      "businessId": "BIZ-KE",
+      "region": "KE",
+      "currency": "KES",
+      "productAmount": 12000,
+      "deliveryFee": 0,
+      "distanceKm": 0,
+      "total": 12000,
+      "pickup": "External Farbit Counter",
+      "destination": "Forex Vault Reserve",
+      "status": "EXTERNAL_SYNCED",
+      "sourceSystem": "Farbit Test Simulation",
+      "createdAt": 1789693049671
     }
   ],
   "escrow": [
@@ -3293,6 +3413,13 @@
       "businessId": "BIZ-KE",
       "amount": 2124,
       "status": "HELD"
+    },
+    {
+      "escrowId": "ESC_1789693049671_3572",
+      "orderId": "ORD_ST106_1789693049671_5922",
+      "businessId": "BIZ-KE",
+      "amount": 12000,
+      "status": "LOCKED"
     }
   ],
   "wallets": [
@@ -3353,7 +3480,19 @@
       "currency": "KES"
     }
   ],
-  "sar_queue": [],
+  "sar_queue": [
+    {
+      "id": "SAR_1789693049671_13947",
+      "userId": "USR_1789693049670_38715",
+      "amount": "KES 12000",
+      "triggers": [
+        "CBK_POCAMLA_THIRD_PARTY_VELOCITY"
+      ],
+      "status": "PENDING_REVIEW",
+      "reason": "Automated Structuring Alert from Farbit Test Simulation",
+      "timestamp": 1789693049671
+    }
+  ],
   "maker_checker_queue": [
     {
       "id": "MC_REQ_1789688279206_48153",
@@ -3692,7 +3831,16 @@
       "checkerId": "USR_1789526748571_70704"
     }
   ],
-  "velocity_alerts": [],
+  "velocity_alerts": [
+    {
+      "id": "VEL_1789693049670_13562",
+      "userId": "USR_1789693049670_38715",
+      "totalRollingAmount": 12000,
+      "transactionCount": 1,
+      "reason": "CBK/POCAMLA 24h Cross-Border Structuring & Smurfing Threshold Exceeded",
+      "timestamp": 1789693049670
+    }
+  ],
   "pep_watchlist": [
     "sanctioned_entity_alpha",
     "pep_corrupt_actor_x",
