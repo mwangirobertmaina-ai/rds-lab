@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS Stage 112 - Multi-Tenant Forex & SaaS Compliance Grid (Admin)</title>
+    <title>RDS Stage 113 - Autonomous AI Neural Core & Post-Quantum Grid (Admin)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -13,12 +13,12 @@
     <!-- Top Navigation -->
     <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-lg">
         <div class="flex items-center space-x-3">
-            <div class="bg-blue-600 p-2 rounded-lg text-white">
-                <i data-lucide="building-2" class="w-6 h-6"></i>
+            <div class="bg-purple-600 p-2 rounded-lg text-white">
+                <i data-lucide="brain" class="w-6 h-6"></i>
             </div>
             <div>
-                <h1 class="text-xl font-bold tracking-tight text-white">RDS Multi-Tenant SaaS Grid</h1>
-                <p class="text-xs text-blue-400 font-semibold tracking-wider uppercase">Stage 112: White-Label Forex Bureaus, FRC goAML & GNN Mesh</p>
+                <h1 class="text-xl font-bold tracking-tight text-white">RDS Autonomous AI Neural Grid</h1>
+                <p class="text-xs text-purple-400 font-semibold tracking-wider uppercase">Stage 113: Post-Quantum Lattice, Autonomous AI & Multi-Tenant SaaS</p>
             </div>
         </div>
         
@@ -26,13 +26,13 @@
         <div class="flex items-center space-x-3">
             <div class="flex items-center space-x-2 bg-slate-950 border border-slate-700 px-3 py-1.5 rounded-lg">
                 <span class="text-xs text-slate-400 font-semibold">Active Tenant:</span>
-                <select id="tenantSelector" onchange="switchTenantNode()" class="bg-transparent text-xs text-indigo-300 font-bold focus:outline-none cursor-pointer">
+                <select id="tenantSelector" onchange="switchTenantNode()" class="bg-transparent text-xs text-purple-300 font-bold focus:outline-none cursor-pointer">
                     <option value="BIZ-KE">RDS Nairobi Forex Bureau (KE)</option>
                     <option value="BIZ-UK">RDS London Reserve (UK)</option>
                     <option value="BIZ-US">RDS New York Corridor (US)</option>
                 </select>
             </div>
-            <button onclick="openProvisionModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
+            <button onclick="openProvisionModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
                 <i data-lucide="plus-circle" class="w-4 h-4"></i>
                 <span>Rent New Bureau</span>
             </button>
@@ -42,15 +42,15 @@
     <!-- Action Toolbar -->
     <div class="bg-slate-900/50 border-b border-slate-800/80 px-6 py-3 flex items-center justify-between">
         <div class="flex items-center space-x-2 text-xs text-slate-400">
-            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
-            <span>Current Tenant Isolation ID: <strong id="currentTenantIdLabel" class="text-white font-mono">BIZ-KE</strong></span>
+            <i data-lucide="shield" class="w-4 h-4 text-emerald-400"></i>
+            <span>Tenant ID: <strong id="currentTenantIdLabel" class="text-white font-mono">BIZ-KE</strong> | Quantum Shield: <strong class="text-emerald-400">Lattice-Ready</strong></span>
         </div>
         <div class="flex items-center space-x-3">
-            <button onclick="scanGNNNetwork()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
+            <button onclick="runAICycle()" class="bg-purple-600 hover:bg-purple-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
                 <i data-lucide="cpu" class="w-4 h-4"></i>
-                <span>Scan Tenant GNN</span>
+                <span>Run AI Neural Cycle</span>
             </button>
-            <button onclick="fetchInventoryReserves()" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5">
+            <button onclick="fetchInventoryReserves()" class="bg-slate-800 hover:bg-slate-700 text-purple-400 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5">
                 <i data-lucide="package" class="w-4 h-4"></i>
                 <span>Audit Reserves</span>
             </button>
@@ -60,7 +60,7 @@
             </button>
             <button onclick="triggerChainAudit()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5">
                 <i data-lucide="lock" class="w-4 h-4 text-amber-400"></i>
-                <span>Verify Audit Vault</span>
+                <span>Verify Quantum Vault</span>
             </button>
         </div>
     </div>
@@ -72,11 +72,11 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Tenant GNN Rings</span>
-                    <i data-lucide="cpu" class="w-5 h-5 text-emerald-500"></i>
+                    <span class="text-xs font-semibold uppercase tracking-wider">AI Neural Decisions</span>
+                    <i data-lucide="brain" class="w-5 h-5 text-purple-500"></i>
                 </div>
-                <div id="statGnnCount" class="text-2xl font-bold text-white">0</div>
-                <p class="text-xs text-slate-500 mt-1">Tenant topology scans executed</p>
+                <div id="statAiCount" class="text-2xl font-bold text-white">0</div>
+                <p class="text-xs text-slate-500 mt-1">Autonomous optimization cycles</p>
             </div>
             <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
@@ -96,11 +96,11 @@
             </div>
             <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Cryptographic Vault</span>
+                    <span class="text-xs font-semibold uppercase tracking-wider">Post-Quantum Vault</span>
                     <i data-lucide="shield-check" class="w-5 h-5 text-emerald-500"></i>
                 </div>
                 <div id="statVaultCount" class="text-2xl font-bold text-white">0</div>
-                <p class="text-xs text-slate-500 mt-1">Tamper-proof SHA-256 blocks</p>
+                <p class="text-xs text-slate-500 mt-1">Lattice-secured SHA-256 blocks</p>
             </div>
         </div>
 
@@ -108,7 +108,7 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-6 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div>
-                    <h2 class="text-base font-bold text-white">Tenant Asset Reserves & Forex Liquidity Valuation</h2>
+                    <h2 class="text-base font-bold text-white">AI-Managed Asset Reserves & Forex Liquidity Valuation</h2>
                     <p class="text-xs text-slate-400">Inspect real-time stock levels, liquidity units, and asset valuation isolated to the selected bureau node.</p>
                 </div>
                 <div id="inventoryValuationBadge" class="text-xs bg-emerald-950 text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-800 font-mono">
@@ -135,15 +135,15 @@
             </div>
         </div>
 
-        <!-- Immutable Audit Vault Inspector -->
+        <!-- Immutable Post-Quantum Audit Vault Inspector -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
             <div class="border-b border-slate-800 px-6 py-4 flex items-center justify-between">
                 <div>
-                    <h2 class="text-base font-bold text-white">Immutable Forensic Audit Vault</h2>
-                    <p class="text-xs text-slate-400">Cryptographically chained ledger verifying all multi-tenant transactions and compliance actions.</p>
+                    <h2 class="text-base font-bold text-white">Post-Quantum Immutable Audit Vault</h2>
+                    <p class="text-xs text-slate-400">Lattice-hardened cryptographic ledger verifying all multi-tenant transactions and AI actions.</p>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <input type="text" id="auditSearchInput" onkeyup="searchAuditVault()" placeholder="Search action type, hash, tenant..." class="bg-slate-950 border border-slate-700 text-xs px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 w-64">
+                    <input type="text" id="auditSearchInput" onkeyup="searchAuditVault()" placeholder="Search action type, hash, tenant..." class="bg-slate-950 border border-slate-700 text-xs px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-purple-500 w-64">
                 </div>
             </div>
             <div class="overflow-x-auto max-h-96">
@@ -153,7 +153,7 @@
                             <th class="p-3 font-semibold">Timestamp</th>
                             <th class="p-3 font-semibold">Action Type</th>
                             <th class="p-3 font-semibold">Actor / Tenant Details</th>
-                            <th class="p-3 font-semibold">Current SHA-256 Hash</th>
+                            <th class="p-3 font-semibold">Quantum Lattice Hash</th>
                             <th class="p-3 font-semibold">Status</th>
                         </tr>
                     </thead>
@@ -172,36 +172,36 @@
     <div id="provisionModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white">Rent / Provision New Forex Bureau Node</h3>
+                <h3 class="text-base font-bold text-white">Rent / Provision AI-Managed Forex Bureau</h3>
                 <button onclick="closeProvisionModal()" class="text-slate-400 hover:text-white">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
                 <div>
                     <label class="block text-slate-400 mb-1">Bureau Name</label>
-                    <input type="text" id="newBureauName" placeholder="e.g., Mombasa Exchange Bureau" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
+                    <input type="text" id="newBureauName" placeholder="e.g., Mombasa Exchange Bureau" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-purple-500">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-slate-400 mb-1">Region Code</label>
-                        <input type="text" id="newRegion" placeholder="KE, UG, TZ, UK" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
+                        <input type="text" id="newRegion" placeholder="KE, UG, TZ, UK" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-purple-500">
                     </div>
                     <div>
                         <label class="block text-slate-400 mb-1">Currency</label>
-                        <input type="text" id="newCurrency" placeholder="KES, USD, GBP" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
+                        <input type="text" id="newCurrency" placeholder="KES, USD, GBP" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-purple-500">
                     </div>
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Owner Phone</label>
-                    <input type="text" id="newOwnerPhone" placeholder="254700000000" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
+                    <input type="text" id="newOwnerPhone" placeholder="254700000000" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-purple-500">
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Tax PIN / License No</label>
-                    <input type="text" id="newTaxPin" placeholder="P000000000X" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
+                    <input type="text" id="newTaxPin" placeholder="P000000000X" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-purple-500">
                 </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
                 <button onclick="closeProvisionModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-                <button onclick="submitNewTenant()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md">Provision Node</button>
+                <button onclick="submitNewTenant()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md">Provision Node</button>
             </div>
         </div>
     </div>
@@ -225,7 +225,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    document.getElementById('statGnnCount').innerText = data.gnnCount || 0;
+                    document.getElementById('statAiCount').innerText = data.aiDecisionsCount || 0;
                     document.getElementById('statSarCount').innerText = data.sarQueue ? data.sarQueue.length : 0;
                     document.getElementById('statVelocityCount').innerText = data.velocityAlerts ? data.velocityAlerts.length : 0;
                     document.getElementById('statVaultCount').innerText = data.immutableVaultCount || 0;
@@ -279,7 +279,6 @@
                     alert(`✅ ${data.message}\nTenant ID: ${data.tenant.id}`);
                     closeProvisionModal();
                     
-                    // Add new option to dropdown and select it
                     const selector = document.getElementById('tenantSelector');
                     const opt = document.createElement('option');
                     opt.value = data.tenant.id;
@@ -292,26 +291,26 @@
                     alert("❌ Error: " + data.error);
                 }
             } catch (err) {
-                alert("Network error provisioning tenant node.");
+                alert("Network error provisioning AI tenant node.");
             }
         }
 
-        async function scanGNNNetwork() {
+        async function runAICycle() {
             const tenantId = getSelectedTenantId();
             try {
-                const res = await fetch('/api/admin/gnn/scan-network', {
+                const res = await fetch('/api/admin/ai/run-autonomous-cycle', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': tenantId }
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ Tenant GNN Scan Complete!\nCluster ID: ${data.clusterRecord.clusterId}\nStatus: ${data.clusterRecord.status}`);
+                    alert(`✅ Autonomous AI Cycle Complete!\nDecision ID: ${data.decisionRecord.decisionId}\nConfidence: ${data.decisionRecord.neuralConfidenceScore}%`);
                     loadDashboard();
                 } else {
-                    alert("❌ GNN Scan Error: " + data.error);
+                    alert("❌ AI Cycle Error: " + data.error);
                 }
             } catch (err) {
-                alert("Network error executing GNN network scan.");
+                alert("Network error executing autonomous AI cycle.");
             }
         }
 
@@ -339,7 +338,7 @@
             }
             tbody.innerHTML = products.map(p => `
                 <tr class="hover:bg-slate-900/50 transition">
-                    <td class="p-3 text-blue-400">${p.id}</td>
+                    <td class="p-3 text-purple-400">${p.id}</td>
                     <td class="p-3 text-white font-semibold">${p.name}</td>
                     <td class="p-3 text-slate-300">${p.merchant || "Direct Bureau Node"}</td>
                     <td class="p-3 text-slate-300">${p.currency || "KES"} ${p.price}</td>
@@ -359,11 +358,11 @@
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `goAML_v5.0.2_${tenantId}_${Date.now()}.xml`;
+                a.download = `goAML_v5.0.2_AI_${tenantId}_${Date.now()}.xml`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                alert("✅ FRC goAML v5.0.2 XML Report successfully downloaded for tenant " + tenantId);
+                alert("✅ AI-Validated FRC goAML v5.0.2 XML Report successfully downloaded.");
                 loadAuditVault();
             } catch (err) {
                 alert("Failed to generate goAML XML report.");
@@ -392,10 +391,10 @@
             tbody.innerHTML = streams.slice(-50).reverse().map(s => `
                 <tr class="hover:bg-slate-900/50 transition">
                     <td class="p-3 text-slate-400">${new Date(s.timestamp).toLocaleTimeString()}</td>
-                    <td class="p-3 font-semibold text-blue-400">${s.actionType}</td>
+                    <td class="p-3 font-semibold text-purple-400">${s.actionType}</td>
                     <td class="p-3 text-slate-300 truncate max-w-xs">${JSON.stringify(s.actor)}</td>
                     <td class="p-3 text-slate-500 truncate max-w-xs">${s.currentHash}</td>
-                    <td class="p-3"><span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 text-[10px]">VERIFIED</span></td>
+                    <td class="p-3"><span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 text-[10px]">PQ-VERIFIED</span></td>
                 </tr>
             `).join('');
         }
