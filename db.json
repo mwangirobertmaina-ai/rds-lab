@@ -1,6 +1,20 @@
 {
   "businesses": [
     {
+      "id": "INST-CBK-RTGS",
+      "name": "Central Bank of Kenya (CBK) National RTGS Gateway",
+      "region": "KE",
+      "currency": "KES",
+      "type": "CENTRAL_BANK"
+    },
+    {
+      "id": "INST-WORLDBANK",
+      "name": "World Bank Sovereign Development Corridor (IBRD/IDA)",
+      "region": "US",
+      "currency": "USD",
+      "type": "INTERNATIONAL_RESERVE"
+    },
+    {
       "id": "BIZ-KE",
       "name": "RDS Nairobi (M-Pesa Corridor)",
       "region": "KE",
@@ -3951,6 +3965,103 @@
       "currentHash": "d06f2701f63eb6eb655bed27d390e0db0335dd2894fc20a64c96d14498829899",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_124_UNIVERSAL_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789708678373_65194",
+      "timestamp": 1789708678373,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_EXECUTED",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)"
+      },
+      "details": {
+        "settlementId": "CLr_1789708678373_76511",
+        "initiatingNode": "INST-WORLDBANK",
+        "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)",
+        "clearingNetwork": "WORLD_BANK_CBK_INTERBANK_MESH",
+        "timestamp": 1789708678373,
+        "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+      },
+      "previousHash": "d06f2701f63eb6eb655bed27d390e0db0335dd2894fc20a64c96d14498829899",
+      "currentHash": "070e7dd590721caf887ee1efffc18e9a4dc71fb1c2967a5c060f0d14954028f4",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_124_WORLD_COMPLIANT_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789708680251_61465",
+      "timestamp": 1789708680251,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_EXECUTED",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)"
+      },
+      "details": {
+        "settlementId": "CLr_1789708680251_25116",
+        "initiatingNode": "INST-WORLDBANK",
+        "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)",
+        "clearingNetwork": "WORLD_BANK_CBK_INTERBANK_MESH",
+        "timestamp": 1789708680251,
+        "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+      },
+      "previousHash": "070e7dd590721caf887ee1efffc18e9a4dc71fb1c2967a5c060f0d14954028f4",
+      "currentHash": "1f10c7091c1c5b44f5ab391b8905587cb2d965bad46698ff1c7ec6b9eb0e71cb",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_124_WORLD_COMPLIANT_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789708682704_51257",
+      "timestamp": 1789708682704,
+      "actionType": "VAULT_CRYPTOGRAPHIC_CHAIN_VERIFIED",
+      "actor": {
+        "verifiedBlocks": 200,
+        "chainValid": true
+      },
+      "details": {
+        "status": "SECURE_100_PERCENT"
+      },
+      "previousHash": "1f10c7091c1c5b44f5ab391b8905587cb2d965bad46698ff1c7ec6b9eb0e71cb",
+      "currentHash": "e31d4069b1abb7436c060f8baeb7566444c415b1a5e50b72eaad9d6622a6a7a5",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_124_WORLD_COMPLIANT_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789708704285_10857",
+      "timestamp": 1789708704285,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789708704285_87076",
+        "tenantId": "INST-WORLDBANK",
+        "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)",
+        "timestamp": 1789708704285,
+        "actionTaken": "AUTONOMOUS_WORLD_COMPLIANT_SHADOW_TRAP_MONITORING",
+        "activeTraps": 0,
+        "systemHealth": "100% WORLD-COMPLIANT SECURE",
+        "status": "SHADOW_TRAP_ACTIVE"
+      },
+      "previousHash": "e31d4069b1abb7436c060f8baeb7566444c415b1a5e50b72eaad9d6622a6a7a5",
+      "currentHash": "fbb38b1d1ad140915cf260d3b69bff117b185c9ab76fabe71c6848c9d2d7a2dc",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_124_WORLD_COMPLIANT_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789708708825_8751",
+      "timestamp": 1789708708825,
+      "actionType": "OFFICIAL_WORLD_AUDIT_REPORT_PRINTED",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)"
+      },
+      "details": {
+        "queryTime": 1789708708825
+      },
+      "previousHash": "fbb38b1d1ad140915cf260d3b69bff117b185c9ab76fabe71c6848c9d2d7a2dc",
+      "currentHash": "2ad2bf12a6cabcda2aa18355e48f540ca83a36f7ba3e2c33cfb447c01f722398",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_124_WORLD_COMPLIANT_LATTICE"
     }
   ],
   "iso20022_wires": [],
@@ -4279,6 +4390,16 @@
       "activeTraps": 0,
       "systemHealth": "100% SECURE",
       "status": "SHADOW_TRAP_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789708704285_87076",
+      "tenantId": "INST-WORLDBANK",
+      "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)",
+      "timestamp": 1789708704285,
+      "actionTaken": "AUTONOMOUS_WORLD_COMPLIANT_SHADOW_TRAP_MONITORING",
+      "activeTraps": 0,
+      "systemHealth": "100% WORLD-COMPLIANT SECURE",
+      "status": "SHADOW_TRAP_ACTIVE"
     }
   ],
   "interbank_clearing_settlements": [
@@ -4329,6 +4450,22 @@
       "initiatingNode": "BIZ-KE",
       "clearingNetwork": "GLOBAL_CENTRAL_BANK_MESH",
       "timestamp": 1789707016201,
+      "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+    },
+    {
+      "settlementId": "CLr_1789708678373_76511",
+      "initiatingNode": "INST-WORLDBANK",
+      "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)",
+      "clearingNetwork": "WORLD_BANK_CBK_INTERBANK_MESH",
+      "timestamp": 1789708678373,
+      "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+    },
+    {
+      "settlementId": "CLr_1789708680251_25116",
+      "initiatingNode": "INST-WORLDBANK",
+      "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)",
+      "clearingNetwork": "WORLD_BANK_CBK_INTERBANK_MESH",
+      "timestamp": 1789708680251,
       "status": "CLEARED_AND_SETTLED_ATOMICALLY"
     }
   ],
