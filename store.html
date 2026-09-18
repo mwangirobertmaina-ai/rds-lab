@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS 94 | Sovereign On-Demand Commerce & Logistics Simulator</title>
+  <title>RDS 124 | Sovereign On-Demand Commerce & Logistics Simulator</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
@@ -292,12 +292,12 @@
     <!-- AUTHENTICATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🚀 RDS STAGE 94 SECURE ON-DEMAND LOGIN</span>
+            <span>🚀 RDS STAGE 124 SECURE ON-DEMAND LOGIN</span>
         </div>
 
         <div class="checkout-panel" style="padding: 20px;">
             <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Unified Commerce Simulator</h2>
-            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Sign in to access Jumia storefront browsing and live Uber logistics dispatch.</p>
+            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Sign in to access Jumia storefront browsing and live logistics dispatch.</p>
 
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Email Address</label>
             <input type="email" id="authEmail" value="robert.maina@rds.com">
@@ -338,6 +338,7 @@
         <div class="corridor-selector" id="dynamicCorridorSelector">
             <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE Hub</div>
             <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK Hub</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-PEARL', 'Pearl Forex Node', 'USD', this)">🇺🇸 Pearl Node</div>
         </div>
 
         <div class="category-filter-bar">
@@ -416,7 +417,8 @@
             <p><strong>Email:</strong> <span id="profileEmail">robert.maina@rds.com</span></p>
             <p style="margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">254721862397</span></p>
             <p style="margin-top: 6px;"><strong>Name:</strong> Robert Maina</p>
-            <p style="margin-top: 6px;"><strong>KYC Status:</strong> <span style="color: var(--neon-green);">Sovereign Verified</span></p>
+            <p style="margin-top: 6px;"><strong>KYC Status:</strong> <span style="color: var(--neon-green);">Tier-3 Sovereign Verified</span></p>
+            <p style="margin-top: 6px;"><strong>Admin Portal:</strong> <a href="/admin.html" target="_blank" style="color: var(--cyan);">Open Admin & Vault Dashboard ➔</a></p>
         </div>
     </div>
 
@@ -472,13 +474,21 @@
         async function requestOtp() {
             const phone = document.getElementById('authPhone').value.trim();
             const email = document.getElementById('authEmail').value.trim();
-            const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, email })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(data.message);
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, email })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || "OTP Sent successfully.");
+                    document.getElementById('phoneStep').style.display = 'none';
+                    document.getElementById('otpStep').style.display = 'block';
+                } else {
+                    alert(data.error || "Failed to send OTP.");
+                }
+            } catch(e) {
+                alert("Network error connecting to auth service. Simulation mode engaged.");
                 document.getElementById('phoneStep').style.display = 'none';
                 document.getElementById('otpStep').style.display = 'block';
             }
@@ -488,13 +498,24 @@
             const phone = document.getElementById('authPhone').value.trim();
             const email = document.getElementById('authEmail').value.trim();
             const otp = document.getElementById('authOtp').value.trim();
-            const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, otp, role: 'USER', email })
-            });
-            const data = await res.json();
-            if (data.success) {
-                currentUser = data.user;
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, otp, role: 'USER', email })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentUser = data.user;
+                    document.getElementById('bottomNav').style.display = 'flex';
+                    switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
+                    loadStoreCatalog();
+                    fetchLiveOrders();
+                    setTimeout(() => { if(map) map.invalidateSize(); }, 300);
+                } else {
+                    alert(data.error || "Invalid OTP code.");
+                }
+            } catch(e) {
+                currentUser = { id: "USR_DEFAULT", phone, email, fullName: "Robert Maina" };
                 document.getElementById('bottomNav').style.display = 'flex';
                 switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
                 loadStoreCatalog();
@@ -659,7 +680,6 @@
             const pLng = Number(document.getElementById('pickupLng').value) || 36.817223;
             const dLat = Number(document.getElementById('destLat').value) || -1.265556;
             const dLng = Number(document.getElementById('destLng').value) || 36.802778;
-            const curr = document.getElementById('storeCurrency').value;
 
             try {
                 const res = await fetch(`${API_BASE}/api/checkout`, {

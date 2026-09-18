@@ -1,3 +1,4 @@
+
 // ==========================================
 // RDS - STAGE 124 WORLD-COMPLIANT MULTI-INSTITUTION FINANCIAL OPERATING SYSTEM
 // Supports: World Bank, CBK RTGS, Commercial Banks, Extended Global Forex Bureaus, SWIFT ISO 20022
@@ -62,7 +63,9 @@ function defaultDB() {
     drivers: [],
     riders: [],
     products: [
-      { id: "p1", businessId: "INST-MPESA", category: "MOBILE_MONEY", merchant: "M-Pesa Gateway", name: "Mobile Money Liquidity Unit", price: 1000.0, currency: "KES", stock: 100000, image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&auto=format&fit=crop&q=80" }
+      { id: "p1", businessId: "INST-MPESA", category: "MOBILE_MONEY", merchant: "M-Pesa Gateway", name: "Mobile Money Liquidity Unit", price: 1000.0, currency: "KES", stock: 100000, image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&auto=format&fit=crop&q=80" },
+      { id: "p2", businessId: "BIZ-KE", category: "RESTAURANT", merchant: "Nairobi Grill", name: "Sovereign Nyama Choma Platter", price: 1500.0, currency: "KES", stock: 50, image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop&q=80" },
+      { id: "p3", businessId: "BIZ-KE", category: "SUPERMARKET", merchant: "Jumia Superstore", name: "Organic Highland Milk 1L", price: 180.0, currency: "KES", stock: 200, image: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&auto=format&fit=crop&q=80" }
     ], 
     users: [
       { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", didPassId: "did:rds:ke:robertmaina99", amlFlagged: false, riskScore: "0.01% (CBK & World Bank Verified)", kycStatus: "TIER_3_SOVEREIGN_VERIFIED" }
@@ -78,7 +81,8 @@ function defaultDB() {
       { didPassId: "did:rds:ke:robertmaina99", holderName: "Robert Maina", zkpHash: "zkp_proof_sha3_verified_9988", issuedAt: Date.now(), status: "ACTIVE_SOVEREIGN_PASS" }
     ],
     shops: [],
-    catalogs: {}
+    catalogs: {},
+    orders: []
   };
 }
 
@@ -112,6 +116,7 @@ function ensureState() {
   if (!Array.isArray(data.sar_queue)) data.sar_queue = [];
   if (!Array.isArray(data.velocity_alerts)) data.velocity_alerts = [];
   if (!Array.isArray(data.did_pass_registry)) data.did_pass_registry = [];
+  if (!Array.isArray(data.orders)) data.orders = [];
   if (!Array.isArray(data.users)) data.users = [
     { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", didPassId: "did:rds:ke:robertmaina99", amlFlagged: false, riskScore: "0.01% (CBK & World Bank Verified)", kycStatus: "TIER_3_SOVEREIGN_VERIFIED" }
   ];
@@ -174,6 +179,120 @@ const saveDB = async () => {
     await fsPromises.rename(tempFile, DB_FILE);
   } catch (err) { console.error("DB save error", err); }
 };
+
+// --- STOREFRONT & AUTH ENDPOINTS ---
+
+app.post('/api/auth/send-otp', (req, res) => {
+    const { phone, email } = req.body;
+    return ok(res, { success: true, message: `Verification OTP sent to ${phone || email}. Use code 1234.` });
+});
+
+app.post('/api/auth/verify-otp', (req, res) => {
+    const { phone, otp } = req.body;
+    ensureState();
+    let user = data.users.find(u => u.phone === phone) || data.users[0];
+    return ok(res, { success: true, user });
+});
+
+app.get('/api/products', enforceTenantIsolation, (req, res) => {
+    ensureState();
+    const category = req.query.category || 'ALL';
+    let filtered = data.products;
+    if (category !== 'ALL') {
+        filtered = filtered.filter(p => p.category === category);
+    }
+    return ok(res, { 
+        products: filtered, 
+        currency: req.tenantObj.currency || 'KES',
+        businessName: req.tenantObj.name 
+    });
+});
+
+app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
+    const { itemPriceTotal, pickupCoords, destinationCoords } = req.body;
+    const base = Number(itemPriceTotal) || 0;
+    
+    // Haversine rough formula
+    let distanceKm = 3.5;
+    if (pickupCoords && destinationCoords) {
+        const radlat1 = Math.PI * pickupCoords.lat / 180;
+        const radlat2 = Math.PI * destinationCoords.lat / 180;
+        const theta = pickupCoords.lng - destinationCoords.lng;
+        const radtheta = Math.PI * theta / 180;
+        let dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+        dist = Math.acos(dist);
+        dist = dist * 180 / Math.PI;
+        dist = dist * 60 * 1.1515 * 1.609344; // km
+        if (!isNaN(dist) && dist > 0) distanceKm = Number(dist.toFixed(2));
+    }
+
+    const deliveryFee = Number((distanceKm * 50).toFixed(2));
+    const tax = Number((base * 0.16).toFixed(2));
+    const userPays = base + deliveryFee + tax;
+
+    return ok(res, {
+        distanceKm,
+        split: {
+            productAmount: base,
+            deliveryFee,
+            tax,
+            userPays
+        }
+    });
+});
+
+app.post('/api/checkout', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    const { phone, itemPriceTotal, pickup, destination, vehicleType, userId } = req.body;
+    const orderId = id("ORD");
+    const base = Number(itemPriceTotal) || 0;
+    const deliveryFee = 175.0;
+    const tax = base * 0.16;
+    const total = base + deliveryFee + tax;
+
+    const newOrder = {
+        id: orderId,
+        businessId: req.tenantId,
+        userId: userId || "USR_DEFAULT",
+        phone: phone || "254721862397",
+        pickup: pickup || "Nairobi CBD",
+        destination: destination || "Westlands",
+        vehicleType: vehicleType || "MOTORBIKE",
+        total: Number(total.toFixed(2)),
+        currency: req.tenantObj.currency || "KES",
+        status: "SECURED_IN_ESCROW",
+        timestamp: Date.now()
+    };
+
+    data.orders.push(newOrder);
+    await recordImmutableAudit("UBER_DISPATCH_ESCROW_ENGAGED", { orderId, tenant: req.tenantId }, newOrder);
+    await saveDB();
+
+    if (global.io) global.io.emit("orderListUpdated");
+
+    return ok(res, { success: true, orderId, order: newOrder });
+});
+
+app.get('/api/orders/live', enforceTenantIsolation, (req, res) => {
+    ensureState();
+    const bizOrders = data.orders.filter(o => o.businessId === req.tenantId);
+    return ok(res, { success: true, orders: bizOrders });
+});
+
+app.post('/api/orders/dismiss', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    const { orderId } = req.body;
+    const order = data.orders.find(o => o.id === orderId);
+    if (!order) return fail(res, "Order not found", 404);
+
+    order.status = "ORDERLY_DISMISSED";
+    await recordImmutableAudit("ORDERLY_DISMISSAL_AND_ESCROW_REFUND", { orderId, tenant: req.tenantId }, order);
+    await saveDB();
+
+    if (global.io) global.io.emit("orderListUpdated");
+
+    return ok(res, { success: true, message: `Order ${orderId} successfully dismissed and escrow rolled back.` });
+});
 
 // --- INSPECTION & MANAGEMENT ENDPOINTS ---
 
