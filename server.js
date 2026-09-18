@@ -54,7 +54,10 @@ function defaultDB() {
       { id: "BIZ-PEARL", name: "Pearl Forex Bureau International Clearing Node", region: "KE", currency: "USD", type: "FOREX_BUREAU", ownerPhone: "254733000000", taxPin: "P057891234W" },
       { id: "BIZ-TOWER", name: "Tower Forex & Global Remittance Exchange", region: "KE", currency: "EUR", type: "FOREX_BUREAU", ownerPhone: "254744000000", taxPin: "P058923451V" },
       { id: "BIZ-METRO", name: "Metropolis Sovereign Forex Bureau", region: "US", currency: "USD", type: "FOREX_BUREAU", ownerPhone: "12125550199", taxPin: "US-88392019F" },
-      { id: "BIZ-TOKYO", name: "Tokyo Apex Central Forex Reserve", region: "JP", currency: "JPY", type: "CENTRAL_RESERVE", ownerPhone: "8135550143", taxPin: "JP-99201837T" }
+      { id: "BIZ-TOKYO", name: "Tokyo Apex Central Forex Reserve", region: "JP", currency: "JPY", type: "CENTRAL_RESERVE", ownerPhone: "8135550143", taxPin: "JP-99201837T" },
+      { id: "BIZ-DUBAI", name: "Dubai Gold & Forex Sovereign Exchange", region: "AE", currency: "AED", type: "FOREX_BUREAU", ownerPhone: "97145550122", taxPin: "AE-100293847" },
+      { id: "BIZ-SG", name: "Singapore Apex Forex Clearing Hub", region: "SG", currency: "SGD", type: "FOREX_BUREAU", ownerPhone: "6565550188", taxPin: "SG-20938419S" },
+      { id: "BIZ-ZURICH", name: "Zurich Swiss Central Reserve Node", region: "CH", currency: "CHF", type: "CENTRAL_RESERVE", ownerPhone: "41435550190", taxPin: "CH-98123457H" }
     ], 
     drivers: [],
     riders: [],
@@ -90,7 +93,10 @@ function ensureState() {
     { id: "BIZ-PEARL", name: "Pearl Forex Bureau International Clearing Node", region: "KE", currency: "USD", type: "FOREX_BUREAU" },
     { id: "BIZ-TOWER", name: "Tower Forex & Global Remittance Exchange", region: "KE", currency: "EUR", type: "FOREX_BUREAU" },
     { id: "BIZ-METRO", name: "Metropolis Sovereign Forex Bureau", region: "US", currency: "USD", type: "FOREX_BUREAU" },
-    { id: "BIZ-TOKYO", name: "Tokyo Apex Central Forex Reserve", region: "JP", currency: "JPY", type: "CENTRAL_RESERVE" }
+    { id: "BIZ-TOKYO", name: "Tokyo Apex Central Forex Reserve", region: "JP", currency: "JPY", type: "CENTRAL_RESERVE" },
+    { id: "BIZ-DUBAI", name: "Dubai Gold & Forex Sovereign Exchange", region: "AE", currency: "AED", type: "FOREX_BUREAU" },
+    { id: "BIZ-SG", name: "Singapore Apex Forex Clearing Hub", region: "SG", currency: "SGD", type: "FOREX_BUREAU" },
+    { id: "BIZ-ZURICH", name: "Zurich Swiss Central Reserve Node", region: "CH", currency: "CHF", type: "CENTRAL_RESERVE" }
   ];
   requiredNodes.forEach(node => {
     if (!data.businesses.some(b => b.id === node.id)) {
