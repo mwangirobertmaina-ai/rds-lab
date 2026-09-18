@@ -4499,6 +4499,68 @@
       "currentHash": "618af581ad261f70e8460a4f6a49959c5473edadb1c65ac33c944085ca41a7ee",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_133_HYBRID_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789771581026_76981",
+      "timestamp": 1789771581026,
+      "actionType": "AUTONOMOUS_SYSTEM_UPGRADE_INITIATED",
+      "actor": {
+        "tenant": "INST-CBK-RTGS"
+      },
+      "details": {
+        "upgradeId": "UPG_1789771581026_93712",
+        "targetStage": "134",
+        "timestamp": 1789771581026,
+        "status": "STAGED_AND_VERIFIED"
+      },
+      "previousHash": "618af581ad261f70e8460a4f6a49959c5473edadb1c65ac33c944085ca41a7ee",
+      "currentHash": "ebb3ff9d19b323d8f3c2283d626c0a69af67d11210deda333da4f9d16f700178",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_133_HYBRID_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789771585577_7640",
+      "timestamp": 1789771585577,
+      "actionType": "AUTOMATED_DAILY_REGULATORY_REPORT_DISPATCHED",
+      "actor": {
+        "tenant": "INST-CBK-RTGS"
+      },
+      "details": {
+        "reportId": "REP_DAILY_1789771585577_76164",
+        "period": "DAILY",
+        "tenantId": "INST-CBK-RTGS",
+        "institution": "Central Bank of Kenya (CBK) National RTGS Gateway",
+        "timestamp": 1789771585577,
+        "metrics": {
+          "totalTransactions": 5,
+          "flaggedTraps": 5,
+          "totalVolume": 6700000
+        },
+        "status": "AUTOMATICALLY_DISPATCHED_TO_CENTRAL_BANK"
+      },
+      "previousHash": "ebb3ff9d19b323d8f3c2283d626c0a69af67d11210deda333da4f9d16f700178",
+      "currentHash": "b4bf7b536610a6dc2fce2e95060eb715c6e9467d65b4d1d693567a0ebbdf5b10",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_133_HYBRID_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789771596593_84085",
+      "timestamp": 1789771596593,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_EXECUTED",
+      "actor": {
+        "tenant": "INST-CBK-RTGS"
+      },
+      "details": {
+        "settlementId": "CLr_1789771596593_90631",
+        "initiatingNode": "INST-CBK-RTGS",
+        "institution": "Central Bank of Kenya (CBK) National RTGS Gateway",
+        "timestamp": 1789771596593,
+        "status": "DUAL_CLEARED"
+      },
+      "previousHash": "b4bf7b536610a6dc2fce2e95060eb715c6e9467d65b4d1d693567a0ebbdf5b10",
+      "currentHash": "db54151ef083576efc96412c9fcd53a02c4d8b19db65b2593c265658705622b0",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_133_HYBRID_LATTICE"
     }
   ],
   "iso20022_wires": [
@@ -5001,6 +5063,13 @@
       "clearingNetwork": "WORLD_BANK_CBK_INTERBANK_MESH",
       "timestamp": 1789708680251,
       "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+    },
+    {
+      "settlementId": "CLr_1789771596593_90631",
+      "initiatingNode": "INST-CBK-RTGS",
+      "institution": "Central Bank of Kenya (CBK) National RTGS Gateway",
+      "timestamp": 1789771596593,
+      "status": "DUAL_CLEARED"
     }
   ],
   "shadow_trap_flags": [
@@ -5097,6 +5166,12 @@
       "referenceId": "WIRE_1789771017905_24743",
       "details": "Automated compliance filing triggered at Central Bank of Kenya (CBK) National RTGS Gateway for amount 1250000.",
       "timestamp": 1789771017905
+    },
+    {
+      "sarId": "SAR_DAILY_1789771585577_18698",
+      "referenceId": "REP_DAILY_1789771585577_76164",
+      "details": "Automated DAILY sovereign compliance report successfully transmitted to Central Bank RTGS & World Bank gateways.",
+      "timestamp": 1789771585577
     }
   ],
   "velocity_alerts": [
