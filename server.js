@@ -5,7 +5,7 @@
 // ==========================================
 
 const express = require("express");
-const http = http = require("http");
+const http = require("http");
 const { Server } = require("socket.io");
 const fs = require("fs");
 const fsPromises = require("fs").promises;
@@ -217,6 +217,37 @@ async function recordImmutableAudit(actionType, actor, details) {
     return auditRecord;
 }
 
+function screenAgainstWatchlists(userOrName) {
+    ensureState();
+    const queryStr = typeof userOrName === 'string' ? userOrName.toLowerCase() : `${userOrName.fullName} ${userOrName.idOrPassportNo}`.toLowerCase();
+    return data.pep_watchlist.some(w => queryStr.includes(w.toLowerCase()));
+}
+
+function enforceTenantIsolation(req, res, next) {
+    const businessId = req.headers['x-business-id'] || req.query.businessId || req.body.businessId || "BIZ-KE";
+    ensureState();
+    req.tenantId = businessId;
+    req.tenantObj = data.businesses.find(b => b.id === businessId) || data.shops.find(s => s.shopId === businessId) || { id: businessId, name: "Forex Bureau Node", currency: "KES", region: "KE" };
+    next();
+}
+
+function ok(res, payload = {}) {
+  return res.status(200).json({ success: true, ...payload });
+}
+
+function fail(res, msg = "Error", statusCode = 400) {
+  return res.status(statusCode).json({ success: false, error: msg });
+}
+
+const saveDB = async () => {
+  try {
+    ensureState();
+    const tempFile = `${DB_FILE}.tmp`;
+    await fsPromises.writeFile(tempFile, JSON.stringify(data, null, 2), "utf-8");
+    await fsPromises.rename(tempFile, DB_FILE);
+  } catch (err) { console.error("DB save error", err); }
+};
+
 // STAGE 107: LAW ENFORCEMENT SURVEILLANCE & TELEMETRY INGESTION ENDPOINT
 app.post('/api/surveillance/track-movement', enforceTenantIsolation, async (req, res) => {
     try {
@@ -228,7 +259,7 @@ app.post('/api/surveillance/track-movement', enforceTenantIsolation, async (req,
             trackId: id("TRK"),
             userId: userId || "ANONYMOUS_TARGET",
             orderId: orderId || "N/A",
-            coordinates: coordinates || { lat: -1.286389, lng: 36.817223 }, // Default Nairobi Center
+            coordinates: coordinates || { lat: -1.286389, lng: 36.817223 },
             deviceFingerprint: deviceFingerprint || "UNKNOWN_DEVICE",
             ipAddress: ipAddress || req.ip,
             velocityVector: velocityVector || "NORMAL",
@@ -236,20 +267,16 @@ app.post('/api/surveillance/track-movement', enforceTenantIsolation, async (req,
             agencyAlertStatus: "LOGGED_SILENTLY"
         };
 
-        // Check if user is on watchlist or flagged for high-risk structuring
         const targetUser = data.users.find(u => u.id === userId);
         const isFlagged = targetUser?.amlFlagged || screenAgainstWatchlists(targetUser || "");
 
         if (isFlagged) {
             movementRecord.agencyAlertStatus = "INTERPOL_DCI_WATCHLIST_MATCH";
             data.suspect_movement_logs.push(movementRecord);
-            
-            // Record silently without alerting the criminal
             await recordImmutableAudit("SUSPECT_MOVEMENT_CAPTURED", { userId, agency: "DCI_INTERPOL_GRID" }, movementRecord);
         }
 
         data.surveillance_grid.push(movementRecord);
-        // Keep buffer size managed
         if (data.surveillance_grid.length > 1000) data.surveillance_grid.shift();
 
         await saveDB();
@@ -322,97 +349,40 @@ app.get('/api/admin/audit/verify-chain', async (req, res) => {
     });
 });
 
-function screenAgainstWatchlists(userOrName) {
+app.get('/api/audit/search', (req, res) => {
     ensureState();
-    const queryStr = typeof userOrName === 'string' ? userOrName.toLowerCase() : `${userOrName.fullName} ${userOrName.idOrPassportNo}`.toLowerCase();
-    return data.pep_watchlist.some(w => queryStr.includes(w.toLowerCase()));
-}
-
-function checkTransactionVelocity(userId, amount) {
-    ensureState();
-    const rollingWindowMs = 24 * 60 * 60 * 1000;
-    const now = Date.now();
-    const recentTx = data.transactions.filter(t => t.userId === userId && (now - t.createdAt) < rollingWindowMs);
-    
-    const totalRollingAmount = recentTx.reduce((sum, t) => sum + Number(t.total || 0), 0) + Number(amount || 0);
-    const transactionCount = recentTx.length + 1;
-
-    if (totalRollingAmount > 10000 || transactionCount >= 6) {
-        const alertEntry = {
-            id: id("VEL"),
-            userId,
-            totalRollingAmount,
-            transactionCount,
-            reason: "CBK/POCAMLA & INTERPOL Cross-Border Structuring Threshold Exceeded",
-            timestamp: now
-        };
-        data.velocity_alerts.push(alertEntry);
-        recordImmutableAudit("SMURFING_VELOCITY_TRIGGERED", { userId }, alertEntry);
-        return true;
+    const query = (req.query.q || "").toLowerCase();
+    let stream = data.immutable_audit_vault;
+    if (query) {
+        stream = stream.filter(a => 
+            a.actionType.toLowerCase().includes(query) || 
+            a.currentHash.toLowerCase().includes(query) || 
+            JSON.stringify(a.actor).toLowerCase().includes(query)
+        );
     }
-    return false;
-}
+    return ok(res, { success: true, auditStream: stream });
+});
 
-function enforceComplianceAndKYC(req, res, next) {
-    ensureState();
-    const token = req.headers['authorization'] || req.headers['x-session-token'];
-    const userIdFromBody = req.body.userId;
-
-    let user = null;
-    if (token) {
-        const session = data.active_sessions.find(s => s.token === token);
-        if (session) { user = data.users.find(u => u.id === session.userId); }
-    }
-    if (!user && userIdFromBody) { user = data.users.find(u => u.id === userIdFromBody); }
-    if (!user) { user = data.users.find(u => u.id === "USR_DEFAULT"); }
-
-    if (user && screenAgainstWatchlists(user)) {
-        user.amlFlagged = true;
-        // STAGE 107 PHILOSOPHY: Do not block instantly if tracking; record and log silently for DCI/INTERPOL operation
-        recordImmutableAudit("GLOBAL_PEP_SANCTION_MATCH_LOGGED", { userId: user.id }, { name: user.fullName, action: "SILENT_TRACKING_ENGAGED" });
-    }
-
-    req.currentUser = user;
-    next();
-}
-
-function verifyRole(requiredRole) {
-    return (req, res, next) => {
+app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, res) => {
+    try {
         ensureState();
-        const token = req.headers['authorization'] || req.headers['x-session-token'];
-        const session = data.active_sessions.find(s => s.token === token);
-
-        if (!session && requiredRole !== 'USER') {
-            return fail(res, "Unauthorized: Valid session token required.", 401);
-        }
-
-        const userRole = session ? session.role : "USER";
-        const roleHierarchy = { ADMIN: 3, MERCHANT: 2, USER: 1 };
-
-        if ((roleHierarchy[userRole] || 1) < (roleHierarchy[requiredRole] || 1)) {
-            return fail(res, "Access denied: Insufficient privileges.", 403);
-        }
-
-        req.session = session;
-        next();
-    };
-}
-
-function validateKenyanPhone(phone) {
-  if (!phone) return null;
-  let cleaned = phone.toString().replace(/[^0-9]/g, "");
-  if (cleaned.startsWith("0")) cleaned = "254" + cleaned.substring(1);
-  if (cleaned.startsWith("254") && cleaned.length === 12) return cleaned;
-  return cleaned.length >= 9 ? cleaned : null;
-}
-
-function ok(res, payload = {}) {
-  return res.status(200).json({ success: true, ...payload });
-}
-
-function fail(res, msg = "Error", statusCode = 400) {
-  return res.status(statusCode).json({ success: false, error: msg });
-}
+        const tenantOrders = data.orders.filter(o => o.businessId === req.tenantId || req.tenantId === "BIZ-KE");
+        return ok(res, { 
+            success: true, 
+            corridors: data.businesses,
+            orders: tenantOrders, 
+            users: data.users, 
+            sarQueue: data.sar_queue,
+            activeSessions: data.active_sessions,
+            universalConnections: data.universal_connections,
+            makerCheckerQueue: data.maker_checker_queue,
+            velocityAlerts: data.velocity_alerts,
+            immutableVaultCount: data.immutable_audit_vault.length
+        });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
 
 if (fs.existsSync(DB_FILE)) {
   try {
@@ -424,26 +394,8 @@ if (fs.existsSync(DB_FILE)) {
   } catch (err) { data = defaultDB(); }
 }
 
-const saveDB = async () => {
-  try {
-    ensureState();
-    const tempFile = `${DB_FILE}.tmp`;
-    await fsPromises.writeFile(tempFile, JSON.stringify(data, null, 2), "utf-8");
-    await fsPromises.rename(tempFile, DB_FILE);
-  } catch (err) { console.error("DB save error", err); }
-};
-
-function enforceTenantIsolation(req, res, next) {
-    const businessId = req.headers['x-business-id'] || req.query.businessId || req.body.businessId || "BIZ-KE";
-    ensureState();
-    req.tenantId = businessId;
-    req.tenantObj = data.businesses.find(b => b.id === businessId) || data.shops.find(s => s.shopId === businessId) || { id: businessId, name: "Forex Bureau Node", currency: "KES", region: "KE" };
-    next();
-}
-
 io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
-  // Live telemetry socket listener for suspect movement tracking
   socket.on("client_telemetry_ping", async (payload) => {
       if (payload && payload.userId) {
           data.surveillance_grid.push({
