@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS Stage 124 - Universal Financial Operating System (Admin)</title>
+    <title>RDS Stage 124 - World-Compliant Financial Operating System (Admin)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -18,8 +18,8 @@
                 <i data-lucide="landmark" class="w-6 h-6"></i>
             </div>
             <div>
-                <h1 class="text-xl font-bold tracking-tight text-white">RDS Universal Financial OS</h1>
-                <p class="text-xs text-blue-400 font-semibold tracking-wider uppercase">Stage 124: Fully Activated Verify Vault & Compliance Mesh</p>
+                <h1 class="text-xl font-bold tracking-tight text-white">RDS World-Compliant Financial OS</h1>
+                <p class="text-xs text-blue-400 font-semibold tracking-wider uppercase">Stage 124: World Bank, CBK RTGS & Verify Vault Mesh</p>
             </div>
         </div>
         
@@ -27,9 +27,11 @@
             <div class="flex items-center space-x-2 bg-slate-950 border border-slate-700 px-3 py-1.5 rounded-lg">
                 <span class="text-xs text-slate-400 font-semibold">Institution:</span>
                 <select id="tenantSelector" onchange="switchTenantNode()" class="bg-transparent text-xs text-blue-300 font-bold focus:outline-none cursor-pointer">
+                    <option value="INST-WORLDBANK">World Bank Sovereign Corridor (IBRD/IDA)</option>
+                    <option value="INST-CBK-RTGS">Central Bank of Kenya (CBK RTGS)</option>
                     <option value="INST-MPESA">M-Pesa Mobile Money Hub (Safaricom)</option>
                     <option value="INST-EQUITY">Equity Bank Commercial Clearing</option>
-                    <option value="INST-KCB">KCB Bank RTGS Gateway</option>
+                    <option value="INST-KCB">KCB Bank National RTGS Gateway</option>
                     <option value="BIZ-KE">RDS Nairobi Forex Bureau (KE)</option>
                     <option value="BIZ-UK">RDS London Central Reserve (UK)</option>
                 </select>
@@ -45,12 +47,12 @@
     <div class="bg-slate-900/50 border-b border-slate-800/80 px-6 py-3 flex items-center justify-between">
         <div class="flex items-center space-x-2 text-xs text-slate-400">
             <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
-            <span>Active Node: <strong id="currentTenantIdLabel" class="text-white font-mono">INST-MPESA</strong> | Universal Shield: <strong class="text-emerald-400">100% Active</strong></span>
+            <span>Active Node: <strong id="currentTenantIdLabel" class="text-white font-mono">INST-CBK-RTGS</strong> | World Shield: <strong class="text-emerald-400">100% Active</strong></span>
         </div>
         <div class="flex items-center space-x-3">
             <button onclick="dispatchIsoWire()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
                 <i data-lucide="send" class="w-4 h-4"></i>
-                <span>Dispatch Bank/M-Pesa Wire</span>
+                <span>Dispatch World/CBK Wire</span>
             </button>
             <button onclick="runInterbankClearing()" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
                 <i data-lucide="repeat" class="w-4 h-4"></i>
@@ -94,7 +96,7 @@
             </div>
             <div onclick="openModal('isoWires')" class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md cursor-pointer hover:border-emerald-500 transition">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Bank & M-Pesa Wires</span>
+                    <span class="text-xs font-semibold uppercase tracking-wider">World & CBK Wires</span>
                     <i data-lucide="send" class="w-5 h-5 text-emerald-500"></i>
                 </div>
                 <div id="statWiresCount" class="text-2xl font-bold text-white">0</div>
@@ -122,8 +124,8 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
             <div class="border-b border-slate-800 px-6 py-4 flex items-center justify-between">
                 <div>
-                    <h2 class="text-base font-bold text-white">Universal Immutable Audit Vault</h2>
-                    <p class="text-xs text-slate-400">Cryptographically chained ledger verifying all bank transfers, M-Pesa txns, shadow-traps, and reports.</p>
+                    <h2 class="text-base font-bold text-white">World-Compliant Immutable Audit Vault</h2>
+                    <p class="text-xs text-slate-400">Cryptographically chained ledger verifying World Bank, CBK RTGS, commercial wires, and regulatory reports.</p>
                 </div>
                 <div class="flex items-center space-x-2">
                     <input type="text" id="auditSearchInput" onkeyup="searchAuditVault()" placeholder="Search action type, institution..." class="bg-slate-950 border border-slate-700 text-xs px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 w-64">
@@ -161,7 +163,7 @@
                 </h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-white">&times;</button>
             </div>
-            <p id="modalDesc" class="text-xs text-slate-400">Inspect live records retrieved from the secure universal clearing mesh.</p>
+            <p id="modalDesc" class="text-xs text-slate-400">Inspect live records retrieved from the secure world-compliant clearing mesh.</p>
             <div class="overflow-y-auto max-h-96">
                 <table class="w-full text-left border-collapse text-xs font-mono">
                     <thead class="bg-slate-950 text-slate-400 border-b border-slate-800" id="modalTableHead">
@@ -182,7 +184,7 @@
     <div id="didModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white">Mint Sovereign DID ZKP Pass</h3>
+                <h3 class="text-base font-bold text-white">Mint World-Compliant DID ZKP Pass</h3>
                 <button onclick="closeDidModal()" class="text-slate-400 hover:text-white">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
@@ -256,7 +258,7 @@
 
             if (type === 'shadowTraps') {
                 title.innerHTML = `<i data-lucide="shield-alert" class="w-5 h-5 text-red-500"></i><span>Active Shadow-Trap Flags & Resolution Manager</span>`;
-                desc.innerText = "Inspect flagged entities captured across banks & mobile money under continuous service. Click 'Disable / Clear' once cleared.";
+                desc.innerText = "Inspect flagged entities captured across World Bank, CBK RTGS, & commercial corridors. Click 'Disable / Clear' once cleared.";
                 thead.innerHTML = `<tr><th class="p-3">Trap ID</th><th class="p-3">Institution & Reason</th><th class="p-3">Action</th></tr>`;
                 try {
                     const res = await fetch('/api/admin/shadow-traps', { headers: { 'x-business-id': tenantId } });
@@ -265,17 +267,17 @@
                         tbody.innerHTML = data.shadowTraps.map(t => `
                             <tr class="hover:bg-slate-900/50 transition">
                                 <td class="p-3 text-red-400 font-bold">${t.trapId}</td>
-                                <td class="p-3 text-slate-300">${t.institution || 'Bank/M-Pesa Node'}: ${t.reason}</td>
+                                <td class="p-3 text-slate-300">${t.institution || 'Sovereign Node'}: ${t.reason}</td>
                                 <td class="p-3"><button onclick="resolveShadowTrap('${t.trapId}')" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-[11px] font-semibold transition">Disable / Clear</button></td>
                             </tr>
                         `).join('');
                     } else {
-                        tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">Zero active shadow traps found across financial institutions.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">Zero active shadow traps found across sovereign institutions.</td></tr>`;
                     }
                 } catch(e) { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-red-500">Error loading data.</td></tr>`; }
             } else if (type === 'sarQueue') {
-                title.innerHTML = `<i data-lucide="file-text" class="w-5 h-5 text-amber-500"></i><span>SAR Queue (FRC goAML v5.0.2 Reports)</span>`;
-                desc.innerText = "Suspicious Activity Reports generated automatically for banking & mobile money corridors.";
+                title.innerHTML = `<i data-lucide="file-text" class="w-5 h-5 text-amber-500"></i><span>SAR Queue (World Bank & CBK goAML Reports)</span>`;
+                desc.innerText = "Suspicious Activity Reports generated automatically for international development & central bank corridors.";
                 thead.innerHTML = `<tr><th class="p-3">SAR ID</th><th class="p-3">Reference ID</th><th class="p-3">Details & Timestamp</th></tr>`;
                 try {
                     const res = await fetch('/api/admin/sar-queue', { headers: { 'x-business-id': tenantId } });
@@ -289,12 +291,12 @@
                             </tr>
                         `).join('');
                     } else {
-                        tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No pending SAR reports in queue.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No pending international SAR reports in queue.</td></tr>`;
                     }
                 } catch(e) { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-red-500">Error loading data.</td></tr>`; }
             } else if (type === 'isoWires') {
-                title.innerHTML = `<i data-lucide="send" class="w-5 h-5 text-emerald-500"></i><span>Bank, M-Pesa & ISO 20022 Settlements</span>`;
-                desc.innerText = "All cross-border wires and mobile money liquidity transfers executed across financial institutions.";
+                title.innerHTML = `<i data-lucide="send" class="w-5 h-5 text-emerald-500"></i><span>World Bank, CBK RTGS & ISO 20022 Settlements</span>`;
+                desc.innerText = "All sovereign cross-border wires and central bank liquidity transfers executed globally.";
                 thead.innerHTML = `<tr><th class="p-3">Wire ID</th><th class="p-3">Institution & Beneficiary</th><th class="p-3">Amount & Status</th></tr>`;
                 try {
                     const res = await fetch('/api/admin/iso-wires', { headers: { 'x-business-id': tenantId } });
@@ -308,12 +310,12 @@
                             </tr>
                         `).join('');
                     } else {
-                        tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No institution settlements recorded yet.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No world bank or central bank settlements recorded yet.</td></tr>`;
                     }
                 } catch(e) { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-red-500">Error loading data.</td></tr>`; }
             } else if (type === 'didPasses') {
                 title.innerHTML = `<i data-lucide="shield-check" class="w-5 h-5 text-blue-500"></i><span>Decentralized Sovereign Identity (DID) ZKP Passes</span>`;
-                desc.innerText = "Cryptographic zero-knowledge passes verified across commercial banks & mobile networks.";
+                desc.innerText = "Cryptographic zero-knowledge passes verified across World Bank & CBK international nodes.";
                 thead.innerHTML = `<tr><th class="p-3">DID Pass ID</th><th class="p-3">Holder Name</th><th class="p-3">ZKP Hash & Status</th></tr>`;
                 try {
                     const res = await fetch('/api/admin/did-passes', { headers: { 'x-business-id': tenantId } });
@@ -332,7 +334,7 @@
                 } catch(e) { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-red-500">Error loading data.</td></tr>`; }
             } else if (type === 'sovereignVault') {
                 title.innerHTML = `<i data-lucide="lock" class="w-5 h-5 text-indigo-500"></i><span>Sovereign Vault (Tamper-Proof Lattice Blocks)</span>`;
-                desc.innerText = "Complete immutable cryptographic ledger storing all multi-institution blocks.";
+                desc.innerText = "Complete immutable cryptographic ledger storing all World Bank, CBK, and multi-institution blocks.";
                 thead.innerHTML = `<tr><th class="p-3">Timestamp</th><th class="p-3">Action Type</th><th class="p-3">Current Hash</th></tr>`;
                 try {
                     const res = await fetch('/api/admin/sovereign-vault', { headers: { 'x-business-id': tenantId } });
@@ -381,18 +383,18 @@
 
         async function dispatchIsoWire() {
             const tenantId = getSelectedTenantId();
-            const amount = prompt("Enter transfer amount (Enter 1,000,000+ to test shadow-trap capture):", "1200000");
+            const amount = prompt("Enter transfer amount (Enter 1,000,000+ to test world-compliant shadow-trap capture):", "1200000");
             if (!amount) return;
 
             try {
                 const res = await fetch('/api/iso20022/dispatch-wire', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': tenantId },
-                    body: JSON.stringify({ beneficiaryName: "External Counterparty Account", beneficiaryAccount: "ACC_BANK_99", amount })
+                    body: JSON.stringify({ beneficiaryName: "Sovereign International Counterparty", beneficiaryAccount: "ACC_WORLD_BANK_01", amount })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ Transaction Served Successfully!\nStatus: ${data.wireMessage.status}\n${data.wireMessage.shadowTrapFlagged ? '⚠️ SHADOW-TRAP ENGAGED: Entity flagged silently. FRC SAR generated. Continuing service.' : '🟢 Clean transaction processed.'}`);
+                    alert(`✅ World-Compliant Wire Settled Successfully!\nStatus: ${data.wireMessage.status}\n${data.wireMessage.shadowTrapFlagged ? '⚠️ SHADOW-TRAP ENGAGED: Entity flagged silently. International SAR generated. Continuing service.' : '🟢 Clean sovereign transaction processed.'}`);
                     loadDashboard();
                 } else {
                     alert("❌ Error: " + data.error);
@@ -411,7 +413,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ Inter-Bank Clearing Executed!\nSettlement ID: ${data.settlementRecord.settlementId}`);
+                    alert(`✅ World Bank / CBK Inter-Bank Clearing Executed!\nSettlement ID: ${data.settlementRecord.settlementId}`);
                     loadDashboard();
                 } else {
                     alert("❌ Error: " + data.error);
@@ -430,7 +432,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ AI Shadow-Trap Agent Scan Complete!\nActive Traps: ${data.actionRecord.activeTraps}`);
+                    alert(`✅ World-Compliant AI Shadow-Trap Agent Scan Complete!\nActive Traps: ${data.actionRecord.activeTraps}`);
                     loadDashboard();
                 } else {
                     alert("❌ Error: " + data.error);
@@ -457,7 +459,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ Sovereign DID Pass Minted!\nPass ID: ${data.didRecord.didPassId}`);
+                    alert(`✅ World-Compliant Sovereign DID Pass Minted!\nPass ID: ${data.didRecord.didPassId}`);
                     closeDidModal();
                     loadDashboard();
                 } else {
@@ -519,7 +521,7 @@
             
             modal.classList.remove('hidden');
             title.innerHTML = `<i data-lucide="lock" class="w-5 h-5 text-amber-400"></i><span>Cryptographic Vault Integrity & Chain Verification</span>`;
-            desc.innerText = "Executing real-time SHA-256 lattice verification across all immutable audit blocks...";
+            desc.innerText = "Executing real-time SHA-256 lattice verification across all World Bank & CBK immutable audit blocks...";
             thead.innerHTML = `<tr><th class="p-3">Verification Metric</th><th class="p-3">Cryptographic Status</th></tr>`;
             tbody.innerHTML = `<tr><td colspan="2" class="p-6 text-center text-amber-400 animate-pulse">Running full chain validation...</td></tr>`;
             lucide.createIcons();
@@ -540,7 +542,7 @@
                         </tr>
                         <tr class="hover:bg-slate-900/50 transition">
                             <td class="p-3 text-slate-300 font-bold">Cryptographic Standard</td>
-                            <td class="p-3 text-blue-400 font-mono">SHA-256 / Stage 124 Lattice Mesh</td>
+                            <td class="p-3 text-blue-400 font-mono">SHA-256 / World-Compliant Mesh</td>
                         </tr>
                         <tr class="hover:bg-slate-900/50 transition">
                             <td class="p-3 text-slate-300 font-bold">System Audit Timestamp</td>
