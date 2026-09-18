@@ -1,5 +1,5 @@
 // ==========================================
-// RDS - STAGE 104 WORLD-CLASS GLOBAL SOVEREIGN & KENYAN FOREX BUREAU COMPLIANCE ENGINE
+// RDS - STAGE 105 PREMIER GLOBAL SOVEREIGN & KENYAN FOREX BUREAU COMPLIANCE ENGINE
 // Universal Support: Kenya (CBK Form FXBO / POCAMLA), UK (FCA), USA (FinCEN), EU (ECB), Canada & All Africa
 // + Jumia Storefront + Uber Dispatch + Immutable Audit Vault + Maker-Checker + Smurfing Velocity
 // ==========================================
@@ -252,7 +252,6 @@ app.get('/api/admin/audit/verify-chain', async (req, res) => {
     });
 });
 
-// SELF-HEALING AUDIT SEARCH ENDPOINT
 app.get('/api/audit/search', (req, res) => {
     ensureState();
     const query = (req.query.q || "").toLowerCase();
@@ -395,7 +394,7 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_104_FOREX_SOVEREIGN_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_105_FOREX_SOVEREIGN_ONLINE", time: Date.now() }));
 
 app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
     try {
@@ -502,7 +501,6 @@ app.post('/api/admin/sessions/terminate', enforceTenantIsolation, verifyRole('AD
     return ok(res, { success: true, message: "User session successfully terminated and revoked." });
 });
 
-// DIRECT INSTANT TOGGLE AML ROUTE
 app.post('/api/admin/toggle-aml', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
     try {
         ensureState();
@@ -682,7 +680,7 @@ app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async
             });
         }
 
-        const orderId = id("ORD_ST104");
+        const orderId = id("ORD_ST105");
         const assignedRider = "DRV_01";
 
         const order = {
@@ -723,7 +721,7 @@ app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async
                     BusinessShortCode: MPESA_CONFIG.shortCode, Password: password, Timestamp: timestamp,
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
-                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Forex Stage 104`,
+                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Forex Stage 105`,
                     TransactionDesc: `CBK FXBO Escrow Settlement`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -743,5 +741,5 @@ app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 104 FOREX BUREAU & SOVEREIGN COMPLIANCE ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 105 PREMIER FOREX BUREAU & SOVEREIGN COMPLIANCE ENGINE ACTIVE ON PORT ${PORT}`);
 });

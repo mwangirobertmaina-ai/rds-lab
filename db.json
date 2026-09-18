@@ -1132,6 +1132,454 @@
       "currentHash": "736136d919c5599812005ecdf5e3ea94b05a820cf7cefac5286e9472a04f6d17",
       "tamperProof": true,
       "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689557276_76465",
+      "timestamp": 1789689557276,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "json"
+      },
+      "previousHash": "736136d919c5599812005ecdf5e3ea94b05a820cf7cefac5286e9472a04f6d17",
+      "currentHash": "80029cfe96d1beeb5753bc7cde5a5c485021c13fa77dcd4d5bb9c16b9e5f3ee9",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689559819_39552",
+      "timestamp": 1789689559819,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 48
+      },
+      "previousHash": "80029cfe96d1beeb5753bc7cde5a5c485021c13fa77dcd4d5bb9c16b9e5f3ee9",
+      "currentHash": "c0c8d8266bf0bec96cab8f28f401ff1d4b6aea497e38e9e188119c7710ed0092",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689560762_53235",
+      "timestamp": 1789689560762,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 49
+      },
+      "previousHash": "c0c8d8266bf0bec96cab8f28f401ff1d4b6aea497e38e9e188119c7710ed0092",
+      "currentHash": "7aa6de712cf6c8ae2ce36571ef535ec7925f9f6b7dafd89e0d7b0db1741153d8",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689561922_7039",
+      "timestamp": 1789689561922,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 50
+      },
+      "previousHash": "7aa6de712cf6c8ae2ce36571ef535ec7925f9f6b7dafd89e0d7b0db1741153d8",
+      "currentHash": "b33b88bebae5c84d3e5cf4e28d7312ffba3d4e1a6bcf66b94e7ea8a55845e791",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689562162_7113",
+      "timestamp": 1789689562162,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 51
+      },
+      "previousHash": "b33b88bebae5c84d3e5cf4e28d7312ffba3d4e1a6bcf66b94e7ea8a55845e791",
+      "currentHash": "50c4c1819059d36ab38164a174085e1984c6ae9375292fa91b8cfa975f9b6d7f",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689566536_47515",
+      "timestamp": 1789689566536,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 52
+      },
+      "previousHash": "50c4c1819059d36ab38164a174085e1984c6ae9375292fa91b8cfa975f9b6d7f",
+      "currentHash": "8271beb3fa41a46a8e015a8ff503750c820a612c1bdc3a30c5b6d76d169f22d5",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689567265_97874",
+      "timestamp": 1789689567265,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 53
+      },
+      "previousHash": "8271beb3fa41a46a8e015a8ff503750c820a612c1bdc3a30c5b6d76d169f22d5",
+      "currentHash": "a4c92cf29177ef0469305e0abbd68b22ecd9494541b144e1e030dc4a40656bfd",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689567327_41105",
+      "timestamp": 1789689567327,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 54
+      },
+      "previousHash": "a4c92cf29177ef0469305e0abbd68b22ecd9494541b144e1e030dc4a40656bfd",
+      "currentHash": "275d66ae9a110dfd2b9d38e7e0a1d89ff97ad155a708d6ab63550cabe24dba41",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689569201_16470",
+      "timestamp": 1789689569201,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 55
+      },
+      "previousHash": "275d66ae9a110dfd2b9d38e7e0a1d89ff97ad155a708d6ab63550cabe24dba41",
+      "currentHash": "49cee30689cecc7a6f8b0de70630688a2e5f5c41627f0b2c6be249cc661b0f00",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689569261_81346",
+      "timestamp": 1789689569261,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 56
+      },
+      "previousHash": "49cee30689cecc7a6f8b0de70630688a2e5f5c41627f0b2c6be249cc661b0f00",
+      "currentHash": "40df303a81f111cf02f484b976414b896a60f2d1a9c50ba9df4d190758d8a486",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689569567_26427",
+      "timestamp": 1789689569567,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 57
+      },
+      "previousHash": "40df303a81f111cf02f484b976414b896a60f2d1a9c50ba9df4d190758d8a486",
+      "currentHash": "8aa54cea440fc8291cc6d2355d5dfa1fe27a454f7ab8c4051d4479d3625ef378",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689569627_23462",
+      "timestamp": 1789689569627,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 58
+      },
+      "previousHash": "8aa54cea440fc8291cc6d2355d5dfa1fe27a454f7ab8c4051d4479d3625ef378",
+      "currentHash": "770ea42ac2c1b67311422e6e20e051c927d68a9f032edf2179201249541f1f50",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689580219_42259",
+      "timestamp": 1789689580219,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "json"
+      },
+      "previousHash": "770ea42ac2c1b67311422e6e20e051c927d68a9f032edf2179201249541f1f50",
+      "currentHash": "731d5c7153d0ecbd43244e3656fbe2b05fa243c963d77a82e3615cb8d8e1aa45",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689581262_70990",
+      "timestamp": 1789689581262,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "json"
+      },
+      "previousHash": "731d5c7153d0ecbd43244e3656fbe2b05fa243c963d77a82e3615cb8d8e1aa45",
+      "currentHash": "384300100dbd3ced43617630011799c1d9af97d0c1d1c1941ae58d3434c92fea",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689581323_48186",
+      "timestamp": 1789689581323,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "json"
+      },
+      "previousHash": "384300100dbd3ced43617630011799c1d9af97d0c1d1c1941ae58d3434c92fea",
+      "currentHash": "d763269de10d1dbda5d26ac11b895977b937bebf4625ff2e6c3302cdcdb7a0b6",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689582925_57211",
+      "timestamp": 1789689582925,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "json"
+      },
+      "previousHash": "d763269de10d1dbda5d26ac11b895977b937bebf4625ff2e6c3302cdcdb7a0b6",
+      "currentHash": "87000f998d8eeb04062183ec7c0daba69f6a4c63cb4365e2d513882297fbf3f6",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689582985_81600",
+      "timestamp": 1789689582985,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "json"
+      },
+      "previousHash": "87000f998d8eeb04062183ec7c0daba69f6a4c63cb4365e2d513882297fbf3f6",
+      "currentHash": "726601b29cdd5f03672a03f22d142148dad087fdd207a6f6fa1a9da70f9b75ad",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689584902_74466",
+      "timestamp": 1789689584902,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "xml"
+      },
+      "previousHash": "726601b29cdd5f03672a03f22d142148dad087fdd207a6f6fa1a9da70f9b75ad",
+      "currentHash": "cda55ec1f6de6149afeb7fa60464d16b6259148651a1a407d9c9750a77b2ca22",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689584961_4572",
+      "timestamp": 1789689584961,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "xml"
+      },
+      "previousHash": "cda55ec1f6de6149afeb7fa60464d16b6259148651a1a407d9c9750a77b2ca22",
+      "currentHash": "d0a7ea1589a11a43f250220b62618488040051f106e0472c3e24dc7a041d6551",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689585550_54439",
+      "timestamp": 1789689585550,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "xml"
+      },
+      "previousHash": "d0a7ea1589a11a43f250220b62618488040051f106e0472c3e24dc7a041d6551",
+      "currentHash": "d47bec2e9dee10c4058249d929fc1bfbcd9d4d51e2011175f3dbd6001323e817",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689585610_56251",
+      "timestamp": 1789689585610,
+      "actionType": "CBK_FXBO_REGULATORY_BATCH_EXPORT",
+      "actor": {
+        "admin": "USR_1789526748571_70704",
+        "region": "KE"
+      },
+      "details": {
+        "format": "xml"
+      },
+      "previousHash": "d47bec2e9dee10c4058249d929fc1bfbcd9d4d51e2011175f3dbd6001323e817",
+      "currentHash": "e6a9b894e52b85c690a6ef831103628fdd8c4a782021f7261d03371b5a7e353c",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689588267_83668",
+      "timestamp": 1789689588267,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 68
+      },
+      "previousHash": "e6a9b894e52b85c690a6ef831103628fdd8c4a782021f7261d03371b5a7e353c",
+      "currentHash": "4d8785d869a988bf123fb276e65bc39c96687263a25e05ecd88a73a9ec2ec845",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689588327_92438",
+      "timestamp": 1789689588327,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 69
+      },
+      "previousHash": "4d8785d869a988bf123fb276e65bc39c96687263a25e05ecd88a73a9ec2ec845",
+      "currentHash": "b4a932b8df535c1dbdf2a79b1e2629b543049e78fe79e3b28b1db15a1599dd77",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689588632_63826",
+      "timestamp": 1789689588632,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 70
+      },
+      "previousHash": "b4a932b8df535c1dbdf2a79b1e2629b543049e78fe79e3b28b1db15a1599dd77",
+      "currentHash": "a90259314315f5a76dcc8b677f7d29675745efa0438e5b16cfc9f06dcdb5b344",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689588692_882",
+      "timestamp": 1789689588692,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 71
+      },
+      "previousHash": "a90259314315f5a76dcc8b677f7d29675745efa0438e5b16cfc9f06dcdb5b344",
+      "currentHash": "1ac6d1f2d70a92146d01bed1f887da4a9a3ec71ba08548e163f0a50d5b71f234",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689860323_72041",
+      "timestamp": 1789689860323,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 72
+      },
+      "previousHash": "1ac6d1f2d70a92146d01bed1f887da4a9a3ec71ba08548e163f0a50d5b71f234",
+      "currentHash": "a4605b5600e7d8ac39ad20b8e8c767cd5b937a444c4d161e4b3ea3b2d9eff74b",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689861104_93452",
+      "timestamp": 1789689861104,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 73
+      },
+      "previousHash": "a4605b5600e7d8ac39ad20b8e8c767cd5b937a444c4d161e4b3ea3b2d9eff74b",
+      "currentHash": "c919d9c77ef7377194d2448655f526dbda2b3fa2d7f0aa92502f6f3a3d9aba90",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789689861368_92373",
+      "timestamp": 1789689861368,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 74
+      },
+      "previousHash": "c919d9c77ef7377194d2448655f526dbda2b3fa2d7f0aa92502f6f3a3d9aba90",
+      "currentHash": "06d3aea829de75bc552bc646dbd3ba37fd5f863c63b25b3a7d33897c8bcb263f",
+      "tamperProof": true,
+      "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
     }
   ],
   "transactions": [
