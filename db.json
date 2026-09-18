@@ -2823,6 +2823,150 @@
       "currentHash": "f5784ffe67b9a5713e8bc4fb01d1c797832c7cf4ef53b9fc05fabbccd93f64e5",
       "tamperProof": true,
       "regulatoryStandard": "STAGE_108_INTERPOL_DCI_POCAMLA_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789699181514_69630",
+      "timestamp": 1789699181514,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 134
+      },
+      "previousHash": "f5784ffe67b9a5713e8bc4fb01d1c797832c7cf4ef53b9fc05fabbccd93f64e5",
+      "currentHash": "31c25d973a348f92f77180e044c313791f3d3f4cca3f0ba7dcd8e777fd951e2c",
+      "tamperProof": true,
+      "regulatoryStandard": "STAGE_110_GLOBAL_ZKP_POCAMLA_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789699184064_2075",
+      "timestamp": 1789699184064,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 135
+      },
+      "previousHash": "31c25d973a348f92f77180e044c313791f3d3f4cca3f0ba7dcd8e777fd951e2c",
+      "currentHash": "8d8838883f580d43f80e8f1488db2b59fc0edcc7e928fe39af38fa0c6bf59ec8",
+      "tamperProof": true,
+      "regulatoryStandard": "STAGE_110_GLOBAL_ZKP_POCAMLA_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789699187048_16031",
+      "timestamp": 1789699187048,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 136
+      },
+      "previousHash": "8d8838883f580d43f80e8f1488db2b59fc0edcc7e928fe39af38fa0c6bf59ec8",
+      "currentHash": "fef73ad8b80a4b2720c61199259fd669a7bda1abaa4885a48ccc7e8e3de3463c",
+      "tamperProof": true,
+      "regulatoryStandard": "STAGE_110_GLOBAL_ZKP_POCAMLA_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789699187343_97590",
+      "timestamp": 1789699187343,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 137
+      },
+      "previousHash": "fef73ad8b80a4b2720c61199259fd669a7bda1abaa4885a48ccc7e8e3de3463c",
+      "currentHash": "9311aa897515ec8d9dac0676684c070a0fdde253ff7f58d14b0bdf4cab822071",
+      "tamperProof": true,
+      "regulatoryStandard": "STAGE_110_GLOBAL_ZKP_POCAMLA_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789699192416_4051",
+      "timestamp": 1789699192416,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 138
+      },
+      "previousHash": "9311aa897515ec8d9dac0676684c070a0fdde253ff7f58d14b0bdf4cab822071",
+      "currentHash": "fdba0881c684ada4f3a2836e81cf6e9f189a8ca090605d069f1e6945114a5c81",
+      "tamperProof": true,
+      "regulatoryStandard": "STAGE_110_GLOBAL_ZKP_POCAMLA_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789699194007_64440",
+      "timestamp": 1789699194007,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 139
+      },
+      "previousHash": "fdba0881c684ada4f3a2836e81cf6e9f189a8ca090605d069f1e6945114a5c81",
+      "currentHash": "a32074ef5531e7efe6fb0d0d0e7815ba61eb9b062d7cb783fc38231efc503a30",
+      "tamperProof": true,
+      "regulatoryStandard": "STAGE_110_GLOBAL_ZKP_POCAMLA_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789699194271_15330",
+      "timestamp": 1789699194271,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 140
+      },
+      "previousHash": "a32074ef5531e7efe6fb0d0d0e7815ba61eb9b062d7cb783fc38231efc503a30",
+      "currentHash": "785b4e9eeb90942d1f56c764df279d3a780297fb9de56044c996f45aaf334a89",
+      "tamperProof": true,
+      "regulatoryStandard": "STAGE_110_GLOBAL_ZKP_POCAMLA_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789699195647_9016",
+      "timestamp": 1789699195647,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 141
+      },
+      "previousHash": "785b4e9eeb90942d1f56c764df279d3a780297fb9de56044c996f45aaf334a89",
+      "currentHash": "4b109d30ece2ef4fcd94c4b9361c5fcb9eed94530f8b20b58dbdcfeaf6188ba6",
+      "tamperProof": true,
+      "regulatoryStandard": "STAGE_110_GLOBAL_ZKP_POCAMLA_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789699197191_72831",
+      "timestamp": 1789699197191,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 142
+      },
+      "previousHash": "4b109d30ece2ef4fcd94c4b9361c5fcb9eed94530f8b20b58dbdcfeaf6188ba6",
+      "currentHash": "9dee63cc3350c02bea176f9acd14734d8e563b3c0166693677b92cf3473f5288",
+      "tamperProof": true,
+      "regulatoryStandard": "STAGE_110_GLOBAL_ZKP_POCAMLA_VERIFIED"
     }
   ],
   "transactions": [
@@ -4062,6 +4206,7 @@
     "CID_SECURE_KEY",
     "INTERPOL_GLOBAL_RED"
   ],
+  "zkp_proof_registry": [],
   "shops": [],
   "catalogs": {},
   "ledger_entries": [
