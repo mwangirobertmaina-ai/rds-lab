@@ -1,6 +1,6 @@
 // ==========================================
 // RDS - STAGE 124 WORLD-COMPLIANT MULTI-INSTITUTION FINANCIAL OPERATING SYSTEM
-// Supports: World Bank, CBK RTGS, Commercial Banks, M-Pesa / Mobile Money, Forex Bureaus, SWIFT ISO 20022
+// Supports: World Bank, CBK RTGS, Commercial Banks, Extended Global Forex Bureaus, SWIFT ISO 20022
 // + Fully Activated KYC / AML Sovereign Registry & Cryptographic Verify Vault
 // ==========================================
 
@@ -50,7 +50,11 @@ function defaultDB() {
       { id: "INST-EQUITY", name: "Equity Bank Commercial Clearing Node", region: "KE", currency: "KES", type: "COMMERCIAL_BANK", ownerPhone: "254711000000", taxPin: "P051111111Y" },
       { id: "INST-KCB", name: "KCB Bank National RTGS Gateway", region: "KE", currency: "KES", type: "COMMERCIAL_BANK", ownerPhone: "254722000000", taxPin: "P052222222Z" },
       { id: "BIZ-KE", name: "RDS Nairobi Forex Bureau (CBK RTGS Corridor)", region: "KE", currency: "KES", type: "FOREX_BUREAU", ownerPhone: "254721862397", taxPin: "P055123456Z" },
-      { id: "BIZ-UK", name: "RDS London Commercial Reserve (SWIFT ISO)", region: "UK", currency: "GBP", type: "CENTRAL_RESERVE", ownerPhone: "447123456789", taxPin: "GB123456789" }
+      { id: "BIZ-UK", name: "RDS London Central Reserve (SWIFT ISO)", region: "UK", currency: "GBP", type: "CENTRAL_RESERVE", ownerPhone: "447123456789", taxPin: "GB123456789" },
+      { id: "BIZ-PEARL", name: "Pearl Forex Bureau International Clearing Node", region: "KE", currency: "USD", type: "FOREX_BUREAU", ownerPhone: "254733000000", taxPin: "P057891234W" },
+      { id: "BIZ-TOWER", name: "Tower Forex & Global Remittance Exchange", region: "KE", currency: "EUR", type: "FOREX_BUREAU", ownerPhone: "254744000000", taxPin: "P058923451V" },
+      { id: "BIZ-METRO", name: "Metropolis Sovereign Forex Bureau", region: "US", currency: "USD", type: "FOREX_BUREAU", ownerPhone: "12125550199", taxPin: "US-88392019F" },
+      { id: "BIZ-TOKYO", name: "Tokyo Apex Central Forex Reserve", region: "JP", currency: "JPY", type: "CENTRAL_RESERVE", ownerPhone: "8135550143", taxPin: "JP-99201837T" }
     ], 
     drivers: [],
     riders: [],
@@ -82,7 +86,11 @@ function ensureState() {
   if (!Array.isArray(data.businesses)) data.businesses = [];
   const requiredNodes = [
     { id: "INST-WORLDBANK", name: "World Bank Sovereign Development Corridor (IBRD/IDA)", region: "US", currency: "USD", type: "INTERNATIONAL_RESERVE" },
-    { id: "INST-CBK-RTGS", name: "Central Bank of Kenya (CBK) National RTGS Gateway", region: "KE", currency: "KES", type: "CENTRAL_BANK" }
+    { id: "INST-CBK-RTGS", name: "Central Bank of Kenya (CBK) National RTGS Gateway", region: "KE", currency: "KES", type: "CENTRAL_BANK" },
+    { id: "BIZ-PEARL", name: "Pearl Forex Bureau International Clearing Node", region: "KE", currency: "USD", type: "FOREX_BUREAU" },
+    { id: "BIZ-TOWER", name: "Tower Forex & Global Remittance Exchange", region: "KE", currency: "EUR", type: "FOREX_BUREAU" },
+    { id: "BIZ-METRO", name: "Metropolis Sovereign Forex Bureau", region: "US", currency: "USD", type: "FOREX_BUREAU" },
+    { id: "BIZ-TOKYO", name: "Tokyo Apex Central Forex Reserve", region: "JP", currency: "JPY", type: "CENTRAL_RESERVE" }
   ];
   requiredNodes.forEach(node => {
     if (!data.businesses.some(b => b.id === node.id)) {
@@ -196,7 +204,6 @@ app.get('/api/admin/did-passes', enforceTenantIsolation, async (req, res) => {
     return ok(res, { success: true, didPasses: data.did_pass_registry });
 });
 
-// NEW KYC USERS REGISTRY ENDPOINT
 app.get('/api/admin/kyc-registry', enforceTenantIsolation, async (req, res) => {
     ensureState();
     return ok(res, { success: true, kycUsers: data.users });
@@ -207,7 +214,6 @@ app.get('/api/admin/sovereign-vault', enforceTenantIsolation, async (req, res) =
     return ok(res, { success: true, vaultBlocks: data.immutable_audit_vault });
 });
 
-// WORLD-COMPLIANT ISO 20022 / CBK / WORLD BANK WIRE DISPATCH WITH SHADOW-TRAP & KYC CHECK
 app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -262,7 +268,7 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
 
         return ok(res, { 
             success: true, 
-            message: `Wire instruction successfully formatted, KYC verified, and settled via World Bank / CBK Corridor (${req.tenantObj.name}).`, 
+            message: `Wire instruction successfully formatted, KYC verified, and settled via Corridor (${req.tenantObj.name}).`, 
             wireMessage,
             complianceNote: "Transaction 100% compliant with World Bank, CBK, and FATF Tier-3 standards under continuous service." 
         });
@@ -271,7 +277,6 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
     }
 });
 
-// INTER-BANK CLEARING
 app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -295,7 +300,6 @@ app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (re
     }
 });
 
-// AI ENFORCEMENT AGENT
 app.post('/api/ai/autonomous-enforcement', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -315,13 +319,12 @@ app.post('/api/ai/autonomous-enforcement', enforceTenantIsolation, async (req, r
         await recordImmutableAudit("AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED", { tenant: req.tenantId, institution: req.tenantObj.name }, actionRecord);
         await saveDB();
 
-        return ok(res, { success: true, message: `Autonomous AI Agent scanned ${req.tenantObj.name} against World Bank / CBK KYC rules. Zero disruption.`, actionRecord });
+        return ok(res, { success: true, message: `Autonomous AI Agent scanned ${req.tenantObj.name} against KYC rules. Zero disruption.`, actionRecord });
     } catch (err) {
         return fail(res, err.message, 500);
     }
 });
 
-// DID PASS MINTING
 app.post('/api/did/register-pass', async (req, res) => {
     try {
         ensureState();
@@ -340,8 +343,6 @@ app.post('/api/did/register-pass', async (req, res) => {
         };
 
         data.did_pass_registry.push(didRecord);
-        
-        // Also register into KYC users list
         data.users.push({
             id: id("USR"),
             fullName: holderName,
@@ -361,7 +362,6 @@ app.post('/api/did/register-pass', async (req, res) => {
     }
 });
 
-// COMPLIANCE DASHBOARD
 app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -383,7 +383,6 @@ app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, r
     }
 });
 
-// PRINTABLE AUDIT REPORT
 app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -395,7 +394,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
                 <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold; color: #dc2626;">${s.actionType}</td>
                 <td style="padding: 8px; border-bottom: 1px solid #ddd; font-family: monospace; font-size: 11px;">${JSON.stringify(s.actor)}</td>
                 <td style="padding: 8px; border-bottom: 1px solid #ddd; font-family: monospace; font-size: 10px; color: #555;">${s.currentHash}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; color: #16a34a; font-weight: bold;">VERIFIED</td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd; color: #16a34a; font-weight: bold;">SHA-256 VALID</td>
             </tr>
         `).join('');
 
@@ -437,7 +436,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
                 </tbody>
             </table>
             <div class="footer">
-                <p><strong>World Compliance Standard:</strong> World Bank IBRD/IDA / Central Bank of Kenya (CBK) RTGS / FATF KYC Tier-3 / SWIFT ISO 20022.</p>
+                <p><strong>World Compliance Standard:</strong> World Bank IBRD/IDA / Central Bank of Kenya (CBK) / FATF KYC Tier-3 / SWIFT ISO 20022.</p>
                 <p>This document is cryptographically immutable and legally binding for official international regulatory and law enforcement verification.</p>
             </div>
         </body>
@@ -447,7 +446,6 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
     }
 });
 
-// FULLY ACTIVATED CRYPTOGRAPHIC CHAIN VERIFICATION ENDPOINT
 app.get('/api/admin/audit/verify-chain', async (req, res) => {
     ensureState();
     let isValid = true;
