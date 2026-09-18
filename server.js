@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 108 SOVEREIGN INTELLIGENCE, LAW ENFORCEMENT & MODERN COMPLIANCE ENGINE
-// Universal Support: Kenya (DCI/CID, FRC, CBK Form FXBO / POCAMLA), INTERPOL, FinCEN, FCA
-// + Live Telemetry Tracking + Suspicious Movement Memorization + Forensic Intelligence Taps + Automated goAML Reporting
+// RDS - STAGE 109 SOVEREIGN INTELLIGENCE, LAW ENFORCEMENT & ENTERPRISE COMPLIANCE ENGINE
+// Universal Support: Kenya (DCI/CID, FRC goAML, CBK Form FXBO / POCAMLA), INTERPOL, FinCEN, FCA
+// + Live Telemetry Tracking + Suspicious Movement Memorization + Forensic Taps + Inventory Asset Reserves
 // ==========================================
 
 const express = require("express");
@@ -53,35 +53,6 @@ function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.max(round(R * c), 0.5);
 }
 
-function calculateFinancials(order, region = "KE") {
-    const baseAmount = Number(order.itemPriceTotal || 0);    
-    const deliveryFee = Number(order.deliveryFee || 0);
-    const surcharge2 = round(baseAmount * 0.02);
-    const total = round(baseAmount + surcharge2 + deliveryFee);
-    
-    let taxRate = 0.16;
-    if (region === "UK" || region === "EU") taxRate = 0.20;
-    if (region === "CA") taxRate = 0.13;
-    if (region === "US") taxRate = 0.08;
-
-    const tax = round(baseAmount * taxRate);
-    const riderReceives = round(deliveryFee * 0.95);
-    const riderPlatform = round(deliveryFee * 0.05);
-
-    return {
-        currency: order.currency || "KES",
-        productAmount: baseAmount,
-        deliveryFee,
-        userPays: total,
-        shopReceives: round(baseAmount),
-        platformFromUserFee: surcharge2,
-        platformFromRider: riderPlatform,
-        tax,
-        riderReceives,
-        netPlatformRevenue: round(surcharge2 + riderPlatform - tax)
-    };
-}
-
 const MPESA_CONFIG = {
   consumerKey: process.env.MPESA_CONSUMER_KEY || "1gUiUGRcrNGP7GEplYsE62mNKqAnItctwfteNSPPklSop61w",
   consumerSecret: process.env.MPESA_CONSUMER_SECRET || "wF4tdktQCUIATJr3DNqW9wtIjtImd7bNGGyYhYa5k3LNesW20xRG1ZAsEiqBqgRv",
@@ -126,7 +97,7 @@ function defaultDB() {
       { riderId: "RDR_01", name: "John Kiprop", phone: "254711223344", vehicleType: "MOTORBIKE", status: "ACTIVE" }
     ],
     products: [
-      { id: "p1", businessId: "BIZ-KE", category: "RESTAURANT", merchant: "Nairobi Grill & Chicken", name: "2pc Chicken Meal (KES)", price: 650, currency: "KES", image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80" }
+      { id: "p1", businessId: "BIZ-KE", category: "RESTAURANT", merchant: "Nairobi Grill & Chicken", name: "2pc Chicken Meal (KES)", price: 650, currency: "KES", stock: 150, image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80" }
     ], 
     users: [
       { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", idOrPassportNo: "32456789", amlFlagged: false, riskScore: "0.8%", kycStatus: "VERIFIED", riskProfile: { score: 0.8, level: "LOW", factors: ["Global Verified ID", "POCAMLA Compliant"] } }
@@ -208,7 +179,7 @@ async function recordImmutableAudit(actionType, actor, details) {
         previousHash,
         currentHash,
         tamperProof: true,
-        regulatoryStandard: "STAGE_108_INTERPOL_DCI_POCAMLA_VERIFIED"
+        regulatoryStandard: "STAGE_109_INTERPOL_DCI_POCAMLA_VERIFIED"
     };
 
     data.immutable_audit_vault.push(auditRecord);
@@ -220,31 +191,6 @@ function screenAgainstWatchlists(userOrName) {
     ensureState();
     const queryStr = typeof userOrName === 'string' ? userOrName.toLowerCase() : `${userOrName.fullName} ${userOrName.idOrPassportNo}`.toLowerCase();
     return data.pep_watchlist.some(w => queryStr.includes(w.toLowerCase()));
-}
-
-function checkTransactionVelocity(userId, amount) {
-    ensureState();
-    const rollingWindowMs = 24 * 60 * 60 * 1000;
-    const now = Date.now();
-    const recentTx = data.transactions.filter(t => t.userId === userId && (now - t.createdAt) < rollingWindowMs);
-    
-    const totalRollingAmount = recentTx.reduce((sum, t) => sum + Number(t.total || 0), 0) + Number(amount || 0);
-    const transactionCount = recentTx.length + 1;
-
-    if (totalRollingAmount > 10000 || transactionCount >= 6) {
-        const alertEntry = {
-            id: id("VEL"),
-            userId,
-            totalRollingAmount,
-            transactionCount,
-            reason: "CBK/POCAMLA & INTERPOL Cross-Border Structuring Threshold Exceeded",
-            timestamp: now
-        };
-        data.velocity_alerts.push(alertEntry);
-        recordImmutableAudit("SMURFING_VELOCITY_TRIGGERED", { userId }, alertEntry);
-        return true;
-    }
-    return false;
 }
 
 function enforceTenantIsolation(req, res, next) {
@@ -272,7 +218,23 @@ const saveDB = async () => {
   } catch (err) { console.error("DB save error", err); }
 };
 
-// STAGE 108: ENHANCED COMPLIANCE & FRC goAML EXPORT ENDPOINT
+// STAGE 109: LIVE INVENTORY & ASSET RESERVE MANAGEMENT ENDPOINT
+app.get('/api/admin/inventory/reserves', enforceTenantIsolation, async (req, res) => {
+    try {
+        ensureState();
+        return ok(res, {
+            success: true,
+            tenantId: req.tenantId,
+            currency: req.tenantObj.currency,
+            products: data.products.filter(p => p.businessId === req.tenantId || req.tenantId === "BIZ-KE"),
+            totalAssetValuation: data.products.reduce((sum, p) => sum + (Number(p.price || 0) * Number(p.stock || 10)), 0)
+        });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
+
+// STAGE 109: FRC goAML XML EXPORT ENDPOINT
 app.get('/api/admin/compliance/export-goaml', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -281,7 +243,7 @@ app.get('/api/admin/compliance/export-goaml', enforceTenantIsolation, async (req
         
         res.setHeader('Content-Type', 'application/xml');
         return res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<goAML_Report version="108" jurisdiction="Kenya-FRC">
+<goAML_Report version="109" jurisdiction="Kenya-FRC">
     <GenerationTime>${new Date().toISOString()}</GenerationTime>
     <ReportingInstitution>${req.tenantObj.name}</ReportingInstitution>
     <SARCount>${data.sar_queue.length}</SARCount>
@@ -293,7 +255,7 @@ app.get('/api/admin/compliance/export-goaml', enforceTenantIsolation, async (req
     }
 });
 
-// STAGE 108: DYNAMIC RISK SCORE RECALIBRATION ENDPOINT
+// STAGE 109: DYNAMIC RISK SCORE RECALIBRATION
 app.post('/api/admin/risk-score/recalculate', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -317,7 +279,7 @@ app.post('/api/admin/risk-score/recalculate', enforceTenantIsolation, async (req
     }
 });
 
-// STAGE 107/108: LAW ENFORCEMENT SURVEILLANCE & TELEMETRY INGESTION ENDPOINT
+// STAGE 109: LAW ENFORCEMENT SURVEILLANCE TELEMETRY
 app.post('/api/surveillance/track-movement', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -355,7 +317,7 @@ app.post('/api/surveillance/track-movement', enforceTenantIsolation, async (req,
     }
 });
 
-// STAGE 107/108: SECURE AGENCY INTELLIGENCE FEED (DCI / CID / INTERPOL ACCESS)
+// STAGE 109: SECURE AGENCY INTELLIGENCE FEED
 app.get('/api/agency/intelligence-feed', async (req, res) => {
     try {
         ensureState();
@@ -477,8 +439,8 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_108_SOVEREIGN_INTELLIGENCE_GRID_ACTIVE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_109_SOVEREIGN_INTELLIGENCE_GRID_ACTIVE", time: Date.now() }));
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 108 LAW ENFORCEMENT & MODERN COMPLIANCE GRID ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 109 LAW ENFORCEMENT & ASSET RESERVE GRID ACTIVE ON PORT ${PORT}`);
 });
