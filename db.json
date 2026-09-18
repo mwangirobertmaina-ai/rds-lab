@@ -2967,6 +2967,44 @@
       "currentHash": "9dee63cc3350c02bea176f9acd14734d8e563b3c0166693677b92cf3473f5288",
       "tamperProof": true,
       "regulatoryStandard": "STAGE_110_GLOBAL_ZKP_POCAMLA_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789699846661_57915",
+      "timestamp": 1789699846661,
+      "actionType": "GNN_TOPOLOGY_SCAN_EXECUTED",
+      "actor": {
+        "admin": "AI_RISK_ENGINE"
+      },
+      "details": {
+        "clusterId": "GNN_1789699846661_6958",
+        "scannedAt": 1789699846661,
+        "nodesAnalyzed": 6,
+        "muleAccountsDetected": 0,
+        "status": "GRAPH_TOPOLOGY_OPTIMIZED_AND_CLEAN"
+      },
+      "previousHash": "9dee63cc3350c02bea176f9acd14734d8e563b3c0166693677b92cf3473f5288",
+      "currentHash": "a908a44bb3b8982701a2a51013a1cb9f036bbdba4452f4370ce231d4b94b2690",
+      "tamperProof": true,
+      "regulatoryStandard": "STAGE_111_FRC_GOAML_V502_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789699848696_98279",
+      "timestamp": 1789699848696,
+      "actionType": "GNN_TOPOLOGY_SCAN_EXECUTED",
+      "actor": {
+        "admin": "AI_RISK_ENGINE"
+      },
+      "details": {
+        "clusterId": "GNN_1789699848696_10229",
+        "scannedAt": 1789699848696,
+        "nodesAnalyzed": 6,
+        "muleAccountsDetected": 0,
+        "status": "GRAPH_TOPOLOGY_OPTIMIZED_AND_CLEAN"
+      },
+      "previousHash": "a908a44bb3b8982701a2a51013a1cb9f036bbdba4452f4370ce231d4b94b2690",
+      "currentHash": "27cb34c11edc1a1438a3881963bcd927c46dbd660d2be3de113f8a365aa346a7",
+      "tamperProof": true,
+      "regulatoryStandard": "STAGE_111_FRC_GOAML_V502_VERIFIED"
     }
   ],
   "transactions": [
@@ -4206,9 +4244,25 @@
     "CID_SECURE_KEY",
     "INTERPOL_GLOBAL_RED"
   ],
-  "zkp_proof_registry": [],
+  "gnn_cluster_rings": [
+    {
+      "clusterId": "GNN_1789699846661_6958",
+      "scannedAt": 1789699846661,
+      "nodesAnalyzed": 6,
+      "muleAccountsDetected": 0,
+      "status": "GRAPH_TOPOLOGY_OPTIMIZED_AND_CLEAN"
+    },
+    {
+      "clusterId": "GNN_1789699848696_10229",
+      "scannedAt": 1789699848696,
+      "nodesAnalyzed": 6,
+      "muleAccountsDetected": 0,
+      "status": "GRAPH_TOPOLOGY_OPTIMIZED_AND_CLEAN"
+    }
+  ],
   "shops": [],
   "catalogs": {},
+  "zkp_proof_registry": [],
   "ledger_entries": [
     {
       "id": "LEDGER_1789538185324_5072",
