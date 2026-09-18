@@ -33,16 +33,6 @@
       "taxPin": "CA123456789RT"
     }
   ],
-  "drivers": [],
-  "riders": [
-    {
-      "riderId": "RDR_01",
-      "name": "John Kiprop",
-      "phone": "254711223344",
-      "vehicleType": "MOTORBIKE",
-      "status": "ACTIVE"
-    }
-  ],
   "products": [
     {
       "id": "p1",
@@ -143,106 +133,6 @@
         ]
       },
       "createdAt": 1789693049670
-    }
-  ],
-  "otp_sessions": [
-    {
-      "phone": "1234",
-      "otp": "1234",
-      "expires": 1789603614279
-    },
-    {
-      "phone": "254711999888",
-      "email": "audittest@rds.com",
-      "otp": "1234",
-      "expires": 1789680028397
-    },
-    {
-      "phone": "254721862397",
-      "email": "compliance@rds-forex.ke",
-      "otp": "1234",
-      "expires": 1789693367945
-    }
-  ],
-  "active_sessions": [
-    {
-      "token": "a3d0f9cce4e5bce3b8ddc30f11c52fa6422dcac23fe1bbfd5e7815685c5d485a",
-      "userId": "USR_1789674342963_47256",
-      "phone": "254711999888",
-      "role": "USER",
-      "loginTime": 1789676933070
-    },
-    {
-      "token": "f2706fdaa6d6e2466281ab3a192146006a0e6c7bf50c4f8761c8e83da2ce47bb",
-      "userId": "USR_1789674342963_47256",
-      "phone": "254711999888",
-      "role": "ADMIN",
-      "loginTime": 1789679740733
-    },
-    {
-      "token": "89c701a2ef32147d4b3af05ee937313c4cf3f11bf1ed8ebe3d1b85e57bc534c6",
-      "userId": "USR_1789526748571_70704",
-      "phone": "254721862397",
-      "role": "ADMIN",
-      "loginTime": 1789688273933
-    },
-    {
-      "token": "9057a4e680176f45611f90968ae47c4951eff229a16b4b41197cc5fea4e91c7d",
-      "userId": "USR_1789526748571_70704",
-      "phone": "254721862397",
-      "role": "ADMIN",
-      "loginTime": 1789689116386
-    },
-    {
-      "token": "d5574e50cc0d4aa277c0df4bf0f38ba903651d3b7277f5d5b5d28e9d5245ef78",
-      "userId": "USR_1789526748571_70704",
-      "phone": "254721862397",
-      "role": "USER",
-      "loginTime": 1789689255081
-    },
-    {
-      "token": "ad7925aa45d5170028ad83854daec68227c47488f22fb7083cdc789aa1863e22",
-      "userId": "USR_1789526748571_70704",
-      "phone": "254721862397",
-      "role": "USER",
-      "loginTime": 1789690441708
-    },
-    {
-      "token": "3c8cc9d1f761cbaae401a321e7e229c4826710f98a8aef81cfc664ad6aa821ae",
-      "userId": "USR_1789526748571_70704",
-      "phone": "254721862397",
-      "role": "ADMIN",
-      "loginTime": 1789690514459
-    },
-    {
-      "token": "1179759cf212d5e4993dfb4ae216ca0eae1c91d24b9677cad4f118635b5c31a6",
-      "userId": "USR_1789526748571_70704",
-      "phone": "254721862397",
-      "role": "ADMIN",
-      "loginTime": 1789690715817
-    },
-    {
-      "token": "8f6b8e68f42da4249413ee0f2c2e8a9987ed52c7853d094fc70836a4bb06215c",
-      "userId": "USR_1789526748571_70704",
-      "phone": "254721862397",
-      "role": "ADMIN",
-      "loginTime": 1789692820906
-    },
-    {
-      "token": "a21d1e4fd9640046b4920666adbcf97e62c0ca4ad9a401a83801b03dfb1f3215",
-      "userId": "USR_1789526748571_70704",
-      "phone": "254721862397",
-      "role": "ADMIN",
-      "loginTime": 1789693069104
-    }
-  ],
-  "universal_connections": [
-    {
-      "id": "API_CONN_1789677068357_39559",
-      "targetApiUrl": "https://httpbin.org/json",
-      "status": "CONNECTED_SUCCESS",
-      "timestamp": 1789677068357,
-      "responseSnippet": "{\"slideshow\":{\"author\":\"Yours Truly\",\"date\":\"date of publication\",\"slides\":[{\"title\":\"Wake up to WonderWidgets!\",\"type\":\"all\"},{\"items\":[\"Why <em>WonderWidgets</em> are great\",\"Who <em>buys</em> WonderWidgets\"],\"title\":\"Overview\",\"type\":\"all\"}],\"title\":\"Sample Slide Show\"}}"
     }
   ],
   "immutable_audit_vault": [
@@ -3005,6 +2895,522 @@
       "currentHash": "27cb34c11edc1a1438a3881963bcd927c46dbd660d2be3de113f8a365aa346a7",
       "tamperProof": true,
       "regulatoryStandard": "STAGE_111_FRC_GOAML_V502_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703550937_12428",
+      "timestamp": 1789703550936,
+      "actionType": "DID_ZKP_PASS_MINTED",
+      "actor": {
+        "holderName": "pearl forex"
+      },
+      "details": {
+        "didPassId": "did:rds:global:937752",
+        "zkpHash": "55ae31d2864f0472efe9a769d0e431d378e5c3dfcec4e5242457fd297ad318b1"
+      },
+      "previousHash": "27cb34c11edc1a1438a3881963bcd927c46dbd660d2be3de113f8a365aa346a7",
+      "currentHash": "d456ef289f56b74c1a55f637967e76ec2b89271b72ec91615c7c0135fba0aa38",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703556548_91456",
+      "timestamp": 1789703556548,
+      "actionType": "DID_ZKP_PASS_MINTED",
+      "actor": {
+        "holderName": "pearl forex"
+      },
+      "details": {
+        "didPassId": "did:rds:global:973557",
+        "zkpHash": "c4e50ec148e86afb4bc52378b8b2cc86be9d250e3508c740a35387b78fa44986"
+      },
+      "previousHash": "d456ef289f56b74c1a55f637967e76ec2b89271b72ec91615c7c0135fba0aa38",
+      "currentHash": "ed41873648cdcd8d7e384f980bebb6727a5815445b81016c17b36fb1acb0a663",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703571428_38440",
+      "timestamp": 1789703571428,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789703571428_43682",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789703571428,
+        "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+        "threatsNeutralized": 0,
+        "systemHealth": "100% SECURE",
+        "status": "AUTONOMOUS_AGENT_ACTIVE"
+      },
+      "previousHash": "ed41873648cdcd8d7e384f980bebb6727a5815445b81016c17b36fb1acb0a663",
+      "currentHash": "55aa060bf5d50bfaf8c977393cf395d57b5d007ca66f1394980f6ce784381ced",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703574874_13171",
+      "timestamp": 1789703574874,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789703574874_82686",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789703574874,
+        "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+        "threatsNeutralized": 0,
+        "systemHealth": "100% SECURE",
+        "status": "AUTONOMOUS_AGENT_ACTIVE"
+      },
+      "previousHash": "55aa060bf5d50bfaf8c977393cf395d57b5d007ca66f1394980f6ce784381ced",
+      "currentHash": "5115662adde3ea0eb8a4abf304178238742f825dcaea278e30e7394f193c3d8d",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703575914_9625",
+      "timestamp": 1789703575914,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789703575914_97483",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789703575914,
+        "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+        "threatsNeutralized": 0,
+        "systemHealth": "100% SECURE",
+        "status": "AUTONOMOUS_AGENT_ACTIVE"
+      },
+      "previousHash": "5115662adde3ea0eb8a4abf304178238742f825dcaea278e30e7394f193c3d8d",
+      "currentHash": "617d4845a70c61a002a4fdd56ccad81c42031d1f206e79e9c133aa3d999334a8",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703576786_58674",
+      "timestamp": 1789703576786,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789703576786_41662",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789703576786,
+        "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+        "threatsNeutralized": 0,
+        "systemHealth": "100% SECURE",
+        "status": "AUTONOMOUS_AGENT_ACTIVE"
+      },
+      "previousHash": "617d4845a70c61a002a4fdd56ccad81c42031d1f206e79e9c133aa3d999334a8",
+      "currentHash": "151565b2655a6b6659a9da62e7635ec80d94fcd549470223798099d0e327cb06",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703577986_19592",
+      "timestamp": 1789703577986,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789703577986_21435",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789703577986,
+        "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+        "threatsNeutralized": 0,
+        "systemHealth": "100% SECURE",
+        "status": "AUTONOMOUS_AGENT_ACTIVE"
+      },
+      "previousHash": "151565b2655a6b6659a9da62e7635ec80d94fcd549470223798099d0e327cb06",
+      "currentHash": "bc20aba933e58fbf29252b59b4fb7aedfca4ab4c5158781383a5f606fb3fa58c",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703580338_13988",
+      "timestamp": 1789703580338,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789703580338_79919",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789703580338,
+        "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+        "threatsNeutralized": 0,
+        "systemHealth": "100% SECURE",
+        "status": "AUTONOMOUS_AGENT_ACTIVE"
+      },
+      "previousHash": "bc20aba933e58fbf29252b59b4fb7aedfca4ab4c5158781383a5f606fb3fa58c",
+      "currentHash": "79338a193889da3ba883e3c9df18cb581b514503a07c1848b89c3168a37a851e",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703614483_5002",
+      "timestamp": 1789703614483,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789703614483_92877",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789703614483,
+        "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+        "threatsNeutralized": 0,
+        "systemHealth": "100% SECURE",
+        "status": "AUTONOMOUS_AGENT_ACTIVE"
+      },
+      "previousHash": "79338a193889da3ba883e3c9df18cb581b514503a07c1848b89c3168a37a851e",
+      "currentHash": "fcfc2e71d20b0ec2dd992d920b9231b27b39a05022b8000d95b4eae18ae6fe56",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703615682_46360",
+      "timestamp": 1789703615682,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789703615682_9831",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789703615682,
+        "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+        "threatsNeutralized": 0,
+        "systemHealth": "100% SECURE",
+        "status": "AUTONOMOUS_AGENT_ACTIVE"
+      },
+      "previousHash": "fcfc2e71d20b0ec2dd992d920b9231b27b39a05022b8000d95b4eae18ae6fe56",
+      "currentHash": "9ca7ab96938bb214a0652a81de3038c5ffc868c0db8825664d36ab847e5b1b0a",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703616474_59238",
+      "timestamp": 1789703616474,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789703616474_89959",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789703616474,
+        "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+        "threatsNeutralized": 0,
+        "systemHealth": "100% SECURE",
+        "status": "AUTONOMOUS_AGENT_ACTIVE"
+      },
+      "previousHash": "9ca7ab96938bb214a0652a81de3038c5ffc868c0db8825664d36ab847e5b1b0a",
+      "currentHash": "6500f4ac876a5e00f0d78b18e498b0b749c8343729ca64a028ab2ecde3425405",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703617154_47669",
+      "timestamp": 1789703617154,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789703617154_17249",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789703617154,
+        "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+        "threatsNeutralized": 0,
+        "systemHealth": "100% SECURE",
+        "status": "AUTONOMOUS_AGENT_ACTIVE"
+      },
+      "previousHash": "6500f4ac876a5e00f0d78b18e498b0b749c8343729ca64a028ab2ecde3425405",
+      "currentHash": "4d95ffdd76394eba0284da1a4067437fc8aac64cc57c2c44c35f4d486b338da8",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789703629403_9480",
+      "timestamp": 1789703629403,
+      "actionType": "DID_ZKP_PASS_MINTED",
+      "actor": {
+        "holderName": "pearl forex"
+      },
+      "details": {
+        "didPassId": "did:rds:global:815095",
+        "zkpHash": "ef5d8137ecba634d5d533e046fd147592bf6145e07715a13293bf129fc2c2863"
+      },
+      "previousHash": "4d95ffdd76394eba0284da1a4067437fc8aac64cc57c2c44c35f4d486b338da8",
+      "currentHash": "b669c6cb91d5fe8aeba3c919d9b30a29b0acc03743e5799a22aaa63e30b01c62",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_116_QUANTUM_DID_VERIFIED"
+    }
+  ],
+  "iso20022_wires": [],
+  "ai_enforcement_logs": [
+    {
+      "enforcementId": "AI_ENFORCE_1789703571428_43682",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789703571428,
+      "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+      "threatsNeutralized": 0,
+      "systemHealth": "100% SECURE",
+      "status": "AUTONOMOUS_AGENT_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789703574874_82686",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789703574874,
+      "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+      "threatsNeutralized": 0,
+      "systemHealth": "100% SECURE",
+      "status": "AUTONOMOUS_AGENT_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789703575914_97483",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789703575914,
+      "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+      "threatsNeutralized": 0,
+      "systemHealth": "100% SECURE",
+      "status": "AUTONOMOUS_AGENT_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789703576786_41662",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789703576786,
+      "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+      "threatsNeutralized": 0,
+      "systemHealth": "100% SECURE",
+      "status": "AUTONOMOUS_AGENT_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789703577986_21435",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789703577986,
+      "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+      "threatsNeutralized": 0,
+      "systemHealth": "100% SECURE",
+      "status": "AUTONOMOUS_AGENT_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789703580338_79919",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789703580338,
+      "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+      "threatsNeutralized": 0,
+      "systemHealth": "100% SECURE",
+      "status": "AUTONOMOUS_AGENT_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789703614483_92877",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789703614483,
+      "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+      "threatsNeutralized": 0,
+      "systemHealth": "100% SECURE",
+      "status": "AUTONOMOUS_AGENT_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789703615682_9831",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789703615682,
+      "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+      "threatsNeutralized": 0,
+      "systemHealth": "100% SECURE",
+      "status": "AUTONOMOUS_AGENT_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789703616474_89959",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789703616474,
+      "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+      "threatsNeutralized": 0,
+      "systemHealth": "100% SECURE",
+      "status": "AUTONOMOUS_AGENT_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789703617154_17249",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789703617154,
+      "actionTaken": "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
+      "threatsNeutralized": 0,
+      "systemHealth": "100% SECURE",
+      "status": "AUTONOMOUS_AGENT_ACTIVE"
+    }
+  ],
+  "did_pass_registry": [
+    {
+      "didPassId": "did:rds:ke:robertmaina99",
+      "holderName": "Robert Maina",
+      "zkpHash": "zkp_proof_sha3_verified_9988",
+      "issuedAt": 1789703457681,
+      "status": "ACTIVE_SOVEREIGN_PASS"
+    },
+    {
+      "didPassId": "did:rds:global:937752",
+      "holderName": "pearl forex",
+      "zkpHash": "55ae31d2864f0472efe9a769d0e431d378e5c3dfcec4e5242457fd297ad318b1",
+      "issuedAt": 1789703550936,
+      "status": "ACTIVE_SOVEREIGN_PASS"
+    },
+    {
+      "didPassId": "did:rds:global:973557",
+      "holderName": "pearl forex",
+      "zkpHash": "c4e50ec148e86afb4bc52378b8b2cc86be9d250e3508c740a35387b78fa44986",
+      "issuedAt": 1789703556548,
+      "status": "ACTIVE_SOVEREIGN_PASS"
+    },
+    {
+      "didPassId": "did:rds:global:815095",
+      "holderName": "pearl forex",
+      "zkpHash": "ef5d8137ecba634d5d533e046fd147592bf6145e07715a13293bf129fc2c2863",
+      "issuedAt": 1789703629403,
+      "status": "ACTIVE_SOVEREIGN_PASS"
+    }
+  ],
+  "sar_queue": [
+    {
+      "id": "SAR_1789693049671_13947",
+      "userId": "USR_1789693049670_38715",
+      "amount": "KES 12000",
+      "triggers": [
+        "CBK_POCAMLA_THIRD_PARTY_VELOCITY"
+      ],
+      "status": "PENDING_REVIEW",
+      "reason": "Automated Structuring Alert from Farbit Test Simulation",
+      "timestamp": 1789693049671
+    }
+  ],
+  "velocity_alerts": [
+    {
+      "id": "VEL_1789693049670_13562",
+      "userId": "USR_1789693049670_38715",
+      "totalRollingAmount": 12000,
+      "transactionCount": 1,
+      "reason": "CBK/POCAMLA 24h Cross-Border Structuring & Smurfing Threshold Exceeded",
+      "timestamp": 1789693049670
+    }
+  ],
+  "shops": [],
+  "catalogs": {},
+  "drivers": [],
+  "riders": [
+    {
+      "riderId": "RDR_01",
+      "name": "John Kiprop",
+      "phone": "254711223344",
+      "vehicleType": "MOTORBIKE",
+      "status": "ACTIVE"
+    }
+  ],
+  "otp_sessions": [
+    {
+      "phone": "1234",
+      "otp": "1234",
+      "expires": 1789603614279
+    },
+    {
+      "phone": "254711999888",
+      "email": "audittest@rds.com",
+      "otp": "1234",
+      "expires": 1789680028397
+    },
+    {
+      "phone": "254721862397",
+      "email": "compliance@rds-forex.ke",
+      "otp": "1234",
+      "expires": 1789693367945
+    }
+  ],
+  "active_sessions": [
+    {
+      "token": "a3d0f9cce4e5bce3b8ddc30f11c52fa6422dcac23fe1bbfd5e7815685c5d485a",
+      "userId": "USR_1789674342963_47256",
+      "phone": "254711999888",
+      "role": "USER",
+      "loginTime": 1789676933070
+    },
+    {
+      "token": "f2706fdaa6d6e2466281ab3a192146006a0e6c7bf50c4f8761c8e83da2ce47bb",
+      "userId": "USR_1789674342963_47256",
+      "phone": "254711999888",
+      "role": "ADMIN",
+      "loginTime": 1789679740733
+    },
+    {
+      "token": "89c701a2ef32147d4b3af05ee937313c4cf3f11bf1ed8ebe3d1b85e57bc534c6",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "ADMIN",
+      "loginTime": 1789688273933
+    },
+    {
+      "token": "9057a4e680176f45611f90968ae47c4951eff229a16b4b41197cc5fea4e91c7d",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "ADMIN",
+      "loginTime": 1789689116386
+    },
+    {
+      "token": "d5574e50cc0d4aa277c0df4bf0f38ba903651d3b7277f5d5b5d28e9d5245ef78",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "USER",
+      "loginTime": 1789689255081
+    },
+    {
+      "token": "ad7925aa45d5170028ad83854daec68227c47488f22fb7083cdc789aa1863e22",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "USER",
+      "loginTime": 1789690441708
+    },
+    {
+      "token": "3c8cc9d1f761cbaae401a321e7e229c4826710f98a8aef81cfc664ad6aa821ae",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "ADMIN",
+      "loginTime": 1789690514459
+    },
+    {
+      "token": "1179759cf212d5e4993dfb4ae216ca0eae1c91d24b9677cad4f118635b5c31a6",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "ADMIN",
+      "loginTime": 1789690715817
+    },
+    {
+      "token": "8f6b8e68f42da4249413ee0f2c2e8a9987ed52c7853d094fc70836a4bb06215c",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "ADMIN",
+      "loginTime": 1789692820906
+    },
+    {
+      "token": "a21d1e4fd9640046b4920666adbcf97e62c0ca4ad9a401a83801b03dfb1f3215",
+      "userId": "USR_1789526748571_70704",
+      "phone": "254721862397",
+      "role": "ADMIN",
+      "loginTime": 1789693069104
+    }
+  ],
+  "universal_connections": [
+    {
+      "id": "API_CONN_1789677068357_39559",
+      "targetApiUrl": "https://httpbin.org/json",
+      "status": "CONNECTED_SUCCESS",
+      "timestamp": 1789677068357,
+      "responseSnippet": "{\"slideshow\":{\"author\":\"Yours Truly\",\"date\":\"date of publication\",\"slides\":[{\"title\":\"Wake up to WonderWidgets!\",\"type\":\"all\"},{\"items\":[\"Why <em>WonderWidgets</em> are great\",\"Who <em>buys</em> WonderWidgets\"],\"title\":\"Overview\",\"type\":\"all\"}],\"title\":\"Sample Slide Show\"}}"
     }
   ],
   "transactions": [
@@ -3870,19 +4276,6 @@
       "currency": "KES"
     }
   ],
-  "sar_queue": [
-    {
-      "id": "SAR_1789693049671_13947",
-      "userId": "USR_1789693049670_38715",
-      "amount": "KES 12000",
-      "triggers": [
-        "CBK_POCAMLA_THIRD_PARTY_VELOCITY"
-      ],
-      "status": "PENDING_REVIEW",
-      "reason": "Automated Structuring Alert from Farbit Test Simulation",
-      "timestamp": 1789693049671
-    }
-  ],
   "maker_checker_queue": [
     {
       "id": "MC_REQ_1789688279206_48153",
@@ -4221,16 +4614,6 @@
       "checkerId": "USR_1789526748571_70704"
     }
   ],
-  "velocity_alerts": [
-    {
-      "id": "VEL_1789693049670_13562",
-      "userId": "USR_1789693049670_38715",
-      "totalRollingAmount": 12000,
-      "transactionCount": 1,
-      "reason": "CBK/POCAMLA 24h Cross-Border Structuring & Smurfing Threshold Exceeded",
-      "timestamp": 1789693049670
-    }
-  ],
   "pep_watchlist": [
     "sanctioned_entity_alpha",
     "pep_corrupt_actor_x",
@@ -4260,8 +4643,6 @@
       "status": "GRAPH_TOPOLOGY_OPTIMIZED_AND_CLEAN"
     }
   ],
-  "shops": [],
-  "catalogs": {},
   "zkp_proof_registry": [],
   "ledger_entries": [
     {
