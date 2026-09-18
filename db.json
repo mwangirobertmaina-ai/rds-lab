@@ -2615,6 +2615,102 @@
       "currentHash": "adffdb8e9eb4161b245e8c7ac639fe8893e64131a7134303920bb3018303946e",
       "tamperProof": true,
       "regulatoryStandard": "POCAMLA & CBK FXBO Verified"
+    },
+    {
+      "auditId": "AUD_1789696183847_50947",
+      "timestamp": 1789696183847,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 121
+      },
+      "previousHash": "adffdb8e9eb4161b245e8c7ac639fe8893e64131a7134303920bb3018303946e",
+      "currentHash": "06f89d4e3e78f57adfdc970c9ce4101831ba61843384abe1ac17973c3a1e117f",
+      "tamperProof": true,
+      "regulatoryStandard": "INTERPOL, DCI & POCAMLA Verified"
+    },
+    {
+      "auditId": "AUD_1789696188255_25203",
+      "timestamp": 1789696188255,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 122
+      },
+      "previousHash": "06f89d4e3e78f57adfdc970c9ce4101831ba61843384abe1ac17973c3a1e117f",
+      "currentHash": "45e4ff23ea6319064777cef1d2c832a5e6cdaf26e5101a1df0067ef7f8a2cefb",
+      "tamperProof": true,
+      "regulatoryStandard": "INTERPOL, DCI & POCAMLA Verified"
+    },
+    {
+      "auditId": "AUD_1789696261445_53567",
+      "timestamp": 1789696261445,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 123
+      },
+      "previousHash": "45e4ff23ea6319064777cef1d2c832a5e6cdaf26e5101a1df0067ef7f8a2cefb",
+      "currentHash": "0c84e9f50cc1f2c431e7d6acc172138023992bdc59923b88d1fcdef26c09b778",
+      "tamperProof": true,
+      "regulatoryStandard": "INTERPOL, DCI & POCAMLA Verified"
+    },
+    {
+      "auditId": "AUD_1789696277236_91566",
+      "timestamp": 1789696277236,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 124
+      },
+      "previousHash": "0c84e9f50cc1f2c431e7d6acc172138023992bdc59923b88d1fcdef26c09b778",
+      "currentHash": "43c3d6806d702acd5a9bd1d025ec1cada64c6969d3005e25086e2fc406655406",
+      "tamperProof": true,
+      "regulatoryStandard": "INTERPOL, DCI & POCAMLA Verified"
+    },
+    {
+      "auditId": "AUD_1789696282131_20091",
+      "timestamp": 1789696282131,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 125
+      },
+      "previousHash": "43c3d6806d702acd5a9bd1d025ec1cada64c6969d3005e25086e2fc406655406",
+      "currentHash": "b8160932e6ffc94654249a66495c897195e0c2ad2240d651a92bb1bbc25d451b",
+      "tamperProof": true,
+      "regulatoryStandard": "INTERPOL, DCI & POCAMLA Verified"
+    },
+    {
+      "auditId": "AUD_1789696285293_30172",
+      "timestamp": 1789696285293,
+      "actionType": "CRYPTOGRAPHIC_CHAIN_AUDIT_RUN",
+      "actor": {
+        "admin": "SYSTEM_INSPECTOR"
+      },
+      "details": {
+        "isValid": true,
+        "totalBlocks": 126
+      },
+      "previousHash": "b8160932e6ffc94654249a66495c897195e0c2ad2240d651a92bb1bbc25d451b",
+      "currentHash": "3e288f5ba4df27e61d577efd7d3be9e2a6849c3adf6598da40ac99dfb9843f85",
+      "tamperProof": true,
+      "regulatoryStandard": "INTERPOL, DCI & POCAMLA Verified"
     }
   ],
   "transactions": [
@@ -3846,6 +3942,13 @@
     "pep_corrupt_actor_x",
     "blacklisted_org_99",
     "ofac_blocked_target"
+  ],
+  "surveillance_grid": [],
+  "suspect_movement_logs": [],
+  "agency_access_keys": [
+    "DCI_COMMAND_2026",
+    "CID_SECURE_KEY",
+    "INTERPOL_GLOBAL_RED"
   ],
   "shops": [],
   "catalogs": {},
