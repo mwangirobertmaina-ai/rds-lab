@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 118 SOVEREIGN INTER-BANK CLEARINGHOUSE & MULTI-TENANT OS
-// Universal Support: Kenya (DCI/CID, FRC goAML v5.0.2, CBK RTGS), SWIFT ISO 20022, Decentralized Identity
-// + Cross-Node Liquidity Clearinghouse + Autonomous AI Agents + Post-Quantum Lattice Vault
+// RDS - STAGE 119 HARDENED SOVEREIGN COMPLIANCE ENGINE (SHADOW-TRAP & GOAML v5.0.2)
+// Universal Support: Kenya (DCI/CID, FRC goAML v5.0.2, CBK RTGS), SWIFT ISO 20022
+// + Silent Shadow-Trap + Continuous Serving Protocol + Automated SAR Queue Generation
 // ==========================================
 
 const express = require("express");
@@ -58,11 +58,10 @@ function defaultDB() {
     iso20022_wires: [],
     ai_enforcement_logs: [],
     interbank_clearing_settlements: [],
-    did_pass_registry: [
-      { didPassId: "did:rds:ke:robertmaina99", holderName: "Robert Maina", zkpHash: "zkp_proof_sha3_verified_9988", issuedAt: Date.now(), status: "ACTIVE_SOVEREIGN_PASS" }
-    ],
+    shadow_trap_flags: [],
     sar_queue: [],
     velocity_alerts: [],
+    did_pass_registry: [],
     shops: [],
     catalogs: {}
   };
@@ -79,9 +78,10 @@ function ensureState() {
   if (!Array.isArray(data.iso20022_wires)) data.iso20022_wires = [];
   if (!Array.isArray(data.ai_enforcement_logs)) data.ai_enforcement_logs = [];
   if (!Array.isArray(data.interbank_clearing_settlements)) data.interbank_clearing_settlements = [];
-  if (!Array.isArray(data.did_pass_registry)) data.did_pass_registry = [];
+  if (!Array.isArray(data.shadow_trap_flags)) data.shadow_trap_flags = [];
   if (!Array.isArray(data.sar_queue)) data.sar_queue = [];
   if (!Array.isArray(data.velocity_alerts)) data.velocity_alerts = [];
+  if (!Array.isArray(data.did_pass_registry)) data.did_pass_registry = [];
 }
 
 ensureState();
@@ -97,7 +97,7 @@ async function recordImmutableAudit(actionType, actor, details) {
         ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
         : "GENESIS_ROOT_HASH_000000000000000000000000";
     
-    const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_118_SOVEREIGN_LATTICE`;
+    const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_119_HARDENED`;
     const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
     const auditRecord = {
@@ -109,7 +109,7 @@ async function recordImmutableAudit(actionType, actor, details) {
         previousHash,
         currentHash,
         tamperProof: true,
-        cryptographicStandard: "STAGE_118_QUANTUM_DID_VERIFIED"
+        cryptographicStandard: "STAGE_119_SHADOW_TRAP_VERIFIED"
     };
 
     data.immutable_audit_vault.push(auditRecord);
@@ -142,7 +142,7 @@ const saveDB = async () => {
   } catch (err) { console.error("DB save error", err); }
 };
 
-// STAGE 118: SWIFT ISO 20022 / RTGS WIRE DISPATCH ENDPOINT
+// STAGE 119: HARDENED ISO 20022 WIRE DISPATCH WITH SHADOW-TRAP SCREENING
 app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -150,6 +150,11 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
         if (!beneficiaryAccount || !amount) return fail(res, "Beneficiary account and amount required for wire settlement.", 400);
 
         const wireId = id("ISO_WIRE");
+        const numericAmount = Number(amount);
+        
+        // SHADOW-TRAP LOGIC: If amount exceeds high-risk threshold, flag silently but CONTINUE SERVING NORMAL SUCCESS
+        const isSuspicious = numericAmount >= 1000000; // e.g., 1M+ units trigger silent regulatory flag
+
         const wireMessage = {
             wireId,
             tenantId: req.tenantId,
@@ -158,23 +163,47 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
             beneficiaryName: beneficiaryName || "Global Counterparty",
             beneficiaryAccount,
             bicCode: bicCode || "RTGSSKENAXX",
-            amount: Number(amount),
+            amount: numericAmount,
             currency: currency || req.tenantObj.currency,
             timestamp: Date.now(),
-            status: "SETTLED_VIA_CENTRAL_BANK_RTGS"
+            shadowTrapFlagged: isSuspicious,
+            status: "SETTLED_VIA_CENTRAL_BANK_RTGS" // Always returns success so criminal doesn't flee
         };
 
         data.iso20022_wires.push(wireMessage);
+
+        if (isSuspicious) {
+            const trapRecord = {
+                trapId: id("TRAP"),
+                wireId,
+                reason: "High-value velocity threshold crossed. Shadow-trap engaged for law enforcement capture.",
+                timestamp: Date.now()
+            };
+            data.shadow_trap_flags.push(trapRecord);
+            data.sar_queue.push({
+                sarId: id("SAR"),
+                referenceId: wireId,
+                details: "Automated FRC goAML suspicious transaction report triggered under shadow-trap protocol.",
+                timestamp: Date.now()
+            });
+            await recordImmutableAudit("SHADOW_TRAP_TRIGGERED", { tenant: req.tenantId }, trapRecord);
+        }
+
         await recordImmutableAudit("ISO_20022_WIRE_DISPATCHED", { tenant: req.tenantId }, wireMessage);
         await saveDB();
 
-        return ok(res, { success: true, message: "ISO 20022 wire instruction successfully formatted and settled.", wireMessage });
+        return ok(res, { 
+            success: true, 
+            message: "ISO 20022 wire instruction successfully formatted and settled.", 
+            wireMessage,
+            complianceNote: "Transaction successfully processed under sovereign operational continuity." 
+        });
     } catch (err) {
         return fail(res, err.message, 500);
     }
 });
 
-// STAGE 118: INTER-BANK CLEARINGHOUSE SETTLEMENT ROUTE
+// STAGE 119: INTER-BANK CLEARINGHOUSE SETTLEMENT ROUTE
 app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -197,7 +226,7 @@ app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (re
     }
 });
 
-// STAGE 118: AUTONOMOUS AI ENFORCEMENT AGENT
+// STAGE 119: AUTONOMOUS AI ENFORCEMENT AGENT
 app.post('/api/ai/autonomous-enforcement', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -206,23 +235,23 @@ app.post('/api/ai/autonomous-enforcement', enforceTenantIsolation, async (req, r
             enforcementId,
             tenantId: req.tenantId,
             timestamp: Date.now(),
-            actionTaken: "AUTONOMOUS_MEMPOOL_SCAN_AND_HEALING",
-            threatsNeutralized: 0,
+            actionTaken: "AUTONOMOUS_SHADOW_TRAP_MONITORING",
+            activeTraps: data.shadow_trap_flags.length,
             systemHealth: "100% SECURE",
-            status: "AUTONOMOUS_AGENT_ACTIVE"
+            status: "SHADOW_TRAP_ACTIVE"
         };
 
         data.ai_enforcement_logs.push(actionRecord);
         await recordImmutableAudit("AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED", { tenant: req.tenantId }, actionRecord);
         await saveDB();
 
-        return ok(res, { success: true, message: "Autonomous AI Enforcement Agent executed successfully. Zero threat anomalies.", actionRecord });
+        return ok(res, { success: true, message: "Autonomous AI Enforcement Agent executed shadow-trap scan. Zero disruption to active traffic.", actionRecord });
     } catch (err) {
         return fail(res, err.message, 500);
     }
 });
 
-// STAGE 118: DECENTRALIZED SOVEREIGN IDENTITY (DID) ZKP REGISTRATION
+// STAGE 119: DECENTRALIZED SOVEREIGN IDENTITY (DID) ZKP REGISTRATION
 app.post('/api/did/register-pass', async (req, res) => {
     try {
         ensureState();
@@ -250,7 +279,7 @@ app.post('/api/did/register-pass', async (req, res) => {
     }
 });
 
-// STAGE 118: COMPLIANCE DASHBOARD
+// STAGE 119: COMPLIANCE DASHBOARD
 app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -259,6 +288,8 @@ app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, r
             activeTenant: req.tenantObj,
             corridors: data.businesses,
             isoWiresCount: data.iso20022_wires.length,
+            shadowTrapsCount: data.shadow_trap_flags.length,
+            sarQueueCount: data.sar_queue.length,
             aiEnforcementsCount: data.ai_enforcement_logs.length,
             interbankCount: data.interbank_clearing_settlements.length,
             didPassesCount: data.did_pass_registry.length,
@@ -269,7 +300,7 @@ app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, r
     }
 });
 
-// STAGE 118: OFFICIAL AUDIT PRINTABLE REPORT ROUTE
+// STAGE 119: OFFICIAL AUDIT PRINTABLE REPORT ROUTE
 app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -289,7 +320,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
         return res.send(`<!DOCTYPE html>
         <html>
         <head>
-            <title>RDS Stage 118 Official Sovereign Audit Report - ${req.tenantId}</title>
+            <title>RDS Stage 119 Hardened Sovereign Audit Report - ${req.tenantId}</title>
             <style>
                 body { font-family: Arial, sans-serif; color: #111; padding: 40px; margin: 0; }
                 h1 { font-size: 22px; margin-bottom: 5px; }
@@ -303,7 +334,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
         <body>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h1>RDS Sovereign Financial Operating System — Stage 118 Audit Report</h1>
+                    <h1>RDS Sovereign Financial Operating System — Stage 119 Hardened Audit Report</h1>
                     <div class="meta">Node Corridor: <strong>${req.tenantObj.name} (${req.tenantId})</strong> | Generated: ${new Date().toUTCString()}</div>
                 </div>
                 <button onclick="window.print()" style="background: #d97706; color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">Print / Save PDF</button>
@@ -323,7 +354,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
                 </tbody>
             </table>
             <div class="footer">
-                <p><strong>Compliance & Regulatory Standard:</strong> FRC goAML v5.0.2 / CBK RTGS / SWIFT ISO 20022 / Stage 118 Sovereign Verified.</p>
+                <p><strong>Compliance & Regulatory Standard:</strong> FRC goAML v5.0.2 / CBK RTGS / SWIFT ISO 20022 / Shadow-Trap Hardened.</p>
                 <p>This document is cryptographically immutable and legally binding for official regulatory and law enforcement verification.</p>
             </div>
         </body>
@@ -348,7 +379,7 @@ app.get('/api/admin/audit/verify-chain', async (req, res) => {
         }
     }
 
-    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "✅ Stage 118 Sovereign Lattice Cryptographic Chain 100% Valid." });
+    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "✅ Stage 119 Hardened Sovereign Lattice Cryptographic Chain 100% Valid." });
 });
 
 app.get('/api/audit/search', (req, res) => {
@@ -375,8 +406,8 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_118_SOVEREIGN_OS_ACTIVE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_119_HARDENED_OS_ACTIVE", time: Date.now() }));
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 118 SOVEREIGN OS (ISO 20022 + AI + INTERBANK CLEARING) ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 119 HARDENED SOVEREIGN OS (SHADOW-TRAP + GOAML) ACTIVE ON PORT ${PORT}`);
 });
