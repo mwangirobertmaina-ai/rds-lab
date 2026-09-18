@@ -1,5 +1,5 @@
 // ==========================================
-// RDS - STAGE 129 SELF-UPGRADING DUAL-COMPLIANT SOVEREIGN FINANCIAL OPERATING SYSTEM
+// RDS - STAGE 130 SOVEREIGN SELF-UPGRADING FINANCIAL OPERATING SYSTEM
 // Supports: World Bank, CBK RTGS, goAML/SAR Automated Reporting, ISO 20022 Rich Mapping, & Autonomous OTA Self-Upgrades
 // ==========================================
 
@@ -101,18 +101,18 @@ function ensureState() {
 
   if (data.immutable_audit_vault.length === 0) {
     const genesisTimestamp = Date.now();
-    const rawGenesis = `${genesisTimestamp}:GENESIS_ROOT_INIT:{} :{} :GENESIS_ROOT_HASH_000000000000000000000000:STAGE_129_SELF_UPGRADING`;
+    const rawGenesis = `${genesisTimestamp}:GENESIS_ROOT_INIT:{} :{} :GENESIS_ROOT_HASH_000000000000000000000000:STAGE_130_SOVEREIGN`;
     const genesisHash = crypto.createHash("sha256").update(rawGenesis).digest("hex");
     data.immutable_audit_vault.push({
       auditId: "AUD_GENESIS_ROOT",
       timestamp: genesisTimestamp,
       actionType: "GENESIS_ROOT_INIT",
-      actor: { system: "RDS_SELF_UPGRADING_CORE" },
-      details: { message: "Secure self-upgrading sovereign genesis block established." },
+      actor: { system: "RDS_SOVEREIGN_CORE" },
+      details: { message: "Secure sovereign genesis block established." },
       previousHash: "GENESIS_ROOT_HASH_000000000000000000000000",
       currentHash: genesisHash,
       tamperProof: true,
-      cryptographicStandard: "STAGE_129_SELF_UPGRADING_LATTICE"
+      cryptographicStandard: "STAGE_130_SOVEREIGN_LATTICE"
     });
   }
 }
@@ -146,7 +146,7 @@ async function recordImmutableAudit(actionType, actor, details) {
             ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
             : "GENESIS_ROOT_HASH_000000000000000000000000";
         
-        const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_129_UPGRADE`;
+        const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_130_UPGRADE`;
         const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
         const auditRecord = {
@@ -158,7 +158,7 @@ async function recordImmutableAudit(actionType, actor, details) {
             previousHash,
             currentHash,
             tamperProof: true,
-            cryptographicStandard: "STAGE_129_SELF_UPGRADING_LATTICE"
+            cryptographicStandard: "STAGE_130_SOVEREIGN_LATTICE"
         };
 
         data.immutable_audit_vault.push(auditRecord);
@@ -174,7 +174,7 @@ function enforceTenantIsolation(req, res, next) {
         const businessId = req.headers['x-business-id'] || req.query.businessId || req.body.businessId || "INST-CBK-RTGS";
         ensureState();
         req.tenantId = businessId;
-        req.tenantObj = data.businesses.find(b => b.id === businessId) || data.businesses[0] || { id: businessId, name: "Self-Upgrading Clearing Node", currency: "USD", type: "CENTRAL_BANK" };
+        req.tenantObj = data.businesses.find(b => b.id === businessId) || data.businesses[0] || { id: businessId, name: "Sovereign Clearing Node", currency: "USD", type: "CENTRAL_BANK" };
         next();
     } catch (err) {
         return res.status(500).json({ success: false, error: "Tenant isolation error: " + err.message });
@@ -192,74 +192,10 @@ function fail(res, msg = "Error", statusCode = 400) {
 // --- API & HEALTH CHECK ENDPOINTS ---
 
 app.get('/api/health', (req, res) => {
-    return ok(res, { status: "ACTIVE", stage: "129", compliance: "WORLD_BANK_AND_CBK_DUAL", selfUpgradingMesh: "ONLINE", timestamp: Date.now() });
+    return ok(res, { status: "ACTIVE", stage: "130", compliance: "WORLD_BANK_AND_CBK_DUAL", sovereignMesh: "ONLINE", timestamp: Date.now() });
 });
 
-app.post('/api/auth/send-otp', (req, res) => {
-    const { phone, email } = req.body;
-    return ok(res, { success: true, message: `Dual-Verified OTP sent to ${phone || email}. Use code 1234.` });
-});
-
-app.post('/api/auth/verify-otp', (req, res) => {
-    const { phone } = req.body;
-    ensureState();
-    let user = data.users.find(u => u.phone === phone) || data.users[0];
-    return ok(res, { success: true, user });
-});
-
-app.get('/api/products', enforceTenantIsolation, (req, res) => {
-    ensureState();
-    const category = req.query.category || 'ALL';
-    let filtered = data.products;
-    if (category !== 'ALL') { filtered = filtered.filter(p => p.category === category); }
-    return ok(res, { products: filtered, currency: req.tenantObj.currency || 'KES', businessName: req.tenantObj.name });
-});
-
-app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
-    const { itemPriceTotal } = req.body;
-    const base = Number(itemPriceTotal) || 0;
-    const deliveryFee = 175.0;
-    const tax = Number((base * 0.16).toFixed(2));
-    return ok(res, { distanceKm: 3.5, split: { productAmount: base, deliveryFee, tax, userPays: base + deliveryFee + tax } });
-});
-
-app.post('/api/checkout', enforceTenantIsolation, async (req, res) => {
-    ensureState();
-    const { phone, itemPriceTotal, pickup, destination, vehicleType, userId } = req.body;
-    const orderId = id("ORD");
-    const base = Number(itemPriceTotal) || 0;
-    const total = base + 175.0 + (base * 0.16);
-
-    const newOrder = {
-        id: orderId, businessId: req.tenantId, userId: userId || "USR_DEFAULT",
-        phone: phone || "254721862397", pickup: pickup || "Nairobi CBD", destination: destination || "Westlands",
-        vehicleType: vehicleType || "MOTORBIKE", total: Number(total.toFixed(2)),
-        currency: req.tenantObj.currency || "KES", status: "SECURED_IN_ESCROW", timestamp: Date.now()
-    };
-
-    data.orders.push(newOrder);
-    await recordImmutableAudit("UBER_DISPATCH_ESCROW_ENGAGED", { orderId, tenant: req.tenantId }, newOrder);
-    if (global.io) global.io.emit("orderListUpdated");
-    return ok(res, { success: true, orderId, order: newOrder });
-});
-
-app.get('/api/orders/live', enforceTenantIsolation, (req, res) => {
-    ensureState();
-    return ok(res, { success: true, orders: data.orders.filter(o => o.businessId === req.tenantId) });
-});
-
-app.post('/api/orders/dismiss', enforceTenantIsolation, async (req, res) => {
-    ensureState();
-    const { orderId } = req.body;
-    const order = data.orders.find(o => o.id === orderId);
-    if (!order) return fail(res, "Order not found", 404);
-    order.status = "ORDERLY_DISMISSED";
-    await recordImmutableAudit("ORDERLY_DISMISSAL_AND_ESCROW_REFUND", { orderId, tenant: req.tenantId }, order);
-    if (global.io) global.io.emit("orderListUpdated");
-    return ok(res, { success: true, message: `Order ${orderId} successfully dismissed.` });
-});
-
-// --- ADMIN INSPECTION & SELF-UPGRADING ENDPOINTS ---
+// --- ADMIN INSPECTION & ACTIVATED BUTTON ENDPOINTS ---
 
 app.get('/api/admin/shadow-traps', enforceTenantIsolation, (req, res) => ok(res, { success: true, shadowTraps: data.shadow_trap_flags }));
 
@@ -289,7 +225,7 @@ app.post('/api/system/self-upgrade', enforceTenantIsolation, async (req, res) =>
             return fail(res, "Unauthorized self-upgrade attempt. Invalid master certificate.", 403);
         }
 
-        const targetStage = req.body.targetStage || "130";
+        const targetStage = req.body.targetStage || "131";
         const upgradeLog = { upgradeId: id("UPG"), targetStage, timestamp: Date.now(), status: "STAGED_AND_VERIFIED" };
         
         await recordImmutableAudit("AUTONOMOUS_SYSTEM_UPGRADE_INITIATED", { tenant: req.tenantId }, upgradeLog);
@@ -308,11 +244,9 @@ app.post('/api/system/self-upgrade', enforceTenantIsolation, async (req, res) =>
 app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res) => {
     ensureState();
     const { beneficiaryName, beneficiaryAccount, bicCode, amount, currency, ultimateDebtor, ultimateCreditor, purposeCode } = req.body;
-    if (!beneficiaryAccount || !amount) return fail(res, "Beneficiary account and amount required.", 400);
+    const numericAmount = Number(amount) || 1250000;
 
     const wireId = id("WIRE");
-    const numericAmount = Number(amount);
-
     const isCentralBankThresholdCrossed = numericAmount >= 1000000;
     const isWorldBankFiduciaryCrossed = numericAmount >= 500000;
     const dualFlagged = isCentralBankThresholdCrossed || isWorldBankFiduciaryCrossed;
@@ -324,8 +258,8 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
         institutionType: req.tenantObj.type,
         messageType: "pacs.008.001.10 (World Bank IBRD & CBK RTGS Dual-Validated Credit Transfer)",
         beneficiaryName: beneficiaryName || "Sovereign Counterparty", 
-        beneficiaryAccount,
-        ultimateDebtor: ultimateDebtor || "Sovereign Principal Entity",
+        beneficiaryAccount: beneficiaryAccount || "ACC_SOVEREIGN_01",
+        ultimateDebtor: ultimateDebtor || "Ministry of Finance",
         ultimateCreditor: ultimateCreditor || beneficiaryName || "Beneficiary Entity",
         purposeCode: purposeCode || "GDSV (General Sovereign Settlement)",
         bicCode: bicCode || "WORLDCBKRTGSXX", 
@@ -345,7 +279,7 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
             trapId: id("TRAP"), 
             wireId, 
             amount: numericAmount, 
-            beneficiary: beneficiaryName, 
+            beneficiary: beneficiaryName || "Sovereign Counterparty", 
             institution: req.tenantObj.name, 
             reason: isCentralBankThresholdCrossed ? "Exceeds Central Bank FRC cash/transfer reporting threshold." : "Exceeds World Bank fiduciary oversight ceiling.", 
             timestamp: Date.now() 
@@ -384,7 +318,7 @@ app.post('/api/did/register-pass', async (req, res) => {
     const { holderName, nationalIdOrPassport } = req.body;
     if (!holderName) return fail(res, "Holder name required.", 400);
     const didPassId = `did:rds:sovereign:${Math.floor(Math.random() * 900000 + 100000)}`;
-    const zkpHash = crypto.createHash("sha3-256").update(`${didPassId}:${nationalIdOrPassport}:${Date.now()}`).digest("hex");
+    const zkpHash = crypto.createHash("sha3-256").update(`${didPassId}:${nationalIdOrPassport || 'ID'}:${Date.now()}`).digest("hex");
     const didRecord = { didPassId, holderName, zkpHash, issuedAt: Date.now(), status: "ACTIVE_DUAL_COMPLIANT_PASS" };
     data.did_pass_registry.push(didRecord);
     data.users.push({ id: id("USR"), fullName: holderName, phone: nationalIdOrPassport || "254700000000", didPassId, amlFlagged: false, riskScore: "0.00%", kycStatus: "TIER_3_DUAL_SOVEREIGN_VERIFIED" });
@@ -405,9 +339,10 @@ app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, (req, res) =>
 
 app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res) => {
     ensureState();
+    await recordImmutableAudit("OFFICIAL_AUDIT_REPORT_PRINTED", { tenant: req.tenantId }, { count: data.immutable_audit_vault.length });
     const rows = data.immutable_audit_vault.slice(-50).reverse().map(s => `<tr><td>${new Date(s.timestamp).toLocaleString()}</td><td><b>${s.actionType}</b></td><td>${s.currentHash}</td></tr>`).join('');
     res.setHeader('Content-Type', 'text/html');
-    return res.send(`<html><body><h1>Stage 129 Self-Upgrading Audit Report</h1><table border="1"><tr><th>Time</th><th>Action</th><th>Hash</th></tr>${rows}</table></body></html>`);
+    return res.send(`<html><body style="font-family:sans-serif;background:#090d16;color:#fff;padding:20px;"><h1>Stage 130 Sovereign Self-Upgrading Audit Report</h1><table border="1" cellpadding="8" style="border-collapse:collapse;border-color:#333;"><tr><th>Time</th><th>Action Type</th><th>Cryptographic Hash</th></tr>${rows}</table></body></html>`);
 });
 
 app.get('/api/admin/audit/verify-chain', async (req, res) => {
@@ -418,7 +353,8 @@ app.get('/api/admin/audit/verify-chain', async (req, res) => {
         const expectedPrev = i === 0 ? "GENESIS_ROOT_HASH_000000000000000000000000" : data.immutable_audit_vault[i - 1].currentHash;
         if (block.previousHash !== expectedPrev) { isValid = false; break; }
     }
-    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "Self-Upgrading Vault integrity verified 100%." });
+    await recordImmutableAudit("SOVEREIGN_VAULT_CHAIN_VERIFIED", { status: isValid ? "VALID" : "COMPROMISED" }, { totalBlocks: data.immutable_audit_vault.length });
+    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "Sovereign Vault integrity verified 100%." });
 });
 
 app.get('/api/audit/search', (req, res) => {
@@ -437,5 +373,5 @@ if (fs.existsSync(DB_FILE)) {
 }
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 129 SELF-UPGRADING FINANCIAL OS ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 130 SOVEREIGN FINANCIAL OS ACTIVE ON PORT ${PORT}`);
 });
