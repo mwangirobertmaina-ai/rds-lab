@@ -1,6 +1,55 @@
 {
   "businesses": [
     {
+      "id": "BIZ-ZURICH",
+      "name": "Zurich Swiss Central Reserve Node",
+      "region": "CH",
+      "currency": "CHF",
+      "type": "CENTRAL_RESERVE"
+    },
+    {
+      "id": "BIZ-SG",
+      "name": "Singapore Apex Forex Clearing Hub",
+      "region": "SG",
+      "currency": "SGD",
+      "type": "FOREX_BUREAU"
+    },
+    {
+      "id": "BIZ-DUBAI",
+      "name": "Dubai Gold & Forex Sovereign Exchange",
+      "region": "AE",
+      "currency": "AED",
+      "type": "FOREX_BUREAU"
+    },
+    {
+      "id": "BIZ-TOKYO",
+      "name": "Tokyo Apex Central Forex Reserve",
+      "region": "JP",
+      "currency": "JPY",
+      "type": "CENTRAL_RESERVE"
+    },
+    {
+      "id": "BIZ-METRO",
+      "name": "Metropolis Sovereign Forex Bureau",
+      "region": "US",
+      "currency": "USD",
+      "type": "FOREX_BUREAU"
+    },
+    {
+      "id": "BIZ-TOWER",
+      "name": "Tower Forex & Global Remittance Exchange",
+      "region": "KE",
+      "currency": "EUR",
+      "type": "FOREX_BUREAU"
+    },
+    {
+      "id": "BIZ-PEARL",
+      "name": "Pearl Forex Bureau International Clearing Node",
+      "region": "KE",
+      "currency": "USD",
+      "type": "FOREX_BUREAU"
+    },
+    {
       "id": "INST-CBK-RTGS",
       "name": "Central Bank of Kenya (CBK) National RTGS Gateway",
       "region": "KE",
@@ -4087,9 +4136,77 @@
       "currentHash": "fdac2ddf7d450f9b5e77dfd9cc1d5cbd705ee0fe68b6ff279259827a6092bb16",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_124_KYC_SOVEREIGN_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789712025429_21008",
+      "timestamp": 1789712025428,
+      "actionType": "SHADOW_TRAP_TRIGGERED",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)"
+      },
+      "details": {
+        "trapId": "TRAP_1789712025428_34789",
+        "wireId": "WIRE_1789712025428_51600",
+        "amount": 1200000,
+        "beneficiary": "Sovereign International Counterparty",
+        "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)",
+        "reason": "World-compliant velocity threshold crossed. Shadow-trap engaged for international law enforcement & FRC capture.",
+        "timestamp": 1789712025428
+      },
+      "previousHash": "fdac2ddf7d450f9b5e77dfd9cc1d5cbd705ee0fe68b6ff279259827a6092bb16",
+      "currentHash": "32d9747e3af41ecdd8ba02db7a700aecd6041b382a061421b468eec553e0e5be",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_124_KYC_SOVEREIGN_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789712025435_50025",
+      "timestamp": 1789712025435,
+      "actionType": "WORLD_COMPLIANT_WIRE_DISPATCHED",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)"
+      },
+      "details": {
+        "wireId": "WIRE_1789712025428_51600",
+        "tenantId": "INST-WORLDBANK",
+        "institutionName": "World Bank Sovereign Development Corridor (IBRD/IDA)",
+        "institutionType": "INTERNATIONAL_RESERVE",
+        "messageType": "pacs.008.001.10 (World Bank & CBK Sovereign KYC-Cleared Credit Transfer)",
+        "beneficiaryName": "Sovereign International Counterparty",
+        "beneficiaryAccount": "ACC_WORLD_BANK_01",
+        "bicCode": "WORLDCBKRTGSXX",
+        "amount": 1200000,
+        "currency": "USD",
+        "timestamp": 1789712025428,
+        "shadowTrapFlagged": true,
+        "kycValidationStatus": "PASSED_CBK_WORLDBANK_TIER3",
+        "status": "SETTLED_ATOMICALLY_WORLD_COMPLIANT"
+      },
+      "previousHash": "32d9747e3af41ecdd8ba02db7a700aecd6041b382a061421b468eec553e0e5be",
+      "currentHash": "f6fadc0476068640ac8442b6412f87cf4d485a0a8e9832b5037e42eda5a8b3e3",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_124_KYC_SOVEREIGN_LATTICE"
     }
   ],
-  "iso20022_wires": [],
+  "iso20022_wires": [
+    {
+      "wireId": "WIRE_1789712025428_51600",
+      "tenantId": "INST-WORLDBANK",
+      "institutionName": "World Bank Sovereign Development Corridor (IBRD/IDA)",
+      "institutionType": "INTERNATIONAL_RESERVE",
+      "messageType": "pacs.008.001.10 (World Bank & CBK Sovereign KYC-Cleared Credit Transfer)",
+      "beneficiaryName": "Sovereign International Counterparty",
+      "beneficiaryAccount": "ACC_WORLD_BANK_01",
+      "bicCode": "WORLDCBKRTGSXX",
+      "amount": 1200000,
+      "currency": "USD",
+      "timestamp": 1789712025428,
+      "shadowTrapFlagged": true,
+      "kycValidationStatus": "PASSED_CBK_WORLDBANK_TIER3",
+      "status": "SETTLED_ATOMICALLY_WORLD_COMPLIANT"
+    }
+  ],
   "ai_enforcement_logs": [
     {
       "enforcementId": "AI_ENFORCE_1789703571428_43682",
@@ -4494,7 +4611,17 @@
       "status": "CLEARED_AND_SETTLED_ATOMICALLY"
     }
   ],
-  "shadow_trap_flags": [],
+  "shadow_trap_flags": [
+    {
+      "trapId": "TRAP_1789712025428_34789",
+      "wireId": "WIRE_1789712025428_51600",
+      "amount": 1200000,
+      "beneficiary": "Sovereign International Counterparty",
+      "institution": "World Bank Sovereign Development Corridor (IBRD/IDA)",
+      "reason": "World-compliant velocity threshold crossed. Shadow-trap engaged for international law enforcement & FRC capture.",
+      "timestamp": 1789712025428
+    }
+  ],
   "sar_queue": [
     {
       "id": "SAR_1789693049671_13947",
@@ -4506,6 +4633,12 @@
       "status": "PENDING_REVIEW",
       "reason": "Automated Structuring Alert from Farbit Test Simulation",
       "timestamp": 1789693049671
+    },
+    {
+      "sarId": "SAR_1789712025428_23894",
+      "referenceId": "WIRE_1789712025428_51600",
+      "details": "Automated international goAML / FATF report triggered at World Bank Sovereign Development Corridor (IBRD/IDA) under shadow-trap protocol.",
+      "timestamp": 1789712025428
     }
   ],
   "velocity_alerts": [
