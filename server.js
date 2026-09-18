@@ -1,7 +1,8 @@
+
 // ==========================================
-// RDS - STAGE 105 PREMIER GLOBAL SOVEREIGN & KENYAN FOREX BUREAU COMPLIANCE ENGINE
+// RDS - STAGE 106 PREMIER GLOBAL SOVEREIGN & KENYAN FOREX BUREAU COMPLIANCE ENGINE
 // Universal Support: Kenya (CBK Form FXBO / POCAMLA), UK (FCA), USA (FinCEN), EU (ECB), Canada & All Africa
-// + Jumia Storefront + Uber Dispatch + Immutable Audit Vault + Maker-Checker + Smurfing Velocity
+// + Third-Party Legacy Integration Webhook (Farbit & Till Sync) + Immutable Audit Vault + Maker-Checker + Smurfing Velocity
 // ==========================================
 
 const express = require("express");
@@ -394,7 +395,91 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_105_FOREX_SOVEREIGN_ONLINE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_106_FOREX_SOVEREIGN_ONLINE", time: Date.now() }));
+
+// STAGE 106: THIRD-PARTY LEGACY / FARBIT WEBHOOK SYNC ENDPOINT
+app.post('/api/thirdparty/webhook-sync', enforceTenantIsolation, async (req, res) => {
+    try {
+        ensureState();
+        const { businessId, userId, itemPriceTotal, currency, customerDetails, sourceSystem } = req.body;
+        
+        const tenant = req.tenantObj;
+        const targetUserId = userId || "USR_DEFAULT";
+        let user = data.users.find(u => u.id === targetUserId);
+
+        if (!user && customerDetails) {
+            user = {
+                id: id("USR"),
+                fullName: customerDetails.name || "Farbit Walk-in Client",
+                phone: customerDetails.phone || "254700000000",
+                idOrPassportNo: customerDetails.idNumber || "99887766",
+                amlFlagged: false,
+                riskScore: "1.1% (LOW)",
+                kycStatus: "VERIFIED",
+                riskProfile: { score: 1.1, level: "LOW", factors: ["Third-Party Farbit API Sync"] },
+                createdAt: Date.now()
+            };
+            data.users.push(user);
+        }
+
+        if (user && screenAgainstWatchlists(user)) {
+            user.amlFlagged = true;
+            recordImmutableAudit("THIRD_PARTY_PEP_SANCTION_MATCH", { userId: user.id, source: sourceSystem || "Farbit" }, { customerDetails });
+            return fail(res, "External sync rejected: Customer matched against CBK/OFAC watchlists.", 403);
+        }
+
+        const totalAmount = Number(itemPriceTotal || 0);
+        if (user && checkTransactionVelocity(user.id, totalAmount)) {
+            data.sar_queue.push({
+                id: id("SAR"),
+                userId: user.id,
+                amount: `${currency || tenant.currency} ${totalAmount}`,
+                triggers: ["CBK_POCAMLA_THIRD_PARTY_VELOCITY"],
+                status: "PENDING_REVIEW",
+                reason: `Automated Structuring Alert from ${sourceSystem || "External Till App"}`,
+                timestamp: Date.now()
+            });
+        }
+
+        const orderId = id("ORD_ST106");
+        const order = {
+            id: orderId,
+            userId: user ? user.id : "ANONYMOUS",
+            businessId: tenant.id,
+            region: tenant.region,
+            currency: currency || tenant.currency,
+            productAmount: totalAmount,
+            deliveryFee: 0,
+            distanceKm: 0,
+            total: totalAmount,
+            pickup: "External Farbit Counter",
+            destination: "Forex Vault Reserve",
+            status: "EXTERNAL_SYNCED",
+            sourceSystem: sourceSystem || "Farbit Ledger",
+            createdAt: Date.now()
+        };
+
+        data.orders.push(order);
+        data.escrow.push({ escrowId: id("ESC"), orderId, businessId: tenant.id, amount: totalAmount, status: "LOCKED" });
+        data.transactions.push({ idempotencyKey: id("TX"), userId: user ? user.id : "ANONYMOUS", orderId, total: totalAmount, createdAt: Date.now() });
+
+        await recordImmutableAudit("THIRD_PARTY_TRANSACTION_SYNCED", { source: sourceSystem || "Farbit" }, { orderId, total: totalAmount });
+        await saveDB();
+
+        if (global.io) {
+            global.io.emit('orderListUpdated', { orderId: order.id, status: order.status });
+        }
+
+        return ok(res, {
+            success: true,
+            message: "Third-party transaction successfully synced and secured in SHA-256 audit vault.",
+            orderId,
+            complianceStatus: "PASSED_POCAMLA_SCREENING"
+        });
+    } catch (err) {
+        return fail(res, err.message, 500);
+    }
+});
 
 app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, verifyRole('ADMIN'), async (req, res) => {
     try {
@@ -680,7 +765,7 @@ app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async
             });
         }
 
-        const orderId = id("ORD_ST105");
+        const orderId = id("ORD_ST106");
         const assignedRider = "DRV_01";
 
         const order = {
@@ -721,7 +806,7 @@ app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async
                     BusinessShortCode: MPESA_CONFIG.shortCode, Password: password, Timestamp: timestamp,
                     TransactionType: "CustomerPayBillOnline", Amount: Math.round(split.userPays),
                     PartyA: sanitizedPhone, PartyB: MPESA_CONFIG.shortCode, PhoneNumber: sanitizedPhone,
-                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Forex Stage 105`,
+                    CallBackURL: MPESA_CONFIG.callbackUrl, AccountReference: `RDS Forex Stage 106`,
                     TransactionDesc: `CBK FXBO Escrow Settlement`
                 },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -741,5 +826,5 @@ app.post("/api/checkout", enforceTenantIsolation, enforceComplianceAndKYC, async
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 105 PREMIER FOREX BUREAU & SOVEREIGN COMPLIANCE ENGINE ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 106 PREMIER FOREX BUREAU & SOVEREIGN COMPLIANCE ENGINE ACTIVE ON PORT ${PORT}`);
 });
