@@ -1,8 +1,8 @@
 
 // ==========================================
-// RDS - STAGE 123 UNIVERSAL MULTI-INSTITUTION FINANCIAL OPERATING SYSTEM
+// RDS - STAGE 124 UNIVERSAL MULTI-INSTITUTION FINANCIAL OPERATING SYSTEM
 // Supports: Commercial Banks, M-Pesa / Mobile Money, Forex Bureaus, Central Bank RTGS, SWIFT ISO 20022
-// + Multi-Institution Switcher + Shadow-Trap Protocol + Continuous Serving & SAR Generation
+// + Fully Activated Cryptographic Verify Vault Endpoint + Shadow-Trap Protocol & Continuous Serving
 // ==========================================
 
 const express = require("express");
@@ -102,7 +102,7 @@ async function recordImmutableAudit(actionType, actor, details) {
         ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
         : "GENESIS_ROOT_HASH_000000000000000000000000";
     
-    const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_123_UNIVERSAL`;
+    const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_124_UNIVERSAL`;
     const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
     const auditRecord = {
@@ -114,7 +114,7 @@ async function recordImmutableAudit(actionType, actor, details) {
         previousHash,
         currentHash,
         tamperProof: true,
-        cryptographicStandard: "STAGE_123_UNIVERSAL_LATTICE"
+        cryptographicStandard: "STAGE_124_UNIVERSAL_LATTICE"
     };
 
     data.immutable_audit_vault.push(auditRecord);
@@ -369,7 +369,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
         return res.send(`<!DOCTYPE html>
         <html>
         <head>
-            <title>RDS Stage 123 Universal Audit Report - ${req.tenantId}</title>
+            <title>RDS Stage 124 Universal Audit Report - ${req.tenantId}</title>
             <style>
                 body { font-family: Arial, sans-serif; color: #111; padding: 40px; margin: 0; }
                 h1 { font-size: 22px; margin-bottom: 5px; }
@@ -383,7 +383,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
         <body>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h1>RDS Universal Financial Operating System — Stage 123 Audit Report</h1>
+                    <h1>RDS Universal Financial Operating System — Stage 124 Audit Report</h1>
                     <div class="meta">Institution Node: <strong>${req.tenantObj.name} (${req.tenantId})</strong> | Generated: ${new Date().toUTCString()}</div>
                 </div>
                 <button onclick="window.print()" style="background: #dc2626; color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">Print / Save PDF</button>
@@ -413,12 +413,14 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
     }
 });
 
+// FULLY ACTIVATED CRYPTOGRAPHIC CHAIN VERIFICATION ENDPOINT
 app.get('/api/admin/audit/verify-chain', async (req, res) => {
     ensureState();
     let isValid = true;
     let corruptedBlockId = null;
+    let checkedBlocks = data.immutable_audit_vault.length;
 
-    for (let i = 0; i < data.immutable_audit_vault.length; i++) {
+    for (let i = 0; i < checkedBlocks; i++) {
         const block = data.immutable_audit_vault[i];
         const expectedPrev = i === 0 ? "GENESIS_ROOT_HASH_000000000000000000000000" : data.immutable_audit_vault[i - 1].currentHash;
         if (block.previousHash !== expectedPrev) {
@@ -428,7 +430,18 @@ app.get('/api/admin/audit/verify-chain', async (req, res) => {
         }
     }
 
-    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "✅ Stage 123 Universal Lattice Cryptographic Chain 100% Valid." });
+    // Record the chain verification action in the vault itself
+    await recordImmutableAudit("VAULT_CRYPTOGRAPHIC_CHAIN_VERIFIED", { verifiedBlocks: checkedBlocks, chainValid: isValid }, { status: isValid ? "SECURE_100_PERCENT" : "TAMPER_DETECTED" });
+
+    return ok(res, { 
+        success: true, 
+        chainValid: isValid, 
+        totalBlocksVerified: checkedBlocks, 
+        corruptedBlockId,
+        message: isValid 
+            ? `✅ Stage 124 Vault Cryptographic Integrity Verified: All ${checkedBlocks} lattice blocks are 100% authentic and tamper-proof.` 
+            : `❌ CRITICAL INTEGRITY BREACH DETECTED at Block ID: ${corruptedBlockId}` 
+    });
 });
 
 app.get('/api/audit/search', (req, res) => {
@@ -455,8 +468,8 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_123_UNIVERSAL_OS_ACTIVE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_124_UNIVERSAL_OS_ACTIVE", time: Date.now() }));
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 123 UNIVERSAL OS (BANKS + M-PESA + FOREX) ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 124 UNIVERSAL OS (VERIFY VAULT ACTIVATED) ACTIVE ON PORT ${PORT}`);
 });

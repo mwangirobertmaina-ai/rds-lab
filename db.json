@@ -3896,6 +3896,29 @@
       "currentHash": "a41f9a079bcdb195d8c75cc66c7d42346f8e46e63bc1551b4b1bf431350e5eda",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_122_LATTICE_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789707391913_79157",
+      "timestamp": 1789707391913,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-UK",
+        "institution": "RDS London (Stripe UK)"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789707391913_83961",
+        "tenantId": "BIZ-UK",
+        "institution": "RDS London (Stripe UK)",
+        "timestamp": 1789707391913,
+        "actionTaken": "AUTONOMOUS_UNIVERSAL_SHADOW_TRAP_MONITORING",
+        "activeTraps": 0,
+        "systemHealth": "100% SECURE",
+        "status": "SHADOW_TRAP_ACTIVE"
+      },
+      "previousHash": "a41f9a079bcdb195d8c75cc66c7d42346f8e46e63bc1551b4b1bf431350e5eda",
+      "currentHash": "64f2b824f7423aff8839565a86174252668e145a467522b07a855da4d150f91b",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_123_UNIVERSAL_LATTICE"
     }
   ],
   "iso20022_wires": [],
@@ -4211,6 +4234,16 @@
       "tenantId": "BIZ-KE",
       "timestamp": 1789707019336,
       "actionTaken": "AUTONOMOUS_SHADOW_TRAP_MONITORING",
+      "activeTraps": 0,
+      "systemHealth": "100% SECURE",
+      "status": "SHADOW_TRAP_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789707391913_83961",
+      "tenantId": "BIZ-UK",
+      "institution": "RDS London (Stripe UK)",
+      "timestamp": 1789707391913,
+      "actionTaken": "AUTONOMOUS_UNIVERSAL_SHADOW_TRAP_MONITORING",
       "activeTraps": 0,
       "systemHealth": "100% SECURE",
       "status": "SHADOW_TRAP_ACTIVE"
