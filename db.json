@@ -33,6 +33,16 @@
       "taxPin": "CA123456789RT"
     }
   ],
+  "drivers": [],
+  "riders": [
+    {
+      "riderId": "RDR_01",
+      "name": "John Kiprop",
+      "phone": "254711223344",
+      "vehicleType": "MOTORBIKE",
+      "status": "ACTIVE"
+    }
+  ],
   "products": [
     {
       "id": "p1",
@@ -3732,6 +3742,160 @@
       "currentHash": "570a30ea43389ed25847a97b65dc425026e08c99d7b9d8a4f5121c720222a835",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_121_SHADOW_TRAP_RESOLVER"
+    },
+    {
+      "auditId": "AUD_1789706949538_95848",
+      "timestamp": 1789706949538,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_EXECUTED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "settlementId": "CLr_1789706949538_81741",
+        "initiatingNode": "BIZ-KE",
+        "clearingNetwork": "GLOBAL_CENTRAL_BANK_MESH",
+        "timestamp": 1789706949538,
+        "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+      },
+      "previousHash": "570a30ea43389ed25847a97b65dc425026e08c99d7b9d8a4f5121c720222a835",
+      "currentHash": "43d65671557c92be8309811d4249e2f8e3afa09f10371bda4986cf6bbc67cca5",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_122_LATTICE_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789706950465_58756",
+      "timestamp": 1789706950465,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_EXECUTED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "settlementId": "CLr_1789706950465_53835",
+        "initiatingNode": "BIZ-KE",
+        "clearingNetwork": "GLOBAL_CENTRAL_BANK_MESH",
+        "timestamp": 1789706950465,
+        "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+      },
+      "previousHash": "43d65671557c92be8309811d4249e2f8e3afa09f10371bda4986cf6bbc67cca5",
+      "currentHash": "969a05c13bb1e2b9f3260bd5bb3c3c52d3f65fe0c6635303987e37dd1d34bc6d",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_122_LATTICE_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789706950713_15467",
+      "timestamp": 1789706950713,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_EXECUTED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "settlementId": "CLr_1789706950713_53412",
+        "initiatingNode": "BIZ-KE",
+        "clearingNetwork": "GLOBAL_CENTRAL_BANK_MESH",
+        "timestamp": 1789706950713,
+        "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+      },
+      "previousHash": "969a05c13bb1e2b9f3260bd5bb3c3c52d3f65fe0c6635303987e37dd1d34bc6d",
+      "currentHash": "87570e77dcc503c372e8d13b74ac4bde309b2cc5c4afab8d338470a60a2bc268",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_122_LATTICE_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789706956673_20315",
+      "timestamp": 1789706956673,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789706956673_56444",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789706956673,
+        "actionTaken": "AUTONOMOUS_SHADOW_TRAP_MONITORING",
+        "activeTraps": 0,
+        "systemHealth": "100% SECURE",
+        "status": "SHADOW_TRAP_ACTIVE"
+      },
+      "previousHash": "87570e77dcc503c372e8d13b74ac4bde309b2cc5c4afab8d338470a60a2bc268",
+      "currentHash": "a74070689ad3016041de4a4713be9918fd23443ca1afe6a06008ba393708514d",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_122_LATTICE_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789707016201_41596",
+      "timestamp": 1789707016201,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_EXECUTED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "settlementId": "CLr_1789707016201_84049",
+        "initiatingNode": "BIZ-KE",
+        "clearingNetwork": "GLOBAL_CENTRAL_BANK_MESH",
+        "timestamp": 1789707016201,
+        "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+      },
+      "previousHash": "a74070689ad3016041de4a4713be9918fd23443ca1afe6a06008ba393708514d",
+      "currentHash": "6080f5f5af8c1edbb5cd1d46b6b9c8f73ee3943cd63d74f35c72f478099f4e7d",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_122_LATTICE_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789707018384_75949",
+      "timestamp": 1789707018384,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789707018384_23285",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789707018384,
+        "actionTaken": "AUTONOMOUS_SHADOW_TRAP_MONITORING",
+        "activeTraps": 0,
+        "systemHealth": "100% SECURE",
+        "status": "SHADOW_TRAP_ACTIVE"
+      },
+      "previousHash": "6080f5f5af8c1edbb5cd1d46b6b9c8f73ee3943cd63d74f35c72f478099f4e7d",
+      "currentHash": "108c6f5c5affa7184e8579e7e8fcada240cbfaad3732cff7473b33b1549ad9dc",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_122_LATTICE_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789707019336_88091",
+      "timestamp": 1789707019336,
+      "actionType": "AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "enforcementId": "AI_ENFORCE_1789707019336_35582",
+        "tenantId": "BIZ-KE",
+        "timestamp": 1789707019336,
+        "actionTaken": "AUTONOMOUS_SHADOW_TRAP_MONITORING",
+        "activeTraps": 0,
+        "systemHealth": "100% SECURE",
+        "status": "SHADOW_TRAP_ACTIVE"
+      },
+      "previousHash": "108c6f5c5affa7184e8579e7e8fcada240cbfaad3732cff7473b33b1549ad9dc",
+      "currentHash": "2fdc5998c98d594f1370d213a5ca4e653b06484921495aec7c9ffa001a8aff75",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_122_LATTICE_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1789707020860_13632",
+      "timestamp": 1789707020860,
+      "actionType": "OFFICIAL_AUDIT_REPORT_PRINTED",
+      "actor": {
+        "tenant": "BIZ-KE"
+      },
+      "details": {
+        "queryTime": 1789707020860
+      },
+      "previousHash": "2fdc5998c98d594f1370d213a5ca4e653b06484921495aec7c9ffa001a8aff75",
+      "currentHash": "a41f9a079bcdb195d8c75cc66c7d42346f8e46e63bc1551b4b1bf431350e5eda",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_122_LATTICE_VERIFIED"
     }
   ],
   "iso20022_wires": [],
@@ -4023,6 +4187,33 @@
       "activeTraps": 0,
       "systemHealth": "100% SECURE",
       "status": "SHADOW_TRAP_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789706956673_56444",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789706956673,
+      "actionTaken": "AUTONOMOUS_SHADOW_TRAP_MONITORING",
+      "activeTraps": 0,
+      "systemHealth": "100% SECURE",
+      "status": "SHADOW_TRAP_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789707018384_23285",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789707018384,
+      "actionTaken": "AUTONOMOUS_SHADOW_TRAP_MONITORING",
+      "activeTraps": 0,
+      "systemHealth": "100% SECURE",
+      "status": "SHADOW_TRAP_ACTIVE"
+    },
+    {
+      "enforcementId": "AI_ENFORCE_1789707019336_35582",
+      "tenantId": "BIZ-KE",
+      "timestamp": 1789707019336,
+      "actionTaken": "AUTONOMOUS_SHADOW_TRAP_MONITORING",
+      "activeTraps": 0,
+      "systemHealth": "100% SECURE",
+      "status": "SHADOW_TRAP_ACTIVE"
     }
   ],
   "interbank_clearing_settlements": [
@@ -4045,6 +4236,34 @@
       "initiatingNode": "BIZ-KE",
       "clearingNetwork": "GLOBAL_CENTRAL_BANK_MESH",
       "timestamp": 1789706135536,
+      "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+    },
+    {
+      "settlementId": "CLr_1789706949538_81741",
+      "initiatingNode": "BIZ-KE",
+      "clearingNetwork": "GLOBAL_CENTRAL_BANK_MESH",
+      "timestamp": 1789706949538,
+      "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+    },
+    {
+      "settlementId": "CLr_1789706950465_53835",
+      "initiatingNode": "BIZ-KE",
+      "clearingNetwork": "GLOBAL_CENTRAL_BANK_MESH",
+      "timestamp": 1789706950465,
+      "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+    },
+    {
+      "settlementId": "CLr_1789706950713_53412",
+      "initiatingNode": "BIZ-KE",
+      "clearingNetwork": "GLOBAL_CENTRAL_BANK_MESH",
+      "timestamp": 1789706950713,
+      "status": "CLEARED_AND_SETTLED_ATOMICALLY"
+    },
+    {
+      "settlementId": "CLr_1789707016201_84049",
+      "initiatingNode": "BIZ-KE",
+      "clearingNetwork": "GLOBAL_CENTRAL_BANK_MESH",
+      "timestamp": 1789707016201,
       "status": "CLEARED_AND_SETTLED_ATOMICALLY"
     }
   ],
@@ -4104,16 +4323,6 @@
   ],
   "shops": [],
   "catalogs": {},
-  "drivers": [],
-  "riders": [
-    {
-      "riderId": "RDR_01",
-      "name": "John Kiprop",
-      "phone": "254711223344",
-      "vehicleType": "MOTORBIKE",
-      "status": "ACTIVE"
-    }
-  ],
   "otp_sessions": [
     {
       "phone": "1234",

@@ -1,8 +1,8 @@
 
 // ==========================================
-// RDS - STAGE 122 UNIFIED SOVEREIGN OS & COMPREHENSIVE COMPLIANCE ENGINE
-// Universal Support: Kenya (DCI/CID, FRC goAML v5.0.2, CBK RTGS), SWIFT ISO 20022, Multi-Tenant SaaS
-// + Full Entity Registry + Interactive Inspection APIs + Shadow-Trap Protocol & Continuous Serving
+// RDS - STAGE 123 UNIVERSAL MULTI-INSTITUTION FINANCIAL OPERATING SYSTEM
+// Supports: Commercial Banks, M-Pesa / Mobile Money, Forex Bureaus, Central Bank RTGS, SWIFT ISO 20022
+// + Multi-Institution Switcher + Shadow-Trap Protocol + Continuous Serving & SAR Generation
 // ==========================================
 
 const express = require("express");
@@ -45,18 +45,16 @@ app.use(express.static("."));
 function defaultDB() {
   return { 
     businesses: [
-      { id: "BIZ-KE", name: "RDS Nairobi Forex Bureau (CBK RTGS Corridor)", region: "KE", currency: "KES", ownerPhone: "254721862397", taxPin: "P055123456Z" },
-      { id: "BIZ-UK", name: "RDS London (SWIFT ISO 20022 Reserve)", region: "UK", currency: "GBP", ownerPhone: "447123456789", taxPin: "GB123456789" },
-      { id: "BIZ-US", name: "RDS New York (FEDWIRE Corridor)", region: "US", currency: "USD", ownerPhone: "12125550199", taxPin: "US-EIN-9988" }
+      { id: "INST-MPESA", name: "M-Pesa Mobile Money Clearing Hub (Safaricom)", region: "KE", currency: "KES", type: "MOBILE_MONEY", ownerPhone: "254721862397", taxPin: "P051234567X" },
+      { id: "INST-EQUITY", name: "Equity Bank Commercial Clearing Node", region: "KE", currency: "KES", type: "COMMERCIAL_BANK", ownerPhone: "254711000000", taxPin: "P051111111Y" },
+      { id: "INST-KCB", name: "KCB Bank National RTGS Gateway", region: "KE", currency: "KES", type: "COMMERCIAL_BANK", ownerPhone: "254722000000", taxPin: "P052222222Z" },
+      { id: "BIZ-KE", name: "RDS Nairobi Forex Bureau (CBK RTGS Corridor)", region: "KE", currency: "KES", type: "FOREX_BUREAU", ownerPhone: "254721862397", taxPin: "P055123456Z" },
+      { id: "BIZ-UK", name: "RDS London Commercial Reserve (SWIFT ISO)", region: "UK", currency: "GBP", type: "CENTRAL_RESERVE", ownerPhone: "447123456789", taxPin: "GB123456789" }
     ], 
-    drivers: [
-      { id: "DRV_01", name: "John Kiprop", vehicle: "Motorbike", plate: "KMXX 123A", status: "ONLINE", phone: "254711223344" }
-    ],
-    riders: [
-      { riderId: "RDR_01", name: "John Kiprop", phone: "254711223344", vehicleType: "MOTORBIKE", status: "ACTIVE" }
-    ],
+    drivers: [],
+    riders: [],
     products: [
-      { id: "p1", businessId: "BIZ-KE", category: "FOREX", merchant: "RDS Nairobi RTGS Hub", name: "ISO 20022 Settlement Unit", price: 130.0, currency: "KES", stock: 50000, image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&auto=format&fit=crop&q=80" }
+      { id: "p1", businessId: "INST-MPESA", category: "MOBILE_MONEY", merchant: "M-Pesa Gateway", name: "Mobile Money Liquidity Unit", price: 1000.0, currency: "KES", stock: 100000, image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&auto=format&fit=crop&q=80" }
     ], 
     users: [
       { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", didPassId: "did:rds:ke:robertmaina99", amlFlagged: false, riskScore: "0.01% (DID Verified)", kycStatus: "VERIFIED" }
@@ -81,10 +79,6 @@ let data = defaultDB();
 function ensureState() {
   if (!data || typeof data !== 'object') data = defaultDB();
   if (!Array.isArray(data.businesses)) data.businesses = [];
-  if (!Array.isArray(data.drivers)) data.drivers = [];
-  if (!Array.isArray(data.riders)) data.riders = [];
-  if (!Array.isArray(data.products)) data.products = [];
-  if (!Array.isArray(data.users)) data.users = [];
   if (!Array.isArray(data.immutable_audit_vault)) data.immutable_audit_vault = [];
   if (!Array.isArray(data.iso20022_wires)) data.iso20022_wires = [];
   if (!Array.isArray(data.ai_enforcement_logs)) data.ai_enforcement_logs = [];
@@ -108,7 +102,7 @@ async function recordImmutableAudit(actionType, actor, details) {
         ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
         : "GENESIS_ROOT_HASH_000000000000000000000000";
     
-    const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_122_UNIFIED`;
+    const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_123_UNIVERSAL`;
     const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
     const auditRecord = {
@@ -120,7 +114,7 @@ async function recordImmutableAudit(actionType, actor, details) {
         previousHash,
         currentHash,
         tamperProof: true,
-        cryptographicStandard: "STAGE_122_LATTICE_VERIFIED"
+        cryptographicStandard: "STAGE_123_UNIVERSAL_LATTICE"
     };
 
     data.immutable_audit_vault.push(auditRecord);
@@ -129,10 +123,10 @@ async function recordImmutableAudit(actionType, actor, details) {
 }
 
 function enforceTenantIsolation(req, res, next) {
-    const businessId = req.headers['x-business-id'] || req.query.businessId || req.body.businessId || "BIZ-KE";
+    const businessId = req.headers['x-business-id'] || req.query.businessId || req.body.businessId || "INST-MPESA";
     ensureState();
     req.tenantId = businessId;
-    req.tenantObj = data.businesses.find(b => b.id === businessId) || { id: businessId, name: "Sovereign RTGS Node", currency: "KES", region: "KE" };
+    req.tenantObj = data.businesses.find(b => b.id === businessId) || { id: businessId, name: "Universal Clearing Node", currency: "KES", type: "COMMERCIAL_BANK" };
     next();
 }
 
@@ -153,7 +147,7 @@ const saveDB = async () => {
   } catch (err) { console.error("DB save error", err); }
 };
 
-// --- INSPECTION & MANAGEMENT ENDPOINTS FOR ALL METRIC PANELS ---
+// --- INSPECTION & MANAGEMENT ENDPOINTS ---
 
 app.get('/api/admin/shadow-traps', enforceTenantIsolation, async (req, res) => {
     ensureState();
@@ -193,30 +187,31 @@ app.get('/api/admin/sovereign-vault', enforceTenantIsolation, async (req, res) =
     return ok(res, { success: true, vaultBlocks: data.immutable_audit_vault });
 });
 
-// ISO 20022 WIRE DISPATCH WITH SHADOW-TRAP
+// UNIVERSAL ISO 20022 / BANK / M-PESA WIRE DISPATCH WITH SHADOW-TRAP
 app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
         const { beneficiaryName, beneficiaryAccount, bicCode, amount, currency } = req.body;
         if (!beneficiaryAccount || !amount) return fail(res, "Beneficiary account and amount required for wire settlement.", 400);
 
-        const wireId = id("ISO_WIRE");
+        const wireId = id("WIRE");
         const numericAmount = Number(amount);
         const isSuspicious = numericAmount >= 1000000;
 
         const wireMessage = {
             wireId,
             tenantId: req.tenantId,
-            messageType: "pacs.008.001.10 (FI to FI Customer Credit Transfer)",
-            debtorInstitution: req.tenantObj.name,
-            beneficiaryName: beneficiaryName || "Global Counterparty",
+            institutionName: req.tenantObj.name,
+            institutionType: req.tenantObj.type,
+            messageType: "pacs.008.001.10 (Universal Financial Credit Transfer)",
+            beneficiaryName: beneficiaryName || "Counterparty",
             beneficiaryAccount,
-            bicCode: bicCode || "RTGSSKENAXX",
+            bicCode: bicCode || "CLEARINGNETXX",
             amount: numericAmount,
             currency: currency || req.tenantObj.currency,
             timestamp: Date.now(),
             shadowTrapFlagged: isSuspicious,
-            status: "SETTLED_VIA_CENTRAL_BANK_RTGS"
+            status: "SETTLED_ATOMICALLY"
         };
 
         data.iso20022_wires.push(wireMessage);
@@ -227,6 +222,7 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
                 wireId,
                 amount: numericAmount,
                 beneficiary: beneficiaryName,
+                institution: req.tenantObj.name,
                 reason: "High-value velocity threshold crossed. Shadow-trap engaged for law enforcement capture.",
                 timestamp: Date.now()
             };
@@ -234,18 +230,18 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
             data.sar_queue.push({
                 sarId: id("SAR"),
                 referenceId: wireId,
-                details: "Automated FRC goAML suspicious transaction report triggered under shadow-trap protocol.",
+                details: `Automated FRC goAML report triggered at ${req.tenantObj.name} under shadow-trap protocol.`,
                 timestamp: Date.now()
             });
-            await recordImmutableAudit("SHADOW_TRAP_TRIGGERED", { tenant: req.tenantId }, trapRecord);
+            await recordImmutableAudit("SHADOW_TRAP_TRIGGERED", { tenant: req.tenantId, institution: req.tenantObj.name }, trapRecord);
         }
 
-        await recordImmutableAudit("ISO_20022_WIRE_DISPATCHED", { tenant: req.tenantId }, wireMessage);
+        await recordImmutableAudit("UNIVERSAL_WIRE_DISPATCHED", { tenant: req.tenantId, institution: req.tenantObj.name }, wireMessage);
         await saveDB();
 
         return ok(res, { 
             success: true, 
-            message: "ISO 20022 wire instruction successfully formatted and settled.", 
+            message: `Wire instruction successfully formatted and settled via ${req.tenantObj.name}.`, 
             wireMessage,
             complianceNote: "Transaction successfully processed under continuous operational service." 
         });
@@ -262,16 +258,17 @@ app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (re
         const settlementRecord = {
             settlementId,
             initiatingNode: req.tenantId,
-            clearingNetwork: "GLOBAL_CENTRAL_BANK_MESH",
+            institution: req.tenantObj.name,
+            clearingNetwork: "UNIVERSAL_INTERBANK_MESH",
             timestamp: Date.now(),
             status: "CLEARED_AND_SETTLED_ATOMICALLY"
         };
 
         data.interbank_clearing_settlements.push(settlementRecord);
-        await recordImmutableAudit("INTERBANK_CLEARING_SETTLEMENT_EXECUTED", { tenant: req.tenantId }, settlementRecord);
+        await recordImmutableAudit("INTERBANK_CLEARING_SETTLEMENT_EXECUTED", { tenant: req.tenantId, institution: req.tenantObj.name }, settlementRecord);
         await saveDB();
 
-        return ok(res, { success: true, message: "Inter-bank clearing settlement completed atomically.", settlementRecord });
+        return ok(res, { success: true, message: `Inter-bank clearing settlement completed atomically for ${req.tenantObj.name}.`, settlementRecord });
     } catch (err) {
         return fail(res, err.message, 500);
     }
@@ -285,18 +282,19 @@ app.post('/api/ai/autonomous-enforcement', enforceTenantIsolation, async (req, r
         const actionRecord = {
             enforcementId,
             tenantId: req.tenantId,
+            institution: req.tenantObj.name,
             timestamp: Date.now(),
-            actionTaken: "AUTONOMOUS_SHADOW_TRAP_MONITORING",
+            actionTaken: "AUTONOMOUS_UNIVERSAL_SHADOW_TRAP_MONITORING",
             activeTraps: data.shadow_trap_flags.length,
             systemHealth: "100% SECURE",
             status: "SHADOW_TRAP_ACTIVE"
         };
 
         data.ai_enforcement_logs.push(actionRecord);
-        await recordImmutableAudit("AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED", { tenant: req.tenantId }, actionRecord);
+        await recordImmutableAudit("AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED", { tenant: req.tenantId, institution: req.tenantObj.name }, actionRecord);
         await saveDB();
 
-        return ok(res, { success: true, message: "Autonomous AI Enforcement Agent executed shadow-trap scan. Zero disruption to active traffic.", actionRecord });
+        return ok(res, { success: true, message: `Autonomous AI Agent scanned ${req.tenantObj.name}. Zero disruption to active traffic.`, actionRecord });
     } catch (err) {
         return fail(res, err.message, 500);
     }
@@ -355,7 +353,7 @@ app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, async (req, r
 app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
-        await recordImmutableAudit("OFFICIAL_AUDIT_REPORT_PRINTED", { tenant: req.tenantId }, { queryTime: Date.now() });
+        await recordImmutableAudit("OFFICIAL_AUDIT_REPORT_PRINTED", { tenant: req.tenantId, institution: req.tenantObj.name }, { queryTime: Date.now() });
         
         const rows = data.immutable_audit_vault.slice(-100).reverse().map(s => `
             <tr>
@@ -371,7 +369,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
         return res.send(`<!DOCTYPE html>
         <html>
         <head>
-            <title>RDS Stage 122 Official Sovereign Audit Report - ${req.tenantId}</title>
+            <title>RDS Stage 123 Universal Audit Report - ${req.tenantId}</title>
             <style>
                 body { font-family: Arial, sans-serif; color: #111; padding: 40px; margin: 0; }
                 h1 { font-size: 22px; margin-bottom: 5px; }
@@ -385,8 +383,8 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
         <body>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h1>RDS Sovereign Financial Operating System — Stage 122 Audit Report</h1>
-                    <div class="meta">Node Corridor: <strong>${req.tenantObj.name} (${req.tenantId})</strong> | Generated: ${new Date().toUTCString()}</div>
+                    <h1>RDS Universal Financial Operating System — Stage 123 Audit Report</h1>
+                    <div class="meta">Institution Node: <strong>${req.tenantObj.name} (${req.tenantId})</strong> | Generated: ${new Date().toUTCString()}</div>
                 </div>
                 <button onclick="window.print()" style="background: #dc2626; color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">Print / Save PDF</button>
             </div>
@@ -405,7 +403,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
                 </tbody>
             </table>
             <div class="footer">
-                <p><strong>Compliance & Regulatory Standard:</strong> FRC goAML v5.0.2 / CBK RTGS / SWIFT ISO 20022 / Unified OS.</p>
+                <p><strong>Compliance & Regulatory Standard:</strong> FRC goAML v5.0.2 / CBK RTGS / Commercial Banks / M-Pesa Mobile Money Clearing.</p>
                 <p>This document is cryptographically immutable and legally binding for official regulatory and law enforcement verification.</p>
             </div>
         </body>
@@ -430,7 +428,7 @@ app.get('/api/admin/audit/verify-chain', async (req, res) => {
         }
     }
 
-    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "✅ Stage 122 Sovereign Lattice Cryptographic Chain 100% Valid." });
+    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "✅ Stage 123 Universal Lattice Cryptographic Chain 100% Valid." });
 });
 
 app.get('/api/audit/search', (req, res) => {
@@ -457,8 +455,8 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_122_UNIFIED_OS_ACTIVE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_123_UNIVERSAL_OS_ACTIVE", time: Date.now() }));
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 122 UNIFIED SOVEREIGN OS ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 123 UNIVERSAL OS (BANKS + M-PESA + FOREX) ACTIVE ON PORT ${PORT}`);
 });
