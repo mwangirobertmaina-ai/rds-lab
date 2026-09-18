@@ -1,7 +1,8 @@
+
 // ==========================================
-// RDS - STAGE 121 INTERACTIVE SHADOW-TRAP MANAGEMENT & COMPLIANCE ENGINE
-// Universal Support: Kenya (DCI/CID, FRC goAML v5.0.2, CBK RTGS), SWIFT ISO 20022
-// + Interactive Shadow-Trap Resolution + Disable/Clear Controls + Audit Integration
+// RDS - STAGE 122 UNIFIED SOVEREIGN OS & COMPREHENSIVE COMPLIANCE ENGINE
+// Universal Support: Kenya (DCI/CID, FRC goAML v5.0.2, CBK RTGS), SWIFT ISO 20022, Multi-Tenant SaaS
+// + Full Entity Registry + Interactive Inspection APIs + Shadow-Trap Protocol & Continuous Serving
 // ==========================================
 
 const express = require("express");
@@ -48,6 +49,12 @@ function defaultDB() {
       { id: "BIZ-UK", name: "RDS London (SWIFT ISO 20022 Reserve)", region: "UK", currency: "GBP", ownerPhone: "447123456789", taxPin: "GB123456789" },
       { id: "BIZ-US", name: "RDS New York (FEDWIRE Corridor)", region: "US", currency: "USD", ownerPhone: "12125550199", taxPin: "US-EIN-9988" }
     ], 
+    drivers: [
+      { id: "DRV_01", name: "John Kiprop", vehicle: "Motorbike", plate: "KMXX 123A", status: "ONLINE", phone: "254711223344" }
+    ],
+    riders: [
+      { riderId: "RDR_01", name: "John Kiprop", phone: "254711223344", vehicleType: "MOTORBIKE", status: "ACTIVE" }
+    ],
     products: [
       { id: "p1", businessId: "BIZ-KE", category: "FOREX", merchant: "RDS Nairobi RTGS Hub", name: "ISO 20022 Settlement Unit", price: 130.0, currency: "KES", stock: 50000, image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&auto=format&fit=crop&q=80" }
     ], 
@@ -74,6 +81,8 @@ let data = defaultDB();
 function ensureState() {
   if (!data || typeof data !== 'object') data = defaultDB();
   if (!Array.isArray(data.businesses)) data.businesses = [];
+  if (!Array.isArray(data.drivers)) data.drivers = [];
+  if (!Array.isArray(data.riders)) data.riders = [];
   if (!Array.isArray(data.products)) data.products = [];
   if (!Array.isArray(data.users)) data.users = [];
   if (!Array.isArray(data.immutable_audit_vault)) data.immutable_audit_vault = [];
@@ -99,7 +108,7 @@ async function recordImmutableAudit(actionType, actor, details) {
         ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
         : "GENESIS_ROOT_HASH_000000000000000000000000";
     
-    const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_121_HARDENED`;
+    const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_122_UNIFIED`;
     const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
     const auditRecord = {
@@ -111,7 +120,7 @@ async function recordImmutableAudit(actionType, actor, details) {
         previousHash,
         currentHash,
         tamperProof: true,
-        cryptographicStandard: "STAGE_121_SHADOW_TRAP_RESOLVER"
+        cryptographicStandard: "STAGE_122_LATTICE_VERIFIED"
     };
 
     data.immutable_audit_vault.push(auditRecord);
@@ -144,13 +153,13 @@ const saveDB = async () => {
   } catch (err) { console.error("DB save error", err); }
 };
 
-// ENDPOINT: FETCH ACTIVE SHADOW-TRAPS
+// --- INSPECTION & MANAGEMENT ENDPOINTS FOR ALL METRIC PANELS ---
+
 app.get('/api/admin/shadow-traps', enforceTenantIsolation, async (req, res) => {
     ensureState();
     return ok(res, { success: true, shadowTraps: data.shadow_trap_flags });
 });
 
-// ENDPOINT: RESOLVE AND DISABLE SHADOW-TRAP
 app.post('/api/admin/shadow-traps/resolve', enforceTenantIsolation, async (req, res) => {
     ensureState();
     const { trapId } = req.body;
@@ -162,6 +171,26 @@ app.post('/api/admin/shadow-traps/resolve', enforceTenantIsolation, async (req, 
         return ok(res, { success: true, message: `Shadow trap ${trapId} successfully resolved and disabled.` });
     }
     return fail(res, "Shadow trap not found", 404);
+});
+
+app.get('/api/admin/sar-queue', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    return ok(res, { success: true, sarQueue: data.sar_queue });
+});
+
+app.get('/api/admin/iso-wires', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    return ok(res, { success: true, isoWires: data.iso20022_wires });
+});
+
+app.get('/api/admin/did-passes', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    return ok(res, { success: true, didPasses: data.did_pass_registry });
+});
+
+app.get('/api/admin/sovereign-vault', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    return ok(res, { success: true, vaultBlocks: data.immutable_audit_vault });
 });
 
 // ISO 20022 WIRE DISPATCH WITH SHADOW-TRAP
@@ -342,7 +371,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
         return res.send(`<!DOCTYPE html>
         <html>
         <head>
-            <title>RDS Stage 121 Official Sovereign Audit Report - ${req.tenantId}</title>
+            <title>RDS Stage 122 Official Sovereign Audit Report - ${req.tenantId}</title>
             <style>
                 body { font-family: Arial, sans-serif; color: #111; padding: 40px; margin: 0; }
                 h1 { font-size: 22px; margin-bottom: 5px; }
@@ -356,7 +385,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
         <body>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h1>RDS Sovereign Financial Operating System — Stage 121 Hardened Audit Report</h1>
+                    <h1>RDS Sovereign Financial Operating System — Stage 122 Audit Report</h1>
                     <div class="meta">Node Corridor: <strong>${req.tenantObj.name} (${req.tenantId})</strong> | Generated: ${new Date().toUTCString()}</div>
                 </div>
                 <button onclick="window.print()" style="background: #dc2626; color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">Print / Save PDF</button>
@@ -376,7 +405,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
                 </tbody>
             </table>
             <div class="footer">
-                <p><strong>Compliance & Regulatory Standard:</strong> FRC goAML v5.0.2 / CBK RTGS / SWIFT ISO 20022 / Shadow-Trap Managed.</p>
+                <p><strong>Compliance & Regulatory Standard:</strong> FRC goAML v5.0.2 / CBK RTGS / SWIFT ISO 20022 / Unified OS.</p>
                 <p>This document is cryptographically immutable and legally binding for official regulatory and law enforcement verification.</p>
             </div>
         </body>
@@ -401,7 +430,7 @@ app.get('/api/admin/audit/verify-chain', async (req, res) => {
         }
     }
 
-    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "✅ Stage 121 Hardened Sovereign Lattice Cryptographic Chain 100% Valid." });
+    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "✅ Stage 122 Sovereign Lattice Cryptographic Chain 100% Valid." });
 });
 
 app.get('/api/audit/search', (req, res) => {
@@ -428,8 +457,8 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => socket.join(room));
 });
 
-app.get("/health", (req, res) => ok(res, { status: "STAGE_121_HARDENED_OS_ACTIVE", time: Date.now() }));
+app.get("/health", (req, res) => ok(res, { status: "STAGE_122_UNIFIED_OS_ACTIVE", time: Date.now() }));
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 121 HARDENED SOVEREIGN OS (SHADOW-TRAP MANAGER) ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 122 UNIFIED SOVEREIGN OS ACTIVE ON PORT ${PORT}`);
 });
