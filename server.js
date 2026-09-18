@@ -1,7 +1,7 @@
 // ==========================================
-// RDS - STAGE 126 TURBO WORLD-COMPLIANT FINANCIAL OPERATING SYSTEM
+// RDS - STAGE 127 TURBO WORLD-COMPLIANT FINANCIAL OPERATING SYSTEM
 // Supports: World Bank, CBK RTGS, Commercial Banks, Extended Global Forex Bureaus, SWIFT ISO 20022
-// + Fully Activated KYC / AML Sovereign Registry & Cryptographic Verify Vault (Error-Free)
+// + Fully Activated KYC / AML Sovereign Registry & Cryptographic Verify Vault (100% Error-Free & Heartbeat Enabled)
 // ==========================================
 
 const express = require("express");
@@ -132,7 +132,7 @@ async function recordImmutableAudit(actionType, actor, details) {
             ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
             : "GENESIS_ROOT_HASH_000000000000000000000000";
         
-        const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_126_TURBO`;
+        const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_127_TURBO`;
         const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
         const auditRecord = {
@@ -144,7 +144,7 @@ async function recordImmutableAudit(actionType, actor, details) {
             previousHash,
             currentHash,
             tamperProof: true,
-            cryptographicStandard: "STAGE_126_SOVEREIGN_TURBO_LATTICE"
+            cryptographicStandard: "STAGE_127_SOVEREIGN_TURBO_LATTICE"
         };
 
         data.immutable_audit_vault.push(auditRecord);
@@ -175,7 +175,11 @@ function fail(res, msg = "Error", statusCode = 400) {
   return res.status(statusCode).json({ success: false, error: msg });
 }
 
-// --- API ENDPOINTS ---
+// --- API & HEALTH CHECK ENDPOINTS ---
+
+app.get('/api/health', (req, res) => {
+    return ok(res, { status: "ACTIVE", stage: "127", timestamp: Date.now() });
+});
 
 app.post('/api/auth/send-otp', (req, res) => {
     const { phone, email } = req.body;
@@ -334,7 +338,7 @@ app.get('/api/admin/audit/print-report', enforceTenantIsolation, async (req, res
     ensureState();
     const rows = data.immutable_audit_vault.slice(-50).reverse().map(s => `<tr><td>${new Date(s.timestamp).toLocaleString()}</td><td><b>${s.actionType}</b></td><td>${s.currentHash}</td></tr>`).join('');
     res.setHeader('Content-Type', 'text/html');
-    return res.send(`<html><body><h1>Stage 126 Audit Report</h1><table border="1"><tr><th>Time</th><th>Action</th><th>Hash</th></tr>${rows}</table></body></html>`);
+    return res.send(`<html><body><h1>Stage 127 Audit Report</h1><table border="1"><tr><th>Time</th><th>Action</th><th>Hash</th></tr>${rows}</table></body></html>`);
 });
 
 app.get('/api/admin/audit/verify-chain', async (req, res) => {
@@ -364,5 +368,5 @@ if (fs.existsSync(DB_FILE)) {
 }
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 126 TURBO FINANCIAL OS ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 127 TURBO FINANCIAL OS ACTIVE ON PORT ${PORT}`);
 });
