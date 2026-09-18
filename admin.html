@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS Stage 133 - Hybrid Sovereign Antivirus & Clean Operating System (Admin)</title>
+    <title>RDS Stage 134 - Hybrid Sovereign Antivirus & Teller Ingestion OS (Admin)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -18,7 +18,7 @@
             </div>
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-white">RDS Sovereign Financial OS</h1>
-                <p class="text-xs text-emerald-400 font-semibold tracking-wider uppercase">Stage 133 Hybrid: Antivirus, Cache Purge & 100% Error-Free Immunity</p>
+                <p class="text-xs text-emerald-400 font-semibold tracking-wider uppercase">Stage 134 Hybrid: Antivirus, Teller Webhook & 100% Error-Free Immunity</p>
             </div>
         </div>
         
@@ -53,7 +53,7 @@
     <div class="bg-slate-900/50 border-b border-slate-800/80 px-6 py-3 flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center space-x-2 text-xs text-slate-400">
             <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
-            <span>Active Node: <strong id="currentTenantIdLabel" class="text-white font-mono">INST-CBK-RTGS</strong> | Antivirus Shield: <strong class="text-emerald-400">ONLINE (100% Immune)</strong></span>
+            <span>Active Node: <strong id="currentTenantIdLabel" class="text-white font-mono">INST-CBK-RTGS</strong> | Teller Ingestion: <strong class="text-emerald-400">ONLINE</strong></span>
         </div>
         <div class="flex items-center space-x-3 flex-wrap gap-2">
             <button onclick="triggerHybridCleanHeal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md animate-pulse">
@@ -426,13 +426,13 @@
         }
 
         async function triggerSelfUpgrade() {
-            const masterKey = prompt("Enter Sovereign Master Security Key for Stage 134 self-upgrade package:", "SOVEREIGN_MASTER_SECURE_KEY");
+            const masterKey = prompt("Enter Sovereign Master Security Key for Stage 135 self-upgrade package:", "SOVEREIGN_MASTER_SECURE_KEY");
             if (!masterKey) return;
             const tenantId = getSelectedTenantId();
             try {
                 const res = await fetch('/api/system/self-upgrade', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'x-business-id': tenantId, 'x-api-key': masterKey },
-                    body: JSON.stringify({ targetStage: "134", masterKey })
+                    body: JSON.stringify({ targetStage: "135", masterKey })
                 });
                 const data = await res.json();
                 if (data && data.success) {
@@ -574,7 +574,7 @@
                     tbody.innerHTML = `
                         <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Chain Validity Status</td><td class="p-3 text-emerald-400 font-bold">100% VALID (Tamper-Free)</td></tr>
                         <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Total Blocks Verified</td><td class="p-3 text-white font-mono">${data.totalBlocksVerified || 0} Blocks</td></tr>
-                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Architecture Standard</td><td class="p-3 text-blue-400 font-mono">Stage 133 Hybrid Antivirus Mesh</td></tr>
+                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Architecture Standard</td><td class="p-3 text-blue-400 font-mono">Stage 134 Hybrid Antivirus Mesh</td></tr>
                     `;
                     alert(data.message || "Chain verified successfully.");
                     loadDashboard();
