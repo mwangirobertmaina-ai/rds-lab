@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS Stage 145 - Sovereign Financial OS & Lattice Gateway</title>
+    <title>RDS Stage 147 - Sovereign Financial OS & Unified Compliance Gateway</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -18,7 +18,7 @@
             </div>
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-white">RDS Sovereign Financial OS</h1>
-                <p class="text-xs text-emerald-400 font-semibold tracking-wider uppercase">Stage 145: Autonomous Lattice Settlement Edition</p>
+                <p class="text-xs text-emerald-400 font-semibold tracking-wider uppercase">Stage 147: Unified AI-Approved & Full CBK Compliance Edition</p>
             </div>
         </div>
         
@@ -50,28 +50,36 @@
         </div>
     </header>
 
-    <!-- Fully Active Action Toolbar -->
+    <!-- Fully Restored Action Toolbar (All Stage 145 Buttons + AI & OpenAPI) -->
     <div class="bg-slate-900/50 border-b border-slate-800/80 px-6 py-3 flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center space-x-2 text-xs text-slate-400">
             <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
             <span>Active Node: <strong id="currentTenantIdLabel" class="text-white font-mono">INST-CBK-RTGS</strong> | Role: <strong id="activeRoleLabel" class="text-amber-400">SOVEREIGN_ADMIN</strong></span>
         </div>
         <div class="flex items-center space-x-2 flex-wrap gap-2">
+            <button onclick="openAiEvalModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+                <span>Evaluate AI Intent</span>
+            </button>
+            <button onclick="window.open('/api/ai/openapi.json', '_blank')" class="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="file-code" class="w-3.5 h-3.5"></i>
+                <span>OpenAPI Spec</span>
+            </button>
             <button onclick="triggerCompliancePush('DAILY')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
                 <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                <span>Push Daily CBK Report</span>
+                <span>Push Daily Report</span>
             </button>
             <button onclick="triggerCompliancePush('QUARTERLY')" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
                 <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                <span>Push Quarterly CBK Report</span>
+                <span>Push Quarterly Report</span>
             </button>
             <button onclick="triggerCompliancePush('ANNUAL')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
                 <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                <span>Push Annual CBK Report</span>
+                <span>Push Annual Report</span>
             </button>
             <button onclick="openCbkEmailModal()" class="bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
                 <i data-lucide="mail" class="w-3.5 h-3.5"></i>
-                <span>Email CBK Compliance</span>
+                <span>Email Compliance</span>
             </button>
             <button onclick="triggerHybridCleanHeal()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
                 <i data-lucide="shield" class="w-3.5 h-3.5"></i>
@@ -104,7 +112,7 @@
     <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
 
         <!-- Metrics Overview Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-8 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-9 gap-4">
             <div onclick="openModal('kycRegistry')" class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md cursor-pointer hover:border-emerald-400 transition">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
                     <span class="text-xs font-semibold uppercase tracking-wider">Tiered KYC</span>
@@ -112,6 +120,14 @@
                 </div>
                 <div id="statKycCount" class="text-2xl font-bold text-white">0</div>
                 <p class="text-xs text-slate-500 mt-1">IPRS Verified</p>
+            </div>
+            <div onclick="openModal('aiIntents')" class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md cursor-pointer hover:border-amber-400 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">AI Intents</span>
+                    <i data-lucide="bot" class="w-5 h-5 text-amber-400"></i>
+                </div>
+                <div id="statAiCount" class="text-2xl font-bold text-white">0</div>
+                <p class="text-xs text-slate-500 mt-1">AI-Approved</p>
             </div>
             <div onclick="openModal('shadowTraps')" class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md cursor-pointer hover:border-red-500 transition">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
@@ -204,6 +220,42 @@
 
     </main>
 
+    <!-- AI Agent Intent Evaluation Modal -->
+    <div id="aiEvalModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i data-lucide="bot" class="w-5 h-5 text-amber-400"></i>
+                    <span>Autonomous AI Agent Risk & Intent Evaluation</span>
+                </h3>
+                <button onclick="closeAiEvalModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <p class="text-slate-400">Evaluate automated multi-agent actions against sovereign risk heuristics before committing to the financial mesh.</p>
+                <div>
+                    <label class="block text-slate-400 mb-1">Agent ID</label>
+                    <input type="text" id="aiAgentId" value="LANGCHAIN_AGENT_01" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Proposed Action</label>
+                    <input type="text" id="aiProposedAction" value="EXECUTE_ISO20022_WIRE" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Parameters (JSON)</label>
+                    <textarea id="aiParameters" rows="4" class="w-full bg-slate-950 border border-slate-700 font-mono text-amber-400 p-2 rounded-lg focus:outline-none">{
+  "amount": 750000,
+  "beneficiaryName": "Sovereign Reserve Partner",
+  "purposeCode": "SETT"
+}</textarea>
+                </div>
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                <button onclick="closeAiEvalModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
+                <button onclick="submitAiEval()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Evaluate AI Intent</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Universal Generic Inspector Modal -->
     <div id="genericModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl">
@@ -264,7 +316,7 @@
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 class="text-base font-bold text-white flex items-center space-x-2">
                     <i data-lucide="user-plus" class="w-5 h-5 text-emerald-400"></i>
-                    <span>Secure User Registration (Stage 145 RBAC)</span>
+                    <span>Secure User Registration (Stage 147 RBAC)</span>
                 </h3>
                 <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
@@ -401,7 +453,7 @@
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Custom Notes / Secure Memo</label>
-                    <textarea id="cbkEmailNotes" rows="3" class="w-full bg-slate-950 border border-slate-700 text-slate-200 p-2 rounded-lg focus:outline-none">Automated secure push transmitted via RDS Stage 145 Sovereign OS.</textarea>
+                    <textarea id="cbkEmailNotes" rows="3" class="w-full bg-slate-950 border border-slate-700 text-slate-200 p-2 rounded-lg focus:outline-none">Automated secure push transmitted via RDS Stage 147 Sovereign OS.</textarea>
                 </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
@@ -455,6 +507,7 @@
                 const data = await res.json();
                 if (data && data.success) {
                     document.getElementById('statKycCount').innerText = data.kycUsersCount || 0;
+                    document.getElementById('statAiCount').innerText = data.aiApprovedIntentsCount || 0;
                     document.getElementById('statTrapsCount').innerText = data.shadowTrapsCount || 0;
                     document.getElementById('statMakerCheckerCount').innerText = data.makerCheckerCount || 0;
                     document.getElementById('statSarCount').innerText = data.sarQueueCount || 0;
@@ -485,6 +538,35 @@
 
         function openCbkEmailModal() { document.getElementById('cbkEmailModal').classList.remove('hidden'); }
         function closeCbkEmailModal() { document.getElementById('cbkEmailModal').classList.add('hidden'); }
+
+        function openAiEvalModal() { document.getElementById('aiEvalModal').classList.remove('hidden'); }
+        function closeAiEvalModal() { document.getElementById('aiEvalModal').classList.add('hidden'); }
+
+        async function submitAiEval() {
+            const agentId = document.getElementById('aiAgentId').value.trim();
+            const proposedAction = document.getElementById('aiProposedAction').value.trim();
+            const rawParams = document.getElementById('aiParameters').value.trim();
+            let parameters;
+            try {
+                parameters = JSON.parse(rawParams);
+            } catch(e) {
+                alert("Invalid JSON parameters format.");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/ai/agent-evaluate-intent', {
+                    method: 'POST', headers: getAuthHeaders(),
+                    body: JSON.stringify({ agentId, proposedAction, parameters })
+                });
+                const data = await res.json();
+                if (data && data.success) {
+                    alert(`🤖 ${data.message}\nRisk Score: ${data.evaluation.riskScore}`);
+                    closeAiEvalModal();
+                    loadDashboard();
+                } else { alert("❌ AI Evaluation Error: " + (data ? data.error : 'Rejected')); }
+            } catch (err) { alert("Network error during AI agent intent evaluation."); }
+        }
 
         async function triggerCompliancePush(frequency) {
             if (!confirm(`Execute automated ${frequency} compliance report push to the Central Bank of Kenya RTGS gateway?`)) return;
@@ -648,6 +730,21 @@
                             </tr>
                         `).join('');
                     } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No KYC records found.</td></tr>`; }
+                } else if (type === 'aiIntents') {
+                    title.innerHTML = `<i data-lucide="bot" class="w-5 h-5 text-amber-400"></i><span>AI-Approved Autonomous Agent Intents</span>`;
+                    desc.innerText = "Evaluated AI agent intents, risk scores, and governance approvals.";
+                    thead.innerHTML = `<tr><th class="p-3">Agent ID</th><th class="p-3">Proposed Action & Risk</th><th class="p-3">Approval Status</th></tr>`;
+                    const res = await fetch('/api/admin/ai-intents', { headers: getAuthHeaders() });
+                    const data = await res.json();
+                    if (data && data.success && data.aiIntents && data.aiIntents.length > 0) {
+                        tbody.innerHTML = data.aiIntents.map(a => `
+                            <tr class="hover:bg-slate-900/50 transition">
+                                <td class="p-3 text-amber-400 font-bold">${a.agentId}</td>
+                                <td class="p-3 text-slate-300">${a.proposedAction} (Risk: ${a.riskScore})</td>
+                                <td class="p-3 text-emerald-400 font-bold">${a.approvalStatus}</td>
+                            </tr>
+                        `).join('');
+                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No AI agent intents evaluated yet.</td></tr>`; }
                 } else if (type === 'shadowTraps') {
                     title.innerHTML = `<i data-lucide="shield-alert" class="w-5 h-5 text-red-500"></i><span>Active Shadow-Traps & Resolution Manager</span>`;
                     desc.innerText = "Inspect flagged entities captured across dual corridors.";
@@ -922,7 +1019,7 @@
                     tbody.innerHTML = `
                         <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Chain Validity Status</td><td class="p-3 text-emerald-400 font-bold">100% VALID (Tamper-Free)</td></tr>
                         <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Total Blocks Verified</td><td class="p-3 text-white font-mono">${data.totalBlocksVerified || 0} Blocks</td></tr>
-                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Architecture Standard</td><td class="p-3 text-blue-400 font-mono">Stage 145 Autonomous Lattice Edition</td></tr>
+                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Architecture Standard</td><td class="p-3 text-blue-400 font-mono">Stage 147 Unified AI & Compliance Edition</td></tr>
                     `;
                     alert(data.message || "Chain verified successfully.");
                     loadDashboard();

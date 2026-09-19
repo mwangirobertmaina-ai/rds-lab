@@ -4918,6 +4918,97 @@
       "currentHash": "7c85b0836a4fe6ec0823f787c388830716b5a57b2b24a223c1c6a9581d273448",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_141_RBAC_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789856567393_34398",
+      "timestamp": 1789856567393,
+      "actionType": "CBK_DAILY_COMPLIANCE_PUSH_146",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "pushId": "CBK_PUSH_1789856567391_47485",
+        "tenantId": "INST-CBK-RTGS",
+        "frequency": "DAILY",
+        "recordsCount": 240,
+        "timestamp": 1789856567391,
+        "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+      },
+      "previousHash": "7c85b0836a4fe6ec0823f787c388830716b5a57b2b24a223c1c6a9581d273448",
+      "currentHash": "a61e78af1c32806a6ff2b344924dda42e24f97a2bfd6664c042ff951b4ff4b22",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_146_AI_APPROVED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789857043789_57720",
+      "timestamp": 1789857043789,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_147",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "evaluationId": "AI_EVAL_1789857043786_75594",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_WIRE",
+        "parameters": {
+          "amount": 750000,
+          "beneficiaryName": "Sovereign Reserve Partner",
+          "purposeCode": "SETT"
+        },
+        "riskScore": "0.01%",
+        "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+        "timestamp": 1789857043786
+      },
+      "previousHash": "a61e78af1c32806a6ff2b344924dda42e24f97a2bfd6664c042ff951b4ff4b22",
+      "currentHash": "8c3c92ecdc0f68ee927acbb311663987efa6a4875606a61e11df6b92423e99f8",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_147_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789857064692_66071",
+      "timestamp": 1789857064692,
+      "actionType": "SYSTEM_HYBRID_CLEAN_HEAL_147",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "status": "HEALED"
+      },
+      "previousHash": "8c3c92ecdc0f68ee927acbb311663987efa6a4875606a61e11df6b92423e99f8",
+      "currentHash": "678aa36356b24a7542d254e6fa7237abd162723c0517efc25288cda9bceee3e7",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_147_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789857089608_72963",
+      "timestamp": 1789857089608,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_147",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "evaluationId": "AI_EVAL_1789857089605_95541",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_WIRE",
+        "parameters": {
+          "amount": 750000,
+          "beneficiaryName": "Sovereign Reserve Partner",
+          "purposeCode": "SETT"
+        },
+        "riskScore": "0.01%",
+        "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+        "timestamp": 1789857089605
+      },
+      "previousHash": "678aa36356b24a7542d254e6fa7237abd162723c0517efc25288cda9bceee3e7",
+      "currentHash": "c84bf47a0730d17025394d48e1b27d892e9c31f892e429a4d11f25aa9a6b830e",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_147_UNIFIED_LATTICE"
     }
   ],
   "iso20022_wires": [
@@ -5373,6 +5464,60 @@
       "activeTraps": 0,
       "systemHealth": "100% WORLD-COMPLIANT SECURE",
       "status": "SHADOW_TRAP_ACTIVE"
+    },
+    {
+      "evaluationId": "AI_EVAL_1789857043786_75594",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789857043786
+    },
+    {
+      "evaluationId": "AI_EVAL_1789857089605_95541",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789857089605
+    }
+  ],
+  "ai_approved_intents": [
+    {
+      "evaluationId": "AI_EVAL_1789857043786_75594",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789857043786
+    },
+    {
+      "evaluationId": "AI_EVAL_1789857089605_95541",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789857089605
     }
   ],
   "interbank_clearing_settlements": [
@@ -5682,6 +5827,14 @@
       "frequency": "QUARTERLY",
       "recordsCount": 238,
       "timestamp": 1789851270217,
+      "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+    },
+    {
+      "pushId": "CBK_PUSH_1789856567391_47485",
+      "tenantId": "INST-CBK-RTGS",
+      "frequency": "DAILY",
+      "recordsCount": 240,
+      "timestamp": 1789856567391,
       "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
     }
   ],
