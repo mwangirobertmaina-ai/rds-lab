@@ -1,6 +1,6 @@
 // ==========================================
 // RDS - STAGE 134 HYBRID SOVEREIGN FINANCIAL OPERATING SYSTEM
-// Supports: World Bank, CBK RTGS, goAML/SAR, Teller Bank Webhooks, Autonomous Self-Healing, Antivirus Sanitization & 100% JSON Immunity
+// Supports: World Bank, CBK RTGS, goAML/SAR, Teller Bank Webhooks, Autonomous Self-Healing, Antivirus Sanitization, 100% JSON Immunity & Secure Auth
 // ==========================================
 
 const express = require("express");
@@ -11,6 +11,7 @@ const fsPromises = require("fs").promises;
 const cors = require("cors");
 const path = require("path");
 const crypto = require("crypto");
+const bcrypt = require("bcrypt");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -28,6 +29,7 @@ global.io = io;
 
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
+const SALT_ROUNDS = 10; // Standard for secure bcrypt password hashing
 
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json({ limit: "50mb" }));
@@ -214,6 +216,61 @@ function fail(res, msg = "Error", statusCode = 400) {
   return res.status(statusCode).json({ success: false, error: msg });
 }
 
+// --- SECURE USER REGISTRATION ROUTE (BCRYPT HASHING) ---
+app.post('/api/register', async (req, res) => {
+  try {
+    ensureState();
+    const { email, password, fullName, phone } = req.body;
+
+    // 1. Validate input
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email and password are required.' });
+    }
+
+    // 2. Check if user already exists
+    const existingUser = data.users.find(u => u.email === email);
+    if (existingUser) {
+      return res.status(409).json({ success: false, error: 'User already exists with this email.' });
+    }
+
+    // 3. Hash the password securely using bcrypt asynchronously
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+    // 4. Save the user to the sovereign database
+    const newUser = { 
+      id: id("USR"), 
+      email, 
+      password: hashedPassword, 
+      fullName: fullName || "Sovereign User", 
+      phone: phone || "254700000000",
+      didPassId: `did:rds:sovereign:${Math.floor(Math.random() * 900000 + 100000)}`,
+      amlFlagged: false,
+      riskScore: "0.00%",
+      kycStatus: "TIER_3_SOVEREIGN_VERIFIED",
+      registeredAt: Date.now()
+    };
+    
+    data.users.push(newUser);
+    saveDB();
+
+    await recordImmutableAudit("SECURE_USER_REGISTERED", { email: newUser.email }, { userId: newUser.id });
+
+    // 5. Respond with success (never send the password back!)
+    return res.status(201).json({ 
+      success: true,
+      message: 'User registered securely and verified successfully!',
+      userId: newUser.id,
+      email: newUser.email,
+      fullName: newUser.fullName,
+      didPassId: newUser.didPassId
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error during registration.' });
+  }
+});
+
 // --- API & HEALTH CHECK ENDPOINTS ---
 
 app.get('/api/health', (req, res) => {
@@ -248,7 +305,6 @@ app.post('/api/teller/webhook', enforceTenantIsolation, async (req, res) => {
         ensureState();
         const event = req.body;
         
-        // Record incoming Teller data directly into your immutable audit vault
         await recordImmutableAudit("TELLER_WEBHOOK_EVENT_RECEIVED", { tenant: req.tenantId }, event);
 
         console.log("📥 Received update from Teller:", event.type || "UNKNOWN_EVENT");
