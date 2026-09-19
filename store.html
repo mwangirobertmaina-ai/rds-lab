@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0b0f19">
-    <title>RDS Stage 134 | Sovereign Commerce, Logistics & Financial OS</title>
+    <title>RDS Stage 135 | Sovereign Commerce, POS Webhook & KYC OS</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
         :root {
@@ -258,13 +257,13 @@
             max-width: 480px;
             margin: 0 auto;
         }
-        .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
+        .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.60rem; font-weight: 600; cursor: pointer; }
         .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
-        .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
+        .nav-item svg { width: 18px; height: 18px; fill: currentColor; margin: 0 auto 2px auto; display: block; }
 
         #mapContainer {
             width: 100%;
-            height: 220px;
+            height: 200px;
             border-radius: 8px;
             margin-bottom: 10px;
             border: 1px solid #374151;
@@ -293,12 +292,12 @@
     <!-- AUTHENTICATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🚀 RDS STAGE 134 SECURE SOVEREIGN AUTHENTICATION</span>
+            <span>🚀 RDS STAGE 135 SOVEREIGN AUTHENTICATION</span>
         </div>
 
         <div class="checkout-panel" style="padding: 20px;">
-            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Unified Financial & Commerce Simulator</h2>
-            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Sign in securely with JWT token issuance and encrypted verification.</p>
+            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Stage 135 Financial OS</h2>
+            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Sign in with secure JWT & ZKP Sovereign Pass verification.</p>
 
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Email Address</label>
             <input type="email" id="authEmail" value="robert.maina@rds.com">
@@ -313,7 +312,7 @@
             <div id="otpStep" style="display: none; margin-top: 15px;">
                 <label style="font-size: 0.75rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP Code (Use 1234)</label>
                 <input type="text" id="authOtp" value="1234" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" maxlength="4">
-                <button onclick="verifyOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch Simulator</button>
+                <button onclick="verifyOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch Stage 135 OS</button>
             </div>
         </div>
     </div>
@@ -410,17 +409,63 @@
         </div>
     </div>
 
+    <!-- POS WEBHOOK & INTERNATIONAL KYC MANAGEMENT VIEW -->
+    <div id="viewPosKyc" class="app-view">
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
+            <span>🛡️ STAGE 135 POS WEBHOOK & INTERNATIONAL KYC ENGINE</span>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>1. Simulate POS / Cashier Terminal Webhook</h3>
+            <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">Simulates external cashier/POS software pushing transaction data into your backend with automatic data sanitization & KRA tax correction.</p>
+            
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Cashier ID</label>
+            <input type="text" id="posCashierId" value="CASHIER_NAIROBI_04">
+            
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Item Name & Price (KES)</label>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="posItemName" value="Sovereign Nyama Platter" style="flex:2;">
+                <input type="number" id="posItemPrice" value="1500" style="flex:1;">
+            </div>
+
+            <button onclick="simulatePosWebhook()" class="btn-cyan" style="margin-top:6px;">Push POS Webhook & Sanitize</button>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>2. Local & International KYC Verification Hub</h3>
+            <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">Supports both local National IDs/M-Pesa and international Passports with global watchlist screening & ZKP ZKP-pass minting.</p>
+            
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Full Legal Name</label>
+            <input type="text" id="kycFullName" value="Robert Maina">
+
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block;">ID or Passport Number</label>
+            <input type="text" id="kycDocNumber" value="KE-99882710">
+
+            <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Country of Residence (KE for Local, US/GB/DE for International)</label>
+            <input type="text" id="kycCountry" value="KE">
+
+            <button onclick="submitKycVerification()" style="background: var(--neon-green); color: #000; font-weight: bold; margin-top:6px;">Verify & Mint Sovereign Pass</button>
+        </div>
+
+        <div class="checkout-panel">
+            <h3>3. Ingested POS & Verified KYC Stream</h3>
+            <div id="posKycLogOutput" style="background:rgba(0,0,0,0.5); padding:10px; border-radius:6px; font-size:0.7rem; color:var(--neon-green); max-height:180px; overflow-y:auto;">
+                <em>No POS webhook transactions or KYC records ingested yet in this session.</em>
+            </div>
+        </div>
+    </div>
+
     <!-- PROFILE & STATE VIEW -->
     <div id="viewProfile" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>User Profile & Secure Session State</h3>
+            <h3>User Profile & Sovereign State</h3>
         </div>
         <div class="checkout-panel">
             <p><strong>Email:</strong> <span id="profileEmail">robert.maina@rds.com</span></p>
             <p style="margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">254721862397</span></p>
             <p style="margin-top: 6px;"><strong>Name:</strong> Robert Maina</p>
-            <p style="margin-top: 6px;"><strong>KYC Status:</strong> <span style="color: var(--neon-green);">Tier-3 Sovereign Verified</span></p>
-            <p style="margin-top: 6px;"><strong>Admin Portal:</strong> <a href="/" target="_blank" style="color: var(--cyan);">Open Sovereign Admin & Compliance Vault ➔</a></p>
+            <p style="margin-top: 6px;"><strong>KYC Status:</strong> <span style="color: var(--neon-green);">Tier-3 Sovereign & International Verified</span></p>
+            <p style="margin-top: 6px;"><strong>Admin Portal:</strong> <a href="/" target="_blank" style="color: var(--cyan);">Open Sovereign Compliance Vault ➔</a></p>
         </div>
     </div>
 
@@ -437,7 +482,8 @@
 
     <div class="bottom-nav" id="bottomNav" style="display: none;">
         <a class="nav-item active" onclick="switchTab('viewHome', this)"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Storefront</a>
-        <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Dispatch Tracker</a>
+        <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Dispatch</a>
+        <a class="nav-item" onclick="switchTab('viewPosKyc', this)"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>POS & KYC</a>
         <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
     </div>
 
@@ -469,6 +515,10 @@
 
             updateMapMarkersAndPolyline();
             socket.on('orderListUpdated', () => { fetchLiveOrders(); });
+            socket.on('posTransactionSynced', (tx) => {
+                const log = document.getElementById('posKycLogOutput');
+                log.innerHTML = `<span style="color:var(--neon-green);">[LIVE POS SYNC] Tx ID: ${tx.posTxId} | Total: ${tx.currency} ${tx.total} sanitized & reconciled.</span><br>` + log.innerHTML;
+            });
         });
 
         async function requestOtp() {
@@ -508,9 +558,7 @@
                     loadStoreCatalog();
                     fetchLiveOrders();
                     setTimeout(() => { if(map) map.invalidateSize(); }, 300);
-                } else {
-                    alert(data.error || "Invalid OTP code.");
-                }
+                } else { alert(data.error || "Invalid OTP code."); }
             } catch(e) {
                 currentUser = { id: "USR_DEFAULT", phone, email, fullName: "Robert Maina" };
                 document.getElementById('bottomNav').style.display = 'flex';
@@ -519,6 +567,52 @@
                 fetchLiveOrders();
                 setTimeout(() => { if(map) map.invalidateSize(); }, 300);
             }
+        }
+
+        async function simulatePosWebhook() {
+            const cashierId = document.getElementById('posCashierId').value.trim();
+            const itemName = document.getElementById('posItemName').value.trim();
+            const itemPrice = Number(document.getElementById('posItemPrice').value) || 1000;
+            const bizId = document.getElementById('storeBusinessId').value;
+            const curr = document.getElementById('storeCurrency').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/pos/webhook`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({
+                        cashierId, registerId: "REG_01",
+                        items: [{ name: itemName, price: itemPrice, qty: 1 }],
+                        currency: curr, customerPhone: "254721862397"
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    const log = document.getElementById('posKycLogOutput');
+                    log.innerHTML = `<span style="color:var(--cyan);">[POS WEBHOOK] Ingested ${data.posRecord.posTxId} | Total: ${curr} ${data.posRecord.total}</span><br>` + log.innerHTML;
+                } else { alert(data.error); }
+            } catch (err) { alert("POS Webhook error."); }
+        }
+
+        async function submitKycVerification() {
+            const fullName = document.getElementById('kycFullName').value.trim();
+            const idOrPassportNumber = document.getElementById('kycDocNumber').value.trim();
+            const country = document.getElementById('kycCountry').value.trim();
+
+            try {
+                const res = await fetch(`${API_BASE}/api/kyc/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullName, idOrPassportNumber, country, phone: "254721862397" })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message + `\nDID Pass ID: ${data.verifiedUser.didPassId}`);
+                    const log = document.getElementById('posKycLogOutput');
+                    log.innerHTML = `<span style="color:var(--gold);">[KYC VERIFIED] ${data.verifiedUser.fullName} (${data.verifiedUser.country}) | DID: ${data.verifiedUser.didPassId}</span><br>` + log.innerHTML;
+                } else { alert(data.error); }
+            } catch (err) { alert("KYC verification error."); }
         }
 
         function updateMapMarkersAndPolyline() {
@@ -611,8 +705,7 @@
         }
 
         async function recalculateCartSummary() {
-            let totalQty = 0;
-            let totalPrice = 0;
+            let totalQty = 0, totalPrice = 0;
             const curr = document.getElementById('storeCurrency').value;
             for (let id in cart) {
                 totalQty += cart[id].qty;
@@ -623,16 +716,13 @@
                 floatingBar.classList.add('active');
                 document.getElementById('cartItemCount').innerText = `${totalQty} Item(s)`;
                 document.getElementById('cartTotalSum').innerText = `${curr} ${totalPrice.toFixed(2)}`;
-            } else {
-                floatingBar.classList.remove('active');
-            }
+            } else { floatingBar.classList.remove('active'); }
             await recalculateUnifiedTotal();
         }
 
         async function recalculateUnifiedTotal() {
             let totalPrice = 0;
             for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
-            
             const pLat = Number(document.getElementById('pickupLat').value) || -1.286389;
             const pLng = Number(document.getElementById('pickupLng').value) || 36.817223;
             const dLat = Number(document.getElementById('destLat').value) || -1.265556;
@@ -642,14 +732,8 @@
 
             try {
                 const res = await fetch(`${API_BASE}/api/calculate-total`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({
-                        itemPriceTotal: totalPrice,
-                        pickupCoords: { lat: pLat, lng: pLng },
-                        destinationCoords: { lat: dLat, lng: dLng },
-                        vehicleType: "MOTORBIKE", businessId: bizId
-                    })
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ itemPriceTotal: totalPrice, pickupCoords: { lat: pLat, lng: pLng }, destinationCoords: { lat: dLat, lng: dLng }, vehicleType: "MOTORBIKE", businessId: bizId })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -666,13 +750,12 @@
         async function triggerUnifiedCheckout() {
             let totalPrice = 0;
             for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
-            if (totalPrice <= 0) { alert("Please add items to your cart first!"); return; }
+            if (totalPrice <= 0) { alert("Please add items first!"); return; }
 
             const bizId = document.getElementById('storeBusinessId').value;
             const phone = currentUser ? currentUser.phone : document.getElementById('custPhone').value.trim();
             const pickup = document.getElementById('pickupInput').value.trim();
             const destination = document.getElementById('destinationInput').value.trim();
-
             const pLat = Number(document.getElementById('pickupLat').value) || -1.286389;
             const pLng = Number(document.getElementById('pickupLng').value) || 36.817223;
             const dLat = Number(document.getElementById('destLat').value) || -1.265556;
@@ -680,23 +763,16 @@
 
             try {
                 const res = await fetch(`${API_BASE}/api/checkout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({
-                        phone, itemPriceTotal: totalPrice,
-                        pickupCoords: { lat: pLat, lng: pLng },
-                        destinationCoords: { lat: dLat, lng: dLng },
-                        vehicleType: "MOTORBIKE", pickup, destination, businessId: bizId,
-                        userId: currentUser ? currentUser.id : 'ANONYMOUS'
-                    })
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ phone, itemPriceTotal: totalPrice, pickupCoords: { lat: pLat, lng: pLng }, destinationCoords: { lat: dLat, lng: dLng }, vehicleType: "MOTORBIKE", pickup, destination, businessId: bizId, userId: currentUser ? currentUser.id : 'ANONYMOUS' })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`Dispatcher Engaged! Order ID: ${data.orderId} secured in Escrow.`);
+                    alert(`Dispatcher Engaged! Order ID: ${data.orderId} secured.`);
                     switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
                     fetchLiveOrders();
                 } else { alert(data.error); }
-            } catch (e) { alert("Checkout dispatch error."); }
+            } catch (e) { alert("Checkout error."); }
         }
 
         async function fetchLiveOrders() {
@@ -704,33 +780,30 @@
             try {
                 const res = await fetch(`${API_BASE}/api/orders/live`, { headers: { "x-business-id": bizId } });
                 const data = await res.json();
-                if (data.success && data.orders) {
-                    renderLiveOrderList(data.orders);
-                }
+                if (data.success && data.orders) renderLiveOrderList(data.orders);
             } catch (e) {}
         }
 
         function renderLiveOrderList(orders) {
             const container = document.getElementById('liveOrderListContainer');
             if (!orders || orders.length === 0) {
-                container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No active dispatch. Place order from storefront.</em>';
+                container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No active dispatch.</em>';
                 return;
             }
             let html = '';
             orders.slice(-4).reverse().forEach(o => {
                 const isDismissed = o.status === 'ORDERLY_DISMISSED';
-                const statusColor = isDismissed ? 'var(--alert-red)' : 'var(--neon-green)';
                 html += `
                     <div class="live-order-card">
                         <div class="live-order-header">
                             <span>🆔 ${o.id}</span>
-                            <span style="color: ${statusColor};">${o.status}</span>
+                            <span style="color: ${isDismissed ? 'var(--alert-red)' : 'var(--neon-green)'};">${o.status}</span>
                         </div>
                         <div style="font-size: 0.75rem; color: #fff; margin-bottom: 6px;">
                             <div>📍 ${o.pickup} ➔ ${o.destination}</div>
                             <div>💰 Total: <strong>${o.currency} ${o.total}</strong></div>
                         </div>
-                        ${!isDismissed ? `<button onclick="dismissOrder('${o.id}')" style="background:var(--alert-red); color:#fff; padding:6px; font-size:0.65rem;">🛑 Orderly Dismissal & Rollback</button>` : '<em style="color:var(--text-dim); font-size:0.65rem;">Process safely rolled back & refunded.</em>'}
+                        ${!isDismissed ? `<button onclick="dismissOrder('${o.id}')" style="background:var(--alert-red); color:#fff; padding:6px; font-size:0.65rem;">🛑 Dismiss & Refund</button>` : '<em style="color:var(--text-dim); font-size:0.65rem;">Refunded.</em>'}
                     </div>
                 `;
             });
@@ -738,20 +811,16 @@
         }
 
         async function dismissOrder(orderId) {
-            if (!confirm("Are you sure you want to dismiss this dispatch request? This will safely roll back processing steps, release escrow, and return you to the storefront.")) return;
+            if (!confirm("Dismiss and refund order?")) return;
             const bizId = document.getElementById('storeBusinessId').value;
             try {
                 const res = await fetch(`${API_BASE}/api/orders/dismiss`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
                     body: JSON.stringify({ orderId, businessId: bizId })
                 });
                 const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    fetchLiveOrders();
-                } else { alert(data.error); }
-            } catch (e) { alert("Dismissal error."); }
+                if (data.success) { alert(data.message); fetchLiveOrders(); }
+            } catch (e) {}
         }
 
         function switchTab(viewId, el) {
