@@ -4760,6 +4760,21 @@
       "currentHash": "4d5a310437a771af393b189bd941faa2c86fc07ad6cdb822b7225f48832fb834",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_134_HYBRID_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789780343447_97652",
+      "timestamp": 1789780343447,
+      "actionType": "SECURE_USER_LOGIN_JWT_ISSUED",
+      "actor": {
+        "email": "test@example.com"
+      },
+      "details": {
+        "userId": "USR_1789778055643_94948"
+      },
+      "previousHash": "4d5a310437a771af393b189bd941faa2c86fc07ad6cdb822b7225f48832fb834",
+      "currentHash": "68d59809252527953423cee21d9f8245296d551013026b845a21c8cde1aa2303",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_134_HYBRID_LATTICE"
     }
   ],
   "iso20022_wires": [
