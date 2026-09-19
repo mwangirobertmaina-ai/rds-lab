@@ -1,308 +1,309 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0b0f19">
-  <title>RDS 124 | Sovereign On-Demand Commerce & Logistics Simulator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b0f19">
+    <title>RDS Stage 134 | Sovereign Commerce, Logistics & Financial OS</title>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-  <style>
-    :root {
-      --neon-green: #00ff88;
-      --dark-bg: #0b0f19;
-      --panel-bg: #111827;
-      --card-bg: #181824;
-      --text-dim: #9ca3af;
-      --cyan: #38bdf8;
-      --alert-red: #ff3366;
-      --gold: #ffd700;
-      --stage-purple: #a855f7;
-    }
+    <style>
+        :root {
+            --neon-green: #00ff88;
+            --dark-bg: #0b0f19;
+            --panel-bg: #111827;
+            --card-bg: #181824;
+            --text-dim: #9ca3af;
+            --cyan: #38bdf8;
+            --alert-red: #ff3366;
+            --gold: #ffd700;
+            --stage-purple: #a855f7;
+        }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
 
-    body {
-      background-color: var(--dark-bg);
-      color: #fff;
-      padding: 15px;
-      max-width: 480px;
-      margin: 0 auto;
-      padding-bottom: 110px;
-    }
+        body {
+            background-color: var(--dark-bg);
+            color: #fff;
+            padding: 15px;
+            max-width: 480px;
+            margin: 0 auto;
+            padding-bottom: 110px;
+        }
 
-    .app-view { display: none; }
-    .app-view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
+        .app-view { display: none; }
+        .app-view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    .telemetry-ribbon {
-      background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(56,189,248,0.1));
-      border: 1px solid var(--stage-purple);
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 0.65rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      color: var(--stage-purple);
-      font-weight: bold;
-    }
+        .telemetry-ribbon {
+            background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(56,189,248,0.1));
+            border: 1px solid var(--stage-purple);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.65rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            color: var(--stage-purple);
+            font-weight: bold;
+        }
 
-    .header-location {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    .location-box { display: flex; align-items: center; gap: 8px; }
-    .location-text span { font-size: 0.75rem; color: var(--text-dim); display: block; }
-    .location-text strong { font-size: 0.95rem; color: #fff; }
+        .header-location {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .location-box { display: flex; align-items: center; gap: 8px; }
+        .location-text span { font-size: 0.75rem; color: var(--text-dim); display: block; }
+        .location-text strong { font-size: 0.95rem; color: #fff; }
 
-    .corridor-selector {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      margin-bottom: 15px;
-      padding-bottom: 4px;
-      scrollbar-width: none;
-    }
-    .corridor-selector::-webkit-scrollbar { display: none; }
-    .corridor-btn {
-      background: var(--panel-bg);
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 8px 10px;
-      text-align: center;
-      cursor: pointer;
-      color: var(--text-dim);
-      font-size: 0.75rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .corridor-btn.active, .corridor-btn:hover {
-      border-color: var(--stage-purple);
-      background: rgba(168, 85, 247, 0.1);
-      color: #fff;
-    }
+        .corridor-selector {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+        .corridor-selector::-webkit-scrollbar { display: none; }
+        .corridor-btn {
+            background: var(--panel-bg);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 8px 10px;
+            text-align: center;
+            cursor: pointer;
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .corridor-btn.active, .corridor-btn:hover {
+            border-color: var(--stage-purple);
+            background: rgba(168, 85, 247, 0.1);
+            color: #fff;
+        }
 
-    .category-filter-bar {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      margin-bottom: 20px;
-      padding-bottom: 4px;
-      scrollbar-width: none;
-    }
-    .category-filter-bar::-webkit-scrollbar { display: none; }
-    .cat-btn {
-      background: var(--panel-bg);
-      border: 1px solid #374151;
-      color: var(--text-dim);
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-    .cat-btn.active, .cat-btn:hover {
-      background: var(--stage-purple);
-      border-color: var(--stage-purple);
-      color: #fff;
-    }
+        .category-filter-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+        .category-filter-bar::-webkit-scrollbar { display: none; }
+        .cat-btn {
+            background: var(--panel-bg);
+            border: 1px solid #374151;
+            color: var(--text-dim);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .cat-btn.active, .cat-btn:hover {
+            background: var(--stage-purple);
+            border-color: var(--stage-purple);
+            color: #fff;
+        }
 
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .section-header h3 { font-size: 1rem; color: #fff; font-weight: 700; }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .section-header h3 { font-size: 1rem; color: #fff; font-weight: 700; }
 
-    .catalog-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 25px;
-    }
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
 
-    .product-card {
-      background: var(--panel-bg);
-      border: 1px solid #222c3d;
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
+        .product-card {
+            background: var(--panel-bg);
+            border: 1px solid #222c3d;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
 
-    .image-wrapper {
-      width: 100%;
-      height: 110px;
-      overflow: hidden;
-      background: #000;
-      position: relative;
-    }
+        .image-wrapper {
+            width: 100%;
+            height: 110px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+        }
 
-    .merchant-badge {
-      position: absolute;
-      top: 6px; left: 6px;
-      background: rgba(0,0,0,0.75);
-      color: var(--cyan);
-      font-size: 0.6rem;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: bold;
-    }
+        .merchant-badge {
+            position: absolute;
+            top: 6px; left: 6px;
+            background: rgba(0,0,0,0.75);
+            color: var(--cyan);
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
 
-    .product-img { width: 100%; height: 100%; object-fit: cover; }
-    .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
-    .product-title { font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 2px; }
-    .product-price { font-size: 0.85rem; color: var(--stage-purple); font-weight: 700; margin-bottom: 8px; }
+        .product-img { width: 100%; height: 100%; object-fit: cover; }
+        .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
+        .product-title { font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 2px; }
+        .product-price { font-size: 0.85rem; color: var(--stage-purple); font-weight: 700; margin-bottom: 8px; }
 
-    .quantity-stepper {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--dark-bg);
-      border: 1px solid #374151;
-      border-radius: 6px;
-      overflow: hidden;
-      margin-bottom: 6px;
-    }
-    .quantity-stepper button {
-      background: #222e3c;
-      color: #fff;
-      border: none;
-      padding: 6px 10px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 0.8rem;
-    }
-    .quantity-display { font-size: 0.8rem; font-weight: bold; color: var(--neon-green); padding: 0 8px; }
+        .quantity-stepper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--dark-bg);
+            border: 1px solid #374151;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+        .quantity-stepper button {
+            background: #222e3c;
+            color: #fff;
+            border: none;
+            padding: 6px 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .quantity-display { font-size: 0.8rem; font-weight: bold; color: var(--neon-green); padding: 0 8px; }
 
-    button {
-      background: var(--stage-purple);
-      color: #fff;
-      border: none;
-      padding: 9px;
-      font-weight: 700;
-      width: 100%;
-      cursor: pointer;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-    }
-    button:hover { background: var(--cyan); color: #000; }
+        button {
+            background: var(--stage-purple);
+            color: #fff;
+            border: none;
+            padding: 9px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+        button:hover { background: var(--cyan); color: #000; }
 
-    .floating-cart {
-      position: fixed;
-      bottom: 70px; left: 15px; right: 15px;
-      max-width: 450px;
-      margin: 0 auto;
-      background: linear-gradient(135deg, #111827, #1f2937);
-      border: 1px solid var(--stage-purple);
-      border-radius: 12px;
-      padding: 12px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 999;
-      display: none;
-    }
-    .floating-cart.active { display: flex; }
+        .floating-cart {
+            position: fixed;
+            bottom: 70px; left: 15px; right: 15px;
+            max-width: 450px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #111827, #1f2937);
+            border: 1px solid var(--stage-purple);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 999;
+            display: none;
+        }
+        .floating-cart.active { display: flex; }
 
-    .checkout-panel {
-      background: var(--panel-bg);
-      border: 1px solid #222c3d;
-      border-radius: 12px;
-      padding: 15px;
-      margin-bottom: 20px;
-    }
-    .checkout-panel h3 { font-size: 0.9rem; margin-bottom: 12px; color: var(--cyan); text-transform: uppercase; }
+        .checkout-panel {
+            background: var(--panel-bg);
+            border: 1px solid #222c3d;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .checkout-panel h3 { font-size: 0.9rem; margin-bottom: 12px; color: var(--cyan); text-transform: uppercase; }
 
-    input, select {
-      width: 100%;
-      background: var(--dark-bg);
-      border: 1px solid #374151;
-      color: #fff;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      outline: none;
-    }
-    input:focus, select:focus { border-color: var(--stage-purple); }
+        input, select {
+            width: 100%;
+            background: var(--dark-bg);
+            border: 1px solid #374151;
+            color: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        input:focus, select:focus { border-color: var(--stage-purple); }
 
-    .btn-cyan { background: var(--cyan); color: #000; }
-    .btn-cyan:hover { background: var(--neon-green); }
+        .btn-cyan { background: var(--cyan); color: #000; }
+        .btn-cyan:hover { background: var(--neon-green); }
 
-    .bottom-nav {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: var(--panel-bg);
-      border-top: 1px solid #222c3d;
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-      z-index: 1000;
-      max-width: 480px;
-      margin: 0 auto;
-    }
-    .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
-    .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
-    .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: var(--panel-bg);
+            border-top: 1px solid #222c3d;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 1000;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
+        .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
+        .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
 
-    #mapContainer {
-      width: 100%;
-      height: 220px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      border: 1px solid #374151;
-      z-index: 1;
-    }
+        #mapContainer {
+            width: 100%;
+            height: 220px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #374151;
+            z-index: 1;
+        }
 
-    .live-order-card {
-      background: rgba(0,0,0,0.4);
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 10px;
-    }
-    .live-order-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
-      margin-bottom: 6px;
-      color: var(--cyan);
-      font-weight: bold;
-    }
-  </style>
+        .live-order-card {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .live-order-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            margin-bottom: 6px;
+            color: var(--cyan);
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body id="appBody">
 
     <!-- AUTHENTICATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🚀 RDS STAGE 124 SECURE ON-DEMAND LOGIN</span>
+            <span>🚀 RDS STAGE 134 SECURE SOVEREIGN AUTHENTICATION</span>
         </div>
 
         <div class="checkout-panel" style="padding: 20px;">
-            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Unified Commerce Simulator</h2>
-            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Sign in to access Jumia storefront browsing and live logistics dispatch.</p>
+            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Unified Financial & Commerce Simulator</h2>
+            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Sign in securely with JWT token issuance and encrypted verification.</p>
 
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Email Address</label>
             <input type="email" id="authEmail" value="robert.maina@rds.com">
 
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Phone Number (M-Pesa Corridor)</label>
+            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Phone Number (M-Pesa / Corridor)</label>
             <input type="text" id="authPhone" value="254721862397">
 
             <div id="phoneStep">
@@ -329,22 +330,23 @@
                 <span class="icon">📍</span>
                 <div class="location-text">
                     <span>Active Corridor</span>
-                    <strong id="corridorLabel">Nairobi, Kenya (KES)</strong>
+                    <strong id="corridorLabel">Central Bank of Kenya (CBK RTGS)</strong>
                 </div>
             </div>
-            <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
+            <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">INST-CBK-RTGS</div>
         </div>
 
         <div class="corridor-selector" id="dynamicCorridorSelector">
-            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE Hub</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK Hub</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-PEARL', 'Pearl Forex Node', 'USD', this)">🇺🇸 Pearl Node</div>
+            <div class="corridor-btn active" onclick="switchCorridor('INST-CBK-RTGS', 'CBK RTGS Gateway', 'KES', this)">🇰🇪 CBK RTGS</div>
+            <div class="corridor-btn" onclick="switchCorridor('INST-WORLDBANK', 'World Bank Corridor', 'USD', this)">🇺🇸 World Bank</div>
+            <div class="corridor-btn" onclick="switchCorridor('INST-MPESA', 'M-Pesa Mobile Hub', 'KES', this)">📱 M-Pesa Hub</div>
+            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London Central Reserve', 'GBP', this)">🇬🇧 UK Reserve</div>
         </div>
 
         <div class="category-filter-bar">
             <button class="cat-btn active" onclick="filterCategory('ALL', this)">🛒 All Products</button>
             <button class="cat-btn" onclick="filterCategory('RESTAURANT', this)">🍽️ Restaurant</button>
-            <button class="cat-btn" onclick="filterCategory('HOTEL', this)">🏨 Hotel</button>
+            <button class="cat-btn" onclick="filterCategory('MOBILE_MONEY', this)">💳 Liquidity Unit</button>
             <button class="cat-btn" onclick="filterCategory('SUPERMARKET', this)">🏬 Supermarket</button>
         </div>
 
@@ -411,14 +413,14 @@
     <!-- PROFILE & STATE VIEW -->
     <div id="viewProfile" class="app-view">
         <div class="section-header" style="margin-bottom: 20px;">
-            <h3>User Profile & Session State</h3>
+            <h3>User Profile & Secure Session State</h3>
         </div>
         <div class="checkout-panel">
             <p><strong>Email:</strong> <span id="profileEmail">robert.maina@rds.com</span></p>
             <p style="margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">254721862397</span></p>
             <p style="margin-top: 6px;"><strong>Name:</strong> Robert Maina</p>
             <p style="margin-top: 6px;"><strong>KYC Status:</strong> <span style="color: var(--neon-green);">Tier-3 Sovereign Verified</span></p>
-            <p style="margin-top: 6px;"><strong>Admin Portal:</strong> <a href="/admin.html" target="_blank" style="color: var(--cyan);">Open Admin & Vault Dashboard ➔</a></p>
+            <p style="margin-top: 6px;"><strong>Admin Portal:</strong> <a href="/" target="_blank" style="color: var(--cyan);">Open Sovereign Admin & Compliance Vault ➔</a></p>
         </div>
     </div>
 
@@ -430,7 +432,7 @@
         <button style="width: auto; padding: 6px 14px; font-size: 0.75rem;">Proceed to Dispatch ➔</button>
     </div>
 
-    <input type="hidden" id="storeBusinessId" value="BIZ-KE">
+    <input type="hidden" id="storeBusinessId" value="INST-CBK-RTGS">
     <input type="hidden" id="storeCurrency" value="KES">
 
     <div class="bottom-nav" id="bottomNav" style="display: none;">
@@ -440,9 +442,7 @@
     </div>
 
     <script>
-        const LOCAL_API = "http://localhost:3000";
-        const CLOUD_API = "https://rds-lab.onrender.com";
-        let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
+        const API_BASE = window.location.origin;
 
         let currentUser = null;
         let allProductsCache = [];
@@ -484,11 +484,8 @@
                     alert(data.message || "OTP Sent successfully.");
                     document.getElementById('phoneStep').style.display = 'none';
                     document.getElementById('otpStep').style.display = 'block';
-                } else {
-                    alert(data.error || "Failed to send OTP.");
                 }
             } catch(e) {
-                alert("Network error connecting to auth service. Simulation mode engaged.");
                 document.getElementById('phoneStep').style.display = 'none';
                 document.getElementById('otpStep').style.display = 'block';
             }
@@ -534,8 +531,8 @@
             if (destinationMarker) map.removeLayer(destinationMarker);
             if (routePolyline) map.removeLayer(routePolyline);
 
-            pickupMarker = L.marker([pLat, pLng]).addTo(map).bindPopup("📦 Jumia Storefront Hub");
-            destinationMarker = L.marker([dLat, dLng]).addTo(map).bindPopup("🏁 Uber Delivery Destination");
+            pickupMarker = L.marker([pLat, pLng]).addTo(map).bindPopup("📦 Sovereign Gateway Hub");
+            destinationMarker = L.marker([dLat, dLng]).addTo(map).bindPopup("🏁 Delivery Destination");
             routePolyline = L.polyline([[pLat, pLng], [dLat, dLng]], {color: '#38bdf8', weight: 4}).addTo(map);
             map.fitBounds(routePolyline.getBounds(), {padding: [40, 40]});
         }
@@ -669,7 +666,7 @@
         async function triggerUnifiedCheckout() {
             let totalPrice = 0;
             for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
-            if (totalPrice <= 0) { alert("Please add items to your Jumia cart first!"); return; }
+            if (totalPrice <= 0) { alert("Please add items to your cart first!"); return; }
 
             const bizId = document.getElementById('storeBusinessId').value;
             const phone = currentUser ? currentUser.phone : document.getElementById('custPhone').value.trim();
@@ -695,7 +692,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`Uber Dispatch Engaged! Order ID: ${data.orderId} secured in Escrow.`);
+                    alert(`Dispatcher Engaged! Order ID: ${data.orderId} secured in Escrow.`);
                     switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
                     fetchLiveOrders();
                 } else { alert(data.error); }

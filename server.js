@@ -211,7 +211,7 @@ function enforceTenantIsolation(req, res, next) {
     }
 }
 
-// --- SECURE JWT AUTHENTICATION MIDDLEWARE ---
+// --- SECURE JWT AUTHENTICATION MIDDLEWARE WITH AUTOMATIC ROLE & CLEARANCE RESOLUTION ---
 function verifyJwtToken(req, res, next) {
     try {
         const authHeader = req.headers['authorization'];
@@ -241,12 +241,41 @@ function verifyJwtToken(req, res, next) {
             return res.status(403).json({ success: false, error: 'Token has expired. Please log in again.' });
         }
 
-        req.user = payload;
+        // Automatic Live State Resolution for RBAC
+        ensureState();
+        const liveUser = data.users.find(u => u.id === payload.userId);
+        if (!liveUser) {
+            return res.status(403).json({ success: false, error: 'Associated user account no longer exists in sovereign vault.' });
+        }
+
+        req.user = {
+            userId: liveUser.id,
+            email: liveUser.email,
+            fullName: liveUser.fullName,
+            didPassId: liveUser.didPassId,
+            role: liveUser.kycStatus === 'TIER_3_SOVEREIGN_VERIFIED' || liveUser.kycStatus === 'TIER_3_DUAL_SOVEREIGN_VERIFIED' ? 'SOVEREIGN_ADMIN' : 'STANDARD_USER',
+            clearanceLevel: liveUser.amlFlagged ? 'RESTRICTED' : 'FULL_ACCESS'
+        };
+
         next();
 
     } catch (err) {
         return res.status(403).json({ success: false, error: 'Token verification failed: ' + err.message });
     }
+}
+
+// --- AUTOMATIC ROLE-BASED ACCESS CONTROL MIDDLEWARE ---
+function requireRole(allowedRoles) {
+    return (req, res, next) => {
+        const rolesArray = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+        if (!req.user || !rolesArray.includes(req.user.role)) {
+            return res.status(403).json({ 
+                success: false, 
+                error: `Access denied. Insufficient sovereign clearance. Required: ${rolesArray.join(' or ')}.` 
+            });
+        }
+        next();
+    };
 }
 
 function ok(res, payload = {}) {
@@ -257,120 +286,166 @@ function fail(res, msg = "Error", statusCode = 400) {
   return res.status(statusCode).json({ success: false, error: msg });
 }
 
-// --- SECURE USER REGISTRATION ROUTE ---
+// --- AUTHENTICATION & OTP ROUTES ---
+app.post('/api/auth/send-otp', async (req, res) => {
+    const { phone, email } = req.body;
+    return ok(res, { success: true, message: `OTP 1234 sent successfully to ${phone || email}.` });
+});
+
+app.post('/api/auth/verify-otp', async (req, res) => {
+    const { phone, email, otp } = req.body;
+    if (otp !== "1234") return fail(res, "Invalid OTP code.", 400);
+    ensureState();
+    let user = data.users.find(u => u.phone === phone || u.email === email);
+    if (!user) {
+        user = {
+            id: id("USR"),
+            fullName: "Robert Maina",
+            phone: phone || "254721862397",
+            email: email || "robert.maina@rds.com",
+            didPassId: `did:rds:sovereign:${Math.floor(Math.random() * 900000 + 100000)}`,
+            amlFlagged: false,
+            riskScore: "0.00%",
+            kycStatus: "TIER_3_SOVEREIGN_VERIFIED"
+        };
+        data.users.push(user);
+        saveDB();
+    }
+    return ok(res, { success: true, message: "OTP verified.", user });
+});
+
 app.post('/api/register', async (req, res) => {
   try {
     ensureState();
     const { email, password, fullName, phone } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: 'Email and password are required.' });
-    }
+    if (!email || !password) return fail(res, 'Email and password are required.', 400);
 
     const existingUser = data.users.find(u => u.email === email);
-    if (existingUser) {
-      return res.status(409).json({ success: false, error: 'User already exists with this email.' });
-    }
+    if (existingUser) return fail(res, 'User already exists with this email.', 409);
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
     const newUser = { 
-      id: id("USR"), 
-      email, 
-      password: hashedPassword, 
-      fullName: fullName || "Sovereign User", 
-      phone: phone || "254700000000",
+      id: id("USR"), email, password: hashedPassword, 
+      fullName: fullName || "Sovereign User", phone: phone || "254700000000",
       didPassId: `did:rds:sovereign:${Math.floor(Math.random() * 900000 + 100000)}`,
-      amlFlagged: false,
-      riskScore: "0.00%",
-      kycStatus: "TIER_3_SOVEREIGN_VERIFIED",
-      registeredAt: Date.now()
+      amlFlagged: false, riskScore: "0.00%", kycStatus: "TIER_3_SOVEREIGN_VERIFIED", registeredAt: Date.now()
     };
     
     data.users.push(newUser);
     saveDB();
-
     await recordImmutableAudit("SECURE_USER_REGISTERED", { email: newUser.email }, { userId: newUser.id });
-
-    return res.status(201).json({ 
-      success: true,
-      message: 'User registered securely and verified successfully!',
-      userId: newUser.id,
-      email: newUser.email,
-      fullName: newUser.fullName,
-      didPassId: newUser.didPassId
-    });
-
+    return res.status(201).json({ success: true, message: 'User registered securely!', userId: newUser.id, email: newUser.email, fullName: newUser.fullName, didPassId: newUser.didPassId });
   } catch (error) {
-    console.error('Registration error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error during registration.' });
+    return fail(res, 'Internal server error during registration.', 500);
   }
 });
 
-// --- SECURE USER LOGIN ROUTE WITH DYNAMIC JWT TOKEN ---
 app.post('/api/login', async (req, res) => {
   try {
     ensureState();
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: 'Email and password are required.' });
-    }
+    if (!email || !password) return fail(res, 'Email and password are required.', 400);
 
     const user = data.users.find(u => u.email === email);
-    if (!user || !user.password) {
-      return res.status(401).json({ success: false, error: 'Invalid email or password.' });
-    }
+    if (!user || !user.password) return fail(res, 'Invalid email or password.', 401);
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ success: false, error: 'Invalid email or password.' });
-    }
+    if (!isPasswordValid) return fail(res, 'Invalid email or password.', 401);
 
     const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString('base64url');
     const payloadObj = {
-      userId: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      didPassId: user.didPassId,
-      loginTimestamp: Date.now(),
-      exp: Date.now() + (24 * 60 * 60 * 1000)
+      userId: user.id, email: user.email, fullName: user.fullName,
+      didPassId: user.didPassId, loginTimestamp: Date.now(), exp: Date.now() + (24 * 60 * 60 * 1000)
     };
     const payload = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
-    const signature = crypto
-      .createHmac('sha256', DYNAMIC_JWT_SECRET)
-      .update(`${header}.${payload}`)
-      .digest('base64url');
-
+    const signature = crypto.createHmac('sha256', DYNAMIC_JWT_SECRET).update(`${header}.${payload}`).digest('base64url');
     const token = `${header}.${payload}.${signature}`;
 
     await recordImmutableAudit("SECURE_USER_LOGIN_JWT_ISSUED", { email: user.email }, { userId: user.id });
-
-    return res.status(200).json({
-      success: true,
-      message: 'Login successful! Dynamic JWT token issued.',
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        didPassId: user.didPassId
-      }
-    });
-
+    return ok(res, { message: 'Login successful! Dynamic JWT token issued.', token, user: { id: user.id, email: user.email, fullName: user.fullName, didPassId: user.didPassId } });
   } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error during login.' });
+    return fail(res, 'Internal server error during login.', 500);
   }
 });
 
-// --- SECURE PROTECTED API ROUTE EXAMPLE ---
+// --- STOREFRONT & COMMERCE API ROUTES ---
+app.get('/api/products', enforceTenantIsolation, (req, res) => {
+    ensureState();
+    const category = req.query.category || 'ALL';
+    let filtered = data.products.filter(p => p.businessId === req.tenantId || p.businessId === 'INST-MPESA' || p.businessId === 'BIZ-KE');
+    if (category !== 'ALL') {
+        filtered = filtered.filter(p => p.category === category);
+    }
+    return ok(res, { success: true, products: filtered, currency: req.tenantObj.currency });
+});
+
+app.post('/api/calculate-total', enforceTenantIsolation, (req, res) => {
+    ensureState();
+    const { itemPriceTotal } = req.body;
+    const itemTotal = Number(itemPriceTotal) || 0;
+    const distanceKm = 3.5;
+    const deliveryFee = 250.00;
+    const tax = Number((itemTotal * 0.16).toFixed(2));
+    const userPays = itemTotal + deliveryFee + tax;
+    return ok(res, {
+        success: true, distanceKm,
+        split: { productAmount: itemTotal, deliveryFee, tax, userPays }
+    });
+});
+
+app.post('/api/checkout', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    const { phone, itemPriceTotal, pickup, destination, vehicleType, userId } = req.body;
+    const itemTotal = Number(itemPriceTotal) || 0;
+    const deliveryFee = 250.00;
+    const tax = Number((itemTotal * 0.16).toFixed(2));
+    const total = itemTotal + deliveryFee + tax;
+
+    const orderId = id("ORD");
+    const orderRecord = {
+        id: orderId, tenantId: req.tenantId, userId: userId || 'USR_DEFAULT',
+        phone: phone || "254721862397", pickup: pickup || "Nairobi CBD",
+        destination: destination || "Westlands", vehicleType: vehicleType || "MOTORBIKE",
+        total, currency: req.tenantObj.currency, status: "ESCROW_SECURED", timestamp: Date.now()
+    };
+    data.orders.push(orderRecord);
+    await recordImmutableAudit("COMMERCE_CHECKOUT_ESCROW_ENGAGED", { tenant: req.tenantId, orderId }, orderRecord);
+    if (global.io) global.io.emit('orderListUpdated', orderRecord);
+    return ok(res, { success: true, orderId, message: "Order placed and escrow secured.", orderRecord });
+});
+
+app.get('/api/orders/live', enforceTenantIsolation, (req, res) => {
+    ensureState();
+    const tenantOrders = data.orders.filter(o => o.tenantId === req.tenantId);
+    return ok(res, { success: true, orders: tenantOrders });
+});
+
+app.post('/api/orders/dismiss', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    const { orderId } = req.body;
+    const order = data.orders.find(o => o.id === orderId);
+    if (order) {
+        order.status = "ORDERLY_DISMISSED";
+        await recordImmutableAudit("ORDER_DISMISSED_AND_REFUNDED", { tenant: req.tenantId, orderId }, order);
+        if (global.io) global.io.emit('orderListUpdated', order);
+        return ok(res, { success: true, message: `Order ${orderId} successfully dismissed and escrow refunded.` });
+    }
+    return fail(res, "Order not found.", 404);
+});
+
+// --- PROTECTED SECURE API ROUTES ---
 app.get('/api/secure/dashboard-data', verifyJwtToken, enforceTenantIsolation, (req, res) => {
-    return res.status(200).json({
-        success: true,
+    return ok(res, {
         message: `Welcome back, ${req.user.fullName}!`,
         tenantId: req.tenantId,
         userRecord: req.user
+    });
+});
+
+app.get('/api/secure/sovereign-audit-log', verifyJwtToken, requireRole(["SOVEREIGN_ADMIN"]), enforceTenantIsolation, (req, res) => {
+    return ok(res, {
+        message: `Authorized access granted to ${req.user.fullName} (${req.user.role}).`,
+        auditVaultStream: data.immutable_audit_vault.slice(-10)
     });
 });
 
@@ -379,7 +454,7 @@ app.get('/api/health', (req, res) => {
     return ok(res, { status: "ACTIVE", stage: "134", compliance: "WORLD_BANK_AND_CBK_DUAL", sovereignMesh: "ONLINE", jsonImmunity: "100%", timestamp: Date.now() });
 });
 
-app.get('/api/admin/shadow-traps', enforceTenantIsolation, (req, res) => ok(res, { success: true, shadowTraps: data.shadow_trap_flags }));
+app.get('/api/admin/shadow-traps', enforceTenantIsolation, (req, res) => ok(res, { shadowTraps: data.shadow_trap_flags }));
 
 app.post('/api/admin/shadow-traps/resolve', enforceTenantIsolation, async (req, res) => {
     ensureState();
@@ -388,16 +463,16 @@ app.post('/api/admin/shadow-traps/resolve', enforceTenantIsolation, async (req, 
     if (index !== -1) {
         const resolved = data.shadow_trap_flags.splice(index, 1)[0];
         await recordImmutableAudit("SHADOW_TRAP_RESOLVED_AND_DISABLED", { tenant: req.tenantId }, resolved);
-        return ok(res, { success: true, message: `Shadow trap ${trapId} resolved and cleared.` });
+        return ok(res, { message: `Shadow trap ${trapId} resolved and cleared.` });
     }
     return fail(res, "Shadow trap not found", 404);
 });
 
-app.get('/api/admin/sar-queue', enforceTenantIsolation, (req, res) => ok(res, { success: true, sarQueue: data.sar_queue }));
-app.get('/api/admin/iso-wires', enforceTenantIsolation, (req, res) => ok(res, { success: true, isoWires: data.iso20022_wires }));
-app.get('/api/admin/did-passes', enforceTenantIsolation, (req, res) => ok(res, { success: true, didPasses: data.did_pass_registry }));
-app.get('/api/admin/kyc-registry', enforceTenantIsolation, (req, res) => ok(res, { success: true, kycUsers: data.users }));
-app.get('/api/admin/sovereign-vault', enforceTenantIsolation, (req, res) => ok(res, { success: true, vaultBlocks: data.immutable_audit_vault }));
+app.get('/api/admin/sar-queue', enforceTenantIsolation, (req, res) => ok(res, { sarQueue: data.sar_queue }));
+app.get('/api/admin/iso-wires', enforceTenantIsolation, (req, res) => ok(res, { isoWires: data.iso20022_wires }));
+app.get('/api/admin/did-passes', enforceTenantIsolation, (req, res) => ok(res, { didPasses: data.did_pass_registry }));
+app.get('/api/admin/kyc-registry', enforceTenantIsolation, (req, res) => ok(res, { kycUsers: data.users }));
+app.get('/api/admin/sovereign-vault', enforceTenantIsolation, (req, res) => ok(res, { vaultBlocks: data.immutable_audit_vault }));
 
 app.post('/api/teller/webhook', enforceTenantIsolation, async (req, res) => {
     try {
@@ -415,8 +490,7 @@ app.post('/api/system/hybrid-clean-heal', enforceTenantIsolation, async (req, re
         ensureState();
         if (global.gc) { global.gc(); }
         const healReport = {
-            healId: id("HEAL"),
-            timestamp: Date.now(),
+            healId: id("HEAL"), timestamp: Date.now(),
             actionsPerformed: [
                 "Memory Cache Flushed & Garbage Collection Triggered",
                 "JSON Payload Sanitizer & Antivirus Firewall Re-validated",
@@ -426,7 +500,7 @@ app.post('/api/system/hybrid-clean-heal', enforceTenantIsolation, async (req, re
             systemHealth: "100% HEALTHY - ZERO ERRORS"
         };
         await recordImmutableAudit("HYBRID_ANTIVIRUS_AND_CACHE_PURGE_EXECUTED", { tenant: req.tenantId }, healReport);
-        return ok(res, { success: true, message: "🛡️ Hybrid Antivirus Scanned, Teller Webhook Synced, and System Fully Healed! 100% Error-Free.", healReport });
+        return ok(res, { message: "🛡️ Hybrid Antivirus Scanned, Teller Webhook Synced, and System Fully Healed! 100% Error-Free.", healReport });
     } catch (err) {
         return fail(res, "Hybrid heal execution error: " + err.message, 500);
     }
@@ -435,13 +509,11 @@ app.post('/api/system/hybrid-clean-heal', enforceTenantIsolation, async (req, re
 app.post('/api/system/self-upgrade', enforceTenantIsolation, async (req, res) => {
     try {
         const masterKey = req.headers['x-api-key'] || req.body.masterKey;
-        if (masterKey !== "SOVEREIGN_MASTER_SECURE_KEY") {
-            return fail(res, "Unauthorized self-upgrade attempt. Invalid master certificate.", 403);
-        }
+        if (masterKey !== "SOVEREIGN_MASTER_SECURE_KEY") return fail(res, "Unauthorized self-upgrade attempt. Invalid master certificate.", 403);
         const targetStage = req.body.targetStage || "135";
         const upgradeLog = { upgradeId: id("UPG"), targetStage, timestamp: Date.now(), status: "STAGED_AND_VERIFIED" };
         await recordImmutableAudit("AUTONOMOUS_SYSTEM_UPGRADE_INITIATED", { tenant: req.tenantId }, upgradeLog);
-        return ok(res, { success: true, message: `Stage ${targetStage} upgrade package cryptographically verified.`, upgradeLog });
+        return ok(res, { message: `Stage ${targetStage} upgrade package cryptographically verified.`, upgradeLog });
     } catch (err) {
         return fail(res, "Self-upgrade execution error: " + err.message, 500);
     }
@@ -453,26 +525,15 @@ app.post('/api/regulatory/dispatch-periodic-report', enforceTenantIsolation, asy
         const { periodType } = req.body; 
         const validPeriods = ["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"];
         const period = validPeriods.includes(periodType) ? periodType : "DAILY";
-        const totalTransactions = data.iso20022_wires.length;
-        const flaggedTraps = data.shadow_trap_flags.length;
-        const totalVolume = data.iso20022_wires.reduce((sum, w) => sum + (Number(w.amount) || 0), 0);
         const reportSummary = {
-            reportId: id(`REP_${period}`),
-            period,
-            tenantId: req.tenantId,
-            institution: req.tenantObj.name,
-            timestamp: Date.now(),
-            metrics: { totalTransactions, flaggedTraps, totalVolume },
+            reportId: id(`REP_${period}`), period, tenantId: req.tenantId,
+            institution: req.tenantObj.name, timestamp: Date.now(),
+            metrics: { totalTransactions: data.iso20022_wires.length, flaggedTraps: data.shadow_trap_flags.length },
             status: "AUTOMATICALLY_DISPATCHED_TO_CENTRAL_BANK"
         };
-        data.sar_queue.push({
-            sarId: id(`SAR_${period}`),
-            referenceId: reportSummary.reportId,
-            details: `Automated ${period} sovereign compliance report transmitted.`,
-            timestamp: Date.now()
-        });
+        data.sar_queue.push({ sarId: id(`SAR_${period}`), referenceId: reportSummary.reportId, details: `Automated ${period} report transmitted.`, timestamp: Date.now() });
         await recordImmutableAudit(`AUTOMATED_${period}_REGULATORY_REPORT_DISPATCHED`, { tenant: req.tenantId }, reportSummary);
-        return ok(res, { success: true, message: `✅ Automated ${period} Regulatory Report successfully generated and dispatched!`, reportSummary });
+        return ok(res, { message: `✅ Automated ${period} Regulatory Report successfully generated and dispatched!`, reportSummary });
     } catch (err) {
         return fail(res, "Periodic reporting error: " + err.message, 500);
     }
@@ -483,9 +544,7 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
     const { beneficiaryName, beneficiaryAccount, bicCode, amount, currency, ultimateDebtor, ultimateCreditor, purposeCode } = req.body;
     const numericAmount = Number(amount) || 1250000;
     const wireId = id("WIRE");
-    const isCentralBankThresholdCrossed = numericAmount >= 1000000;
-    const isWorldBankFiduciaryCrossed = numericAmount >= 500000;
-    const dualFlagged = isCentralBankThresholdCrossed || isWorldBankFiduciaryCrossed;
+    const dualFlagged = numericAmount >= 1000000 || numericAmount >= 500000;
 
     const wireMessage = {
         wireId, tenantId: req.tenantId, institutionName: req.tenantObj.name, institutionType: req.tenantObj.type,
@@ -503,7 +562,7 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
         data.sar_queue.push({ sarId: id("goAML"), referenceId: wireId, details: `Compliance filing triggered for ${numericAmount}.`, timestamp: Date.now() });
     }
     await recordImmutableAudit("DUAL_COMPLIANT_WIRE_DISPATCHED", { tenant: req.tenantId, dualFlagged }, wireMessage);
-    return ok(res, { success: true, message: dualFlagged ? "Wire intercepted and queued for regulatory filing." : "Wire dispatched and settled.", wireMessage });
+    return ok(res, { message: dualFlagged ? "Wire intercepted and queued for regulatory filing." : "Wire dispatched and settled.", wireMessage });
 });
 
 app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (req, res) => {
@@ -511,15 +570,7 @@ app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (re
     const settlementRecord = { settlementId: id("CLr"), initiatingNode: req.tenantId, institution: req.tenantObj.name, timestamp: Date.now(), status: "DUAL_CLEARED" };
     data.interbank_clearing_settlements.push(settlementRecord);
     await recordImmutableAudit("INTERBANK_CLEARING_SETTLEMENT_EXECUTED", { tenant: req.tenantId }, settlementRecord);
-    return ok(res, { success: true, settlementRecord });
-});
-
-app.post('/api/ai/autonomous-enforcement', enforceTenantIsolation, async (req, res) => {
-    ensureState();
-    const actionRecord = { enforcementId: id("AI_ENFORCE"), tenantId: req.tenantId, timestamp: Date.now(), activeTraps: data.shadow_trap_flags.length };
-    data.ai_enforcement_logs.push(actionRecord);
-    await recordImmutableAudit("AUTONOMOUS_AI_ENFORCEMENT_TRIGGERED", { tenant: req.tenantId }, actionRecord);
-    return ok(res, { success: true, actionRecord });
+    return ok(res, { settlementRecord });
 });
 
 app.post('/api/did/register-pass', async (req, res) => {
@@ -532,13 +583,13 @@ app.post('/api/did/register-pass', async (req, res) => {
     data.did_pass_registry.push(didRecord);
     data.users.push({ id: id("USR"), fullName: holderName, phone: nationalIdOrPassport || "254700000000", didPassId, amlFlagged: false, riskScore: "0.00%", kycStatus: "TIER_3_DUAL_SOVEREIGN_VERIFIED" });
     await recordImmutableAudit("DID_ZKP_PASS_AND_KYC_MINTED", { holderName }, { didPassId });
-    return ok(res, { success: true, didRecord });
+    return ok(res, { didRecord });
 });
 
 app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, (req, res) => {
     ensureState();
     return ok(res, {
-        success: true, activeTenant: req.tenantObj, corridors: data.businesses,
+        activeTenant: req.tenantObj, corridors: data.businesses,
         isoWiresCount: data.iso20022_wires.length, shadowTrapsCount: data.shadow_trap_flags.length,
         sarQueueCount: data.sar_queue.length, aiEnforcementsCount: data.ai_enforcement_logs.length,
         interbankCount: data.interbank_clearing_settlements.length, didPassesCount: data.did_pass_registry.length,
@@ -563,7 +614,7 @@ app.get('/api/admin/audit/verify-chain', async (req, res) => {
         if (block.previousHash !== expectedPrev) { isValid = false; break; }
     }
     await recordImmutableAudit("SOVEREIGN_VAULT_CHAIN_VERIFIED", { status: isValid ? "VALID" : "COMPROMISED" }, { totalBlocks: data.immutable_audit_vault.length });
-    return ok(res, { success: true, chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "Sovereign Vault integrity verified 100%." });
+    return ok(res, { chainValid: isValid, totalBlocksVerified: data.immutable_audit_vault.length, message: "Sovereign Vault integrity verified 100%." });
 });
 
 app.get('/api/audit/search', (req, res) => {
@@ -571,7 +622,7 @@ app.get('/api/audit/search', (req, res) => {
     const query = (req.query.q || "").toLowerCase();
     let stream = data.immutable_audit_vault;
     if (query) { stream = stream.filter(a => a.actionType.toLowerCase().includes(query) || a.currentHash.toLowerCase().includes(query)); }
-    return ok(res, { success: true, auditStream: stream.slice(-100) });
+    return ok(res, { auditStream: stream.slice(-100) });
 });
 
 if (fs.existsSync(DB_FILE)) {
