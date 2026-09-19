@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS Stage 136 - Sovereign Compliance, Antivirus & POS Ingestion OS</title>
+    <title>RDS Stage 137 - Sovereign Compliance, CBK Automated Pushes & POS Ingestion OS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -18,7 +18,7 @@
             </div>
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-white">RDS Sovereign Financial OS</h1>
-                <p class="text-xs text-emerald-400 font-semibold tracking-wider uppercase">Stage 136: Central ID, Tiered KYC & POS Webhook Sanitizer</p>
+                <p class="text-xs text-emerald-400 font-semibold tracking-wider uppercase">Stage 137: Automated Daily/Quarterly/Annual CBK Compliance Push</p>
             </div>
         </div>
         
@@ -33,53 +33,68 @@
                     <option value="INST-KCB">KCB Bank National RTGS Gateway</option>
                     <option value="BIZ-KE">RDS Nairobi Forex Bureau (KE)</option>
                     <option value="BIZ-UK">RDS London Central Reserve (UK)</option>
-                    <option value="BIZ-PEARL">Pearl Forex Bureau International Clearing</option>
                 </select>
             </div>
-            <button onclick="openLoginModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
+            <button onclick="openLoginModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md cursor-pointer">
                 <i data-lucide="log-in" class="w-4 h-4"></i>
                 <span>User Login</span>
             </button>
-            <button onclick="openRegisterModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
+            <button onclick="openRegisterModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md cursor-pointer">
                 <i data-lucide="user-plus" class="w-4 h-4"></i>
                 <span>Register User</span>
             </button>
-            <button onclick="openDidModal()" class="bg-teal-600 hover:bg-teal-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
+            <button onclick="openDidModal()" class="bg-teal-600 hover:bg-teal-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md cursor-pointer">
                 <i data-lucide="shield-check" class="w-4 h-4"></i>
-                <span>Mint Central ID / Passport Pass</span>
+                <span>Mint Central ID / Pass</span>
             </button>
         </div>
     </header>
 
-    <!-- Action Toolbar -->
+    <!-- Fully Active Action Toolbar -->
     <div class="bg-slate-900/50 border-b border-slate-800/80 px-6 py-3 flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center space-x-2 text-xs text-slate-400">
             <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
-            <span>Active Node: <strong id="currentTenantIdLabel" class="text-white font-mono">INST-CBK-RTGS</strong> | POS Webhook Sanitizer: <strong class="text-emerald-400">ACTIVE</strong></span>
+            <span>Active Node: <strong id="currentTenantIdLabel" class="text-white font-mono">INST-CBK-RTGS</strong> | CBK Automated Sync: <strong class="text-emerald-400">ACTIVE</strong></span>
         </div>
-        <div class="flex items-center space-x-3 flex-wrap gap-2">
-            <button onclick="triggerHybridCleanHeal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md animate-pulse">
-                <i data-lucide="shield" class="w-4 h-4"></i>
-                <span>Clean Cache & Antivirus Heal</span>
+        <div class="flex items-center space-x-2 flex-wrap gap-2">
+            <button onclick="triggerCompliancePush('DAILY')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                <span>Push Daily CBK Report</span>
             </button>
-            <button onclick="dispatchIsoWire()" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
-                <i data-lucide="send" class="w-4 h-4"></i>
-                <span>Dispatch Dual Wire</span>
+            <button onclick="triggerCompliancePush('QUARTERLY')" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                <span>Push Quarterly CBK Report</span>
             </button>
-            <button onclick="openPosWebhookSimulator()" class="bg-purple-600 hover:bg-purple-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
-                <i data-lucide="terminal" class="w-4 h-4"></i>
-                <span>Simulate POS Webhook</span>
+            <button onclick="triggerCompliancePush('ANNUAL')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                <span>Push Annual CBK Report</span>
             </button>
-            <button onclick="runInterbankClearing()" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
-                <i data-lucide="repeat" class="w-4 h-4"></i>
-                <span>Inter-Bank Clearing</span>
+            <button onclick="openCbkEmailModal()" class="bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                <span>Email CBK Compliance</span>
             </button>
-            <button onclick="window.open('/api/admin/audit/print-report?businessId=' + getSelectedTenantId(), '_blank')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
-                <i data-lucide="printer" class="w-4 h-4"></i>
-                <span>Print Audit Report</span>
+            <button onclick="triggerHybridCleanHeal()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                <span>Antivirus Heal</span>
             </button>
-            <button onclick="triggerChainAudit()" class="bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
-                <i data-lucide="lock" class="w-4 h-4 text-white"></i>
+            <button onclick="dispatchIsoWire()" class="bg-blue-700 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                <span>Dispatch Wire</span>
+            </button>
+            <button onclick="openPosWebhookSimulator()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                <span>Simulate POS</span>
+            </button>
+            <button onclick="runInterbankClearing()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="repeat" class="w-3.5 h-3.5"></i>
+                <span>Inter-Bank</span>
+            </button>
+            <button onclick="window.open('/api/admin/audit/print-report?businessId=' + getSelectedTenantId(), '_blank')" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                <span>Print PDF</span>
+            </button>
+            <button onclick="triggerChainAudit()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
                 <span>Verify Vault</span>
             </button>
         </div>
@@ -89,14 +104,14 @@
     <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
 
         <!-- Metrics Overview Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
             <div onclick="openModal('kycRegistry')" class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md cursor-pointer hover:border-emerald-400 transition">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
                     <span class="text-xs font-semibold uppercase tracking-wider">Tiered KYC</span>
                     <i data-lucide="user-check" class="w-5 h-5 text-emerald-400"></i>
                 </div>
                 <div id="statKycCount" class="text-2xl font-bold text-white">0</div>
-                <p class="text-xs text-slate-500 mt-1">IPRS & Global AML Verified</p>
+                <p class="text-xs text-slate-500 mt-1">IPRS Verified</p>
             </div>
             <div onclick="openModal('shadowTraps')" class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md cursor-pointer hover:border-red-500 transition">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
@@ -104,7 +119,7 @@
                     <i data-lucide="shield-alert" class="w-5 h-5 text-red-500"></i>
                 </div>
                 <div id="statTrapsCount" class="text-2xl font-bold text-white">0</div>
-                <p class="text-xs text-slate-500 mt-1">Manage & resolve</p>
+                <p class="text-xs text-slate-500 mt-1">Manage & clear</p>
             </div>
             <div onclick="openModal('sarQueue')" class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md cursor-pointer hover:border-amber-500 transition">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
@@ -120,7 +135,7 @@
                     <i data-lucide="terminal" class="w-5 h-5 text-purple-400"></i>
                 </div>
                 <div id="statPosCount" class="text-2xl font-bold text-white">0</div>
-                <p class="text-xs text-slate-500 mt-1">Sanitized & Corrected</p>
+                <p class="text-xs text-slate-500 mt-1">Sanitized</p>
             </div>
             <div onclick="openModal('didPasses')" class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md cursor-pointer hover:border-blue-500 transition">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
@@ -129,6 +144,14 @@
                 </div>
                 <div id="statDidCount" class="text-2xl font-bold text-white">0</div>
                 <p class="text-xs text-slate-500 mt-1">ZKP identities</p>
+            </div>
+            <div onclick="openModal('compliancePushes')" class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md cursor-pointer hover:border-cyan-500 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">CBK Pushes</span>
+                    <i data-lucide="send" class="w-5 h-5 text-cyan-400"></i>
+                </div>
+                <div id="statPushCount" class="text-2xl font-bold text-white">0</div>
+                <p class="text-xs text-slate-500 mt-1">Automated syncs</p>
             </div>
             <div onclick="openModal('sovereignVault')" class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md cursor-pointer hover:border-indigo-500 transition">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
@@ -144,8 +167,8 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
             <div class="border-b border-slate-800 px-6 py-4 flex items-center justify-between">
                 <div>
-                    <h2 class="text-base font-bold text-white">Sovereign Immutable Audit Vault & POS Sanitizer Stream</h2>
-                    <p class="text-xs text-slate-400">Real-time inspection of central bank syncs, POS webhook corrections, and SHA-256 ledgers.</p>
+                    <h2 class="text-base font-bold text-white">Sovereign Immutable Audit Vault & CBK Push Stream</h2>
+                    <p class="text-xs text-slate-400">Real-time inspection of daily/quarterly/annual compliance transmissions and SHA-256 ledgers.</p>
                 </div>
                 <div class="flex items-center space-x-2">
                     <input type="text" id="auditSearchInput" oninput="debounceSearch()" placeholder="Search action type, hash..." class="bg-slate-950 border border-slate-700 text-xs px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 w-64">
@@ -181,7 +204,7 @@
                     <i data-lucide="database" class="w-5 h-5 text-blue-500"></i>
                     <span>System Inspector</span>
                 </h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <p id="modalDesc" class="text-xs text-slate-400">Inspect live records retrieved from the sovereign mesh.</p>
             <div class="overflow-y-auto max-h-96">
@@ -195,7 +218,7 @@
                 </table>
             </div>
             <div class="flex items-center justify-end pt-3 border-t border-slate-800">
-                <button onclick="closeModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold">Close</button>
+                <button onclick="closeModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Close</button>
             </div>
         </div>
     </div>
@@ -208,7 +231,7 @@
                     <i data-lucide="log-in" class="w-5 h-5 text-blue-400"></i>
                     <span>Secure User Login (JWT Session)</span>
                 </h3>
-                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
                 <div>
@@ -221,8 +244,8 @@
                 </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
-                <button onclick="closeLoginModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-                <button onclick="submitLogin()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md">Login & Issue Token</button>
+                <button onclick="closeLoginModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
+                <button onclick="submitLogin()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Login & Issue Token</button>
             </div>
         </div>
     </div>
@@ -235,7 +258,7 @@
                     <i data-lucide="user-plus" class="w-5 h-5 text-emerald-400"></i>
                     <span>Secure User Registration</span>
                 </h3>
-                <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
                 <div>
@@ -256,8 +279,8 @@
                 </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
-                <button onclick="closeRegisterModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-                <button onclick="submitRegistration()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md">Register User</button>
+                <button onclick="closeRegisterModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
+                <button onclick="submitRegistration()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Register User</button>
             </div>
         </div>
     </div>
@@ -267,14 +290,14 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 class="text-base font-bold text-white">Mint Central ID / Passport & Tiered KYC Pass</h3>
-                <button onclick="closeDidModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                <button onclick="closeDidModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
                 <div>
                     <label class="block text-slate-400 mb-1">Verification Pipeline / Corridor</label>
                     <select id="didVerificationType" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-blue-300 font-bold focus:outline-none">
                         <option value="LOCAL_IPRS">Local National ID & IPRS Registry Validation</option>
-                        <option value="GLOBAL_PASSPORT">International Passport OCR, PEP & Sanctions (Sumsub/World-Check)</option>
+                        <option value="GLOBAL_PASSPORT">International Passport OCR, PEP & Sanctions</option>
                         <option value="MOBILE_MONEY">Mobile Money Telco Owner Validation (M-Pesa)</option>
                     </select>
                 </div>
@@ -296,8 +319,8 @@
                 </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
-                <button onclick="closeDidModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-                <button onclick="submitDidPass()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md">Verify & Mint Sovereign Pass</button>
+                <button onclick="closeDidModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
+                <button onclick="submitDidPass()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Verify & Mint Sovereign Pass</button>
             </div>
         </div>
     </div>
@@ -310,7 +333,7 @@
                     <i data-lucide="terminal" class="w-5 h-5 text-purple-400"></i>
                     <span>Simulate POS / Cashier Ingestion Webhook</span>
                 </h3>
-                <button onclick="closePosModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                <button onclick="closePosModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
                 <p class="text-slate-400">Push raw JSON payloads from retail cashiers or POS terminals. The backend antivirus middleware will automatically sanitize malicious strings, normalize currency codes, and commit to the vault.</p>
@@ -330,8 +353,43 @@
                 </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
-                <button onclick="closePosModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-                <button onclick="submitPosWebhook()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md">Push & Sanitize Webhook</button>
+                <button onclick="closePosModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
+                <button onclick="submitPosWebhook()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Push & Sanitize Webhook</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CBK Email Dispatch Modal -->
+    <div id="cbkEmailModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i data-lucide="mail" class="w-5 h-5 text-cyan-400"></i>
+                    <span>Dispatch Compliance Report to CBK Email</span>
+                </h3>
+                <button onclick="closeCbkEmailModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">CBK / Regulatory Recipient Email</label>
+                    <input type="email" id="cbkRecipientEmail" value="compliance@centralbank.go.ke" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Report Frequency</label>
+                    <select id="cbkEmailFrequency" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-cyan-300 font-bold focus:outline-none">
+                        <option value="DAILY">Daily Compliance Report</option>
+                        <option value="QUARTERLY">Quarterly Compliance Report</option>
+                        <option value="ANNUAL">Annual Compliance Report</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Custom Notes / Secure Memo</label>
+                    <textarea id="cbkEmailNotes" rows="3" class="w-full bg-slate-950 border border-slate-700 text-slate-200 p-2 rounded-lg focus:outline-none">Automated secure push transmitted via RDS Stage 137 Sovereign Financial OS.</textarea>
+                </div>
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                <button onclick="closeCbkEmailModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
+                <button onclick="submitCbkEmailDispatch()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Send Compliance Email</button>
             </div>
         </div>
     </div>
@@ -363,6 +421,7 @@
                     document.getElementById('statSarCount').innerText = data.sarQueueCount || 0;
                     document.getElementById('statPosCount').innerText = data.posWebhooksCount || 0;
                     document.getElementById('statDidCount').innerText = data.didPassesCount || 0;
+                    document.getElementById('statPushCount').innerText = data.compliancePushCount || 0;
                     document.getElementById('statVaultCount').innerText = data.immutableVaultCount || 0;
                 }
             } catch (err) {
@@ -386,6 +445,45 @@
 
         function openPosWebhookSimulator() { document.getElementById('posModal').classList.remove('hidden'); }
         function closePosModal() { document.getElementById('posModal').classList.add('hidden'); }
+
+        function openCbkEmailModal() { document.getElementById('cbkEmailModal').classList.remove('hidden'); }
+        function closeCbkEmailModal() { document.getElementById('cbkEmailModal').classList.add('hidden'); }
+
+        async function triggerCompliancePush(frequency) {
+            const tenantId = getSelectedTenantId();
+            if (!confirm(`Execute automated ${frequency} compliance report push to the Central Bank of Kenya RTGS gateway?`)) return;
+            try {
+                const res = await fetch('/api/compliance/push-cbk', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-business-id': tenantId },
+                    body: JSON.stringify({ frequency })
+                });
+                const data = await res.json();
+                if (data && data.success) {
+                    alert(`✅ ${data.message}`);
+                    loadDashboard();
+                } else { alert("❌ Compliance push failed: " + (data ? data.error : 'Unknown')); }
+            } catch (err) { alert("Network error during CBK compliance transmission."); }
+        }
+
+        async function submitCbkEmailDispatch() {
+            const recipientEmail = document.getElementById('cbkRecipientEmail').value.trim();
+            const frequency = document.getElementById('cbkEmailFrequency').value;
+            const customNotes = document.getElementById('cbkEmailNotes').value.trim();
+
+            if (!recipientEmail) { alert("Recipient email is required."); return; }
+            try {
+                const res = await fetch('/api/compliance/send-custom-email', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-business-id': getSelectedTenantId() },
+                    body: JSON.stringify({ recipientEmail, frequency, customNotes })
+                });
+                const data = await res.json();
+                if (data && data.success) {
+                    alert(`✅ ${data.message}`);
+                    closeCbkEmailModal();
+                    loadDashboard();
+                } else { alert("❌ Email dispatch failed: " + (data ? data.error : 'Unknown')); }
+            } catch (err) { alert("Network error during CBK email transmission."); }
+        }
 
         async function submitLogin() {
             const email = document.getElementById('loginEmail').value.trim();
@@ -526,7 +624,7 @@
                             <tr class="hover:bg-slate-900/50 transition">
                                 <td class="p-3 text-red-400 font-bold">${t.trapId || ''}</td>
                                 <td class="p-3 text-slate-300">${t.institution || 'Sovereign Node'}: ${t.reason || ''}</td>
-                                <td class="p-3"><button onclick="resolveShadowTrap('${t.trapId}')" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-[11px] font-semibold transition">Clear</button></td>
+                                <td class="p-3"><button onclick="resolveShadowTrap('${t.trapId}')" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-[11px] font-semibold transition cursor-pointer">Clear</button></td>
                             </tr>
                         `).join('');
                     } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">Zero active shadow traps found.</td></tr>`; }
@@ -559,7 +657,7 @@
                                 <td class="p-3 text-emerald-400 font-bold">100% IMMUNE</td>
                             </tr>
                         `).join('');
-                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No POS webhooks recorded yet. Use 'Simulate POS Webhook' to test.</td></tr>`; }
+                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No POS webhooks recorded yet.</td></tr>`; }
                 } else if (type === 'didPasses') {
                     title.innerHTML = `<i data-lucide="shield-check" class="w-5 h-5 text-blue-500"></i><span>Decentralized Sovereign Identity (DID) Passes</span>`;
                     desc.innerText = "Cryptographic zero-knowledge passes verified across dual corridors.";
@@ -575,6 +673,21 @@
                             </tr>
                         `).join('');
                     } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No DID passes minted.</td></tr>`; }
+                } else if (type === 'compliancePushes') {
+                    title.innerHTML = `<i data-lucide="send" class="w-5 h-5 text-cyan-400"></i><span>Automated CBK Compliance Push Logs</span>`;
+                    desc.innerText = "Daily, quarterly, and annual compliance reports transmitted to the Central Bank of Kenya RTGS.";
+                    thead.innerHTML = `<tr><th class="p-3">Push ID</th><th class="p-3">Frequency</th><th class="p-3">Timestamp & Status</th></tr>`;
+                    const res = await fetch('/api/admin/compliance-logs', { headers: { 'x-business-id': tenantId } });
+                    const data = await res.json();
+                    if (data && data.success && data.pushLogs && data.pushLogs.length > 0) {
+                        tbody.innerHTML = data.pushLogs.map(p => `
+                            <tr class="hover:bg-slate-900/50 transition">
+                                <td class="p-3 text-cyan-400 font-bold">${p.pushId || ''}</td>
+                                <td class="p-3 text-white font-semibold">${p.frequency || 'DAILY'}</td>
+                                <td class="p-3 text-slate-300">${new Date(p.timestamp).toLocaleString()} <span class="bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded text-[10px] ml-2">${p.status || 'ACCEPTED'}</span></td>
+                            </tr>
+                        `).join('');
+                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No compliance push logs found. Use the top toolbar to push reports.</td></tr>`; }
                 } else if (type === 'sovereignVault') {
                     title.innerHTML = `<i data-lucide="lock" class="w-5 h-5 text-indigo-500"></i><span>Sovereign Vault</span>`;
                     desc.innerText = "Complete immutable cryptographic ledger including system evolution entries.";
@@ -705,7 +818,7 @@
                     tbody.innerHTML = `
                         <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Chain Validity Status</td><td class="p-3 text-emerald-400 font-bold">100% VALID (Tamper-Free)</td></tr>
                         <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Total Blocks Verified</td><td class="p-3 text-white font-mono">${data.totalBlocksVerified || 0} Blocks</td></tr>
-                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Architecture Standard</td><td class="p-3 text-blue-400 font-mono">Stage 136 POS Ingestion & Antivirus Mesh</td></tr>
+                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Architecture Standard</td><td class="p-3 text-blue-400 font-mono">Stage 137 Automated CBK Push Mesh</td></tr>
                     `;
                     alert(data.message || "Chain verified successfully.");
                     loadDashboard();

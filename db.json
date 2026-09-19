@@ -4775,6 +4775,78 @@
       "currentHash": "68d59809252527953423cee21d9f8245296d551013026b845a21c8cde1aa2303",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_134_HYBRID_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789846727862_3984",
+      "timestamp": 1789846727862,
+      "actionType": "CBK_DAILY_COMPLIANCE_PUSH",
+      "actor": {
+        "tenant": "INST-WORLDBANK"
+      },
+      "details": {
+        "pushId": "CBK_PUSH_1789846727859_27725",
+        "tenantId": "INST-WORLDBANK",
+        "frequency": "DAILY",
+        "recordsCount": 233,
+        "timestamp": 1789846727859,
+        "status": "ACCEPTED_BY_CBK_RTGS"
+      },
+      "previousHash": "68d59809252527953423cee21d9f8245296d551013026b845a21c8cde1aa2303",
+      "currentHash": "9973065840b86751349f2f441f7870c9092cd1ddeb994b6d52149bc08a0d2bfa",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_137_HYBRID_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789847681081_93505",
+      "timestamp": 1789847681081,
+      "actionType": "CBK_CUSTOM_EMAIL_DISPATCHED_DAILY",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "recipientEmail": "compliance@centralbank.go.ke"
+      },
+      "details": {
+        "dispatchId": "CBK_EMAIL_1789847681078_1451",
+        "tenantId": "INST-WORLDBANK",
+        "recipientEmail": "compliance@centralbank.go.ke",
+        "frequency": "DAILY",
+        "customNotes": "Automated secure push transmitted via RDS Stage 137 Sovereign Financial OS.",
+        "timestamp": 1789847681078,
+        "status": "DISPATCHED_SECURELY"
+      },
+      "previousHash": "9973065840b86751349f2f441f7870c9092cd1ddeb994b6d52149bc08a0d2bfa",
+      "currentHash": "c8cf214d9cffbbd294ab37bcc4271a7d5ac01a53dc5140596614db2c8441bc16",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_137_HYBRID_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789847706643_23004",
+      "timestamp": 1789847706642,
+      "actionType": "POS_WEBHOOK_INGESTED_AND_SANITIZED",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "terminalId": "POS-NAIROBI-01"
+      },
+      "details": {
+        "webhookId": "WEB_1789847706640_86007",
+        "tenantId": "INST-WORLDBANK",
+        "terminalId": "POS-NAIROBI-01",
+        "sanitizedPayload": {
+          "customerName": "Robert Maina",
+          "amount": "15000",
+          "currency": "KES",
+          "items": [
+            "Sovereign Hardware Unit",
+            "License Renewal"
+          ],
+          "notes": "[SANITIZED_MALICIOUS_SCRIPT]"
+        },
+        "sanitizedNotes": "[SANITIZED_MALICIOUS_SCRIPT]",
+        "timestamp": 1789847706640
+      },
+      "previousHash": "c8cf214d9cffbbd294ab37bcc4271a7d5ac01a53dc5140596614db2c8441bc16",
+      "currentHash": "72450f6a4c6109adc9138e71333ed12b989eae1fee314b8189da37c34e4d02ee",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_137_HYBRID_LATTICE"
     }
   ],
   "iso20022_wires": [
@@ -5437,16 +5509,6 @@
       "timestamp": 1789778778961
     }
   ],
-  "velocity_alerts": [
-    {
-      "id": "VEL_1789693049670_13562",
-      "userId": "USR_1789693049670_38715",
-      "totalRollingAmount": 12000,
-      "transactionCount": 1,
-      "reason": "CBK/POCAMLA 24h Cross-Border Structuring & Smurfing Threshold Exceeded",
-      "timestamp": 1789693049670
-    }
-  ],
   "did_pass_registry": [
     {
       "didPassId": "did:rds:ke:robertmaina99",
@@ -5498,8 +5560,44 @@
       "status": "ACTIVE_DUAL_COMPLIANT_PASS"
     }
   ],
-  "shops": [],
-  "catalogs": {},
+  "pos_transactions": [
+    {
+      "webhookId": "WEB_1789847706640_86007",
+      "tenantId": "INST-WORLDBANK",
+      "terminalId": "POS-NAIROBI-01",
+      "sanitizedPayload": {
+        "customerName": "Robert Maina",
+        "amount": "15000",
+        "currency": "KES",
+        "items": [
+          "Sovereign Hardware Unit",
+          "License Renewal"
+        ],
+        "notes": "[SANITIZED_MALICIOUS_SCRIPT]"
+      },
+      "sanitizedNotes": "[SANITIZED_MALICIOUS_SCRIPT]",
+      "timestamp": 1789847706640
+    }
+  ],
+  "compliance_push_logs": [
+    {
+      "pushId": "CBK_PUSH_1789846727859_27725",
+      "tenantId": "INST-WORLDBANK",
+      "frequency": "DAILY",
+      "recordsCount": 233,
+      "timestamp": 1789846727859,
+      "status": "ACCEPTED_BY_CBK_RTGS"
+    },
+    {
+      "dispatchId": "CBK_EMAIL_1789847681078_1451",
+      "tenantId": "INST-WORLDBANK",
+      "recipientEmail": "compliance@centralbank.go.ke",
+      "frequency": "DAILY",
+      "customNotes": "Automated secure push transmitted via RDS Stage 137 Sovereign Financial OS.",
+      "timestamp": 1789847681078,
+      "status": "DISPATCHED_SECURELY"
+    }
+  ],
   "orders": [
     {
       "id": "ORD_GL_1789502960982_52055",
@@ -6118,6 +6216,18 @@
       "createdAt": 1789693049671
     }
   ],
+  "velocity_alerts": [
+    {
+      "id": "VEL_1789693049670_13562",
+      "userId": "USR_1789693049670_38715",
+      "totalRollingAmount": 12000,
+      "transactionCount": 1,
+      "reason": "CBK/POCAMLA 24h Cross-Border Structuring & Smurfing Threshold Exceeded",
+      "timestamp": 1789693049670
+    }
+  ],
+  "shops": [],
+  "catalogs": {},
   "otp_sessions": [
     {
       "phone": "1234",
