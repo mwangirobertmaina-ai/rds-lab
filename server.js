@@ -1,5 +1,5 @@
 // ==========================================
-// RDS - STAGE 137 SOVEREIGN FINANCIAL OPERATING SYSTEM
+// RDS - STAGE 138 SOVEREIGN FINANCIAL OPERATING SYSTEM
 // Supports: World Bank, CBK RTGS, goAML/SAR, Automated Daily/Quarterly/Annual Central Bank Reporting, POS Sanitization & 100% Active Controls
 // ==========================================
 
@@ -121,18 +121,18 @@ function ensureState() {
 
     if (data.immutable_audit_vault.length === 0) {
       const genesisTimestamp = Date.now();
-      const rawGenesis = `${genesisTimestamp}:GENESIS_ROOT_INIT:{} :{} :GENESIS_ROOT_HASH_000000000000000000000000:STAGE_137_HYBRID`;
+      const rawGenesis = `${genesisTimestamp}:GENESIS_ROOT_INIT:{} :{} :GENESIS_ROOT_HASH_000000000000000000000000:STAGE_138_HYBRID`;
       const genesisHash = crypto.createHash("sha256").update(rawGenesis).digest("hex");
       data.immutable_audit_vault.push({
         auditId: "AUD_GENESIS_ROOT",
         timestamp: genesisTimestamp,
         actionType: "GENESIS_ROOT_INIT",
         actor: { system: "RDS_SOVEREIGN_CORE" },
-        details: { message: "Secure sovereign genesis block established for Stage 137." },
+        details: { message: "Secure sovereign genesis block established for Stage 138." },
         previousHash: "GENESIS_ROOT_HASH_000000000000000000000000",
         currentHash: genesisHash,
         tamperProof: true,
-        cryptographicStandard: "STAGE_137_HYBRID_LATTICE"
+        cryptographicStandard: "STAGE_138_HYBRID_LATTICE"
       });
     }
   } catch (stateErr) {
@@ -170,7 +170,7 @@ async function recordImmutableAudit(actionType, actor, details) {
             ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
             : "GENESIS_ROOT_HASH_000000000000000000000000";
         
-        const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_137_UPGRADE`;
+        const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_138_UPGRADE`;
         const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
         const auditRecord = {
@@ -182,7 +182,7 @@ async function recordImmutableAudit(actionType, actor, details) {
             previousHash,
             currentHash,
             tamperProof: true,
-            cryptographicStandard: "STAGE_137_HYBRID_LATTICE"
+            cryptographicStandard: "STAGE_138_HYBRID_LATTICE"
         };
 
         data.immutable_audit_vault.push(auditRecord);
@@ -261,7 +261,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// --- STAGE 137: AUTOMATED DAILY, QUARTERLY & ANNUAL CBK COMPLIANCE PUSH ---
+// --- STAGE 138: AUTOMATED DAILY, QUARTERLY & ANNUAL CBK COMPLIANCE PUSH ---
 app.post('/api/compliance/push-cbk', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -292,7 +292,7 @@ app.post('/api/compliance/push-cbk', enforceTenantIsolation, async (req, res) =>
     }
 });
 
-// --- STAGE 137: CUSTOM CBK EMAIL / COMPLIANCE DISPATCH ROUTE ---
+// --- STAGE 138: CUSTOM CBK EMAIL / COMPLIANCE DISPATCH ROUTE ---
 app.post('/api/compliance/send-custom-email', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -327,7 +327,7 @@ app.post('/api/compliance/send-custom-email', enforceTenantIsolation, async (req
     }
 });
 
-// --- STAGE 137: CENTRAL REGISTRY & DID / PASSPORT MINTING ROUTE ---
+// --- STAGE 138: CENTRAL REGISTRY & DID / PASSPORT MINTING ROUTE ---
 app.post('/api/did/register-pass', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -372,7 +372,7 @@ app.post('/api/did/register-pass', enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// --- STAGE 137: POS WEBHOOK INGESTION & DATA CORRECTION ROUTE ---
+// --- STAGE 138: POS WEBHOOK INGESTION & DATA CORRECTION ROUTE ---
 app.post('/api/teller/webhook', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
@@ -495,6 +495,29 @@ app.get('/api/admin/audit/verify-chain', (req, res) => {
     });
 });
 
+// --- STAGE 138: DEDICATED SINGLE BLOCK SHA-256 VERIFICATION ENDPOINT ---
+app.get('/api/admin/audit/verify-block/:hash', enforceTenantIsolation, async (req, res) => {
+    ensureState();
+    const targetHash = req.params.hash;
+    const block = data.immutable_audit_vault.find(b => b.currentHash === targetHash);
+    if (!block) {
+        return fail(res, "Block hash not found in sovereign vault.", 404);
+    }
+    
+    // Re-verify hash computation integrity
+    const rawString = `${block.timestamp}:${block.actionType}:${JSON.stringify(block.actor)}:${JSON.stringify(block.details)}:${block.previousHash}:STAGE_138_UPGRADE`;
+    const computedHash = crypto.createHash("sha256").update(rawString).digest("hex");
+    const isValid = computedHash === block.currentHash;
+
+    return ok(res, {
+        success: true,
+        block,
+        integrityVerified: isValid,
+        computedHash,
+        message: isValid ? "✅ SHA-256 cryptographic proof verified successfully with zero tampering." : "❌ Tampering detected!"
+    });
+});
+
 app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res) => {
     ensureState();
     const { amount } = req.body;
@@ -548,11 +571,11 @@ app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (re
 app.get('/api/admin/audit/print-report', enforceTenantIsolation, (req, res) => {
     ensureState();
     res.setHeader('Content-Type', 'text/html');
-    res.send(`<h1>RDS Stage 137 Sovereign Audit Report</h1><pre>${JSON.stringify(data.immutable_audit_vault.slice(-20), null, 2)}</pre>` );
+    res.send(`<h1>RDS Stage 138 Sovereign Audit Report</h1><pre>${JSON.stringify(data.immutable_audit_vault.slice(-20), null, 2)}</pre>` );
 });
 
 app.get('/api/health', (req, res) => {
-    return ok(res, { status: "ACTIVE", stage: "137", compliance: "WORLD_BANK_AND_CBK_DUAL", sovereignMesh: "ONLINE", jsonImmunity: "100%", timestamp: Date.now() });
+    return ok(res, { status: "ACTIVE", stage: "138", compliance: "WORLD_BANK_AND_CBK_DUAL", sovereignMesh: "ONLINE", jsonImmunity: "100%", timestamp: Date.now() });
 });
 
 if (fs.existsSync(DB_FILE)) {
@@ -563,5 +586,5 @@ if (fs.existsSync(DB_FILE)) {
 }
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 137 HYBRID SOVEREIGN FINANCIAL OS ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 138 HYBRID SOVEREIGN FINANCIAL OS ACTIVE ON PORT ${PORT}`);
 });
