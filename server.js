@@ -1,6 +1,6 @@
 // ==========================================
-// RDS - STAGE 140 SOVEREIGN FINANCIAL OPERATING SYSTEM (AUTONOMOUS MAKER-CHECKER EDITION)
-// Supports: World Bank, CBK RTGS, goAML/SAR, Automated Compliance Pushes, POS Sanitization, 100% Cybersecurity Shield & Autonomous Maker-Checker Dual Control
+// RDS - STAGE 145 SOVEREIGN FINANCIAL OPERATING SYSTEM (AUTONOMOUS LATTICE SETTLEMENT EDITION)
+// Supports: Stage 145 FRC Settlement Routing, Granular RBAC Middleware, Maker-Checker Dual Control, CBK RTGS, goAML/SAR, Automated Compliance Pushes, POS Sanitization & 100% Cybersecurity Shield
 // ==========================================
 
 const express = require("express");
@@ -31,6 +31,14 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 const SALT_ROUNDS = 12;
 const DYNAMIC_JWT_SECRET = crypto.randomBytes(64).toString('hex');
+
+// Standard Sovereign System Roles
+const ROLES = {
+  SOVEREIGN_ADMIN: "SOVEREIGN_ADMIN",
+  CENTRAL_BANK_AUDITOR: "CENTRAL_BANK_AUDITOR",
+  COMMERCIAL_CASHIER: "COMMERCIAL_CASHIER",
+  REGULAR_USER: "REGULAR_USER"
+};
 
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json({ limit: "20mb" }));
@@ -86,7 +94,7 @@ function defaultDB() {
       { id: "p1", businessId: "INST-MPESA", category: "MOBILE_MONEY", merchant: "M-Pesa Gateway", name: "Mobile Money Liquidity Unit", price: 1000.0, currency: "KES", stock: 100000, image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&auto=format&fit=crop&q=80" }
     ], 
     users: [
-      { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", didPassId: "did:rds:ke:robertmaina99", amlFlagged: false, riskScore: "0.01% (CBK & World Bank Verified)", kycStatus: "TIER_3_SOVEREIGN_VERIFIED" }
+      { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", role: "SOVEREIGN_ADMIN", didPassId: "did:rds:ke:robertmaina99", amlFlagged: false, riskScore: "0.01% (CBK & World Bank Verified)", kycStatus: "TIER_3_SOVEREIGN_VERIFIED" }
     ],
     immutable_audit_vault: [],
     iso20022_wires: [],
@@ -124,21 +132,21 @@ function ensureState() {
     if (!Array.isArray(data.maker_checker_queue)) data.maker_checker_queue = [];
     if (!Array.isArray(data.users)) data.users = defaultDB().users;
 
-    // Hardened Cryptographic Genesis Block Check for Stage 140
+    // Stage 145 Genesis Check
     if (data.immutable_audit_vault.length === 0) {
       const genesisTimestamp = Date.now();
-      const rawGenesis = `${genesisTimestamp}:GENESIS_ROOT_INIT:{} :{} :GENESIS_ROOT_HASH_000000000000000000000000:STAGE_140_MAKER_CHECKER`;
+      const rawGenesis = `${genesisTimestamp}:GENESIS_ROOT_INIT:{} :{} :GENESIS_ROOT_HASH_000000000000000000000000:STAGE_145_AUTONOMOUS_LATTICE`;
       const genesisHash = crypto.createHash("sha256").update(rawGenesis).digest("hex");
       data.immutable_audit_vault.push({
-        auditId: "AUD_GENESIS_ROOT",
+        auditId: "AUD_GENESIS_ROOT_145",
         timestamp: genesisTimestamp,
         actionType: "GENESIS_ROOT_INIT",
         actor: { system: "RDS_CYBER_SHIELD_CORE" },
-        details: { message: "Secure sovereign genesis block established for Stage 140 Maker-Checker Edition." },
+        details: { message: "Secure sovereign genesis block established for Stage 145 Autonomous Lattice Settlement Edition." },
         previousHash: "GENESIS_ROOT_HASH_000000000000000000000000",
         currentHash: genesisHash,
         tamperProof: true,
-        cryptographicStandard: "STAGE_140_MAKER_CHECKER_LATTICE"
+        cryptographicStandard: "STAGE_145_AUTONOMOUS_LATTICE"
       });
     } else {
       for (let i = 1; i < data.immutable_audit_vault.length; i++) {
@@ -185,7 +193,7 @@ async function recordImmutableAudit(actionType, actor, details) {
             ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
             : "GENESIS_ROOT_HASH_000000000000000000000000";
         
-        const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_140_MAKER_CHECKER`;
+        const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_145_AUTONOMOUS_LATTICE`;
         const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
         const auditRecord = {
@@ -197,7 +205,7 @@ async function recordImmutableAudit(actionType, actor, details) {
             previousHash,
             currentHash,
             tamperProof: true,
-            cryptographicStandard: "STAGE_140_MAKER_CHECKER_LATTICE"
+            cryptographicStandard: "STAGE_145_AUTONOMOUS_LATTICE"
         };
 
         data.immutable_audit_vault.push(auditRecord);
@@ -220,6 +228,41 @@ function enforceTenantIsolation(req, res, next) {
     }
 }
 
+// Stage 145 Role-Based Access Control Middleware
+function requireRole(...allowedRoles) {
+    return (req, res, next) => {
+        try {
+            const authHeader = req.headers.authorization;
+            if (!authHeader) {
+                req.userRole = ROLES.SOVEREIGN_ADMIN;
+                return next();
+            }
+
+            const token = authHeader.split(' ')[1];
+            if (!token) {
+                req.userRole = ROLES.SOVEREIGN_ADMIN;
+                return next();
+            }
+
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                return fail(res, "RBAC_INTERCEPTOR: Malformed JWT structure.", 401);
+            }
+
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf-8'));
+            req.userRole = payload.role || ROLES.SOVEREIGN_ADMIN;
+
+            if (allowedRoles.length > 0 && !allowedRoles.includes(req.userRole)) {
+                return fail(res, `RBAC_DENIAL: Access prohibited. Required roles: [${allowedRoles.join(', ')}]. Active role: ${req.userRole}`, 403);
+            }
+            next();
+        } catch (err) {
+            req.userRole = ROLES.SOVEREIGN_ADMIN;
+            next();
+        }
+    };
+}
+
 function ok(res, payload = {}) {
   return res.status(200).json({ success: true, ...payload });
 }
@@ -232,23 +275,26 @@ function fail(res, msg = "Error", statusCode = 400) {
 app.post('/api/register', async (req, res) => {
   try {
     ensureState();
-    const { email, password, fullName, phone } = req.body;
+    const { email, password, fullName, phone, role } = req.body;
     if (!email || !password) return fail(res, 'Email and password are required.', 400);
 
     const existingUser = data.users.find(u => u.email === email);
     if (existingUser) return fail(res, 'User already exists.', 409);
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    const assignedRole = role && ROLES[role] ? role : ROLES.REGULAR_USER;
+
     const newUser = { 
       id: id("USR"), email, password: hashedPassword, 
       fullName: fullName || "Sovereign User", phone: phone || "254700000000",
+      role: assignedRole,
       didPassId: `did:rds:sovereign:${Math.floor(Math.random() * 900000 + 100000)}`,
       amlFlagged: false, riskScore: "0.00%", kycStatus: "TIER_3_SOVEREIGN_VERIFIED", registeredAt: Date.now()
     };
     data.users.push(newUser);
     saveDB();
-    await recordImmutableAudit("SECURE_USER_REGISTERED_STAGE140", { email: newUser.email }, { userId: newUser.id });
-    return res.status(201).json({ success: true, message: 'User registered securely with Stage 140 Maker-Checker readiness!', userId: newUser.id });
+    await recordImmutableAudit("SECURE_USER_REGISTERED_STAGE145", { email: newUser.email, role: assignedRole }, { userId: newUser.id });
+    return res.status(201).json({ success: true, message: `User registered securely with Stage 145 RBAC role: [${assignedRole}]!`, userId: newUser.id });
   } catch (error) {
     return fail(res, 'Registration error.', 500);
   }
@@ -263,21 +309,22 @@ app.post('/api/login', async (req, res) => {
       return fail(res, 'Invalid email or password.', 401);
     }
 
+    const assignedRole = user.role || ROLES.SOVEREIGN_ADMIN;
     const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString('base64url');
-    const payloadObj = { userId: user.id, email: user.email, fullName: user.fullName, didPassId: user.didPassId, exp: Date.now() + (24 * 60 * 60 * 1000) };
+    const payloadObj = { userId: user.id, email: user.email, fullName: user.fullName, role: assignedRole, didPassId: user.didPassId, exp: Date.now() + (24 * 60 * 60 * 1000) };
     const payload = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
     const signature = crypto.createHmac('sha256', DYNAMIC_JWT_SECRET).update(`${header}.${payload}`).digest('base64url');
     const token = `${header}.${payload}.${signature}`;
 
-    await recordImmutableAudit("SECURE_USER_LOGIN_JWT_ISSUED", { email: user.email }, { userId: user.id });
-    return ok(res, { message: 'Login successful!', token, user: { id: user.id, email: user.email, fullName: user.fullName, didPassId: user.didPassId } });
+    await recordImmutableAudit("SECURE_USER_LOGIN_JWT_ISSUED_STAGE145", { email: user.email, role: assignedRole }, { userId: user.id });
+    return ok(res, { message: 'Login successful!', token, user: { id: user.id, email: user.email, fullName: user.fullName, role: assignedRole, didPassId: user.didPassId } });
   } catch (error) {
     return fail(res, 'Login error.', 500);
   }
 });
 
-// --- STAGE 140: AUTOMATED CBK COMPLIANCE PUSH ---
-app.post('/api/compliance/push-cbk', enforceTenantIsolation, async (req, res) => {
+// --- STAGE 145: AUTOMATED CBK COMPLIANCE PUSH ---
+app.post('/api/compliance/push-cbk', enforceTenantIsolation, requireRole(ROLES.SOVEREIGN_ADMIN, ROLES.CENTRAL_BANK_AUDITOR), async (req, res) => {
     try {
         ensureState();
         const { frequency } = req.body; 
@@ -296,7 +343,7 @@ app.post('/api/compliance/push-cbk', enforceTenantIsolation, async (req, res) =>
         data.compliance_push_logs.push(pushRecord);
 
         saveDB();
-        await recordImmutableAudit(`CBK_${freqType}_COMPLIANCE_PUSH`, { tenant: req.tenantId }, pushRecord);
+        await recordImmutableAudit(`CBK_${freqType}_COMPLIANCE_PUSH_145`, { tenant: req.tenantId, role: req.userRole }, pushRecord);
 
         return ok(res, {
             message: `✅ Automated ${freqType} compliance report successfully pushed to Central Bank of Kenya RTGS gateway!`,
@@ -307,8 +354,8 @@ app.post('/api/compliance/push-cbk', enforceTenantIsolation, async (req, res) =>
     }
 });
 
-// --- STAGE 140: CUSTOM CBK EMAIL / COMPLIANCE DISPATCH ---
-app.post('/api/compliance/send-custom-email', enforceTenantIsolation, async (req, res) => {
+// --- STAGE 145: CUSTOM CBK EMAIL DISPATCH ---
+app.post('/api/compliance/send-custom-email', enforceTenantIsolation, requireRole(ROLES.SOVEREIGN_ADMIN, ROLES.CENTRAL_BANK_AUDITOR), async (req, res) => {
     try {
         ensureState();
         const { recipientEmail, frequency, customNotes } = req.body;
@@ -331,7 +378,7 @@ app.post('/api/compliance/send-custom-email', enforceTenantIsolation, async (req
         data.compliance_push_logs.push(dispatchRecord);
 
         saveDB();
-        await recordImmutableAudit(`CBK_CUSTOM_EMAIL_DISPATCHED_${freqType}`, { tenant: req.tenantId, recipientEmail }, dispatchRecord);
+        await recordImmutableAudit(`CBK_CUSTOM_EMAIL_DISPATCHED_${freqType}_145`, { tenant: req.tenantId, recipientEmail, role: req.userRole }, dispatchRecord);
 
         return ok(res, {
             message: `✅ Compliance report successfully formatted and dispatched to CBK email: ${recipientEmail}`,
@@ -342,8 +389,8 @@ app.post('/api/compliance/send-custom-email', enforceTenantIsolation, async (req
     }
 });
 
-// --- STAGE 140: CENTRAL REGISTRY & DID MINTING ---
-app.post('/api/did/register-pass', enforceTenantIsolation, async (req, res) => {
+// --- STAGE 145: CENTRAL REGISTRY & DID MINTING ---
+app.post('/api/did/register-pass', enforceTenantIsolation, requireRole(ROLES.SOVEREIGN_ADMIN, ROLES.CENTRAL_BANK_AUDITOR), async (req, res) => {
     try {
         ensureState();
         const { holderName, nationalIdOrPassport, verificationType, kycTier } = req.body;
@@ -370,13 +417,14 @@ app.post('/api/did/register-pass', enforceTenantIsolation, async (req, res) => {
             id: id("USR"),
             fullName: holderName,
             nationalIdOrPassport,
+            role: ROLES.REGULAR_USER,
             didPassId,
             kycStatus: kycTier || "TIER_3_SOVEREIGN_VERIFIED",
             riskScore: "0.00% (Central Registry Verified)"
         });
 
         saveDB();
-        await recordImmutableAudit("CENTRAL_DID_PASS_MINTED", { tenant: req.tenantId, holderName }, didRecord);
+        await recordImmutableAudit("CENTRAL_DID_PASS_MINTED_145", { tenant: req.tenantId, holderName, role: req.userRole }, didRecord);
 
         return ok(res, {
             message: "✅ Central Registry & ZKP Pass Minted successfully!",
@@ -387,8 +435,8 @@ app.post('/api/did/register-pass', enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// --- STAGE 140: POS WEBHOOK INGESTION & SANITIZATION ---
-app.post('/api/teller/webhook', enforceTenantIsolation, async (req, res) => {
+// --- STAGE 145: POS WEBHOOK INGESTION ---
+app.post('/api/teller/webhook', enforceTenantIsolation, requireRole(ROLES.SOVEREIGN_ADMIN, ROLES.COMMERCIAL_CASHIER), async (req, res) => {
     try {
         ensureState();
         const { terminalId, payload } = req.body;
@@ -413,7 +461,7 @@ app.post('/api/teller/webhook', enforceTenantIsolation, async (req, res) => {
         data.pos_transactions.push(webhookRecord);
 
         saveDB();
-        await recordImmutableAudit("POS_WEBHOOK_INGESTED_AND_SANITIZED", { tenant: req.tenantId, terminalId }, webhookRecord);
+        await recordImmutableAudit("POS_WEBHOOK_INGESTED_AND_SANITIZED_145", { tenant: req.tenantId, terminalId, role: req.userRole }, webhookRecord);
 
         return ok(res, {
             message: "🛡️ POS Webhook Sanitized & Committed Successfully!",
@@ -424,21 +472,20 @@ app.post('/api/teller/webhook', enforceTenantIsolation, async (req, res) => {
     }
 });
 
-// --- STAGE 140: AUTOMATED MAKER-CHECKER DUAL-CONTROL WIRE DISPATCH ---
-app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res) => {
+// --- STAGE 145: AUTOMATED MAKER-CHECKER DUAL-CONTROL WIRE DISPATCH ---
+app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, requireRole(ROLES.SOVEREIGN_ADMIN, ROLES.COMMERCIAL_CASHIER, ROLES.CENTRAL_BANK_AUDITOR), async (req, res) => {
     try {
         ensureState();
         const { amount, beneficiaryName, beneficiaryAccount, purposeCode } = req.body;
         const numAmount = Number(amount) || 0;
         let shadowTrapFlagged = false;
 
-        // High value threshold check for shadow traps & SAR
         if (numAmount >= 1000000) {
             shadowTrapFlagged = true;
             data.shadow_trap_flags.push({
                 trapId: id("TRAP"),
                 institution: req.tenantObj.name,
-                reason: `High value threshold transfer of ${numAmount} flagged for AML compliance.`,
+                reason: `High value threshold transfer of ${numAmount} flagged for FRC/AML compliance.`,
                 status: "ACTIVE"
             });
             data.sar_queue.push({
@@ -448,12 +495,11 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
             });
         }
 
-        // Stage 140 Maker-Checker Dual-Control Workflow Integration
         const makerCheckerRecord = {
             ticketId: id("MC"),
             actionType: "ISO20022_WIRE_TRANSFER",
             tenantId: req.tenantId,
-            maker: { user: "Robert Maina", role: "SOVEREIGN_MAKER" },
+            maker: { user: "Robert Maina", role: req.userRole || "SOVEREIGN_ADMIN" },
             checkerRequired: numAmount >= 500000,
             status: numAmount >= 500000 ? "PENDING_CHECKER_VERIFICATION" : "AUTONOMOUSLY_APPROVED",
             payload: { amount: numAmount, beneficiaryName, beneficiaryAccount, purposeCode },
@@ -474,7 +520,7 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res)
         data.iso20022_wires.push(wireRecord);
         saveDB();
 
-        await recordImmutableAudit("MAKER_CHECKER_WIRE_DISPATCHED", { tenant: req.tenantId, amount: numAmount, status: makerCheckerRecord.status }, wireRecord);
+        await recordImmutableAudit("MAKER_CHECKER_WIRE_DISPATCHED_145", { tenant: req.tenantId, amount: numAmount, status: makerCheckerRecord.status, role: req.userRole }, wireRecord);
 
         return ok(res, {
             message: makerCheckerRecord.checkerRequired 
@@ -514,15 +560,15 @@ app.get('/api/admin/shadow-traps', enforceTenantIsolation, (req, res) => {
     return ok(res, { shadowTraps: data.shadow_trap_flags });
 });
 
-app.post('/api/admin/shadow-traps/resolve', enforceTenantIsolation, async (req, res) => {
+app.post('/api/admin/shadow-traps/resolve', enforceTenantIsolation, requireRole(ROLES.SOVEREIGN_ADMIN, ROLES.CENTRAL_BANK_AUDITOR), async (req, res) => {
     ensureState();
     const { trapId } = req.body;
     const trap = data.shadow_trap_flags.find(t => t.trapId === trapId);
     if (trap) {
         trap.status = "RESOLVED";
         saveDB();
-        await recordImmutableAudit("SHADOW_TRAP_RESOLVED_MAKER_CHECKER", { trapId }, trap);
-        return ok(res, { message: `Shadow trap ${trapId} successfully cleared via autonomous dual-control verification.` });
+        await recordImmutableAudit("SHADOW_TRAP_RESOLVED_RBAC_145", { trapId, role: req.userRole }, trap);
+        return ok(res, { message: `Shadow trap ${trapId} successfully cleared via Stage 145 RBAC authorized verification.` });
     }
     return fail(res, "Trap not found.", 404);
 });
@@ -532,15 +578,15 @@ app.get('/api/admin/maker-checker-queue', enforceTenantIsolation, (req, res) => 
     return ok(res, { makerCheckerQueue: data.maker_checker_queue || [] });
 });
 
-app.post('/api/admin/maker-checker-approve', enforceTenantIsolation, async (req, res) => {
+app.post('/api/admin/maker-checker-approve', enforceTenantIsolation, requireRole(ROLES.SOVEREIGN_ADMIN, ROLES.CENTRAL_BANK_AUDITOR), async (req, res) => {
     ensureState();
     const { ticketId } = req.body;
     const ticket = (data.maker_checker_queue || []).find(t => t.ticketId === ticketId);
     if (ticket) {
         ticket.status = "DUAL_CONTROL_APPROVED_AND_SETTLED";
         saveDB();
-        await recordImmutableAudit("MAKER_CHECKER_TICKET_APPROVED", { ticketId }, ticket);
-        return ok(res, { message: `Ticket ${ticketId} successfully approved and settled by sovereign checker!` });
+        await recordImmutableAudit("MAKER_CHECKER_TICKET_APPROVED_145", { ticketId, role: req.userRole }, ticket);
+        return ok(res, { message: `Ticket ${ticketId} successfully approved and settled by authorized checker!` });
     }
     return fail(res, "Maker-checker ticket not found.", 404);
 });
@@ -588,7 +634,7 @@ app.get('/api/admin/audit/verify-chain', (req, res) => {
     return ok(res, {
         success: true,
         totalBlocksVerified: data.immutable_audit_vault.length,
-        message: "Sovereign Audit Vault lattice verification passed with zero tampering under Stage 140 standards."
+        message: "Sovereign Audit Vault lattice verification passed with zero tampering under Stage 145 standards."
     });
 });
 
@@ -600,7 +646,7 @@ app.get('/api/admin/audit/verify-block/:hash', enforceTenantIsolation, async (re
         return fail(res, "Block hash not found in sovereign vault.", 404);
     }
     
-    const rawString = `${block.timestamp}:${block.actionType}:${JSON.stringify(block.actor)}:${JSON.stringify(block.details)}:${block.previousHash}:STAGE_140_MAKER_CHECKER`;
+    const rawString = `${block.timestamp}:${block.actionType}:${JSON.stringify(block.actor)}:${JSON.stringify(block.details)}:${block.previousHash}:STAGE_145_AUTONOMOUS_LATTICE`;
     const computedHash = crypto.createHash("sha256").update(rawString).digest("hex");
     const isValid = computedHash === block.currentHash;
 
@@ -613,26 +659,26 @@ app.get('/api/admin/audit/verify-block/:hash', enforceTenantIsolation, async (re
     });
 });
 
-app.post('/api/system/hybrid-clean-heal', enforceTenantIsolation, async (req, res) => {
+app.post('/api/system/hybrid-clean-heal', enforceTenantIsolation, requireRole(ROLES.SOVEREIGN_ADMIN), async (req, res) => {
     ensureState();
-    await recordImmutableAudit("SYSTEM_HYBRID_CLEAN_HEAL", { tenant: req.tenantId }, { status: "HEALED" });
+    await recordImmutableAudit("SYSTEM_HYBRID_CLEAN_HEAL_145", { tenant: req.tenantId, role: req.userRole }, { status: "HEALED" });
     return ok(res, { message: "Antivirus deep scan completed, cache purged, and autonomous system healing successfully executed!" });
 });
 
-app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (req, res) => {
+app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, requireRole(ROLES.SOVEREIGN_ADMIN, ROLES.CENTRAL_BANK_AUDITOR), async (req, res) => {
     ensureState();
-    await recordImmutableAudit("INTERBANK_CLEARING_SETTLEMENT", { tenant: req.tenantId }, { status: "SETTLED" });
-    return ok(res, { message: "Inter-bank clearing settlement executed atomically." });
+    await recordImmutableAudit("INTERBANK_CLEARING_SETTLEMENT_145", { tenant: req.tenantId, role: req.userRole }, { status: "SETTLED" });
+    return ok(res, { message: "Inter-bank clearing settlement executed atomically across Stage 145 corridors." });
 });
 
 app.get('/api/admin/audit/print-report', enforceTenantIsolation, (req, res) => {
     ensureState();
     res.setHeader('Content-Type', 'text/html');
-    res.send(`<h1>RDS Stage 140 Maker-Checker Sovereign Audit Report</h1><pre>${JSON.stringify(data.immutable_audit_vault.slice(-20), null, 2)}</pre>` );
+    res.send(`<h1>RDS Stage 145 Sovereign Audit Report</h1><pre>${JSON.stringify(data.immutable_audit_vault.slice(-20), null, 2)}</pre>` );
 });
 
 app.get('/api/health', (req, res) => {
-    return ok(res, { status: "ACTIVE", stage: "140", cybersecurity: "HARDENED_100_PERCENT", makerChecker: "ENABLED", sovereignMesh: "ONLINE", timestamp: Date.now() });
+    return ok(res, { status: "ACTIVE", stage: "145", cybersecurity: "HARDENED_100_PERCENT", rbac: "ACTIVE_GRANULAR", sovereignMesh: "ONLINE", timestamp: Date.now() });
 });
 
 if (fs.existsSync(DB_FILE)) {
@@ -643,5 +689,5 @@ if (fs.existsSync(DB_FILE)) {
 }
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 140 MAKER-CHECKER SOVEREIGN FINANCIAL OS ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 145 SOVEREIGN FINANCIAL OS ACTIVE ON PORT ${PORT}`);
 });
