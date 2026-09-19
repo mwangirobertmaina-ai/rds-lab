@@ -29,7 +29,10 @@ global.io = io;
 
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
-const SALT_ROUNDS = 10; // Standard for secure bcrypt password hashing
+const SALT_ROUNDS = 10;
+
+// Automatically generate dynamic session signing key on server boot
+const DYNAMIC_JWT_SECRET = crypto.randomBytes(64).toString('hex');
 
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json({ limit: "50mb" }));
@@ -222,21 +225,17 @@ app.post('/api/register', async (req, res) => {
     ensureState();
     const { email, password, fullName, phone } = req.body;
 
-    // 1. Validate input
     if (!email || !password) {
       return res.status(400).json({ success: false, error: 'Email and password are required.' });
     }
 
-    // 2. Check if user already exists
     const existingUser = data.users.find(u => u.email === email);
     if (existingUser) {
       return res.status(409).json({ success: false, error: 'User already exists with this email.' });
     }
 
-    // 3. Hash the password securely using bcrypt asynchronously
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // 4. Save the user to the sovereign database
     const newUser = { 
       id: id("USR"), 
       email, 
@@ -255,7 +254,6 @@ app.post('/api/register', async (req, res) => {
 
     await recordImmutableAudit("SECURE_USER_REGISTERED", { email: newUser.email }, { userId: newUser.id });
 
-    // 5. Respond with success (never send the password back!)
     return res.status(201).json({ 
       success: true,
       message: 'User registered securely and verified successfully!',
@@ -268,6 +266,64 @@ app.post('/api/register', async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error);
     return res.status(500).json({ success: false, error: 'Internal server error during registration.' });
+  }
+});
+
+// --- SECURE USER LOGIN ROUTE WITH DYNAMIC JWT TOKEN GENERATION ---
+app.post('/api/login', async (req, res) => {
+  try {
+    ensureState();
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email and password are required.' });
+    }
+
+    const user = data.users.find(u => u.email === email);
+    if (!user || !user.password) {
+      return res.status(401).json({ success: false, error: 'Invalid email or password.' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ success: false, error: 'Invalid email or password.' });
+    }
+
+    // Generate dynamic JWT Token on-the-fly (Header.Payload.Signature) without hardcoded keys
+    const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString('base64url');
+    const payloadObj = {
+      userId: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      didPassId: user.didPassId,
+      loginTimestamp: Date.now(),
+      exp: Date.now() + (24 * 60 * 60 * 1000) // 24 hours expiration
+    };
+    const payload = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
+    const signature = crypto
+      .createHmac('sha256', DYNAMIC_JWT_SECRET)
+      .update(`${header}.${payload}`)
+      .digest('base64url');
+
+    const token = `${header}.${payload}.${signature}`;
+
+    await recordImmutableAudit("SECURE_USER_LOGIN_JWT_ISSUED", { email: user.email }, { userId: user.id });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful! Dynamic JWT token issued.',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        didPassId: user.didPassId
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error during login.' });
   }
 });
 

@@ -42,11 +42,15 @@
                     <option value="BIZ-ZURICH">Zurich Swiss Central Reserve Node</option>
                 </select>
             </div>
+            <button onclick="openLoginModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
+                <i data-lucide="log-in" class="w-4 h-4"></i>
+                <span>User Login</span>
+            </button>
             <button onclick="openRegisterModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
                 <i data-lucide="user-plus" class="w-4 h-4"></i>
                 <span>Register User</span>
             </button>
-            <button onclick="openDidModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
+            <button onclick="openDidModal()" class="bg-teal-600 hover:bg-teal-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
                 <i data-lucide="shield-check" class="w-4 h-4"></i>
                 <span>Mint DID & KYC Pass</span>
             </button>
@@ -215,6 +219,33 @@
         </div>
     </div>
 
+    <!-- User Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i data-lucide="log-in" class="w-5 h-5 text-blue-400"></i>
+                    <span>Secure User Login (JWT Session)</span>
+                </h3>
+                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Email Address</label>
+                    <input type="email" id="loginEmail" placeholder="robert@example.com" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
+                </div>
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                <button onclick="closeLoginModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
+                <button onclick="submitLogin()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md">Login & Issue Token</button>
+            </div>
+        </div>
+    </div>
+
     <!-- User Registration Modal -->
     <div id="registerModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
@@ -313,11 +344,43 @@
             loadDashboard();
         }
 
+        function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+
         function openRegisterModal() { document.getElementById('registerModal').classList.remove('hidden'); }
         function closeRegisterModal() { document.getElementById('registerModal').classList.add('hidden'); }
 
         function openDidModal() { document.getElementById('didModal').classList.remove('hidden'); }
         function closeDidModal() { document.getElementById('didModal').classList.add('hidden'); }
+
+        async function submitLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            if (!email || !password) {
+                alert("Email and password are required for login.");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (data && data.success) {
+                    localStorage.setItem('rds_jwt_token', data.token);
+                    alert(`✅ ${data.message}\nToken Issued & Stored Securely.`);
+                    closeLoginModal();
+                    loadDashboard();
+                } else {
+                    alert("❌ Login Failed: " + (data ? data.error : 'Invalid credentials'));
+                }
+            } catch (err) {
+                alert("Network error during login.");
+            }
+        }
 
         async function submitRegistration() {
             const fullName = document.getElementById('regFullName').value.trim();
