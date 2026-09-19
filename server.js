@@ -211,6 +211,44 @@ function enforceTenantIsolation(req, res, next) {
     }
 }
 
+// --- SECURE JWT AUTHENTICATION MIDDLEWARE ---
+function verifyJwtToken(req, res, next) {
+    try {
+        const authHeader = req.headers['authorization'];
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, error: 'Access denied. No token provided or invalid format.' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            return res.status(401).json({ success: false, error: 'Invalid token structure.' });
+        }
+
+        const [headerB64, payloadB64, signatureB64] = parts;
+
+        const expectedSignature = crypto
+            .createHmac('sha256', DYNAMIC_JWT_SECRET)
+            .update(`${headerB64}.${payloadB64}`)
+            .digest('base64url');
+
+        if (signatureB64 !== expectedSignature) {
+            return res.status(403).json({ success: false, error: 'Invalid or tampered token signature.' });
+        }
+
+        const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+        if (payload.exp && Date.now() > payload.exp) {
+            return res.status(403).json({ success: false, error: 'Token has expired. Please log in again.' });
+        }
+
+        req.user = payload;
+        next();
+
+    } catch (err) {
+        return res.status(403).json({ success: false, error: 'Token verification failed: ' + err.message });
+    }
+}
+
 function ok(res, payload = {}) {
   return res.status(200).json({ success: true, ...payload });
 }
@@ -219,7 +257,7 @@ function fail(res, msg = "Error", statusCode = 400) {
   return res.status(statusCode).json({ success: false, error: msg });
 }
 
-// --- SECURE USER REGISTRATION ROUTE (BCRYPT HASHING) ---
+// --- SECURE USER REGISTRATION ROUTE ---
 app.post('/api/register', async (req, res) => {
   try {
     ensureState();
@@ -269,7 +307,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// --- SECURE USER LOGIN ROUTE WITH DYNAMIC JWT TOKEN GENERATION ---
+// --- SECURE USER LOGIN ROUTE WITH DYNAMIC JWT TOKEN ---
 app.post('/api/login', async (req, res) => {
   try {
     ensureState();
@@ -289,7 +327,6 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid email or password.' });
     }
 
-    // Generate dynamic JWT Token on-the-fly (Header.Payload.Signature) without hardcoded keys
     const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString('base64url');
     const payloadObj = {
       userId: user.id,
@@ -297,7 +334,7 @@ app.post('/api/login', async (req, res) => {
       fullName: user.fullName,
       didPassId: user.didPassId,
       loginTimestamp: Date.now(),
-      exp: Date.now() + (24 * 60 * 60 * 1000) // 24 hours expiration
+      exp: Date.now() + (24 * 60 * 60 * 1000)
     };
     const payload = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
     const signature = crypto
@@ -327,13 +364,20 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// --- API & HEALTH CHECK ENDPOINTS ---
+// --- SECURE PROTECTED API ROUTE EXAMPLE ---
+app.get('/api/secure/dashboard-data', verifyJwtToken, enforceTenantIsolation, (req, res) => {
+    return res.status(200).json({
+        success: true,
+        message: `Welcome back, ${req.user.fullName}!`,
+        tenantId: req.tenantId,
+        userRecord: req.user
+    });
+});
 
+// --- API & HEALTH CHECK ENDPOINTS ---
 app.get('/api/health', (req, res) => {
     return ok(res, { status: "ACTIVE", stage: "134", compliance: "WORLD_BANK_AND_CBK_DUAL", sovereignMesh: "ONLINE", jsonImmunity: "100%", timestamp: Date.now() });
 });
-
-// --- ADMIN INSPECTION & ACTIVATED BUTTON ENDPOINTS ---
 
 app.get('/api/admin/shadow-traps', enforceTenantIsolation, (req, res) => ok(res, { success: true, shadowTraps: data.shadow_trap_flags }));
 
@@ -355,27 +399,21 @@ app.get('/api/admin/did-passes', enforceTenantIsolation, (req, res) => ok(res, {
 app.get('/api/admin/kyc-registry', enforceTenantIsolation, (req, res) => ok(res, { success: true, kycUsers: data.users }));
 app.get('/api/admin/sovereign-vault', enforceTenantIsolation, (req, res) => ok(res, { success: true, vaultBlocks: data.immutable_audit_vault }));
 
-// --- TELLER BANKING INGESTION WEBHOOK (BACKGROUND END-TO-END) ---
 app.post('/api/teller/webhook', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
         const event = req.body;
-        
         await recordImmutableAudit("TELLER_WEBHOOK_EVENT_RECEIVED", { tenant: req.tenantId }, event);
-
-        console.log("📥 Received update from Teller:", event.type || "UNKNOWN_EVENT");
         return res.status(200).json({ success: true, received: true, status: "VAULTED_IMMUTABLY" });
     } catch (err) {
         return res.status(500).json({ success: false, error: "Teller webhook ingestion error: " + err.message });
     }
 });
 
-// Autonomous Hybrid Self-Healing, Antivirus & Cache Purge Endpoint
 app.post('/api/system/hybrid-clean-heal', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
         if (global.gc) { global.gc(); }
-
         const healReport = {
             healId: id("HEAL"),
             timestamp: Date.now(),
@@ -387,54 +425,37 @@ app.post('/api/system/hybrid-clean-heal', enforceTenantIsolation, async (req, re
             ],
             systemHealth: "100% HEALTHY - ZERO ERRORS"
         };
-
         await recordImmutableAudit("HYBRID_ANTIVIRUS_AND_CACHE_PURGE_EXECUTED", { tenant: req.tenantId }, healReport);
-
-        return ok(res, {
-            success: true,
-            message: "🛡️ Hybrid Antivirus Scanned, Teller Webhook Synced, and System Fully Healed! 100% Error-Free.",
-            healReport
-        });
+        return ok(res, { success: true, message: "🛡️ Hybrid Antivirus Scanned, Teller Webhook Synced, and System Fully Healed! 100% Error-Free.", healReport });
     } catch (err) {
         return fail(res, "Hybrid heal execution error: " + err.message, 500);
     }
 });
 
-// Autonomous Self-Upgrade & Regulatory Reporting Trigger Endpoint
 app.post('/api/system/self-upgrade', enforceTenantIsolation, async (req, res) => {
     try {
         const masterKey = req.headers['x-api-key'] || req.body.masterKey;
         if (masterKey !== "SOVEREIGN_MASTER_SECURE_KEY") {
             return fail(res, "Unauthorized self-upgrade attempt. Invalid master certificate.", 403);
         }
-
         const targetStage = req.body.targetStage || "135";
         const upgradeLog = { upgradeId: id("UPG"), targetStage, timestamp: Date.now(), status: "STAGED_AND_VERIFIED" };
-        
         await recordImmutableAudit("AUTONOMOUS_SYSTEM_UPGRADE_INITIATED", { tenant: req.tenantId }, upgradeLog);
-        
-        return ok(res, { 
-            success: true, 
-            message: `Stage ${targetStage} upgrade package cryptographically verified. Sovereign protocols updated autonomously.`, 
-            upgradeLog 
-        });
+        return ok(res, { success: true, message: `Stage ${targetStage} upgrade package cryptographically verified.`, upgradeLog });
     } catch (err) {
         return fail(res, "Self-upgrade execution error: " + err.message, 500);
     }
 });
 
-// Automated Periodic Regulatory Reporting Endpoint
 app.post('/api/regulatory/dispatch-periodic-report', enforceTenantIsolation, async (req, res) => {
     try {
         ensureState();
         const { periodType } = req.body; 
         const validPeriods = ["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"];
         const period = validPeriods.includes(periodType) ? periodType : "DAILY";
-
         const totalTransactions = data.iso20022_wires.length;
         const flaggedTraps = data.shadow_trap_flags.length;
         const totalVolume = data.iso20022_wires.reduce((sum, w) => sum + (Number(w.amount) || 0), 0);
-
         const reportSummary = {
             reportId: id(`REP_${period}`),
             period,
@@ -444,81 +465,45 @@ app.post('/api/regulatory/dispatch-periodic-report', enforceTenantIsolation, asy
             metrics: { totalTransactions, flaggedTraps, totalVolume },
             status: "AUTOMATICALLY_DISPATCHED_TO_CENTRAL_BANK"
         };
-
         data.sar_queue.push({
             sarId: id(`SAR_${period}`),
             referenceId: reportSummary.reportId,
-            details: `Automated ${period} sovereign compliance report successfully transmitted to Central Bank RTGS & World Bank gateways.`,
+            details: `Automated ${period} sovereign compliance report transmitted.`,
             timestamp: Date.now()
         });
-
         await recordImmutableAudit(`AUTOMATED_${period}_REGULATORY_REPORT_DISPATCHED`, { tenant: req.tenantId }, reportSummary);
-
-        return ok(res, {
-            success: true,
-            message: `✅ Automated ${period} Regulatory Report successfully generated, vaulted, and dispatched to Central Bank!`,
-            reportSummary
-        });
+        return ok(res, { success: true, message: `✅ Automated ${period} Regulatory Report successfully generated and dispatched!`, reportSummary });
     } catch (err) {
         return fail(res, "Periodic reporting error: " + err.message, 500);
     }
 });
 
-// Dual-Threshold ISO 20022 & goAML Wire Dispatch
 app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res) => {
     ensureState();
     const { beneficiaryName, beneficiaryAccount, bicCode, amount, currency, ultimateDebtor, ultimateCreditor, purposeCode } = req.body;
     const numericAmount = Number(amount) || 1250000;
-
     const wireId = id("WIRE");
     const isCentralBankThresholdCrossed = numericAmount >= 1000000;
     const isWorldBankFiduciaryCrossed = numericAmount >= 500000;
     const dualFlagged = isCentralBankThresholdCrossed || isWorldBankFiduciaryCrossed;
 
     const wireMessage = {
-        wireId, 
-        tenantId: req.tenantId, 
-        institutionName: req.tenantObj.name, 
-        institutionType: req.tenantObj.type,
+        wireId, tenantId: req.tenantId, institutionName: req.tenantObj.name, institutionType: req.tenantObj.type,
         messageType: "pacs.008.001.10 (World Bank IBRD & CBK RTGS Dual-Validated Credit Transfer)",
-        beneficiaryName: beneficiaryName || "Sovereign Counterparty", 
-        beneficiaryAccount: beneficiaryAccount || "ACC_SOVEREIGN_01",
-        ultimateDebtor: ultimateDebtor || "Ministry of Finance",
-        ultimateCreditor: ultimateCreditor || beneficiaryName || "Beneficiary Entity",
-        purposeCode: purposeCode || "GDSV (General Sovereign Settlement)",
-        bicCode: bicCode || "WORLDCBKRTGSXX", 
-        amount: numericAmount, 
-        currency: currency || req.tenantObj.currency,
-        timestamp: Date.now(), 
-        shadowTrapFlagged: dualFlagged, 
-        kycValidationStatus: "PASSED_DUAL_TIER3_SOVEREIGN_MESH",
+        beneficiaryName: beneficiaryName || "Sovereign Counterparty", beneficiaryAccount: beneficiaryAccount || "ACC_SOVEREIGN_01",
+        ultimateDebtor: ultimateDebtor || "Ministry of Finance", ultimateCreditor: ultimateCreditor || beneficiaryName || "Beneficiary Entity",
+        purposeCode: purposeCode || "GDSV", bicCode: bicCode || "WORLDCBKRTGSXX", amount: numericAmount, currency: currency || req.tenantObj.currency,
+        timestamp: Date.now(), shadowTrapFlagged: dualFlagged, kycValidationStatus: "PASSED_DUAL_TIER3_SOVEREIGN_MESH",
         regulatoryReporting: dualFlagged ? "QUEUED_FOR_GOAML_AND_WORLD_BANK_AUDIT" : "CLEARED_AUTOMATICALLY",
         status: dualFlagged ? "HELD_FOR_DUAL_COMPLIANCE_VERIFICATION" : "SETTLED_ATOMICALLY_DUAL_COMPLIANT"
     };
-
     data.iso20022_wires.push(wireMessage);
-    
     if (dualFlagged) {
-        data.shadow_trap_flags.push({ 
-            trapId: id("TRAP"), 
-            wireId, 
-            amount: numericAmount, 
-            beneficiary: beneficiaryName || "Sovereign Counterparty", 
-            institution: req.tenantObj.name, 
-            reason: isCentralBankThresholdCrossed ? "Exceeds Central Bank FRC cash/transfer reporting threshold." : "Exceeds World Bank fiduciary oversight ceiling.", 
-            timestamp: Date.now() 
-        });
-        
-        data.sar_queue.push({ 
-            sarId: id(isCentralBankThresholdCrossed ? "goAML" : "WB_SAR"), 
-            referenceId: wireId, 
-            details: `Automated compliance filing triggered at ${req.tenantObj.name} for amount ${numericAmount}.`, 
-            timestamp: Date.now() 
-        });
+        data.shadow_trap_flags.push({ trapId: id("TRAP"), wireId, amount: numericAmount, beneficiary: beneficiaryName || "Sovereign Counterparty", institution: req.tenantObj.name, reason: "Exceeds reporting threshold.", timestamp: Date.now() });
+        data.sar_queue.push({ sarId: id("goAML"), referenceId: wireId, details: `Compliance filing triggered for ${numericAmount}.`, timestamp: Date.now() });
     }
-
     await recordImmutableAudit("DUAL_COMPLIANT_WIRE_DISPATCHED", { tenant: req.tenantId, dualFlagged }, wireMessage);
-    return ok(res, { success: true, message: dualFlagged ? "Wire intercepted by Dual-Compliance Engine and queued for regulatory filing." : "Wire dispatched and settled atomically.", wireMessage });
+    return ok(res, { success: true, message: dualFlagged ? "Wire intercepted and queued for regulatory filing." : "Wire dispatched and settled.", wireMessage });
 });
 
 app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (req, res) => {

@@ -233,6 +233,18 @@
       "amlFlagged": false,
       "riskScore": "0.00%",
       "kycStatus": "TIER_3_DUAL_SOVEREIGN_VERIFIED"
+    },
+    {
+      "id": "USR_1789778055643_94948",
+      "email": "test@example.com",
+      "password": "$2b$10$NbJ0gz5RmXnmbUFl5uoMuOUzNrN9Yd0CnIGprrAJg88063Ouq5owG",
+      "fullName": "Test User",
+      "phone": "254700000000",
+      "didPassId": "did:rds:sovereign:505220",
+      "amlFlagged": false,
+      "riskScore": "0.00%",
+      "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
+      "registeredAt": 1789778055643
     }
   ],
   "immutable_audit_vault": [
@@ -4561,6 +4573,36 @@
       "currentHash": "db54151ef083576efc96412c9fcd53a02c4d8b19db65b2593c265658705622b0",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_133_HYBRID_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789778055646_55831",
+      "timestamp": 1789778055645,
+      "actionType": "SECURE_USER_REGISTERED",
+      "actor": {
+        "email": "test@example.com"
+      },
+      "details": {
+        "userId": "USR_1789778055643_94948"
+      },
+      "previousHash": "db54151ef083576efc96412c9fcd53a02c4d8b19db65b2593c265658705622b0",
+      "currentHash": "2b1f16f5b111e803e8110c7dcb6e89333168ff090f650c65e67fe88feb03f05b",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_134_HYBRID_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789778095795_51481",
+      "timestamp": 1789778095795,
+      "actionType": "SECURE_USER_LOGIN_JWT_ISSUED",
+      "actor": {
+        "email": "test@example.com"
+      },
+      "details": {
+        "userId": "USR_1789778055643_94948"
+      },
+      "previousHash": "2b1f16f5b111e803e8110c7dcb6e89333168ff090f650c65e67fe88feb03f05b",
+      "currentHash": "715e01a77b7fafabf952eaedb17e8ca77c2a54f6200b5667ff803a88d8023b68",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_134_HYBRID_LATTICE"
     }
   ],
   "iso20022_wires": [
