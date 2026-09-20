@@ -557,6 +557,27 @@
       "currentHash": "2cf1d26de32acaf6d41b49733a2430dc8f5a89ef044dd37b123dcb8c7008d347",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_150_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789932180548_33608",
+      "timestamp": 1789932180548,
+      "actionType": "CBK_DAILY_COMPLIANCE_PUSH_150",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "pushId": "CBK_PUSH_1789932180548_63321",
+        "tenantId": "INST-CBK-RTGS",
+        "frequency": "DAILY",
+        "recordsCount": 17,
+        "timestamp": 1789932180548,
+        "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+      },
+      "previousHash": "2cf1d26de32acaf6d41b49733a2430dc8f5a89ef044dd37b123dcb8c7008d347",
+      "currentHash": "b3c6b5354fc81b75473ab4d7b183228439a928d3b15eca348a6cfaa69296c5c2",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_150_UNIFIED_LATTICE"
     }
   ],
   "iso20022_wires": [
@@ -763,6 +784,14 @@
       "frequency": "ANNUAL",
       "recordsCount": 8,
       "timestamp": 1789923956824,
+      "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+    },
+    {
+      "pushId": "CBK_PUSH_1789932180548_63321",
+      "tenantId": "INST-CBK-RTGS",
+      "frequency": "DAILY",
+      "recordsCount": 17,
+      "timestamp": 1789932180548,
       "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
     }
   ],
