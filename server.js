@@ -1,5 +1,5 @@
 // ==========================================
-// RDS - STAGE 147 SOVEREIGN FINANCIAL OPERATING SYSTEM (UNIFIED AI-APPROVED & FULL CBK COMPLIANCE EDITION)
+// RDS - STAGE 148 SOVEREIGN FINANCIAL OPERATING SYSTEM (UNIFIED AI-APPROVED & FULL CBK COMPLIANCE EDITION)
 // Supports: AI Agent Governance, OpenAPI, Daily/Quarterly/Annual CBK Pushes, Custom Email Dispatch, FRC Settlement, RBAC, Maker-Checker, & Print PDF
 // ==========================================
 
@@ -140,18 +140,18 @@ function ensureState() {
 
     if (data.immutable_audit_vault.length === 0) {
       const genesisTimestamp = Date.now();
-      const rawGenesis = `${genesisTimestamp}:GENESIS_ROOT_INIT:{} :{} :GENESIS_ROOT_HASH_000000000000000000000000:STAGE_147_UNIFIED_LATTICE`;
+      const rawGenesis = `${genesisTimestamp}:GENESIS_ROOT_INIT:{} :{} :GENESIS_ROOT_HASH_000000000000000000000000:STAGE_148_UNIFIED_LATTICE`;
       const genesisHash = crypto.createHash("sha256").update(rawGenesis).digest("hex");
       data.immutable_audit_vault.push({
-        auditId: "AUD_GENESIS_ROOT_147",
+        auditId: "AUD_GENESIS_ROOT_148",
         timestamp: genesisTimestamp,
         actionType: "GENESIS_ROOT_INIT",
         actor: { system: "RDS_CYBER_SHIELD_CORE" },
-        details: { message: "Secure sovereign genesis block established for Stage 147 Unified AI & Full Compliance Edition." },
+        details: { message: "Secure sovereign genesis block established for Stage 148 Unified AI & Full Compliance Edition." },
         previousHash: "GENESIS_ROOT_HASH_000000000000000000000000",
         currentHash: genesisHash,
         tamperProof: true,
-        cryptographicStandard: "STAGE_147_UNIFIED_LATTICE"
+        cryptographicStandard: "STAGE_148_UNIFIED_LATTICE"
       });
     } else {
       for (let i = 1; i < data.immutable_audit_vault.length; i++) {
@@ -196,7 +196,7 @@ async function recordImmutableAudit(actionType, actor, details) {
             ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
             : "GENESIS_ROOT_HASH_000000000000000000000000";
         
-        const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_147_UNIFIED_LATTICE`;
+        const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_148_UNIFIED_LATTICE`;
         const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
         const auditRecord = {
@@ -208,7 +208,7 @@ async function recordImmutableAudit(actionType, actor, details) {
             previousHash,
             currentHash,
             tamperProof: true,
-            cryptographicStandard: "STAGE_147_UNIFIED_LATTICE"
+            cryptographicStandard: "STAGE_148_UNIFIED_LATTICE"
         };
 
         data.immutable_audit_vault.push(auditRecord);
@@ -273,13 +273,13 @@ function fail(res, msg = "Error", statusCode = 400) {
   return res.status(statusCode).json({ success: false, error: msg });
 }
 
-// --- PRODUCTS API ROUTE (FIXED) ---
+// --- PRODUCTS API ROUTE ---
 app.get('/api/products', enforceTenantIsolation, (req, res) => {
     ensureState();
     const category = req.query.category || 'ALL';
     let filtered = data.products.filter(p => p.businessId === req.tenantId);
     if (filtered.length === 0) {
-        filtered = data.products; // Fallback if tenant specific products aren't seeded
+        filtered = data.products;
     }
     if (category !== 'ALL') {
         filtered = filtered.filter(p => p.category === category);
@@ -313,8 +313,8 @@ app.post('/api/register', async (req, res) => {
     };
     data.users.push(newUser);
     saveDB();
-    await recordImmutableAudit("SECURE_USER_REGISTERED_STAGE147", { email: newUser.email, role: assignedRole }, { userId: newUser.id });
-    return res.status(201).json({ success: true, message: `User registered securely with Stage 147 RBAC role: [${assignedRole}]!`, userId: newUser.id });
+    await recordImmutableAudit("SECURE_USER_REGISTERED_STAGE148", { email: newUser.email, role: assignedRole }, { userId: newUser.id });
+    return res.status(201).json({ success: true, message: `User registered securely with Stage 148 RBAC role: [${assignedRole}]!`, userId: newUser.id });
   } catch (error) {
     return fail(res, 'Registration error.', 500);
   }
@@ -336,7 +336,7 @@ app.post('/api/login', async (req, res) => {
     const signature = crypto.createHmac('sha256', DYNAMIC_JWT_SECRET).update(`${header}.${payload}`).digest('base64url');
     const token = `${header}.${payload}.${signature}`;
 
-    await recordImmutableAudit("SECURE_USER_LOGIN_JWT_ISSUED_STAGE147", { email: user.email, role: assignedRole }, { userId: user.id });
+    await recordImmutableAudit("SECURE_USER_LOGIN_JWT_ISSUED_STAGE148", { email: user.email, role: assignedRole }, { userId: user.id });
     return ok(res, { message: 'Login successful!', token, user: { id: user.id, email: user.email, fullName: user.fullName, role: assignedRole, didPassId: user.didPassId } });
   } catch (error) {
     return fail(res, 'Login error.', 500);
@@ -375,7 +375,7 @@ app.post('/api/ai/agent-evaluate-intent', enforceTenantIsolation, requireRole(RO
         data.ai_approved_intents.push(aiLog);
         saveDB();
 
-        await recordImmutableAudit("AI_AGENT_INTENT_EVALUATED_147", { tenant: req.tenantId, agentId, role: req.userRole }, aiLog);
+        await recordImmutableAudit("AI_AGENT_INTENT_EVALUATED_148", { tenant: req.tenantId, agentId, role: req.userRole }, aiLog);
 
         return ok(res, {
             success: true,
@@ -392,7 +392,7 @@ app.get('/api/ai/openapi.json', (req, res) => {
         openapi: "3.1.0",
         info: {
             title: "RDS Sovereign Financial OS - AI Agent Gateway",
-            version: "147.0.0",
+            version: "148.0.0",
             description: "Unified AI-Approved & Full CBK Compliance Edition API specification."
         },
         servers: [{ url: `${req.protocol}://${req.get('host')}` }],
@@ -424,7 +424,7 @@ app.post('/api/compliance/push-cbk', enforceTenantIsolation, requireRole(ROLES.S
         data.compliance_push_logs.push(pushRecord);
 
         saveDB();
-        await recordImmutableAudit(`CBK_${freqType}_COMPLIANCE_PUSH_147`, { tenant: req.tenantId, role: req.userRole }, pushRecord);
+        await recordImmutableAudit(`CBK_${freqType}_COMPLIANCE_PUSH_148`, { tenant: req.tenantId, role: req.userRole }, pushRecord);
 
         return ok(res, {
             message: `✅ Automated ${freqType} compliance report successfully pushed to Central Bank of Kenya RTGS gateway!`,
@@ -458,7 +458,7 @@ app.post('/api/compliance/send-custom-email', enforceTenantIsolation, requireRol
         data.compliance_push_logs.push(dispatchRecord);
 
         saveDB();
-        await recordImmutableAudit(`CBK_CUSTOM_EMAIL_DISPATCHED_${freqType}_147`, { tenant: req.tenantId, recipientEmail, role: req.userRole }, dispatchRecord);
+        await recordImmutableAudit(`CBK_CUSTOM_EMAIL_DISPATCHED_${freqType}_148`, { tenant: req.tenantId, recipientEmail, role: req.userRole }, dispatchRecord);
 
         return ok(res, {
             message: `✅ Compliance report successfully formatted and dispatched to CBK email: ${recipientEmail}`,
@@ -504,7 +504,7 @@ app.post('/api/did/register-pass', enforceTenantIsolation, requireRole(ROLES.SOV
         });
 
         saveDB();
-        await recordImmutableAudit("CENTRAL_DID_PASS_MINTED_147", { tenant: req.tenantId, holderName, role: req.userRole }, didRecord);
+        await recordImmutableAudit("CENTRAL_DID_PASS_MINTED_148", { tenant: req.tenantId, holderName, role: req.userRole }, didRecord);
 
         return ok(res, {
             message: "✅ Central Registry & ZKP Pass Minted successfully!",
@@ -541,7 +541,7 @@ app.post('/api/teller/webhook', enforceTenantIsolation, requireRole(ROLES.SOVERE
         data.pos_transactions.push(webhookRecord);
 
         saveDB();
-        await recordImmutableAudit("POS_WEBHOOK_INGESTED_AND_SANITIZED_147", { tenant: req.tenantId, terminalId, role: req.userRole }, webhookRecord);
+        await recordImmutableAudit("POS_WEBHOOK_INGESTED_AND_SANITIZED_148", { tenant: req.tenantId, terminalId, role: req.userRole }, webhookRecord);
 
         return ok(res, {
             message: "🛡️ POS Webhook Sanitized & Committed Successfully!",
@@ -600,7 +600,7 @@ app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, requireRole(ROLE
         data.iso20022_wires.push(wireRecord);
         saveDB();
 
-        await recordImmutableAudit("MAKER_CHECKER_WIRE_DISPATCHED_147", { tenant: req.tenantId, amount: numAmount, status: makerCheckerRecord.status, role: req.userRole }, wireRecord);
+        await recordImmutableAudit("MAKER_CHECKER_WIRE_DISPATCHED_148", { tenant: req.tenantId, amount: numAmount, status: makerCheckerRecord.status, role: req.userRole }, wireRecord);
 
         return ok(res, {
             message: makerCheckerRecord.checkerRequired 
@@ -648,8 +648,8 @@ app.post('/api/admin/shadow-traps/resolve', enforceTenantIsolation, requireRole(
     if (trap) {
         trap.status = "RESOLVED";
         saveDB();
-        await recordImmutableAudit("SHADOW_TRAP_RESOLVED_RBAC_147", { trapId, role: req.userRole }, trap);
-        return ok(res, { message: `Shadow trap ${trapId} successfully cleared via Stage 147 RBAC authorized verification.` });
+        await recordImmutableAudit("SHADOW_TRAP_RESOLVED_RBAC_148", { trapId, role: req.userRole }, trap);
+        return ok(res, { message: `Shadow trap ${trapId} successfully cleared via Stage 148 RBAC authorized verification.` });
     }
     return fail(res, "Trap not found.", 404);
 });
@@ -666,7 +666,7 @@ app.post('/api/admin/maker-checker-approve', enforceTenantIsolation, requireRole
     if (ticket) {
         ticket.status = "DUAL_CONTROL_APPROVED_AND_SETTLED";
         saveDB();
-        await recordImmutableAudit("MAKER_CHECKER_TICKET_APPROVED_147", { ticketId, role: req.userRole }, ticket);
+        await recordImmutableAudit("MAKER_CHECKER_TICKET_APPROVED_148", { ticketId, role: req.userRole }, ticket);
         return ok(res, { message: `Ticket ${ticketId} successfully approved and settled by authorized checker!` });
     }
     return fail(res, "Maker-checker ticket not found.", 404);
@@ -720,7 +720,7 @@ app.get('/api/admin/audit/verify-chain', (req, res) => {
     return ok(res, {
         success: true,
         totalBlocksVerified: data.immutable_audit_vault.length,
-        message: "Sovereign Audit Vault lattice verification passed with zero tampering under Stage 147 standards."
+        message: "Sovereign Audit Vault lattice verification passed with zero tampering under Stage 148 standards."
     });
 });
 
@@ -732,7 +732,7 @@ app.get('/api/admin/audit/verify-block/:hash', enforceTenantIsolation, async (re
         return fail(res, "Block hash not found in sovereign vault.", 404);
     }
     
-    const rawString = `${block.timestamp}:${block.actionType}:${JSON.stringify(block.actor)}:${JSON.stringify(block.details)}:${block.previousHash}:STAGE_147_UNIFIED_LATTICE`;
+    const rawString = `${block.timestamp}:${block.actionType}:${JSON.stringify(block.actor)}:${JSON.stringify(block.details)}:${block.previousHash}:STAGE_148_UNIFIED_LATTICE`;
     const computedHash = crypto.createHash("sha256").update(rawString).digest("hex");
     const isValid = computedHash === block.currentHash;
 
@@ -747,24 +747,24 @@ app.get('/api/admin/audit/verify-block/:hash', enforceTenantIsolation, async (re
 
 app.post('/api/system/hybrid-clean-heal', enforceTenantIsolation, requireRole(ROLES.SOVEREIGN_ADMIN), async (req, res) => {
     ensureState();
-    await recordImmutableAudit("SYSTEM_HYBRID_CLEAN_HEAL_147", { tenant: req.tenantId, role: req.userRole }, { status: "HEALED" });
+    await recordImmutableAudit("SYSTEM_HYBRID_CLEAN_HEAL_148", { tenant: req.tenantId, role: req.userRole }, { status: "HEALED" });
     return ok(res, { message: "Antivirus deep scan completed, cache purged, and autonomous system healing successfully executed!" });
 });
 
 app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, requireRole(ROLES.SOVEREIGN_ADMIN, ROLES.CENTRAL_BANK_AUDITOR), async (req, res) => {
     ensureState();
-    await recordImmutableAudit("INTERBANK_CLEARING_SETTLEMENT_147", { tenant: req.tenantId, role: req.userRole }, { status: "SETTLED" });
-    return ok(res, { message: "Inter-bank clearing settlement executed atomically across Stage 147 corridors." });
+    await recordImmutableAudit("INTERBANK_CLEARING_SETTLEMENT_148", { tenant: req.tenantId, role: req.userRole }, { status: "SETTLED" });
+    return ok(res, { message: "Inter-bank clearing settlement executed atomically across Stage 148 corridors." });
 });
 
 app.get('/api/admin/audit/print-report', enforceTenantIsolation, (req, res) => {
     ensureState();
     res.setHeader('Content-Type', 'text/html');
-    res.send(`<h1>RDS Stage 147 Sovereign Audit Report</h1><pre>${JSON.stringify(data.immutable_audit_vault.slice(-20), null, 2)}</pre>` );
+    res.send(`<h1>RDS Stage 148 Sovereign Audit Report</h1><pre>${JSON.stringify(data.immutable_audit_vault.slice(-20), null, 2)}</pre>` );
 });
 
 app.get('/api/health', (req, res) => {
-    return ok(res, { status: "ACTIVE", stage: "147", cybersecurity: "HARDENED_100_PERCENT", rbac: "ACTIVE_GRANULAR", aiApproval: "ACTIVE_GATEWAY", sovereignMesh: "ONLINE", timestamp: Date.now() });
+    return ok(res, { status: "ACTIVE", stage: "148", cybersecurity: "HARDENED_100_PERCENT", rbac: "ACTIVE_GRANULAR", aiApproval: "ACTIVE_GATEWAY", sovereignMesh: "ONLINE", timestamp: Date.now() });
 });
 
 if (fs.existsSync(DB_FILE)) {
@@ -775,5 +775,5 @@ if (fs.existsSync(DB_FILE)) {
 }
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS STAGE 147 SOVEREIGN FINANCIAL OS ACTIVE ON PORT ${PORT}`);
+  console.log(`🚀 RDS STAGE 148 SOVEREIGN FINANCIAL OS ACTIVE ON PORT ${PORT}`);
 });

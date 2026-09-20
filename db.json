@@ -175,6 +175,116 @@
       "currentHash": "2dfaa4ecd7ad3ee03fd040721ff616f415d5d14ea0a8afbd051e31f3c33e83f8",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_147_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789871942642_30901",
+      "timestamp": 1789871942642,
+      "actionType": "MAKER_CHECKER_WIRE_DISPATCHED_147",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "amount": 150000,
+        "status": "AUTONOMOUSLY_APPROVED",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "wireId": "WIRE_1789871942641_71167",
+        "tenantId": "INST-CBK-RTGS",
+        "amount": 150000,
+        "shadowTrapFlagged": false,
+        "makerCheckerStatus": "AUTONOMOUSLY_APPROVED",
+        "timestamp": 1789871942641
+      },
+      "previousHash": "2dfaa4ecd7ad3ee03fd040721ff616f415d5d14ea0a8afbd051e31f3c33e83f8",
+      "currentHash": "ddee261523d0955e1ac704a12a5224494f96c562fa9923e38e7612c2add4217d",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_147_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789922922158_9075",
+      "timestamp": 1789922922158,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_148",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "status": "SETTLED"
+      },
+      "previousHash": "ddee261523d0955e1ac704a12a5224494f96c562fa9923e38e7612c2add4217d",
+      "currentHash": "8a73bd2703ecdcdb16a7aec35d6ab58cabcfb659b11f6454220e2d98569fefac",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789922938933_9078",
+      "timestamp": 1789922938933,
+      "actionType": "CBK_DAILY_COMPLIANCE_PUSH_148",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "pushId": "CBK_PUSH_1789922938933_79176",
+        "tenantId": "INST-WORLDBANK",
+        "frequency": "DAILY",
+        "recordsCount": 5,
+        "timestamp": 1789922938933,
+        "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+      },
+      "previousHash": "8a73bd2703ecdcdb16a7aec35d6ab58cabcfb659b11f6454220e2d98569fefac",
+      "currentHash": "7a33acaae86eb9b7a4e992b6de11fdfd5c444268ba81b3f5076299f627a95cad",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789922947701_22546",
+      "timestamp": 1789922947701,
+      "actionType": "CBK_CUSTOM_EMAIL_DISPATCHED_DAILY_148",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "recipientEmail": "compliance@centralbank.go.ke",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "dispatchId": "CBK_EMAIL_1789922947700_71593",
+        "tenantId": "INST-WORLDBANK",
+        "recipientEmail": "compliance@centralbank.go.ke",
+        "frequency": "DAILY",
+        "customNotes": "Standard automated sovereign compliance push report.",
+        "timestamp": 1789922947700,
+        "status": "DISPATCHED_SECURELY"
+      },
+      "previousHash": "7a33acaae86eb9b7a4e992b6de11fdfd5c444268ba81b3f5076299f627a95cad",
+      "currentHash": "bc8f2ebec1f112ee09751d213153b1f6fee595d7f04032946ee33f776ab40412",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789922960573_23298",
+      "timestamp": 1789922960573,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_148",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "evaluationId": "AI_EVAL_1789922960572_56831",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_WIRE",
+        "parameters": {
+          "amount": 750000,
+          "beneficiaryName": "Sovereign Reserve Partner",
+          "purposeCode": "SETT"
+        },
+        "riskScore": "0.01%",
+        "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+        "timestamp": 1789922960572
+      },
+      "previousHash": "bc8f2ebec1f112ee09751d213153b1f6fee595d7f04032946ee33f776ab40412",
+      "currentHash": "44d0e99bd8b2277ef20671f4bb06c46eafc2fa52ad8645766e59b3cd09acfaff",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
     }
   ],
   "iso20022_wires": [
@@ -193,10 +303,46 @@
       "shadowTrapFlagged": false,
       "makerCheckerStatus": "AUTONOMOUSLY_APPROVED",
       "timestamp": 1789862855966
+    },
+    {
+      "wireId": "WIRE_1789871942641_71167",
+      "tenantId": "INST-CBK-RTGS",
+      "amount": 150000,
+      "shadowTrapFlagged": false,
+      "makerCheckerStatus": "AUTONOMOUSLY_APPROVED",
+      "timestamp": 1789871942641
     }
   ],
-  "ai_enforcement_logs": [],
-  "ai_approved_intents": [],
+  "ai_enforcement_logs": [
+    {
+      "evaluationId": "AI_EVAL_1789922960572_56831",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789922960572
+    }
+  ],
+  "ai_approved_intents": [
+    {
+      "evaluationId": "AI_EVAL_1789922960572_56831",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789922960572
+    }
+  ],
   "interbank_clearing_settlements": [],
   "shadow_trap_flags": [
     {
@@ -223,7 +369,25 @@
     }
   ],
   "pos_transactions": [],
-  "compliance_push_logs": [],
+  "compliance_push_logs": [
+    {
+      "pushId": "CBK_PUSH_1789922938933_79176",
+      "tenantId": "INST-WORLDBANK",
+      "frequency": "DAILY",
+      "recordsCount": 5,
+      "timestamp": 1789922938933,
+      "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+    },
+    {
+      "dispatchId": "CBK_EMAIL_1789922947700_71593",
+      "tenantId": "INST-WORLDBANK",
+      "recipientEmail": "compliance@centralbank.go.ke",
+      "frequency": "DAILY",
+      "customNotes": "Standard automated sovereign compliance push report.",
+      "timestamp": 1789922947700,
+      "status": "DISPATCHED_SECURELY"
+    }
+  ],
   "maker_checker_queue": [
     {
       "ticketId": "MC_1789862769129_62679",
@@ -260,6 +424,24 @@
         "purposeCode": "GDSV"
       },
       "timestamp": 1789862855966
+    },
+    {
+      "ticketId": "MC_1789871942641_31462",
+      "actionType": "ISO20022_WIRE_TRANSFER",
+      "tenantId": "INST-CBK-RTGS",
+      "maker": {
+        "user": "Robert Maina",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "checkerRequired": false,
+      "status": "AUTONOMOUSLY_APPROVED",
+      "payload": {
+        "amount": 150000,
+        "beneficiaryName": "Local Test Partner",
+        "beneficiaryAccount": "ACC_01",
+        "purposeCode": "GDSV"
+      },
+      "timestamp": 1789871942641
     }
   ],
   "orders": []
