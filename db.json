@@ -285,6 +285,27 @@
       "currentHash": "44d0e99bd8b2277ef20671f4bb06c46eafc2fa52ad8645766e59b3cd09acfaff",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789923956825_732",
+      "timestamp": 1789923956825,
+      "actionType": "CBK_ANNUAL_COMPLIANCE_PUSH_148",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "pushId": "CBK_PUSH_1789923956824_67134",
+        "tenantId": "INST-WORLDBANK",
+        "frequency": "ANNUAL",
+        "recordsCount": 8,
+        "timestamp": 1789923956824,
+        "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+      },
+      "previousHash": "44d0e99bd8b2277ef20671f4bb06c46eafc2fa52ad8645766e59b3cd09acfaff",
+      "currentHash": "eb311550d7394f9f24061d0bd24f6bb44b7abb403c247b30690224479d5bcc81",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
     }
   ],
   "iso20022_wires": [
@@ -386,6 +407,14 @@
       "customNotes": "Standard automated sovereign compliance push report.",
       "timestamp": 1789922947700,
       "status": "DISPATCHED_SECURELY"
+    },
+    {
+      "pushId": "CBK_PUSH_1789923956824_67134",
+      "tenantId": "INST-WORLDBANK",
+      "frequency": "ANNUAL",
+      "recordsCount": 8,
+      "timestamp": 1789923956824,
+      "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
     }
   ],
   "maker_checker_queue": [
