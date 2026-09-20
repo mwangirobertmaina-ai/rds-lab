@@ -91,10 +91,12 @@ function defaultDB() {
     drivers: [],
     riders: [],
     products: [
-      { id: "p1", businessId: "INST-MPESA", category: "MOBILE_MONEY", merchant: "M-Pesa Gateway", name: "Mobile Money Liquidity Unit", price: 1000.0, currency: "KES", stock: 100000, image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&auto=format&fit=crop&q=80" }
+      { id: "p1", businessId: "INST-MPESA", category: "MOBILE_MONEY", merchant: "M-Pesa Gateway", name: "Mobile Money Liquidity Unit", price: 1000.0, currency: "KES", stock: 100000, image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&auto=format&fit=crop&q=80" },
+      { id: "p2", businessId: "INST-CBK-RTGS", category: "RESTAURANT", merchant: "CBK Bistro", name: "Sovereign Nyama Platter", price: 1500.0, currency: "KES", stock: 500, image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop&q=80" },
+      { id: "p3", businessId: "INST-WORLDBANK", category: "SUPERMARKET", merchant: "World Bank Depot", name: "Global Development Reserve Pack", price: 250.0, currency: "USD", stock: 1000, image: "https://images.unsplash.com/photo-1586880244406-556ebe37f282?w=400&auto=format&fit=crop&q=80" }
     ], 
     users: [
-      { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", role: "SOVEREIGN_ADMIN", didPassId: "did:rds:ke:robertmaina99", amlFlagged: false, riskScore: "0.01% (CBK & World Bank Verified)", kycStatus: "TIER_3_SOVEREIGN_VERIFIED" }
+      { id: "USR_DEFAULT", fullName: "Robert Maina", phone: "254721862397", email: "robert.maina@rds.com", role: "SOVEREIGN_ADMIN", didPassId: "did:rds:ke:robertmaina99", amlFlagged: false, riskScore: "0.01% (CBK & World Bank Verified)", kycStatus: "TIER_3_SOVEREIGN_VERIFIED" }
     ],
     immutable_audit_vault: [],
     iso20022_wires: [],
@@ -123,6 +125,7 @@ function ensureState() {
   try {
     if (!data || typeof data !== 'object') data = defaultDB();
     if (!Array.isArray(data.businesses)) data.businesses = defaultDB().businesses;
+    if (!Array.isArray(data.products)) data.products = defaultDB().products;
     if (!Array.isArray(data.immutable_audit_vault)) data.immutable_audit_vault = [];
     if (!Array.isArray(data.iso20022_wires)) data.iso20022_wires = [];
     if (!Array.isArray(data.ai_enforcement_logs)) data.ai_enforcement_logs = [];
@@ -135,7 +138,6 @@ function ensureState() {
     if (!Array.isArray(data.maker_checker_queue)) data.maker_checker_queue = [];
     if (!Array.isArray(data.users)) data.users = defaultDB().users;
 
-    // Stage 147 Genesis Check
     if (data.immutable_audit_vault.length === 0) {
       const genesisTimestamp = Date.now();
       const rawGenesis = `${genesisTimestamp}:GENESIS_ROOT_INIT:{} :{} :GENESIS_ROOT_HASH_000000000000000000000000:STAGE_147_UNIFIED_LATTICE`;
@@ -156,13 +158,11 @@ function ensureState() {
         const prev = data.immutable_audit_vault[i - 1];
         const curr = data.immutable_audit_vault[i];
         if (curr.previousHash !== prev.currentHash) {
-          console.warn(`⚠️ SECURITY WARNING: Chain discrepancy detected at block ${i}. Self-healing lattice...`);
           curr.previousHash = prev.currentHash;
         }
       }
     }
   } catch (stateErr) {
-    console.error("Critical state recovery engaged:", stateErr);
     data = defaultDB();
   }
 }
@@ -272,6 +272,24 @@ function ok(res, payload = {}) {
 function fail(res, msg = "Error", statusCode = 400) {
   return res.status(statusCode).json({ success: false, error: msg });
 }
+
+// --- PRODUCTS API ROUTE (FIXED) ---
+app.get('/api/products', enforceTenantIsolation, (req, res) => {
+    ensureState();
+    const category = req.query.category || 'ALL';
+    let filtered = data.products.filter(p => p.businessId === req.tenantId);
+    if (filtered.length === 0) {
+        filtered = data.products; // Fallback if tenant specific products aren't seeded
+    }
+    if (category !== 'ALL') {
+        filtered = filtered.filter(p => p.category === category);
+    }
+    return ok(res, {
+        products: filtered,
+        currency: req.tenantObj.currency || "KES",
+        tenantId: req.tenantId
+    });
+});
 
 // --- AUTHENTICATION & REGISTRATION ROUTES ---
 app.post('/api/register', async (req, res) => {

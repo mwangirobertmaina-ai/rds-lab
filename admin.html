@@ -50,7 +50,7 @@
         </div>
     </header>
 
-    <!-- Fully Restored Action Toolbar (All Stage 145 Buttons + AI & OpenAPI) -->
+    <!-- Action Toolbar -->
     <div class="bg-slate-900/50 border-b border-slate-800/80 px-6 py-3 flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center space-x-2 text-xs text-slate-400">
             <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
@@ -220,7 +220,7 @@
 
     </main>
 
-    <!-- AI Agent Intent Evaluation Modal -->
+    <!-- Modals (AI Eval, Login, Register, DID, POS, CBK Email, Generic Inspector) -->
     <div id="aiEvalModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -231,7 +231,6 @@
                 <button onclick="closeAiEvalModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
-                <p class="text-slate-400">Evaluate automated multi-agent actions against sovereign risk heuristics before committing to the financial mesh.</p>
                 <div>
                     <label class="block text-slate-400 mb-1">Agent ID</label>
                     <input type="text" id="aiAgentId" value="LANGCHAIN_AGENT_01" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
@@ -256,7 +255,6 @@
         </div>
     </div>
 
-    <!-- Universal Generic Inspector Modal -->
     <div id="genericModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -283,7 +281,6 @@
         </div>
     </div>
 
-    <!-- User Login Modal -->
     <div id="loginModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -296,7 +293,7 @@
             <div class="space-y-3 text-xs">
                 <div>
                     <label class="block text-slate-400 mb-1">Email Address</label>
-                    <input type="email" id="loginEmail" placeholder="robert@example.com" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
+                    <input type="email" id="loginEmail" value="robert.maina@rds.com" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Password</label>
@@ -310,7 +307,6 @@
         </div>
     </div>
 
-    <!-- User Registration Modal -->
     <div id="registerModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -323,15 +319,15 @@
             <div class="space-y-3 text-xs">
                 <div>
                     <label class="block text-slate-400 mb-1">Full Name</label>
-                    <input type="text" id="regFullName" placeholder="Robert Maina" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500">
+                    <input type="text" id="regFullName" placeholder="Robert Maina" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Email Address</label>
-                    <input type="email" id="regEmail" placeholder="robert@example.com" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500">
+                    <input type="email" id="regEmail" placeholder="robert@example.com" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Secure Password</label>
-                    <input type="password" id="regPassword" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500">
+                    <input type="password" id="regPassword" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Assign System Role</label>
@@ -342,10 +338,6 @@
                         <option value="REGULAR_USER">REGULAR_USER (Standard Tier)</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Phone Number</label>
-                    <input type="text" id="regPhone" placeholder="254721862397" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500">
-                </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
                 <button onclick="closeRegisterModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
@@ -354,7 +346,6 @@
         </div>
     </div>
 
-    <!-- Central ID / Passport & Tiered KYC Minting Modal -->
     <div id="didModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -363,28 +354,12 @@
             </div>
             <div class="space-y-3 text-xs">
                 <div>
-                    <label class="block text-slate-400 mb-1">Verification Pipeline / Corridor</label>
-                    <select id="didVerificationType" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-blue-300 font-bold focus:outline-none">
-                        <option value="LOCAL_IPRS">Local National ID & IPRS Registry Validation</option>
-                        <option value="GLOBAL_PASSPORT">International Passport OCR, PEP & Sanctions</option>
-                        <option value="MOBILE_MONEY">Mobile Money Telco Owner Validation (M-Pesa)</option>
-                    </select>
-                </div>
-                <div>
                     <label class="block text-slate-400 mb-1">Holder Full Name</label>
-                    <input type="text" id="didHolderName" placeholder="e.g., Robert Maina" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none">
+                    <input type="text" id="didHolderName" value="Robert Maina" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">National ID or Passport Number</label>
-                    <input type="text" id="didIdNumber" placeholder="32456789 or A1234567" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Assigned KYC Tier</label>
-                    <select id="didKycTier" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-emerald-400 font-bold focus:outline-none">
-                        <option value="TIER_3_SOVEREIGN">TIER 3 SOVEREIGN VERIFIED (Full Central Bank / IPRS)</option>
-                        <option value="TIER_2_COMMERCIAL">TIER 2 COMMERCIAL VERIFIED</option>
-                        <option value="TIER_1_BASIC">TIER 1 BASIC MOBILE</option>
-                    </select>
+                    <input type="text" id="didIdNumber" value="KE-99882710" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
                 </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
@@ -394,71 +369,49 @@
         </div>
     </div>
 
-    <!-- POS Webhook Simulation Modal -->
     <div id="posModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white flex items-center space-x-2">
-                    <i data-lucide="terminal" class="w-5 h-5 text-purple-400"></i>
-                    <span>Simulate POS / Cashier Ingestion Webhook</span>
-                </h3>
+                <h3 class="text-base font-bold text-white">Simulate POS Ingestion Webhook</h3>
                 <button onclick="closePosModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
-                <p class="text-slate-400">Push raw JSON payloads from retail cashiers or POS terminals. The backend antivirus middleware will automatically sanitize malicious strings, normalize currency codes, and commit to the vault.</p>
                 <div>
-                    <label class="block text-slate-400 mb-1">Terminal ID / Cashier Station</label>
+                    <label class="block text-slate-400 mb-1">Terminal ID</label>
                     <input type="text" id="posTerminalId" value="POS-NAIROBI-01" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">Raw JSON Payload (Auto-Sanitized)</label>
-                    <textarea id="posPayload" rows="5" class="w-full bg-slate-950 border border-slate-700 font-mono text-emerald-400 p-2 rounded-lg focus:outline-none">{
+                    <label class="block text-slate-400 mb-1">Raw JSON Payload</label>
+                    <textarea id="posPayload" rows="4" class="w-full bg-slate-950 border border-slate-700 font-mono text-emerald-400 p-2 rounded-lg">{
   "customerName": "Robert Maina",
-  "amount": "15000",
+  "amount": "1500",
   "currency": "KES",
-  "items": ["Sovereign Hardware Unit", "License Renewal"],
-  "notes": "<script>alert('malicious injection attempt')</script>"
+  "notes": "Cashier payment received"
 }</textarea>
                 </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
                 <button onclick="closePosModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
-                <button onclick="submitPosWebhook()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Push & Sanitize Webhook</button>
+                <button onclick="submitPosWebhook()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Push Webhook</button>
             </div>
         </div>
     </div>
 
-    <!-- CBK Email Dispatch Modal -->
     <div id="cbkEmailModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white flex items-center space-x-2">
-                    <i data-lucide="mail" class="w-5 h-5 text-cyan-400"></i>
-                    <span>Dispatch Compliance Report to CBK Email</span>
-                </h3>
+                <h3 class="text-base font-bold text-white">Dispatch Compliance Report to CBK Email</h3>
                 <button onclick="closeCbkEmailModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
                 <div>
-                    <label class="block text-slate-400 mb-1">CBK / Regulatory Recipient Email</label>
-                    <input type="email" id="cbkRecipientEmail" value="compliance@centralbank.go.ke" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-cyan-500">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Report Frequency</label>
-                    <select id="cbkEmailFrequency" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-cyan-300 font-bold focus:outline-none">
-                        <option value="DAILY">Daily Compliance Report</option>
-                        <option value="QUARTERLY">Quarterly Compliance Report</option>
-                        <option value="ANNUAL">Annual Compliance Report</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Custom Notes / Secure Memo</label>
-                    <textarea id="cbkEmailNotes" rows="3" class="w-full bg-slate-950 border border-slate-700 text-slate-200 p-2 rounded-lg focus:outline-none">Automated secure push transmitted via RDS Stage 147 Sovereign OS.</textarea>
+                    <label class="block text-slate-400 mb-1">Recipient Email</label>
+                    <input type="email" id="cbkRecipientEmail" value="compliance@centralbank.go.ke" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
                 </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
                 <button onclick="closeCbkEmailModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
-                <button onclick="submitCbkEmailDispatch()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Send Compliance Email</button>
+                <button onclick="submitCbkEmailDispatch()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Send Email</button>
             </div>
         </div>
     </div>
@@ -526,100 +479,62 @@
 
         function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
         function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
-
         function openRegisterModal() { document.getElementById('registerModal').classList.remove('hidden'); }
         function closeRegisterModal() { document.getElementById('registerModal').classList.add('hidden'); }
-
         function openDidModal() { document.getElementById('didModal').classList.remove('hidden'); }
         function closeDidModal() { document.getElementById('didModal').classList.add('hidden'); }
-
         function openPosWebhookSimulator() { document.getElementById('posModal').classList.remove('hidden'); }
         function closePosModal() { document.getElementById('posModal').classList.add('hidden'); }
-
         function openCbkEmailModal() { document.getElementById('cbkEmailModal').classList.remove('hidden'); }
         function closeCbkEmailModal() { document.getElementById('cbkEmailModal').classList.add('hidden'); }
-
         function openAiEvalModal() { document.getElementById('aiEvalModal').classList.remove('hidden'); }
         function closeAiEvalModal() { document.getElementById('aiEvalModal').classList.add('hidden'); }
 
         async function submitAiEval() {
             const agentId = document.getElementById('aiAgentId').value.trim();
             const proposedAction = document.getElementById('aiProposedAction').value.trim();
-            const rawParams = document.getElementById('aiParameters').value.trim();
-            let parameters;
-            try {
-                parameters = JSON.parse(rawParams);
-            } catch(e) {
-                alert("Invalid JSON parameters format.");
-                return;
-            }
-
-            try {
-                const res = await fetch('/api/ai/agent-evaluate-intent', {
-                    method: 'POST', headers: getAuthHeaders(),
-                    body: JSON.stringify({ agentId, proposedAction, parameters })
-                });
-                const data = await res.json();
-                if (data && data.success) {
-                    alert(`🤖 ${data.message}\nRisk Score: ${data.evaluation.riskScore}`);
-                    closeAiEvalModal();
-                    loadDashboard();
-                } else { alert("❌ AI Evaluation Error: " + (data ? data.error : 'Rejected')); }
-            } catch (err) { alert("Network error during AI agent intent evaluation."); }
+            const parameters = JSON.parse(document.getElementById('aiParameters').value.trim());
+            const res = await fetch('/api/ai/agent-evaluate-intent', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ agentId, proposedAction, parameters })
+            });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); closeAiEvalModal(); loadDashboard(); }
         }
 
         async function triggerCompliancePush(frequency) {
-            if (!confirm(`Execute automated ${frequency} compliance report push to the Central Bank of Kenya RTGS gateway?`)) return;
-            try {
-                const res = await fetch('/api/compliance/push-cbk', {
-                    method: 'POST', headers: getAuthHeaders(),
-                    body: JSON.stringify({ frequency })
-                });
-                const data = await res.json();
-                if (data && data.success) {
-                    alert(`✅ ${data.message}`);
-                    loadDashboard();
-                } else { alert("❌ Compliance push failed: " + (data ? data.error : 'Unknown')); }
-            } catch (err) { alert("Network error during CBK compliance transmission."); }
+            const res = await fetch('/api/compliance/push-cbk', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ frequency })
+            });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); loadDashboard(); }
         }
 
         async function submitCbkEmailDispatch() {
             const recipientEmail = document.getElementById('cbkRecipientEmail').value.trim();
-            const frequency = document.getElementById('cbkEmailFrequency').value;
-            const customNotes = document.getElementById('cbkEmailNotes').value.trim();
-
-            if (!recipientEmail) { alert("Recipient email is required."); return; }
-            try {
-                const res = await fetch('/api/compliance/send-custom-email', {
-                    method: 'POST', headers: getAuthHeaders(),
-                    body: JSON.stringify({ recipientEmail, frequency, customNotes })
-                });
-                const data = await res.json();
-                if (data && data.success) {
-                    alert(`✅ ${data.message}`);
-                    closeCbkEmailModal();
-                    loadDashboard();
-                } else { alert("❌ Email dispatch failed: " + (data ? data.error : 'Unknown')); }
-            } catch (err) { alert("Network error during CBK email transmission."); }
+            const res = await fetch('/api/compliance/send-custom-email', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ recipientEmail, frequency: "DAILY" })
+            });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); closeCbkEmailModal(); loadDashboard(); }
         }
 
         async function submitLogin() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
-            if (!email || !password) { alert("Email and password required."); return; }
-            try {
-                const res = await fetch('/api/login', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-                if (data && data.success) {
-                    localStorage.setItem('rds_jwt_token', data.token);
-                    alert(`✅ ${data.message}\nRole Assigned: [${data.user ? data.user.role : 'SOVEREIGN_ADMIN'}]`);
-                    closeLoginModal();
-                    loadDashboard();
-                } else { alert("❌ Login Failed: " + (data ? data.error : 'Invalid credentials')); }
-            } catch (err) { alert("Network error during login."); }
+            const res = await fetch('/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (data && data.success) {
+                localStorage.setItem('rds_jwt_token', data.token);
+                alert(data.message);
+                closeLoginModal();
+                loadDashboard();
+            } else { alert(data.error); }
         }
 
         async function submitRegistration() {
@@ -627,82 +542,42 @@
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value.trim();
             const role = document.getElementById('regRole').value;
-            const phone = document.getElementById('regPhone').value.trim();
-            if (!email || !password) { alert("Email and password required."); return; }
-            try {
-                const res = await fetch('/api/register', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fullName, email, password, role, phone })
-                });
-                const data = await res.json();
-                if (data && data.success) {
-                    alert(`✅ ${data.message}\nUser ID: ${data.userId}`);
-                    closeRegisterModal();
-                    loadDashboard();
-                } else { alert("❌ Registration Failed: " + (data ? data.error : 'Unknown error')); }
-            } catch (err) { alert("Network error."); }
+            const res = await fetch('/api/register', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fullName, email, password, role })
+            });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); closeRegisterModal(); loadDashboard(); }
         }
 
         async function submitDidPass() {
-            const verificationType = document.getElementById('didVerificationType').value;
             const holderName = document.getElementById('didHolderName').value.trim();
             const nationalIdOrPassport = document.getElementById('didIdNumber').value.trim();
-            const kycTier = document.getElementById('didKycTier').value;
-
-            if (!holderName || !nationalIdOrPassport) { alert("Holder name and ID/Passport number required."); return; }
-            try {
-                const res = await fetch('/api/did/register-pass', {
-                    method: 'POST', headers: getAuthHeaders(),
-                    body: JSON.stringify({ holderName, nationalIdOrPassport, verificationType, kycTier })
-                });
-                const data = await res.json();
-                if (data && data.success) {
-                    alert(`✅ Central Registry & ZKP Pass Minted successfully!\nPass ID: ${data.didRecord ? data.didRecord.didPassId : ''} [${kycTier}]`);
-                    closeDidModal();
-                    loadDashboard();
-                } else { alert("❌ Verification Error: " + (data ? data.error : 'Unknown')); }
-            } catch (err) { alert("Network error during ID/Passport validation."); }
+            const res = await fetch('/api/did/register-pass', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ holderName, nationalIdOrPassport })
+            });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); closeDidModal(); loadDashboard(); }
         }
 
         async function submitPosWebhook() {
             const terminalId = document.getElementById('posTerminalId').value.trim();
-            const rawPayload = document.getElementById('posPayload').value.trim();
-            let parsedPayload;
-            try {
-                parsedPayload = JSON.parse(rawPayload);
-            } catch(e) {
-                alert("Invalid JSON payload format.");
-                return;
-            }
-
-            try {
-                const res = await fetch('/api/teller/webhook', {
-                    method: 'POST', headers: getAuthHeaders(),
-                    body: JSON.stringify({ terminalId, payload: parsedPayload })
-                });
-                const data = await res.json();
-                if (data && data.success) {
-                    alert(`🛡️ POS Webhook Sanitized & Committed Successfully!\nSanitized Notes: ${data.sanitizedNotes || 'Clean'}`);
-                    closePosModal();
-                    loadDashboard();
-                } else { alert("❌ Webhook Error: " + (data ? data.error : 'Rejected')); }
-            } catch (err) { alert("Network error during POS webhook ingestion."); }
+            const payload = JSON.parse(document.getElementById('posPayload').value.trim());
+            const res = await fetch('/api/teller/webhook', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ terminalId, payload })
+            });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); closePosModal(); loadDashboard(); }
         }
 
         async function triggerHybridCleanHeal() {
-            if (!confirm("Execute Antivirus Deep Scan, Cache Purge, and Autonomous System Healing?")) return;
-            try {
-                const res = await fetch('/api/system/hybrid-clean-heal', {
-                    method: 'POST', headers: getAuthHeaders(),
-                    body: JSON.stringify({})
-                });
-                const data = await res.json();
-                if (data && data.success) {
-                    alert(`🛡️ ${data.message}`);
-                    localStorage.clear(); sessionStorage.clear();
-                    loadDashboard();
-                } else { alert("❌ Heal Failed: " + (data ? data.error : 'RBAC Restricted')); }
-            } catch (err) { alert("Network error."); }
+            const res = await fetch('/api/system/hybrid-clean-heal', {
+                method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({})
+            });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); loadDashboard(); }
         }
 
         async function openModal(type) {
@@ -711,214 +586,56 @@
             const desc = document.getElementById('modalDesc');
             const thead = document.getElementById('modalTableHead');
             const tbody = document.getElementById('modalTableBody');
-            if (!modal) return;
             modal.classList.remove('hidden');
 
-            try {
-                if (type === 'kycRegistry') {
-                    title.innerHTML = `<i data-lucide="user-check" class="w-5 h-5 text-emerald-400"></i><span>Tiered KYC & Central Registry</span>`;
-                    desc.innerText = "Verified identities via IPRS, National ID, and Global Passport AML screening.";
-                    thead.innerHTML = `<tr><th class="p-3">Full Name</th><th class="p-3">ID / Passport Number</th><th class="p-3">Tier & ZKP Status</th></tr>`;
-                    const res = await fetch('/api/admin/kyc-registry', { headers: getAuthHeaders() });
-                    const data = await res.json();
-                    if (data && data.success && data.kycUsers && data.kycUsers.length > 0) {
-                        tbody.innerHTML = data.kycUsers.map(u => `
-                            <tr class="hover:bg-slate-900/50 transition">
-                                <td class="p-3 text-white font-bold">${u.fullName || 'N/A'}</td>
-                                <td class="p-3 text-slate-300">${u.nationalIdOrPassport || 'N/A'}</td>
-                                <td class="p-3 text-emerald-400">${u.didPassId || 'N/A'} <span class="bg-emerald-950 px-2 py-0.5 rounded text-[10px] ml-1">${u.kycTier || 'TIER_3_SOVEREIGN'}</span></td>
-                            </tr>
-                        `).join('');
-                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No KYC records found.</td></tr>`; }
-                } else if (type === 'aiIntents') {
-                    title.innerHTML = `<i data-lucide="bot" class="w-5 h-5 text-amber-400"></i><span>AI-Approved Autonomous Agent Intents</span>`;
-                    desc.innerText = "Evaluated AI agent intents, risk scores, and governance approvals.";
-                    thead.innerHTML = `<tr><th class="p-3">Agent ID</th><th class="p-3">Proposed Action & Risk</th><th class="p-3">Approval Status</th></tr>`;
-                    const res = await fetch('/api/admin/ai-intents', { headers: getAuthHeaders() });
-                    const data = await res.json();
-                    if (data && data.success && data.aiIntents && data.aiIntents.length > 0) {
-                        tbody.innerHTML = data.aiIntents.map(a => `
-                            <tr class="hover:bg-slate-900/50 transition">
-                                <td class="p-3 text-amber-400 font-bold">${a.agentId}</td>
-                                <td class="p-3 text-slate-300">${a.proposedAction} (Risk: ${a.riskScore})</td>
-                                <td class="p-3 text-emerald-400 font-bold">${a.approvalStatus}</td>
-                            </tr>
-                        `).join('');
-                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No AI agent intents evaluated yet.</td></tr>`; }
-                } else if (type === 'shadowTraps') {
-                    title.innerHTML = `<i data-lucide="shield-alert" class="w-5 h-5 text-red-500"></i><span>Active Shadow-Traps & Resolution Manager</span>`;
-                    desc.innerText = "Inspect flagged entities captured across dual corridors.";
-                    thead.innerHTML = `<tr><th class="p-3">Trap ID</th><th class="p-3">Institution & Reason</th><th class="p-3">Action</th></tr>`;
-                    const res = await fetch('/api/admin/shadow-traps', { headers: getAuthHeaders() });
-                    const data = await res.json();
-                    if (data && data.success && data.shadowTraps && data.shadowTraps.length > 0) {
-                        tbody.innerHTML = data.shadowTraps.map(t => `
-                            <tr class="hover:bg-slate-900/50 transition">
-                                <td class="p-3 text-red-400 font-bold">${t.trapId || ''}</td>
-                                <td class="p-3 text-slate-300">${t.institution || 'Sovereign Node'}: ${t.reason || ''}</td>
-                                <td class="p-3"><button onclick="resolveShadowTrap('${t.trapId}')" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-[11px] font-semibold transition cursor-pointer">Clear</button></td>
-                            </tr>
-                        `).join('');
-                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">Zero active shadow traps found.</td></tr>`; }
-                } else if (type === 'makerCheckerQueue') {
-                    title.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5 text-amber-400"></i><span>Maker-Checker Dual-Control Verification Queue</span>`;
-                    desc.innerText = "High-value transfers and sensitive operations requiring autonomous dual-control verification.";
-                    thead.innerHTML = `<tr><th class="p-3">Ticket ID</th><th class="p-3">Action Type & Payload</th><th class="p-3">Status & Action</th></tr>`;
-                    const res = await fetch('/api/admin/maker-checker-queue', { headers: getAuthHeaders() });
-                    const data = await res.json();
-                    if (data && data.success && data.makerCheckerQueue && data.makerCheckerQueue.length > 0) {
-                        tbody.innerHTML = data.makerCheckerQueue.map(m => `
-                            <tr class="hover:bg-slate-900/50 transition">
-                                <td class="p-3 text-amber-400 font-bold">${m.ticketId || ''}</td>
-                                <td class="p-3 text-slate-300">${m.actionType}: ${JSON.stringify(m.payload || {})}</td>
-                                <td class="p-3 text-emerald-400">${m.status} ${m.status === 'PENDING_CHECKER_VERIFICATION' ? `<button onclick="approveMakerChecker('${m.ticketId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-0.5 rounded text-[10px] ml-2 font-bold cursor-pointer">Approve</button>` : ''}</td>
-                            </tr>
-                        `).join('');
-                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No pending maker-checker items.</td></tr>`; }
-                } else if (type === 'sarQueue') {
-                    title.innerHTML = `<i data-lucide="file-text" class="w-5 h-5 text-amber-500"></i><span>Regulatory SAR / goAML Queue</span>`;
-                    desc.innerText = "Suspicious Activity Reports generated automatically for Central Bank & World Bank oversight.";
-                    thead.innerHTML = `<tr><th class="p-3">SAR ID</th><th class="p-3">Reference ID</th><th class="p-3">Details & Timestamp</th></tr>`;
-                    const res = await fetch('/api/admin/sar-queue', { headers: getAuthHeaders() });
-                    const data = await res.json();
-                    if (data && data.success && data.sarQueue && data.sarQueue.length > 0) {
-                        tbody.innerHTML = data.sarQueue.map(s => `
-                            <tr class="hover:bg-slate-900/50 transition">
-                                <td class="p-3 text-amber-400 font-bold">${s.sarId || ''}</td>
-                                <td class="p-3 text-slate-300">${s.referenceId || ''}</td>
-                                <td class="p-3 text-slate-400">${s.details || ''}</td>
-                            </tr>
-                        `).join('');
-                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No pending SAR reports.</td></tr>`; }
-                } else if (type === 'posWebhooks') {
-                    title.innerHTML = `<i data-lucide="terminal" class="w-5 h-5 text-purple-400"></i><span>POS Webhook Ingestion & Sanitization Log</span>`;
-                    desc.innerText = "Incoming payloads from retail cashier endpoints cleaned by antivirus firewall.";
-                    thead.innerHTML = `<tr><th class="p-3">Terminal ID</th><th class="p-3">Sanitized Payload Data</th><th class="p-3">Status</th></tr>`;
-                    const res = await fetch('/api/admin/pos-webhooks', { headers: getAuthHeaders() });
-                    const data = await res.json();
-                    if (data && data.success && data.webhooks && data.webhooks.length > 0) {
-                        tbody.innerHTML = data.webhooks.map(w => `
-                            <tr class="hover:bg-slate-900/50 transition">
-                                <td class="p-3 text-purple-400 font-bold">${w.terminalId || 'POS'}</td>
-                                <td class="p-3 text-slate-300 truncate max-w-sm">${JSON.stringify(w.sanitizedPayload || {})}</td>
-                                <td class="p-3 text-emerald-400 font-bold">100% IMMUNE</td>
-                            </tr>
-                        `).join('');
-                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No POS webhooks recorded yet.</td></tr>`; }
-                } else if (type === 'didPasses') {
-                    title.innerHTML = `<i data-lucide="shield-check" class="w-5 h-5 text-blue-500"></i><span>Decentralized Sovereign Identity (DID) Passes</span>`;
-                    desc.innerText = "Cryptographic zero-knowledge passes verified across dual corridors.";
-                    thead.innerHTML = `<tr><th class="p-3">DID Pass ID</th><th class="p-3">Holder Name</th><th class="p-3">ZKP Hash & Status</th></tr>`;
-                    const res = await fetch('/api/admin/did-passes', { headers: getAuthHeaders() });
-                    const data = await res.json();
-                    if (data && data.success && data.didPasses && data.didPasses.length > 0) {
-                        tbody.innerHTML = data.didPasses.map(d => `
-                            <tr class="hover:bg-slate-900/50 transition">
-                                <td class="p-3 text-blue-400 font-bold">${d.didPassId || ''}</td>
-                                <td class="p-3 text-white">${d.holderName || ''}</td>
-                                <td class="p-3 text-slate-400 truncate max-w-xs">${d.zkpHash || ''}</td>
-                            </tr>
-                        `).join('');
-                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No DID passes minted.</td></tr>`; }
-                } else if (type === 'compliancePushes') {
-                    title.innerHTML = `<i data-lucide="send" class="w-5 h-5 text-cyan-400"></i><span>Automated CBK Compliance Push Logs</span>`;
-                    desc.innerText = "Daily, quarterly, and annual compliance reports transmitted to the Central Bank of Kenya RTGS.";
-                    thead.innerHTML = `<tr><th class="p-3">Push ID</th><th class="p-3">Frequency</th><th class="p-3">Timestamp & Status</th></tr>`;
-                    const res = await fetch('/api/admin/compliance-logs', { headers: getAuthHeaders() });
-                    const data = await res.json();
-                    if (data && data.success && data.pushLogs && data.pushLogs.length > 0) {
-                        tbody.innerHTML = data.pushLogs.map(p => `
-                            <tr class="hover:bg-slate-900/50 transition">
-                                <td class="p-3 text-cyan-400 font-bold">${p.pushId || ''}</td>
-                                <td class="p-3 text-white font-semibold">${p.frequency || 'DAILY'}</td>
-                                <td class="p-3 text-slate-300">${new Date(p.timestamp).toLocaleString()} <span class="bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded text-[10px] ml-2">${p.status || 'ACCEPTED'}</span></td>
-                            </tr>
-                        `).join('');
-                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No compliance push logs found. Use the top toolbar to push reports.</td></tr>`; }
-                } else if (type === 'sovereignVault') {
-                    title.innerHTML = `<i data-lucide="lock" class="w-5 h-5 text-indigo-500"></i><span>Sovereign Vault</span>`;
-                    desc.innerText = "Complete immutable cryptographic ledger including system evolution entries.";
-                    thead.innerHTML = `<tr><th class="p-3">Timestamp</th><th class="p-3">Action Type</th><th class="p-3">Current Hash</th></tr>`;
-                    const res = await fetch('/api/admin/sovereign-vault', { headers: getAuthHeaders() });
-                    const data = await res.json();
-                    if (data && data.success && data.vaultBlocks && data.vaultBlocks.length > 0) {
-                        tbody.innerHTML = data.vaultBlocks.slice(-30).reverse().map(v => `
-                            <tr class="hover:bg-slate-900/50 transition">
-                                <td class="p-3 text-slate-400">${new Date(v.timestamp).toLocaleTimeString()}</td>
-                                <td class="p-3 font-semibold text-indigo-400">${v.actionType || ''}</td>
-                                <td class="p-3 text-slate-500 truncate max-w-sm">${v.currentHash || ''}</td>
-                            </tr>
-                        `).join('');
-                    } else { tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">Vault blocks empty.</td></tr>`; }
-                }
-            } catch (e) {
-                if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-red-500">Error loading data.</td></tr>`;
+            let endpoint = '/api/admin/kyc-registry';
+            if (type === 'aiIntents') endpoint = '/api/admin/ai-intents';
+            if (type === 'shadowTraps') endpoint = '/api/admin/shadow-traps';
+            if (type === 'makerCheckerQueue') endpoint = '/api/admin/maker-checker-queue';
+            if (type === 'sarQueue') endpoint = '/api/admin/sar-queue';
+            if (type === 'posWebhooks') endpoint = '/api/admin/pos-webhooks';
+            if (type === 'didPasses') endpoint = '/api/admin/did-passes';
+            if (type === 'compliancePushes') endpoint = '/api/admin/compliance-logs';
+            if (type === 'sovereignVault') endpoint = '/api/admin/sovereign-vault';
+
+            title.innerHTML = `<i data-lucide="database" class="w-5 h-5 text-blue-500"></i><span>Inspector: ${type}</span>`;
+            thead.innerHTML = `<tr><th class="p-3">Record Data</th></tr>`;
+            tbody.innerHTML = `<tr><td class="p-6 text-center text-slate-400">Loading...</td></tr>`;
+
+            const res = await fetch(endpoint, { headers: getAuthHeaders() });
+            const data = await res.json();
+            const list = data[Object.keys(data).find(k => k !== 'success')] || [];
+            if (list.length > 0) {
+                tbody.innerHTML = list.map(item => `<tr class="hover:bg-slate-900/50"><td class="p-3 text-slate-300">${JSON.stringify(item)}</td></tr>`).join('');
+            } else {
+                tbody.innerHTML = `<tr><td class="p-6 text-center text-slate-500">No records found.</td></tr>`;
             }
             lucide.createIcons();
         }
 
-        function closeModal() {
-            const modal = document.getElementById('genericModal');
-            if (modal) modal.classList.add('hidden');
-            loadDashboard();
-        }
-
-        async function resolveShadowTrap(trapId) {
-            if (!confirm(`Disable and clear shadow trap ${trapId}?`)) return;
-            try {
-                const res = await fetch('/api/admin/shadow-traps/resolve', {
-                    method: 'POST', headers: getAuthHeaders(),
-                    body: JSON.stringify({ trapId })
-                });
-                const data = await res.json();
-                if (data && data.success) { alert(`✅ ${data.message}`); openModal('shadowTraps'); }
-                else { alert("❌ Error: " + (data ? data.error : 'RBAC Restricted')); }
-            } catch (err) { alert("Network error."); }
-        }
-
-        async function approveMakerChecker(ticketId) {
-            try {
-                const res = await fetch('/api/admin/maker-checker-approve', {
-                    method: 'POST', headers: getAuthHeaders(),
-                    body: JSON.stringify({ ticketId })
-                });
-                const data = await res.json();
-                if (data && data.success) { alert(`✅ ${data.message}`); openModal('makerCheckerQueue'); loadDashboard(); }
-                else { alert("❌ Approval error: " + (data ? data.error : 'RBAC Restricted')); }
-            } catch (err) { alert("Network error during approval."); }
-        }
+        function closeModal() { document.getElementById('genericModal').classList.add('hidden'); loadDashboard(); }
 
         async function dispatchIsoWire() {
-            const amount = prompt("Enter transfer amount (Enter 1,000,000+ for Maker-Checker dual control & FRC shadow-trap):", "1250000");
+            const amount = prompt("Enter transfer amount:", "1250000");
             if (!amount) return;
-            try {
-                const res = await fetch('/api/iso20022/dispatch-wire', {
-                    method: 'POST', headers: getAuthHeaders(),
-                    body: JSON.stringify({ beneficiaryName: "Sovereign Counterparty", beneficiaryAccount: "ACC_01", amount, purposeCode: "GDSV" })
-                });
-                const data = await res.json();
-                if (data && data.success) { 
-                    alert(`✅ ${data.message}\n${data.wireMessage && data.wireMessage.shadowTrapFlagged ? '⚠️ SHADOW-TRAP TRIGGERED: Captured in goAML queue.' : '🟢 Clean transaction settled atomically.'}`); 
-                    loadDashboard(); 
-                } else { alert("❌ Error: " + (data ? data.error : 'RBAC Restricted')); }
-            } catch (err) { alert("Network error."); }
+            const res = await fetch('/api/iso20022/dispatch-wire', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ beneficiaryName: "Sovereign Counterparty", beneficiaryAccount: "ACC_01", amount, purposeCode: "GDSV" })
+            });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); loadDashboard(); }
         }
 
         async function runInterbankClearing() {
-            try {
-                const res = await fetch('/api/interbank/clearing-settlement', { method: 'POST', headers: getAuthHeaders() });
-                const data = await res.json();
-                if (data && data.success) { alert(`✅ Inter-Bank Clearing Executed!`); loadDashboard(); }
-                else { alert("❌ Clearing error: " + (data ? data.error : 'RBAC Restricted')); }
-            } catch (err) { alert("Network error."); }
+            const res = await fetch('/api/interbank/clearing-settlement', { method: 'POST', headers: getAuthHeaders() });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); loadDashboard(); }
         }
 
         async function loadAuditVault() {
-            try {
-                const res = await fetch('/api/audit/search');
-                const data = await res.json();
-                if (data && data.success) { renderAuditTable(data.auditStream || []); }
-            } catch (err) { console.error("Audit load error:", err); }
+            const res = await fetch('/api/audit/search');
+            const data = await res.json();
+            if (data && data.success) { renderAuditTable(data.auditStream || []); }
         }
 
         function renderAuditTable(streams) {
@@ -946,40 +663,11 @@
         }
 
         async function verifySingleBlock(blockHash) {
-            const modal = document.getElementById('genericModal');
-            const title = document.getElementById('modalTitle');
-            const desc = document.getElementById('modalDesc');
-            const thead = document.getElementById('modalTableHead');
-            const tbody = document.getElementById('modalTableBody');
-            if (!modal) return;
-            
-            modal.classList.remove('hidden');
-            title.innerHTML = `<i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i><span>Active SHA-256 Block Verification</span>`;
-            desc.innerText = `Cryptographic audit probe evaluating block hash: ${blockHash}`;
-            thead.innerHTML = `<tr><th class="p-3">Evaluation Parameter</th><th class="p-3">Cryptographic Proof Output</th></tr>`;
-            tbody.innerHTML = `<tr><td colspan="2" class="p-6 text-center text-emerald-400 animate-pulse">Computing SHA-256 hash validation...</td></tr>`;
-            lucide.createIcons();
-
-            try {
-                const res = await fetch(`/api/admin/audit/verify-block/${blockHash}`, {
-                    headers: getAuthHeaders()
-                });
-                const data = await res.json();
-                if (data && data.success) {
-                    tbody.innerHTML = `
-                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Audit ID</td><td class="p-3 text-white font-mono">${data.block.auditId}</td></tr>
-                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Action Type</td><td class="p-3 text-blue-400 font-bold">${data.block.actionType}</td></tr>
-                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Stored Hash</td><td class="p-3 text-slate-400 text-[11px] font-mono">${data.block.currentHash}</td></tr>
-                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Re-Computed Hash</td><td class="p-3 text-emerald-400 text-[11px] font-mono">${data.computedHash}</td></tr>
-                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Integrity Result</td><td class="p-3 text-emerald-400 font-bold">100% VALID (Zero Tampering)</td></tr>
-                    `;
-                } else {
-                    tbody.innerHTML = `<tr><td colspan="2" class="p-6 text-center text-red-500">Verification failed: Block not found or mismatched.</td></tr>`;
-                }
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="2" class="p-6 text-center text-red-500">Network error during single block verification.</td></tr>`;
+            const res = await fetch(`/api/admin/audit/verify-block/${blockHash}`, { headers: getAuthHeaders() });
+            const data = await res.json();
+            if (data && data.success) {
+                alert(data.message + `\nComputed Hash: ${data.computedHash}`);
             }
-            lucide.createIcons();
         }
 
         function debounceSearch() {
@@ -988,43 +676,16 @@
         }
 
         async function searchAuditVault() {
-            const input = document.getElementById('auditSearchInput');
-            const query = input ? input.value : "";
-            try {
-                const res = await fetch(`/api/audit/search?q=${encodeURIComponent(query)}`);
-                const data = await res.json();
-                if (data && data.success) { renderAuditTable(data.auditStream || []); }
-            } catch (e) { console.error("Search error:", e); }
+            const query = document.getElementById('auditSearchInput').value;
+            const res = await fetch(`/api/audit/search?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            if (data && data.success) { renderAuditTable(data.auditStream || []); }
         }
 
         async function triggerChainAudit() {
-            const modal = document.getElementById('genericModal');
-            const title = document.getElementById('modalTitle');
-            const desc = document.getElementById('modalDesc');
-            const thead = document.getElementById('modalTableHead');
-            const tbody = document.getElementById('modalTableBody');
-            if (!modal) return;
-            
-            modal.classList.remove('hidden');
-            title.innerHTML = `<i data-lucide="lock" class="w-5 h-5 text-amber-400"></i><span>Sovereign Vault Integrity & Chain Verification</span>`;
-            desc.innerText = "Executing real-time SHA-256 lattice verification across sovereign evolution ledgers...";
-            thead.innerHTML = `<tr><th class="p-3">Verification Metric</th><th class="p-3">Cryptographic Status</th></tr>`;
-            tbody.innerHTML = `<tr><td colspan="2" class="p-6 text-center text-amber-400 animate-pulse">Running chain validation...</td></tr>`;
-            lucide.createIcons();
-
-            try {
-                const res = await fetch('/api/admin/audit/verify-chain');
-                const data = await res.json();
-                if (data && data.success) {
-                    tbody.innerHTML = `
-                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Chain Validity Status</td><td class="p-3 text-emerald-400 font-bold">100% VALID (Tamper-Free)</td></tr>
-                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Total Blocks Verified</td><td class="p-3 text-white font-mono">${data.totalBlocksVerified || 0} Blocks</td></tr>
-                        <tr class="hover:bg-slate-900/50 transition"><td class="p-3 text-slate-300 font-bold">Architecture Standard</td><td class="p-3 text-blue-400 font-mono">Stage 147 Unified AI & Compliance Edition</td></tr>
-                    `;
-                    alert(data.message || "Chain verified successfully.");
-                    loadDashboard();
-                }
-            } catch (err) { tbody.innerHTML = `<tr><td colspan="2" class="p-6 text-center text-red-500">Network error.</td></tr>`; }
+            const res = await fetch('/api/admin/audit/verify-chain');
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); loadDashboard(); }
         }
 
         window.onload = loadDashboard;
