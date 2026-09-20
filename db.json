@@ -505,6 +505,58 @@
       "currentHash": "47f71b7422e6846a104166c966e962f9a8039a3b6ed397e5a3d21bb5facbfcca",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_150_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789931696623_91420",
+      "timestamp": 1789931696623,
+      "actionType": "LOCAL_ID_IPRS_VERIFIED_STAGE150",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "nationalIdNumber": "29481920",
+        "provider": "GOV_IPRS_DIRECT"
+      },
+      "details": {
+        "verificationId": "KYC_IPRS_1789931696622_12575",
+        "tenantId": "INST-CBK-RTGS",
+        "nationalIdNumber": "29481920",
+        "fullName": "Robert Maina",
+        "dateOfBirth": "1992-06-15",
+        "gatewayProvider": "GOV_IPRS_DIRECT",
+        "status": "VERIFIED_SUCCESSFUL",
+        "zkpProofHash": "6773e0890b847de9f206733901e60a96dd077987c9f3be468df1a23c954da404",
+        "timestamp": 1789931696622
+      },
+      "previousHash": "47f71b7422e6846a104166c966e962f9a8039a3b6ed397e5a3d21bb5facbfcca",
+      "currentHash": "c5b3d918fa7dde38deb3de6b49514596d2ca8fb9653fb51f24ff7f1a66c1197d",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_150_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789931857604_46907",
+      "timestamp": 1789931857604,
+      "actionType": "POS_WEBHOOK_INGESTED_AND_SANITIZED_150",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "terminalId": "POS-NAIROBI-01",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "webhookId": "WEB_1789931857603_36270",
+        "tenantId": "INST-CBK-RTGS",
+        "terminalId": "POS-NAIROBI-01",
+        "sanitizedPayload": {
+          "customerName": "Robert Maina",
+          "amount": "1500",
+          "currency": "KES",
+          "notes": "Cashier payment received"
+        },
+        "sanitizedNotes": "Cashier payment received",
+        "timestamp": 1789931857603
+      },
+      "previousHash": "c5b3d918fa7dde38deb3de6b49514596d2ca8fb9653fb51f24ff7f1a66c1197d",
+      "currentHash": "2cf1d26de32acaf6d41b49733a2430dc8f5a89ef044dd37b123dcb8c7008d347",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_150_UNIFIED_LATTICE"
     }
   ],
   "iso20022_wires": [
@@ -659,9 +711,34 @@
       "status": "VERIFIED_SUCCESSFUL",
       "zkpProofHash": "94a2e89058fac8350cc36b13d8e402dc4333506ab92be8675e2bc545c9a8e666",
       "timestamp": 1789930092321
+    },
+    {
+      "verificationId": "KYC_IPRS_1789931696622_12575",
+      "tenantId": "INST-CBK-RTGS",
+      "nationalIdNumber": "29481920",
+      "fullName": "Robert Maina",
+      "dateOfBirth": "1992-06-15",
+      "gatewayProvider": "GOV_IPRS_DIRECT",
+      "status": "VERIFIED_SUCCESSFUL",
+      "zkpProofHash": "6773e0890b847de9f206733901e60a96dd077987c9f3be468df1a23c954da404",
+      "timestamp": 1789931696622
     }
   ],
-  "pos_transactions": [],
+  "pos_transactions": [
+    {
+      "webhookId": "WEB_1789931857603_36270",
+      "tenantId": "INST-CBK-RTGS",
+      "terminalId": "POS-NAIROBI-01",
+      "sanitizedPayload": {
+        "customerName": "Robert Maina",
+        "amount": "1500",
+        "currency": "KES",
+        "notes": "Cashier payment received"
+      },
+      "sanitizedNotes": "Cashier payment received",
+      "timestamp": 1789931857603
+    }
+  ],
   "compliance_push_logs": [
     {
       "pushId": "CBK_PUSH_1789922938933_79176",
