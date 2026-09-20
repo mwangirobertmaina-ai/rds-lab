@@ -44,6 +44,18 @@ app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+// --- DETERMINISTIC STABLE STRINGIFY HELPER (Prevents false tampering hash mismatches) ---
+function stableStringify(obj) {
+    if (obj === null || typeof obj !== 'object') {
+        return JSON.stringify(obj);
+    }
+    if (Array.isArray(obj)) {
+        return '[' + obj.map(stableStringify).join(',') + ']';
+    }
+    const keys = Object.keys(obj).sort();
+    return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(obj[k])).join(',') + '}';
+}
+
 // --- STAGE 150: ADVANCED CYBER SHIELD & RATE LIMITING INTERCEPTOR ---
 const requestIpMap = new Map();
 app.use((req, res, next) => {
@@ -166,7 +178,7 @@ function ensureState() {
 
     if (data.immutable_audit_vault.length === 0) {
       const genesisTimestamp = Date.now();
-      const rawGenesis = `${genesisTimestamp}:GENESIS_ROOT_INIT:{} :{} :GENESIS_ROOT_HASH_000000000000000000000000:STAGE_150_UNIFIED_LATTICE`;
+      const rawGenesis = `${genesisTimestamp}:GENESIS_ROOT_INIT:${stableStringify({ system: "RDS_CYBER_SHIELD_CORE" })}:${stableStringify({ message: "Secure sovereign genesis block established for Stage 150 Unified Hardened Edition." })}:GENESIS_ROOT_HASH_000000000000000000000000:STAGE_150_UNIFIED_LATTICE`;
       const genesisHash = crypto.createHash("sha256").update(rawGenesis).digest("hex");
       data.immutable_audit_vault.push({
         auditId: "AUD_GENESIS_ROOT_150",
@@ -222,7 +234,7 @@ async function recordImmutableAudit(actionType, actor, details) {
             ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash 
             : "GENESIS_ROOT_HASH_000000000000000000000000";
         
-        const rawString = `${timestamp}:${actionType}:${JSON.stringify(actor)}:${JSON.stringify(details)}:${previousHash}:STAGE_150_UNIFIED_LATTICE`;
+        const rawString = `${timestamp}:${actionType}:${stableStringify(actor)}:${stableStringify(details)}:${previousHash}:STAGE_150_UNIFIED_LATTICE`;
         const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
         const auditRecord = {
@@ -806,7 +818,7 @@ app.get('/api/admin/audit/verify-block/:hash', enforceTenantIsolation, async (re
         return fail(res, "Block hash not found in sovereign vault.", 404);
     }
     
-    const rawString = `${block.timestamp}:${block.actionType}:${JSON.stringify(block.actor)}:${JSON.stringify(block.details)}:${block.previousHash}:STAGE_150_UNIFIED_LATTICE`;
+    const rawString = `${block.timestamp}:${block.actionType}:${stableStringify(block.actor)}:${stableStringify(block.details)}:${block.previousHash}:STAGE_150_UNIFIED_LATTICE`;
     const computedHash = crypto.createHash("sha256").update(rawString).digest("hex");
     const isValid = computedHash === block.currentHash;
 

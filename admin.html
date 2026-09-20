@@ -436,14 +436,30 @@
         </div>
     </div>
 
-    <!-- Client Script Logic -->
+    <!-- Client Script Logic (Hardened Edition) -->
     <script>
         lucide.createIcons();
         const socket = io();
         let searchTimeout = null;
 
+        function sanitizeInput(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "[NEUTRALIZED]");
+        }
+
         function getAuthHeaders() {
             const token = localStorage.getItem('rds_jwt_token');
+            if (token) {
+                try {
+                    const parts = token.split('.');
+                    if (parts.length === 3) {
+                        const payload = JSON.parse(atob(parts[1]));
+                        if (payload.exp && Date.now() >= payload.exp) {
+                            localStorage.removeItem('rds_jwt_token');
+                        }
+                    }
+                } catch(e) {}
+            }
             const tenantId = getSelectedTenantId();
             const headers = { 'Content-Type': 'application/json', 'x-business-id': tenantId };
             if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -512,9 +528,15 @@
         function closeAiEvalModal() { document.getElementById('aiEvalModal').classList.add('hidden'); }
 
         async function submitAiEval() {
-            const agentId = document.getElementById('aiAgentId').value.trim();
-            const proposedAction = document.getElementById('aiProposedAction').value.trim();
-            const parameters = JSON.parse(document.getElementById('aiParameters').value.trim());
+            const agentId = sanitizeInput(document.getElementById('aiAgentId').value.trim());
+            const proposedAction = sanitizeInput(document.getElementById('aiProposedAction').value.trim());
+            let parameters = {};
+            try {
+                parameters = JSON.parse(document.getElementById('aiParameters').value.trim());
+            } catch(e) {
+                alert("Invalid JSON format in parameters.");
+                return;
+            }
             const res = await fetch('/api/ai/agent-evaluate-intent', {
                 method: 'POST', headers: getAuthHeaders(),
                 body: JSON.stringify({ agentId, proposedAction, parameters })
@@ -524,9 +546,9 @@
         }
 
         async function submitLocalIdVerification() {
-            const nationalIdNumber = document.getElementById('localIdNumber').value.trim();
-            const fullName = document.getElementById('localIdFullName').value.trim();
-            const dateOfBirth = document.getElementById('localIdDob').value.trim();
+            const nationalIdNumber = sanitizeInput(document.getElementById('localIdNumber').value.trim());
+            const fullName = sanitizeInput(document.getElementById('localIdFullName').value.trim());
+            const dateOfBirth = sanitizeInput(document.getElementById('localIdDob').value.trim());
             const gatewayProvider = document.getElementById('localIdProvider').value;
 
             const res = await fetch('/api/kyc/verify-local-id', {
@@ -553,7 +575,7 @@
         }
 
         async function submitCbkEmailDispatch() {
-            const recipientEmail = document.getElementById('cbkRecipientEmail').value.trim();
+            const recipientEmail = sanitizeInput(document.getElementById('cbkRecipientEmail').value.trim());
             const res = await fetch('/api/compliance/send-custom-email', {
                 method: 'POST', headers: getAuthHeaders(),
                 body: JSON.stringify({ recipientEmail, frequency: "DAILY" })
@@ -563,7 +585,7 @@
         }
 
         async function submitLogin() {
-            const email = document.getElementById('loginEmail').value.trim();
+            const email = sanitizeInput(document.getElementById('loginEmail').value.trim());
             const password = document.getElementById('loginPassword').value.trim();
             const res = await fetch('/api/login', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -579,8 +601,8 @@
         }
 
         async function submitRegistration() {
-            const fullName = document.getElementById('regFullName').value.trim();
-            const email = document.getElementById('regEmail').value.trim();
+            const fullName = sanitizeInput(document.getElementById('regFullName').value.trim());
+            const email = sanitizeInput(document.getElementById('regEmail').value.trim());
             const password = document.getElementById('regPassword').value.trim();
             const role = document.getElementById('regRole').value;
             const res = await fetch('/api/register', {
@@ -592,8 +614,14 @@
         }
 
         async function submitPosWebhook() {
-            const terminalId = document.getElementById('posTerminalId').value.trim();
-            const payload = JSON.parse(document.getElementById('posPayload').value.trim());
+            const terminalId = sanitizeInput(document.getElementById('posTerminalId').value.trim());
+            let payload = {};
+            try {
+                payload = JSON.parse(document.getElementById('posPayload').value.trim());
+            } catch(e) {
+                alert("Invalid JSON payload.");
+                return;
+            }
             const res = await fetch('/api/teller/webhook', {
                 method: 'POST', headers: getAuthHeaders(),
                 body: JSON.stringify({ terminalId, payload })
@@ -707,7 +735,7 @@
         }
 
         async function searchAuditVault() {
-            const query = document.getElementById('auditSearchInput').value;
+            const query = sanitizeInput(document.getElementById('auditSearchInput').value);
             const res = await fetch(`/api/audit/search?q=${encodeURIComponent(query)}`);
             const data = await res.json();
             if (data && data.success) { renderAuditTable(data.auditStream || []); }
