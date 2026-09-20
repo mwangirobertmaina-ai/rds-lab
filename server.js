@@ -220,7 +220,12 @@ const saveDB = async () => {
     ensureState();
     const tempFile = `${DB_FILE}.tmp`;
     await fsPromises.writeFile(tempFile, JSON.stringify(data, null, 2), "utf-8");
-    await fsPromises.rename(tempFile, DB_FILE);
+    try {
+      await fsPromises.rename(tempFile, DB_FILE);
+    } catch (renameErr) {
+      // Fallback for Windows file locking EPERM issues
+      await fsPromises.writeFile(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
+    }
   } catch (err) { console.error("DB save error", err); }
   isSaving = false;
   if (saveQueued) { saveQueued = false; saveDB(); }

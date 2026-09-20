@@ -480,6 +480,31 @@
       "currentHash": "39de13f632b300a3a167cbfc3ca6ef182adca6eca1d7d5d1bf99925a2710b76c",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789930092322_55229",
+      "timestamp": 1789930092322,
+      "actionType": "LOCAL_ID_IPRS_VERIFIED_STAGE150",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "nationalIdNumber": "29481920",
+        "provider": "GOV_IPRS_DIRECT"
+      },
+      "details": {
+        "verificationId": "KYC_IPRS_1789930092321_40313",
+        "tenantId": "INST-CBK-RTGS",
+        "nationalIdNumber": "29481920",
+        "fullName": "Robert Maina",
+        "dateOfBirth": "1992-06-15",
+        "gatewayProvider": "GOV_IPRS_DIRECT",
+        "status": "VERIFIED_SUCCESSFUL",
+        "zkpProofHash": "94a2e89058fac8350cc36b13d8e402dc4333506ab92be8675e2bc545c9a8e666",
+        "timestamp": 1789930092321
+      },
+      "previousHash": "39de13f632b300a3a167cbfc3ca6ef182adca6eca1d7d5d1bf99925a2710b76c",
+      "currentHash": "47f71b7422e6846a104166c966e962f9a8039a3b6ed397e5a3d21bb5facbfcca",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_150_UNIFIED_LATTICE"
     }
   ],
   "iso20022_wires": [
@@ -621,6 +646,19 @@
       "zkpHash": "66cd18d9439183c29a8aafa024cd354a4403e019fa567ce52a364dddee9bb1d1",
       "status": "ACTIVE_SOVEREIGN_PASS",
       "issuedAt": 1789925976833
+    }
+  ],
+  "local_id_verifications": [
+    {
+      "verificationId": "KYC_IPRS_1789930092321_40313",
+      "tenantId": "INST-CBK-RTGS",
+      "nationalIdNumber": "29481920",
+      "fullName": "Robert Maina",
+      "dateOfBirth": "1992-06-15",
+      "gatewayProvider": "GOV_IPRS_DIRECT",
+      "status": "VERIFIED_SUCCESSFUL",
+      "zkpProofHash": "94a2e89058fac8350cc36b13d8e402dc4333506ab92be8675e2bc545c9a8e666",
+      "timestamp": 1789930092321
     }
   ],
   "pos_transactions": [],
