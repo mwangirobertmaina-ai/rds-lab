@@ -112,6 +112,60 @@
       "amlFlagged": false,
       "riskScore": "0.01% (CBK & World Bank Verified)",
       "kycStatus": "TIER_3_SOVEREIGN_VERIFIED"
+    },
+    {
+      "id": "USR_1789925023312_64466",
+      "fullName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "role": "REGULAR_USER",
+      "didPassId": "did:rds:sovereign:658690",
+      "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
+      "riskScore": "0.00% (Central Registry Verified)"
+    },
+    {
+      "id": "USR_1789925031018_9529",
+      "fullName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "role": "REGULAR_USER",
+      "didPassId": "did:rds:sovereign:484505",
+      "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
+      "riskScore": "0.00% (Central Registry Verified)"
+    },
+    {
+      "id": "USR_1789925042746_20466",
+      "fullName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "role": "REGULAR_USER",
+      "didPassId": "did:rds:sovereign:513441",
+      "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
+      "riskScore": "0.00% (Central Registry Verified)"
+    },
+    {
+      "id": "USR_1789925058487_86781",
+      "fullName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "role": "REGULAR_USER",
+      "didPassId": "did:rds:sovereign:188875",
+      "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
+      "riskScore": "0.00% (Central Registry Verified)"
+    },
+    {
+      "id": "USR_1789925077276_92707",
+      "fullName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "role": "REGULAR_USER",
+      "didPassId": "did:rds:sovereign:786689",
+      "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
+      "riskScore": "0.00% (Central Registry Verified)"
+    },
+    {
+      "id": "USR_1789925976833_31152",
+      "fullName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "role": "REGULAR_USER",
+      "didPassId": "did:rds:sovereign:869092",
+      "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
+      "riskScore": "0.00% (Central Registry Verified)"
     }
   ],
   "immutable_audit_vault": [
@@ -306,6 +360,126 @@
       "currentHash": "eb311550d7394f9f24061d0bd24f6bb44b7abb403c247b30690224479d5bcc81",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789925023313_75230",
+      "timestamp": 1789925023313,
+      "actionType": "CENTRAL_DID_PASS_MINTED_148",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "holderName": "Robert Maina",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "didPassId": "did:rds:sovereign:658690",
+        "holderName": "Robert Maina",
+        "nationalIdOrPassport": "KE-99882710",
+        "verificationType": "LOCAL_IPRS",
+        "kycTier": "TIER_3_SOVEREIGN",
+        "zkpHash": "65d6884648ed5b988802eaf2a58f834b0b15afb3df79532b46e54e865e777ca6",
+        "status": "ACTIVE_SOVEREIGN_PASS",
+        "issuedAt": 1789925023312
+      },
+      "previousHash": "eb311550d7394f9f24061d0bd24f6bb44b7abb403c247b30690224479d5bcc81",
+      "currentHash": "927a9168474681825a81d3eb0e6ddb7025c433f869525581c1a970c97c966b6a",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789925031019_69976",
+      "timestamp": 1789925031018,
+      "actionType": "CENTRAL_DID_PASS_MINTED_148",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "holderName": "Robert Maina",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "didPassId": "did:rds:sovereign:484505",
+        "holderName": "Robert Maina",
+        "nationalIdOrPassport": "KE-99882710",
+        "verificationType": "LOCAL_IPRS",
+        "kycTier": "TIER_3_SOVEREIGN",
+        "zkpHash": "493a2bbfb115d1a2437ad29165b05f60d1373def6e27858bb7d7c1470438758b",
+        "status": "ACTIVE_SOVEREIGN_PASS",
+        "issuedAt": 1789925031017
+      },
+      "previousHash": "927a9168474681825a81d3eb0e6ddb7025c433f869525581c1a970c97c966b6a",
+      "currentHash": "907f6e9c504f8c0febb945c10c481b8b449221ba1e1f676512e6012308aba218",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789925042746_93140",
+      "timestamp": 1789925042746,
+      "actionType": "CENTRAL_DID_PASS_MINTED_148",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "holderName": "Robert Maina",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "didPassId": "did:rds:sovereign:513441",
+        "holderName": "Robert Maina",
+        "nationalIdOrPassport": "KE-99882710",
+        "verificationType": "LOCAL_IPRS",
+        "kycTier": "TIER_3_SOVEREIGN",
+        "zkpHash": "e3b2e6650a115305ce47567ce35f6f33e3197dfc4b3971bb0b714b52545a1fd3",
+        "status": "ACTIVE_SOVEREIGN_PASS",
+        "issuedAt": 1789925042746
+      },
+      "previousHash": "907f6e9c504f8c0febb945c10c481b8b449221ba1e1f676512e6012308aba218",
+      "currentHash": "bfbfc2da20ee82cc3c08b3e249d09e9aa4c5ed069dc4988f65d78fde2eeade08",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789925077277_71641",
+      "timestamp": 1789925077277,
+      "actionType": "CENTRAL_DID_PASS_MINTED_148",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "holderName": "Robert Maina",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "didPassId": "did:rds:sovereign:786689",
+        "holderName": "Robert Maina",
+        "nationalIdOrPassport": "KE-99882710",
+        "verificationType": "LOCAL_IPRS",
+        "kycTier": "TIER_3_SOVEREIGN",
+        "zkpHash": "ec5d47880315700e767fe54ed11fd028393289d3862354ed1dec08654abbfe99",
+        "status": "ACTIVE_SOVEREIGN_PASS",
+        "issuedAt": 1789925077276
+      },
+      "previousHash": "bfbfc2da20ee82cc3c08b3e249d09e9aa4c5ed069dc4988f65d78fde2eeade08",
+      "currentHash": "e099882a3c38749445feb26748ef0956925054bdd574569278f0c4afd4f6481b",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789925976835_92315",
+      "timestamp": 1789925976835,
+      "actionType": "CENTRAL_DID_PASS_MINTED_148",
+      "actor": {
+        "tenant": "INST-WORLDBANK",
+        "holderName": "Robert Maina",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "didPassId": "did:rds:sovereign:869092",
+        "holderName": "Robert Maina",
+        "nationalIdOrPassport": "KE-99882710",
+        "verificationType": "LOCAL_IPRS",
+        "kycTier": "TIER_3_SOVEREIGN",
+        "zkpHash": "66cd18d9439183c29a8aafa024cd354a4403e019fa567ce52a364dddee9bb1d1",
+        "status": "ACTIVE_SOVEREIGN_PASS",
+        "issuedAt": 1789925976833
+      },
+      "previousHash": "e099882a3c38749445feb26748ef0956925054bdd574569278f0c4afd4f6481b",
+      "currentHash": "39de13f632b300a3a167cbfc3ca6ef182adca6eca1d7d5d1bf99925a2710b76c",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_148_UNIFIED_LATTICE"
     }
   ],
   "iso20022_wires": [
@@ -387,6 +561,66 @@
       "zkpHash": "zkp_proof_sha3_verified_9988",
       "issuedAt": 1789862410476,
       "status": "ACTIVE_SOVEREIGN_PASS"
+    },
+    {
+      "didPassId": "did:rds:sovereign:658690",
+      "holderName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "verificationType": "LOCAL_IPRS",
+      "kycTier": "TIER_3_SOVEREIGN",
+      "zkpHash": "65d6884648ed5b988802eaf2a58f834b0b15afb3df79532b46e54e865e777ca6",
+      "status": "ACTIVE_SOVEREIGN_PASS",
+      "issuedAt": 1789925023312
+    },
+    {
+      "didPassId": "did:rds:sovereign:484505",
+      "holderName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "verificationType": "LOCAL_IPRS",
+      "kycTier": "TIER_3_SOVEREIGN",
+      "zkpHash": "493a2bbfb115d1a2437ad29165b05f60d1373def6e27858bb7d7c1470438758b",
+      "status": "ACTIVE_SOVEREIGN_PASS",
+      "issuedAt": 1789925031017
+    },
+    {
+      "didPassId": "did:rds:sovereign:513441",
+      "holderName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "verificationType": "LOCAL_IPRS",
+      "kycTier": "TIER_3_SOVEREIGN",
+      "zkpHash": "e3b2e6650a115305ce47567ce35f6f33e3197dfc4b3971bb0b714b52545a1fd3",
+      "status": "ACTIVE_SOVEREIGN_PASS",
+      "issuedAt": 1789925042746
+    },
+    {
+      "didPassId": "did:rds:sovereign:188875",
+      "holderName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "verificationType": "LOCAL_IPRS",
+      "kycTier": "TIER_3_SOVEREIGN",
+      "zkpHash": "d8be5bb5cdf308cf1f7e31cd3d73190b99d6611738f5e2ac184b07dc698d7afb",
+      "status": "ACTIVE_SOVEREIGN_PASS",
+      "issuedAt": 1789925058487
+    },
+    {
+      "didPassId": "did:rds:sovereign:786689",
+      "holderName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "verificationType": "LOCAL_IPRS",
+      "kycTier": "TIER_3_SOVEREIGN",
+      "zkpHash": "ec5d47880315700e767fe54ed11fd028393289d3862354ed1dec08654abbfe99",
+      "status": "ACTIVE_SOVEREIGN_PASS",
+      "issuedAt": 1789925077276
+    },
+    {
+      "didPassId": "did:rds:sovereign:869092",
+      "holderName": "Robert Maina",
+      "nationalIdOrPassport": "KE-99882710",
+      "verificationType": "LOCAL_IPRS",
+      "kycTier": "TIER_3_SOVEREIGN",
+      "zkpHash": "66cd18d9439183c29a8aafa024cd354a4403e019fa567ce52a364dddee9bb1d1",
+      "status": "ACTIVE_SOVEREIGN_PASS",
+      "issuedAt": 1789925976833
     }
   ],
   "pos_transactions": [],
