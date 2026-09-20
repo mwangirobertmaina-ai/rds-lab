@@ -578,6 +578,33 @@
       "currentHash": "b3c6b5354fc81b75473ab4d7b183228439a928d3b15eca348a6cfaa69296c5c2",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_150_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789932570787_66468",
+      "timestamp": 1789932570786,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_150",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "evaluationId": "AI_EVAL_1789932570785_71832",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_WIRE",
+        "parameters": {
+          "amount": 750000,
+          "beneficiaryName": "Sovereign Reserve Partner",
+          "purposeCode": "SETT"
+        },
+        "riskScore": "0.01%",
+        "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+        "timestamp": 1789932570785
+      },
+      "previousHash": "b3c6b5354fc81b75473ab4d7b183228439a928d3b15eca348a6cfaa69296c5c2",
+      "currentHash": "87f904e3f80c23606416c02b13f23e4e7c8070c4d484871fbcdee10e1206bb90",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_150_UNIFIED_LATTICE"
     }
   ],
   "iso20022_wires": [
@@ -619,6 +646,19 @@
       "riskScore": "0.01%",
       "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
       "timestamp": 1789922960572
+    },
+    {
+      "evaluationId": "AI_EVAL_1789932570785_71832",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789932570785
     }
   ],
   "ai_approved_intents": [
@@ -634,6 +674,19 @@
       "riskScore": "0.01%",
       "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
       "timestamp": 1789922960572
+    },
+    {
+      "evaluationId": "AI_EVAL_1789932570785_71832",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789932570785
     }
   ],
   "interbank_clearing_settlements": [],
