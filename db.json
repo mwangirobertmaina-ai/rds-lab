@@ -605,6 +605,373 @@
       "currentHash": "87f904e3f80c23606416c02b13f23e4e7c8070c4d484871fbcdee10e1206bb90",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_150_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789948740552_67218",
+      "timestamp": 1789948740552,
+      "actionType": "CBK_QUARTERLY_COMPLIANCE_PUSH_151",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "pushId": "CBK_PUSH_1789948740552_80914",
+        "tenantId": "INST-CBK-RTGS",
+        "frequency": "QUARTERLY",
+        "recordsCount": 19,
+        "timestamp": 1789948740552,
+        "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+      },
+      "previousHash": "87f904e3f80c23606416c02b13f23e4e7c8070c4d484871fbcdee10e1206bb90",
+      "currentHash": "9fc0e6ead67f53dac7c354eb0f1f5bf2ceec63400009cafa4466de7c594c26fb",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_151_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789949988181_77913",
+      "timestamp": 1789949988181,
+      "actionType": "CBK_QUARTERLY_COMPLIANCE_PUSH_153",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "pushId": "CBK_PUSH_1789949988180_66698",
+        "tenantId": "INST-CBK-RTGS",
+        "frequency": "QUARTERLY",
+        "recordsCount": 20,
+        "timestamp": 1789949988180,
+        "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+      },
+      "previousHash": "9fc0e6ead67f53dac7c354eb0f1f5bf2ceec63400009cafa4466de7c594c26fb",
+      "currentHash": "dcc2dbfae7f424a6be2251c343376c80fdfb6a694482a601ec788b325dc75d4e",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_153_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950023983_75456",
+      "timestamp": 1789950023982,
+      "actionType": "POS_WEBHOOK_INGESTED_AND_SANITIZED_153",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "terminalId": "POS-NAIROBI-01",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "webhookId": "WEB_1789950023982_16396",
+        "tenantId": "INST-CBK-RTGS",
+        "terminalId": "POS-NAIROBI-01",
+        "sanitizedPayload": {
+          "customerName": "Robert Maina",
+          "amount": "1500",
+          "currency": "KES",
+          "notes": "Cashier payment received"
+        },
+        "sanitizedNotes": "Cashier payment received",
+        "timestamp": 1789950023982
+      },
+      "previousHash": "dcc2dbfae7f424a6be2251c343376c80fdfb6a694482a601ec788b325dc75d4e",
+      "currentHash": "f91238ef07fa83da97f21006eca8ec02fdf029e8eab082bf2f60db5329f73f37",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_153_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950042737_3157",
+      "timestamp": 1789950042737,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_153",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "status": "SETTLED"
+      },
+      "previousHash": "f91238ef07fa83da97f21006eca8ec02fdf029e8eab082bf2f60db5329f73f37",
+      "currentHash": "5dacc44e5b1b3e620157028187ee6dde85ed14a63477f487060a5d33f7146f4e",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_153_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950437091_81022",
+      "timestamp": 1789950437091,
+      "actionType": "MAKER_CHECKER_WIRE_DISPATCHED_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "amount": 1250000,
+        "status": "PENDING_CHECKER_VERIFICATION",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "wireId": "WIRE_1789950437091_44250",
+        "tenantId": "INST-CBK-RTGS",
+        "amount": 1250000,
+        "shadowTrapFlagged": true,
+        "makerCheckerStatus": "PENDING_CHECKER_VERIFICATION",
+        "timestamp": 1789950437091
+      },
+      "previousHash": "5dacc44e5b1b3e620157028187ee6dde85ed14a63477f487060a5d33f7146f4e",
+      "currentHash": "0ab83bec9bec1ad3d89650d2e9247819643428ff886fbbcf7a7da07d1aef7bce",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950447099_85837",
+      "timestamp": 1789950447099,
+      "actionType": "SYSTEM_HYBRID_CLEAN_HEAL_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "status": "HEALED"
+      },
+      "previousHash": "0ab83bec9bec1ad3d89650d2e9247819643428ff886fbbcf7a7da07d1aef7bce",
+      "currentHash": "98eb717a94222ba17a32774f53ebc2ef610f57d1543c5f6fbe006afe450ea4c7",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950458380_65422",
+      "timestamp": 1789950458380,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "evaluationId": "AI_EVAL_1789950458379_44166",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_WIRE",
+        "parameters": {
+          "amount": 750000,
+          "beneficiaryName": "Sovereign Reserve Partner",
+          "purposeCode": "SETT"
+        },
+        "riskScore": "0.01%",
+        "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+        "timestamp": 1789950458379
+      },
+      "previousHash": "98eb717a94222ba17a32774f53ebc2ef610f57d1543c5f6fbe006afe450ea4c7",
+      "currentHash": "372b2c2201ada98003672c61514bb1a7df20791cac7f535af5dd191cd116a9f4",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950470391_9517",
+      "timestamp": 1789950470391,
+      "actionType": "CBK_DAILY_COMPLIANCE_PUSH_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "pushId": "CBK_PUSH_1789950470390_90199",
+        "tenantId": "INST-CBK-RTGS",
+        "frequency": "DAILY",
+        "recordsCount": 26,
+        "timestamp": 1789950470390,
+        "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+      },
+      "previousHash": "372b2c2201ada98003672c61514bb1a7df20791cac7f535af5dd191cd116a9f4",
+      "currentHash": "e0d45d8074429d9ad770f30074ce3723f985d7e71c0a6331d3cb6c68e0d43317",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950474579_89477",
+      "timestamp": 1789950474578,
+      "actionType": "CBK_MONTHLY_COMPLIANCE_PUSH_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "pushId": "CBK_PUSH_1789950474577_72467",
+        "tenantId": "INST-CBK-RTGS",
+        "frequency": "MONTHLY",
+        "recordsCount": 27,
+        "timestamp": 1789950474577,
+        "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+      },
+      "previousHash": "e0d45d8074429d9ad770f30074ce3723f985d7e71c0a6331d3cb6c68e0d43317",
+      "currentHash": "efb9944cd9bf2964a94bd1d71d5fa725655c88802b25c2639eaee926184c4da9",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950479282_2554",
+      "timestamp": 1789950479281,
+      "actionType": "CBK_QUARTERLY_COMPLIANCE_PUSH_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "pushId": "CBK_PUSH_1789950479280_73351",
+        "tenantId": "INST-CBK-RTGS",
+        "frequency": "QUARTERLY",
+        "recordsCount": 28,
+        "timestamp": 1789950479280,
+        "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+      },
+      "previousHash": "efb9944cd9bf2964a94bd1d71d5fa725655c88802b25c2639eaee926184c4da9",
+      "currentHash": "a9fe684f15dd40dbcefbd56f0ae214cf71b99166f9ee85a6df5a8babf6f337e5",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950482443_9663",
+      "timestamp": 1789950482442,
+      "actionType": "CBK_YEARLY_COMPLIANCE_PUSH_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "pushId": "CBK_PUSH_1789950482442_16510",
+        "tenantId": "INST-CBK-RTGS",
+        "frequency": "YEARLY",
+        "recordsCount": 29,
+        "timestamp": 1789950482442,
+        "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+      },
+      "previousHash": "a9fe684f15dd40dbcefbd56f0ae214cf71b99166f9ee85a6df5a8babf6f337e5",
+      "currentHash": "6d9e5b4ae3a122ec04c2c0cf8e0754e9d0a4021c86a132922ab71475c7c52b59",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950486995_74696",
+      "timestamp": 1789950486995,
+      "actionType": "CBK_CUSTOM_EMAIL_DISPATCHED_DAILY_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "recipientEmail": "compliance@centralbank.go.ke",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "dispatchId": "CBK_EMAIL_1789950486994_22259",
+        "tenantId": "INST-CBK-RTGS",
+        "recipientEmail": "compliance@centralbank.go.ke",
+        "frequency": "DAILY",
+        "customNotes": "Standard automated sovereign compliance push report.",
+        "timestamp": 1789950486994,
+        "status": "DISPATCHED_SECURELY"
+      },
+      "previousHash": "6d9e5b4ae3a122ec04c2c0cf8e0754e9d0a4021c86a132922ab71475c7c52b59",
+      "currentHash": "48c93bb9af7dd90f87abf8089d1a371a18355e8e2f61946d55668271a47366f0",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950491890_94400",
+      "timestamp": 1789950491890,
+      "actionType": "SYSTEM_HYBRID_CLEAN_HEAL_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "status": "HEALED"
+      },
+      "previousHash": "48c93bb9af7dd90f87abf8089d1a371a18355e8e2f61946d55668271a47366f0",
+      "currentHash": "370ed716b81a25eaf462053e6f1a97be63a05864dee95b7b27f176b7ffe3eb34",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950497050_70356",
+      "timestamp": 1789950497050,
+      "actionType": "MAKER_CHECKER_WIRE_DISPATCHED_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "amount": 1250000,
+        "status": "PENDING_CHECKER_VERIFICATION",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "wireId": "WIRE_1789950497049_89471",
+        "tenantId": "INST-CBK-RTGS",
+        "amount": 1250000,
+        "shadowTrapFlagged": true,
+        "makerCheckerStatus": "PENDING_CHECKER_VERIFICATION",
+        "timestamp": 1789950497049
+      },
+      "previousHash": "370ed716b81a25eaf462053e6f1a97be63a05864dee95b7b27f176b7ffe3eb34",
+      "currentHash": "857dd37b56cb0f05daee3076e9abb07dc982433b892a208e4e318429da919783",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950502436_68495",
+      "timestamp": 1789950502435,
+      "actionType": "POS_WEBHOOK_INGESTED_AND_SANITIZED_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "terminalId": "POS-NAIROBI-01",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "webhookId": "WEB_1789950502435_86601",
+        "tenantId": "INST-CBK-RTGS",
+        "terminalId": "POS-NAIROBI-01",
+        "sanitizedPayload": {
+          "customerName": "Robert Maina",
+          "amount": "1500",
+          "currency": "KES",
+          "notes": "Cashier payment received"
+        },
+        "sanitizedNotes": "Cashier payment received",
+        "timestamp": 1789950502435
+      },
+      "previousHash": "857dd37b56cb0f05daee3076e9abb07dc982433b892a208e4e318429da919783",
+      "currentHash": "7d7d88cf557f899c4b365314c0c80a373f71fd4446a488af62ea5a6583484120",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950508030_38268",
+      "timestamp": 1789950508030,
+      "actionType": "POS_WEBHOOK_INGESTED_AND_SANITIZED_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "terminalId": "POS-NAIROBI-01",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "webhookId": "WEB_1789950508029_47355",
+        "tenantId": "INST-CBK-RTGS",
+        "terminalId": "POS-NAIROBI-01",
+        "sanitizedPayload": {
+          "customerName": "Robert Maina",
+          "amount": "1500",
+          "currency": "KES",
+          "notes": "Cashier payment received"
+        },
+        "sanitizedNotes": "Cashier payment received",
+        "timestamp": 1789950508029
+      },
+      "previousHash": "7d7d88cf557f899c4b365314c0c80a373f71fd4446a488af62ea5a6583484120",
+      "currentHash": "a1299465e92e5d7342eba2918e5381e270282a5d8c5e1962f3a7036519e42990",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789950511824_69003",
+      "timestamp": 1789950511824,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_154",
+      "actor": {
+        "tenant": "INST-CBK-RTGS",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "details": {
+        "status": "SETTLED"
+      },
+      "previousHash": "a1299465e92e5d7342eba2918e5381e270282a5d8c5e1962f3a7036519e42990",
+      "currentHash": "e8b3f37a2b75f1de286655d6dc6dc8dd095585b233edd526c19378ba9c460775",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     }
   ],
   "iso20022_wires": [
@@ -631,6 +998,22 @@
       "shadowTrapFlagged": false,
       "makerCheckerStatus": "AUTONOMOUSLY_APPROVED",
       "timestamp": 1789871942641
+    },
+    {
+      "wireId": "WIRE_1789950437091_44250",
+      "tenantId": "INST-CBK-RTGS",
+      "amount": 1250000,
+      "shadowTrapFlagged": true,
+      "makerCheckerStatus": "PENDING_CHECKER_VERIFICATION",
+      "timestamp": 1789950437091
+    },
+    {
+      "wireId": "WIRE_1789950497049_89471",
+      "tenantId": "INST-CBK-RTGS",
+      "amount": 1250000,
+      "shadowTrapFlagged": true,
+      "makerCheckerStatus": "PENDING_CHECKER_VERIFICATION",
+      "timestamp": 1789950497049
     }
   ],
   "ai_enforcement_logs": [
@@ -659,6 +1042,19 @@
       "riskScore": "0.01%",
       "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
       "timestamp": 1789932570785
+    },
+    {
+      "evaluationId": "AI_EVAL_1789950458379_44166",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789950458379
     }
   ],
   "ai_approved_intents": [
@@ -687,6 +1083,19 @@
       "riskScore": "0.01%",
       "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
       "timestamp": 1789932570785
+    },
+    {
+      "evaluationId": "AI_EVAL_1789950458379_44166",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789950458379
     }
   ],
   "interbank_clearing_settlements": [],
@@ -696,6 +1105,18 @@
       "institution": "Central Bank of Kenya",
       "reason": "Velocity threshold exceeded for foreign exchange transfer.",
       "status": "ACTIVE"
+    },
+    {
+      "trapId": "TRAP_1789950437091_65215",
+      "institution": "Central Bank of Kenya (CBK) National RTGS Gateway",
+      "reason": "High value threshold transfer of 1250000 flagged for FRC/AML compliance.",
+      "status": "ACTIVE"
+    },
+    {
+      "trapId": "TRAP_1789950497049_22215",
+      "institution": "Central Bank of Kenya (CBK) National RTGS Gateway",
+      "reason": "High value threshold transfer of 1250000 flagged for FRC/AML compliance.",
+      "status": "ACTIVE"
     }
   ],
   "sar_queue": [
@@ -703,6 +1124,16 @@
       "sarId": "SAR_5501",
       "referenceId": "WIRE_88921",
       "details": "Automated goAML report generated for threshold transfer of 1,250,000 KES."
+    },
+    {
+      "sarId": "SAR_1789950437091_71399",
+      "referenceId": "WIRE_1789950437091_84086",
+      "details": "goAML report auto-generated for transfer of 1250000 on corridor INST-CBK-RTGS."
+    },
+    {
+      "sarId": "SAR_1789950497049_18416",
+      "referenceId": "WIRE_1789950497049_80166",
+      "details": "goAML report auto-generated for transfer of 1250000 on corridor INST-CBK-RTGS."
     }
   ],
   "did_pass_registry": [
@@ -811,6 +1242,45 @@
       },
       "sanitizedNotes": "Cashier payment received",
       "timestamp": 1789931857603
+    },
+    {
+      "webhookId": "WEB_1789950023982_16396",
+      "tenantId": "INST-CBK-RTGS",
+      "terminalId": "POS-NAIROBI-01",
+      "sanitizedPayload": {
+        "customerName": "Robert Maina",
+        "amount": "1500",
+        "currency": "KES",
+        "notes": "Cashier payment received"
+      },
+      "sanitizedNotes": "Cashier payment received",
+      "timestamp": 1789950023982
+    },
+    {
+      "webhookId": "WEB_1789950502435_86601",
+      "tenantId": "INST-CBK-RTGS",
+      "terminalId": "POS-NAIROBI-01",
+      "sanitizedPayload": {
+        "customerName": "Robert Maina",
+        "amount": "1500",
+        "currency": "KES",
+        "notes": "Cashier payment received"
+      },
+      "sanitizedNotes": "Cashier payment received",
+      "timestamp": 1789950502435
+    },
+    {
+      "webhookId": "WEB_1789950508029_47355",
+      "tenantId": "INST-CBK-RTGS",
+      "terminalId": "POS-NAIROBI-01",
+      "sanitizedPayload": {
+        "customerName": "Robert Maina",
+        "amount": "1500",
+        "currency": "KES",
+        "notes": "Cashier payment received"
+      },
+      "sanitizedNotes": "Cashier payment received",
+      "timestamp": 1789950508029
     }
   ],
   "compliance_push_logs": [
@@ -846,6 +1316,63 @@
       "recordsCount": 17,
       "timestamp": 1789932180548,
       "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+    },
+    {
+      "pushId": "CBK_PUSH_1789948740552_80914",
+      "tenantId": "INST-CBK-RTGS",
+      "frequency": "QUARTERLY",
+      "recordsCount": 19,
+      "timestamp": 1789948740552,
+      "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+    },
+    {
+      "pushId": "CBK_PUSH_1789949988180_66698",
+      "tenantId": "INST-CBK-RTGS",
+      "frequency": "QUARTERLY",
+      "recordsCount": 20,
+      "timestamp": 1789949988180,
+      "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+    },
+    {
+      "pushId": "CBK_PUSH_1789950470390_90199",
+      "tenantId": "INST-CBK-RTGS",
+      "frequency": "DAILY",
+      "recordsCount": 26,
+      "timestamp": 1789950470390,
+      "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+    },
+    {
+      "pushId": "CBK_PUSH_1789950474577_72467",
+      "tenantId": "INST-CBK-RTGS",
+      "frequency": "MONTHLY",
+      "recordsCount": 27,
+      "timestamp": 1789950474577,
+      "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+    },
+    {
+      "pushId": "CBK_PUSH_1789950479280_73351",
+      "tenantId": "INST-CBK-RTGS",
+      "frequency": "QUARTERLY",
+      "recordsCount": 28,
+      "timestamp": 1789950479280,
+      "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+    },
+    {
+      "pushId": "CBK_PUSH_1789950482442_16510",
+      "tenantId": "INST-CBK-RTGS",
+      "frequency": "YEARLY",
+      "recordsCount": 29,
+      "timestamp": 1789950482442,
+      "status": "ACCEPTED_BY_CBK_RTGS_SECURE"
+    },
+    {
+      "dispatchId": "CBK_EMAIL_1789950486994_22259",
+      "tenantId": "INST-CBK-RTGS",
+      "recipientEmail": "compliance@centralbank.go.ke",
+      "frequency": "DAILY",
+      "customNotes": "Standard automated sovereign compliance push report.",
+      "timestamp": 1789950486994,
+      "status": "DISPATCHED_SECURELY"
     }
   ],
   "maker_checker_queue": [
@@ -902,6 +1429,42 @@
         "purposeCode": "GDSV"
       },
       "timestamp": 1789871942641
+    },
+    {
+      "ticketId": "MC_1789950437091_52598",
+      "actionType": "ISO20022_WIRE_TRANSFER",
+      "tenantId": "INST-CBK-RTGS",
+      "maker": {
+        "user": "Robert Maina",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "checkerRequired": true,
+      "status": "PENDING_CHECKER_VERIFICATION",
+      "payload": {
+        "amount": 1250000,
+        "beneficiaryName": "Sovereign Counterparty",
+        "beneficiaryAccount": "ACC_01",
+        "purposeCode": "GDSV"
+      },
+      "timestamp": 1789950437091
+    },
+    {
+      "ticketId": "MC_1789950497049_56476",
+      "actionType": "ISO20022_WIRE_TRANSFER",
+      "tenantId": "INST-CBK-RTGS",
+      "maker": {
+        "user": "Robert Maina",
+        "role": "SOVEREIGN_ADMIN"
+      },
+      "checkerRequired": true,
+      "status": "PENDING_CHECKER_VERIFICATION",
+      "payload": {
+        "amount": 1250000,
+        "beneficiaryName": "Sovereign Counterparty",
+        "beneficiaryAccount": "ACC_01",
+        "purposeCode": "GDSV"
+      },
+      "timestamp": 1789950497049
     }
   ],
   "orders": []
