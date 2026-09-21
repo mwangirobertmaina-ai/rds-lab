@@ -64,43 +64,6 @@
       "taxPin": "GB123456789"
     }
   ],
-  "drivers": [],
-  "riders": [],
-  "products": [
-    {
-      "id": "p1",
-      "businessId": "INST-MPESA",
-      "category": "MOBILE_MONEY",
-      "merchant": "M-Pesa Gateway",
-      "name": "Mobile Money Liquidity Unit",
-      "price": 1000,
-      "currency": "KES",
-      "stock": 100000,
-      "image": "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&auto=format&fit=crop&q=80"
-    },
-    {
-      "id": "p2",
-      "businessId": "INST-CBK-RTGS",
-      "category": "RESTAURANT",
-      "merchant": "CBK Bistro",
-      "name": "Sovereign Nyama Platter",
-      "price": 1500,
-      "currency": "KES",
-      "stock": 500,
-      "image": "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop&q=80"
-    },
-    {
-      "id": "p3",
-      "businessId": "INST-WORLDBANK",
-      "category": "SUPERMARKET",
-      "merchant": "World Bank Depot",
-      "name": "Global Development Reserve Pack",
-      "price": 250,
-      "currency": "USD",
-      "stock": 1000,
-      "image": "https://images.unsplash.com/photo-1586880244406-556ebe37f282?w=400&auto=format&fit=crop&q=80"
-    }
-  ],
   "users": [
     {
       "id": "USR_DEFAULT",
@@ -166,6 +129,19 @@
       "didPassId": "did:rds:sovereign:869092",
       "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
       "riskScore": "0.00% (Central Registry Verified)"
+    },
+    {
+      "id": "USR_1789953741297_26510",
+      "email": "mwangirobertmaina@gmail.com",
+      "password": "$2b$12$IcS7YLKxBTFHLVrSIhjCrumI8earT5adXStxeCfJ6rjd0mBn7vl4q",
+      "fullName": "Robert Maina Mwangi",
+      "phone": "254700000000",
+      "role": "REGULAR_USER",
+      "didPassId": "did:rds:sovereign:577887",
+      "amlFlagged": false,
+      "riskScore": "0.00%",
+      "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
+      "registeredAt": 1789953741297
     }
   ],
   "immutable_audit_vault": [
@@ -972,6 +948,416 @@
       "currentHash": "e8b3f37a2b75f1de286655d6dc6dc8dd095585b233edd526c19378ba9c460775",
       "tamperProof": true,
       "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789953741299_1283",
+      "timestamp": 1789953741298,
+      "actionType": "SECURE_USER_REGISTERED_STAGE154",
+      "actor": {
+        "email": "mwangirobertmaina@gmail.com",
+        "role": "REGULAR_USER"
+      },
+      "details": {
+        "userId": "USR_1789953741297_26510"
+      },
+      "previousHash": "e8b3f37a2b75f1de286655d6dc6dc8dd095585b233edd526c19378ba9c460775",
+      "currentHash": "0777409aebbb5324c365096b3b5c61310a69983204e82e311844d92a8f47191e",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789953760156_11846",
+      "timestamp": 1789953760156,
+      "actionType": "SECURE_USER_LOGIN_JWT_ISSUED_STAGE154",
+      "actor": {
+        "email": "mwangirobertmaina@gmail.com",
+        "role": "REGULAR_USER"
+      },
+      "details": {
+        "userId": "USR_1789953741297_26510"
+      },
+      "previousHash": "0777409aebbb5324c365096b3b5c61310a69983204e82e311844d92a8f47191e",
+      "currentHash": "b352efa4835b0eb0c809c212df18cf0ecc2b79efd3f4a94548476ef5fa9d78b5",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1789953799679_15909",
+      "timestamp": 1789953799678,
+      "actionType": "SECURE_USER_LOGIN_JWT_ISSUED_STAGE154",
+      "actor": {
+        "email": "mwangirobertmaina@gmail.com",
+        "role": "REGULAR_USER"
+      },
+      "details": {
+        "userId": "USR_1789953741297_26510"
+      },
+      "previousHash": "b352efa4835b0eb0c809c212df18cf0ecc2b79efd3f4a94548476ef5fa9d78b5",
+      "currentHash": "1d08162e84c51cf651b42401e7b7dd4d330e5359543305a137bb7a6fdeb21eee",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790025014003_60305",
+      "timestamp": 1790025014003,
+      "actionType": "CASHIER_TRANSACTION_PROCESSED",
+      "actor": {
+        "customerName": "Robert Maina"
+      },
+      "details": {
+        "txId": "TX_1790025014002_71116",
+        "customerName": "Robert Maina",
+        "amount": 1500000,
+        "transactionType": "Cash Deposit",
+        "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
+        "actionRequired": "Queued for FRC/goAML reporting",
+        "timestamp": 1790025014002
+      },
+      "currentHash": "813dd30a74a109d3649538dd94a2bb386d9cfb81f66e4f2b0c47a268c4a1eb27"
+    },
+    {
+      "auditId": "AUD_1790025018536_14464",
+      "timestamp": 1790025018535,
+      "actionType": "CASHIER_ACCOUNT_OPENED",
+      "actor": {
+        "fullName": "Jane Doe"
+      },
+      "details": {
+        "verificationId": "KYC_1790025018534_15084",
+        "nationalIdNumber": "38291029",
+        "fullName": "Jane Doe",
+        "initialDeposit": 75000,
+        "riskRating": "🟢 LOW RISK (Standard Account)",
+        "accountId": "ACC-407840",
+        "status": "ACCOUNT_CREATED_SUCCESS",
+        "timestamp": 1790025018534
+      },
+      "currentHash": "95c20916ab75ace0d882b14b5a76611a228763b0e0f46f8365a6527ac942d460"
+    },
+    {
+      "auditId": "AUD_1790025059124_78742",
+      "timestamp": 1790025059124,
+      "actionType": "CASHIER_ACCOUNT_OPENED",
+      "actor": {
+        "fullName": "Jane Doe"
+      },
+      "details": {
+        "verificationId": "KYC_1790025059123_80310",
+        "nationalIdNumber": "38291029",
+        "fullName": "Jane Doe",
+        "initialDeposit": 75000,
+        "riskRating": "🟢 LOW RISK (Standard Account)",
+        "accountId": "ACC-351449",
+        "status": "ACCOUNT_CREATED_SUCCESS",
+        "timestamp": 1790025059123
+      },
+      "currentHash": "f29f450d8d0ab47b4d88ca288e06e9dd3001c706d2569a1ec2dc3c29ea60d420"
+    },
+    {
+      "auditId": "AUD_1790025338777_81059",
+      "timestamp": 1790025338777,
+      "actionType": "CASHIER_TRANSACTION_PROCESSED",
+      "actor": {
+        "customerName": "Robert Maina"
+      },
+      "details": {
+        "txId": "TX_1790025338776_92051",
+        "customerName": "Robert Maina",
+        "amount": 1500000,
+        "transactionType": "Cash Deposit",
+        "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
+        "timestamp": 1790025338776
+      },
+      "currentHash": "621543a5a75a81bb3350704a9e8891d23fb0b491b05899621588c2cfc8535480"
+    },
+    {
+      "auditId": "AUD_1790025366349_52269",
+      "timestamp": 1790025366349,
+      "actionType": "CASHIER_ACCOUNT_OPENED",
+      "actor": {
+        "fullName": "Jane Doe"
+      },
+      "details": {
+        "verificationId": "KYC_1790025366347_25411",
+        "nationalIdNumber": "38291029",
+        "fullName": "Jane Doe",
+        "initialDeposit": 75000,
+        "riskRating": "🟢 LOW RISK (Standard Account)",
+        "accountId": "ACC-494929",
+        "status": "VERIFIED_SUCCESSFUL",
+        "timestamp": 1790025366347
+      },
+      "currentHash": "b2435b9df25ecb5bf42377cf62adbdf4e2d9304745d296aa9a38c543a08431df"
+    },
+    {
+      "auditId": "AUD_1790025684744_82799",
+      "timestamp": 1790025684744,
+      "actionType": "CASHIER_ACCOUNT_OPENED",
+      "actor": {
+        "fullName": "Jane Doe"
+      },
+      "details": {
+        "verificationId": "KYC_1790025684742_1406",
+        "nationalIdNumber": "38291029",
+        "fullName": "Jane Doe",
+        "initialDeposit": 74999,
+        "riskRating": "🟢 LOW RISK (Standard Account)",
+        "accountId": "ACC-873807",
+        "status": "VERIFIED_SUCCESSFUL",
+        "timestamp": 1790025684742
+      },
+      "currentHash": "ab1447bc1ca4b6381db3daf7dfb2d59001acb5e188434c1733f44cb2a2ac1e9b"
+    },
+    {
+      "auditId": "AUD_1790026446871_21281",
+      "timestamp": 1790026446871,
+      "actionType": "CBK_COMPLIANCE_PUSH",
+      "actor": {},
+      "details": {
+        "pushId": "PUSH_1790026446869_79176",
+        "frequency": "DAILY",
+        "timestamp": 1790026446869,
+        "status": "ACCEPTED_BY_CBK"
+      },
+      "previousHash": "ab1447bc1ca4b6381db3daf7dfb2d59001acb5e188434c1733f44cb2a2ac1e9b",
+      "currentHash": "e305e1802ca0231b1d86bd90865bf750e39a5e4047b519a4e3271f6fa4eff1a5"
+    },
+    {
+      "auditId": "AUD_1790026895102_37878",
+      "timestamp": 1790026895102,
+      "actionType": "CASHIER_ACCOUNT_OPENED",
+      "actor": {
+        "fullName": "Jane Doe"
+      },
+      "details": {
+        "verificationId": "KYC_1790026895100_49418",
+        "nationalIdNumber": "38291029",
+        "fullName": "Jane Doe",
+        "initialDeposit": 75001,
+        "riskRating": "🟢 LOW RISK (Standard Account)",
+        "accountId": "ACC-204213",
+        "status": "VERIFIED_SUCCESSFUL",
+        "timestamp": 1790026895100
+      },
+      "previousHash": "e305e1802ca0231b1d86bd90865bf750e39a5e4047b519a4e3271f6fa4eff1a5",
+      "currentHash": "935348fffca7d87361cfe1575c66627c07c721b3d03006c66ad66f9efa6c36f7"
+    },
+    {
+      "auditId": "AUD_1790026978838_61484",
+      "timestamp": 1790026978838,
+      "actionType": "CBK_COMPLIANCE_PUSH",
+      "actor": {},
+      "details": {
+        "pushId": "PUSH_1790026978837_35244",
+        "frequency": "DAILY",
+        "timestamp": 1790026978837,
+        "status": "ACCEPTED_BY_CBK"
+      },
+      "previousHash": "935348fffca7d87361cfe1575c66627c07c721b3d03006c66ad66f9efa6c36f7",
+      "currentHash": "8f81a3838fcf0a0784265c475fa889f42d454c1abcf64b4eda8df69ef5f4738c"
+    },
+    {
+      "auditId": "AUD_1790026983205_46831",
+      "timestamp": 1790026983204,
+      "actionType": "CBK_COMPLIANCE_PUSH",
+      "actor": {},
+      "details": {
+        "pushId": "PUSH_1790026983203_45455",
+        "frequency": "MONTHLY",
+        "timestamp": 1790026983203,
+        "status": "ACCEPTED_BY_CBK"
+      },
+      "previousHash": "8f81a3838fcf0a0784265c475fa889f42d454c1abcf64b4eda8df69ef5f4738c",
+      "currentHash": "35b3487d65a1ba5054faaaedc6f4f934c0962446cdefc511e1f029b27a492c06"
+    },
+    {
+      "auditId": "AUD_1790026986456_78355",
+      "timestamp": 1790026986456,
+      "actionType": "CBK_COMPLIANCE_PUSH",
+      "actor": {},
+      "details": {
+        "pushId": "PUSH_1790026986455_24259",
+        "frequency": "QUARTERLY",
+        "timestamp": 1790026986455,
+        "status": "ACCEPTED_BY_CBK"
+      },
+      "previousHash": "35b3487d65a1ba5054faaaedc6f4f934c0962446cdefc511e1f029b27a492c06",
+      "currentHash": "8802830e2facd542c517bd0a205d448a08fa70100c225134a791bedac5c188db"
+    },
+    {
+      "auditId": "AUD_1790027135998_75009",
+      "timestamp": 1790027135998,
+      "actionType": "CASHIER_TRANSACTION_PROCESSED",
+      "actor": {
+        "customerName": "irungu"
+      },
+      "details": {
+        "txId": "TX_1790027135997_8394",
+        "customerName": "irungu",
+        "amount": 15000000,
+        "transactionType": "Cash Deposit",
+        "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
+        "timestamp": 1790027135997
+      },
+      "previousHash": "8802830e2facd542c517bd0a205d448a08fa70100c225134a791bedac5c188db",
+      "currentHash": "924720a20093d8d5fcb8712234939baa4b8b4506fd451e8ee792549a85e690e0"
+    },
+    {
+      "auditId": "AUD_1790027191277_81739",
+      "timestamp": 1790027191277,
+      "actionType": "CASHIER_ACCOUNT_OPENED",
+      "actor": {
+        "fullName": "grace"
+      },
+      "details": {
+        "verificationId": "KYC_1790027191276_52216",
+        "nationalIdNumber": "382910123",
+        "fullName": "grace",
+        "initialDeposit": 75001,
+        "riskRating": "🟢 LOW RISK (Standard Account)",
+        "accountId": "ACC-703820",
+        "status": "VERIFIED_SUCCESSFUL",
+        "timestamp": 1790027191276
+      },
+      "previousHash": "924720a20093d8d5fcb8712234939baa4b8b4506fd451e8ee792549a85e690e0",
+      "currentHash": "3043f3e878f00ea5b388eb8eda28ecf6542bca39d401fa390c22befdf9d85221"
+    },
+    {
+      "auditId": "AUD_1790027203855_91201",
+      "timestamp": 1790027203855,
+      "actionType": "CBK_QUARTERLY_COMPLIANCE_PUSH_155",
+      "actor": {},
+      "details": {
+        "pushId": "PUSH_1790027203853_66223",
+        "frequency": "QUARTERLY",
+        "timestamp": 1790027203853,
+        "status": "ACCEPTED_BY_CBK_SECURE"
+      },
+      "previousHash": "3043f3e878f00ea5b388eb8eda28ecf6542bca39d401fa390c22befdf9d85221",
+      "currentHash": "f91ae319ad60b628bbc71298012c721a5a394224b7c55cdd8921f290236c12d3"
+    },
+    {
+      "auditId": "AUD_1790028551710_91518",
+      "timestamp": 1790028551710,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_156",
+      "actor": {},
+      "details": {
+        "status": "SETTLED"
+      },
+      "previousHash": "f91ae319ad60b628bbc71298012c721a5a394224b7c55cdd8921f290236c12d3",
+      "currentHash": "c6ea99750d178cd24e6250c9e248094a5774a207152223c533e0299ae5054473"
+    },
+    {
+      "auditId": "AUD_1790029399757_15853",
+      "timestamp": 1790029399757,
+      "actionType": "CASHIER_TRANSACTION_PROCESSED",
+      "actor": {
+        "customerName": "Robert Maina"
+      },
+      "details": {
+        "txId": "TX_1790029399756_81829",
+        "customerName": "Robert Maina",
+        "amount": 1500000,
+        "transactionType": "Cash Deposit",
+        "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
+        "timestamp": 1790029399756
+      },
+      "previousHash": "c6ea99750d178cd24e6250c9e248094a5774a207152223c533e0299ae5054473",
+      "currentHash": "2a0906275e7da81b07afe8cfc1bd374bbb8835f8f538c45ecaa3e2b99cf133bf"
+    },
+    {
+      "auditId": "AUD_1790029409991_23115",
+      "timestamp": 1790029409990,
+      "actionType": "CASHIER_ACCOUNT_OPENED",
+      "actor": {
+        "fullName": "382910123"
+      },
+      "details": {
+        "verificationId": "KYC_1790029409988_99918",
+        "nationalIdNumber": "38291029",
+        "fullName": "382910123",
+        "initialDeposit": 75000,
+        "riskRating": "🟢 LOW RISK (Standard Account)",
+        "accountId": "ACC-461895",
+        "status": "VERIFIED_SUCCESSFUL",
+        "timestamp": 1790029409988
+      },
+      "previousHash": "2a0906275e7da81b07afe8cfc1bd374bbb8835f8f538c45ecaa3e2b99cf133bf",
+      "currentHash": "1f9adaa9e287a8a679517755579c53958077bca3d768b6b73780209997cee2ef"
+    },
+    {
+      "auditId": "AUD_1790030104019_73265",
+      "timestamp": 1790030104018,
+      "actionType": "CASHIER_TRANSACTION_PROCESSED",
+      "actor": {
+        "customerName": "Robert Maina"
+      },
+      "details": {
+        "txId": "TX_1790030104016_42383",
+        "customerName": "Robert Maina",
+        "amount": 1500000,
+        "transactionType": "Cash Deposit",
+        "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
+        "timestamp": 1790030104016
+      },
+      "previousHash": "1f9adaa9e287a8a679517755579c53958077bca3d768b6b73780209997cee2ef",
+      "currentHash": "122ca993150b5f4f40efc5a374dc2cd651529b2f194c6d5d8035dee21e5d4270"
+    },
+    {
+      "auditId": "AUD_1790030313800_19997",
+      "timestamp": 1790030313800,
+      "actionType": "CASHIER_TRANSACTION_PROCESSED",
+      "actor": {
+        "customerName": "Robert Maina"
+      },
+      "details": {
+        "txId": "TX_1790030313799_18340",
+        "customerName": "Robert Maina",
+        "amount": 1500,
+        "transactionType": "Wire Transfer",
+        "riskLevel": "🟢 Normal Transaction (Approved)",
+        "timestamp": 1790030313799
+      },
+      "previousHash": "122ca993150b5f4f40efc5a374dc2cd651529b2f194c6d5d8035dee21e5d4270",
+      "currentHash": "829c621e0fd8cd78f6249a61f5d707d32bf299c0e6437ef8f9b643e6d810a5f9"
+    },
+    {
+      "auditId": "AUD_1790030750758_55961",
+      "timestamp": 1790030750758,
+      "actionType": "CASHIER_ACCOUNT_OPENED",
+      "actor": {
+        "fullName": "joy"
+      },
+      "details": {
+        "verificationId": "KYC_1790030750757_23010",
+        "nationalIdNumber": "38291029",
+        "fullName": "joy",
+        "initialDeposit": 7500000,
+        "riskRating": "🔴 HIGH RISK (EDD Enhanced Review Required)",
+        "accountId": "ACC-389961",
+        "status": "VERIFIED_SUCCESSFUL",
+        "timestamp": 1790030750757
+      },
+      "previousHash": "829c621e0fd8cd78f6249a61f5d707d32bf299c0e6437ef8f9b643e6d810a5f9",
+      "currentHash": "18ed9160ae73655a89cdbb9e600cd02a968fa574903adfb50eb8c19416130bee"
+    },
+    {
+      "auditId": "AUD_1790031131145_27325",
+      "timestamp": 1790031131145,
+      "actionType": "CASHIER_TRANSACTION_PROCESSED",
+      "actor": {
+        "customerName": "Robert Maina"
+      },
+      "details": {
+        "txId": "TX_1790031131144_25890",
+        "customerName": "Robert Maina",
+        "amount": 1500,
+        "transactionType": "Wire Transfer",
+        "riskLevel": "🟢 Normal Transaction (Approved)",
+        "timestamp": 1790031131144
+      },
+      "previousHash": "18ed9160ae73655a89cdbb9e600cd02a968fa574903adfb50eb8c19416130bee",
+      "currentHash": "ee282bf72e7c4d0e040db10d190ce88dc564dcfbf30b3d148b5bab562798c222"
     }
   ],
   "iso20022_wires": [
@@ -1016,47 +1402,6 @@
       "timestamp": 1789950497049
     }
   ],
-  "ai_enforcement_logs": [
-    {
-      "evaluationId": "AI_EVAL_1789922960572_56831",
-      "agentId": "LANGCHAIN_AGENT_01",
-      "proposedAction": "EXECUTE_ISO20022_WIRE",
-      "parameters": {
-        "amount": 750000,
-        "beneficiaryName": "Sovereign Reserve Partner",
-        "purposeCode": "SETT"
-      },
-      "riskScore": "0.01%",
-      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
-      "timestamp": 1789922960572
-    },
-    {
-      "evaluationId": "AI_EVAL_1789932570785_71832",
-      "agentId": "LANGCHAIN_AGENT_01",
-      "proposedAction": "EXECUTE_ISO20022_WIRE",
-      "parameters": {
-        "amount": 750000,
-        "beneficiaryName": "Sovereign Reserve Partner",
-        "purposeCode": "SETT"
-      },
-      "riskScore": "0.01%",
-      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
-      "timestamp": 1789932570785
-    },
-    {
-      "evaluationId": "AI_EVAL_1789950458379_44166",
-      "agentId": "LANGCHAIN_AGENT_01",
-      "proposedAction": "EXECUTE_ISO20022_WIRE",
-      "parameters": {
-        "amount": 750000,
-        "beneficiaryName": "Sovereign Reserve Partner",
-        "purposeCode": "SETT"
-      },
-      "riskScore": "0.01%",
-      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
-      "timestamp": 1789950458379
-    }
-  ],
   "ai_approved_intents": [
     {
       "evaluationId": "AI_EVAL_1789922960572_56831",
@@ -1098,7 +1443,6 @@
       "timestamp": 1789950458379
     }
   ],
-  "interbank_clearing_settlements": [],
   "shadow_trap_flags": [
     {
       "trapId": "TRAP_9901",
@@ -1134,6 +1478,26 @@
       "sarId": "SAR_1789950497049_18416",
       "referenceId": "WIRE_1789950497049_80166",
       "details": "goAML report auto-generated for transfer of 1250000 on corridor INST-CBK-RTGS."
+    },
+    {
+      "sarId": "SAR_1790025338776_38532",
+      "referenceId": "TX_1790025338776_14241",
+      "details": "CTR auto-generated for transfer of 1500000 KES."
+    },
+    {
+      "sarId": "SAR_1790027135997_95539",
+      "referenceId": "TX_1790027135997_67431",
+      "details": "CTR auto-generated for transfer of 15000000 KES."
+    },
+    {
+      "sarId": "SAR_1790029399756_29151",
+      "referenceId": "TX_1790029399756_6433",
+      "details": "CTR auto-generated for transfer of 1500000 KES."
+    },
+    {
+      "sarId": "SAR_1790030104016_57651",
+      "referenceId": "TX_1790030104016_54578",
+      "details": "CTR auto-generated for transfer of 1500000 KES."
     }
   ],
   "did_pass_registry": [
@@ -1215,7 +1579,8 @@
       "gatewayProvider": "GOV_IPRS_DIRECT",
       "status": "VERIFIED_SUCCESSFUL",
       "zkpProofHash": "94a2e89058fac8350cc36b13d8e402dc4333506ab92be8675e2bc545c9a8e666",
-      "timestamp": 1789930092321
+      "timestamp": 1789930092321,
+      "riskRating": "🟢 LOW RISK (Standard Account)"
     },
     {
       "verificationId": "KYC_IPRS_1789931696622_12575",
@@ -1226,7 +1591,147 @@
       "gatewayProvider": "GOV_IPRS_DIRECT",
       "status": "VERIFIED_SUCCESSFUL",
       "zkpProofHash": "6773e0890b847de9f206733901e60a96dd077987c9f3be468df1a23c954da404",
-      "timestamp": 1789931696622
+      "timestamp": 1789931696622,
+      "riskRating": "🟢 LOW RISK (Standard Account)"
+    },
+    {
+      "verificationId": "KYC_1790025018534_15084",
+      "nationalIdNumber": "38291029",
+      "fullName": "Jane Doe",
+      "initialDeposit": 75000,
+      "riskRating": "🟢 LOW RISK (Standard Account)",
+      "accountId": "ACC-407840",
+      "status": "ACCOUNT_CREATED_SUCCESS",
+      "timestamp": 1790025018534
+    },
+    {
+      "verificationId": "KYC_1790025059123_80310",
+      "nationalIdNumber": "38291029",
+      "fullName": "Jane Doe",
+      "initialDeposit": 75000,
+      "riskRating": "🟢 LOW RISK (Standard Account)",
+      "accountId": "ACC-351449",
+      "status": "ACCOUNT_CREATED_SUCCESS",
+      "timestamp": 1790025059123
+    },
+    {
+      "verificationId": "KYC_1790025366347_25411",
+      "nationalIdNumber": "38291029",
+      "fullName": "Jane Doe",
+      "initialDeposit": 75000,
+      "riskRating": "🟢 LOW RISK (Standard Account)",
+      "accountId": "ACC-494929",
+      "status": "VERIFIED_SUCCESSFUL",
+      "timestamp": 1790025366347
+    },
+    {
+      "verificationId": "KYC_1790025684742_1406",
+      "nationalIdNumber": "38291029",
+      "fullName": "Jane Doe",
+      "initialDeposit": 74999,
+      "riskRating": "🟢 LOW RISK (Standard Account)",
+      "accountId": "ACC-873807",
+      "status": "VERIFIED_SUCCESSFUL",
+      "timestamp": 1790025684742
+    },
+    {
+      "verificationId": "KYC_1790026895100_49418",
+      "nationalIdNumber": "38291029",
+      "fullName": "Jane Doe",
+      "initialDeposit": 75001,
+      "riskRating": "🟢 LOW RISK (Standard Account)",
+      "accountId": "ACC-204213",
+      "status": "VERIFIED_SUCCESSFUL",
+      "timestamp": 1790026895100
+    },
+    {
+      "verificationId": "KYC_1790027191276_52216",
+      "nationalIdNumber": "382910123",
+      "fullName": "grace",
+      "initialDeposit": 75001,
+      "riskRating": "🟢 LOW RISK (Standard Account)",
+      "accountId": "ACC-703820",
+      "status": "VERIFIED_SUCCESSFUL",
+      "timestamp": 1790027191276
+    },
+    {
+      "verificationId": "KYC_1790029409988_99918",
+      "nationalIdNumber": "38291029",
+      "fullName": "382910123",
+      "initialDeposit": 75000,
+      "riskRating": "🟢 LOW RISK (Standard Account)",
+      "accountId": "ACC-461895",
+      "status": "VERIFIED_SUCCESSFUL",
+      "timestamp": 1790029409988
+    },
+    {
+      "verificationId": "KYC_1790030750757_23010",
+      "nationalIdNumber": "38291029",
+      "fullName": "joy",
+      "initialDeposit": 7500000,
+      "riskRating": "🔴 HIGH RISK (EDD Enhanced Review Required)",
+      "accountId": "ACC-389961",
+      "status": "VERIFIED_SUCCESSFUL",
+      "timestamp": 1790030750757
+    }
+  ],
+  "cashier_transactions": [
+    {
+      "txId": "TX_1790025014002_71116",
+      "customerName": "Robert Maina",
+      "amount": 1500000,
+      "transactionType": "Cash Deposit",
+      "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
+      "actionRequired": "Queued for FRC/goAML reporting",
+      "timestamp": 1790025014002
+    },
+    {
+      "txId": "TX_1790025338776_92051",
+      "customerName": "Robert Maina",
+      "amount": 1500000,
+      "transactionType": "Cash Deposit",
+      "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
+      "timestamp": 1790025338776
+    },
+    {
+      "txId": "TX_1790027135997_8394",
+      "customerName": "irungu",
+      "amount": 15000000,
+      "transactionType": "Cash Deposit",
+      "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
+      "timestamp": 1790027135997
+    },
+    {
+      "txId": "TX_1790029399756_81829",
+      "customerName": "Robert Maina",
+      "amount": 1500000,
+      "transactionType": "Cash Deposit",
+      "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
+      "timestamp": 1790029399756
+    },
+    {
+      "txId": "TX_1790030104016_42383",
+      "customerName": "Robert Maina",
+      "amount": 1500000,
+      "transactionType": "Cash Deposit",
+      "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
+      "timestamp": 1790030104016
+    },
+    {
+      "txId": "TX_1790030313799_18340",
+      "customerName": "Robert Maina",
+      "amount": 1500,
+      "transactionType": "Wire Transfer",
+      "riskLevel": "🟢 Normal Transaction (Approved)",
+      "timestamp": 1790030313799
+    },
+    {
+      "txId": "TX_1790031131144_25890",
+      "customerName": "Robert Maina",
+      "amount": 1500,
+      "transactionType": "Wire Transfer",
+      "riskLevel": "🟢 Normal Transaction (Approved)",
+      "timestamp": 1790031131144
     }
   ],
   "pos_transactions": [
@@ -1373,6 +1878,36 @@
       "customNotes": "Standard automated sovereign compliance push report.",
       "timestamp": 1789950486994,
       "status": "DISPATCHED_SECURELY"
+    },
+    {
+      "pushId": "PUSH_1790026446869_79176",
+      "frequency": "DAILY",
+      "timestamp": 1790026446869,
+      "status": "ACCEPTED_BY_CBK"
+    },
+    {
+      "pushId": "PUSH_1790026978837_35244",
+      "frequency": "DAILY",
+      "timestamp": 1790026978837,
+      "status": "ACCEPTED_BY_CBK"
+    },
+    {
+      "pushId": "PUSH_1790026983203_45455",
+      "frequency": "MONTHLY",
+      "timestamp": 1790026983203,
+      "status": "ACCEPTED_BY_CBK"
+    },
+    {
+      "pushId": "PUSH_1790026986455_24259",
+      "frequency": "QUARTERLY",
+      "timestamp": 1790026986455,
+      "status": "ACCEPTED_BY_CBK"
+    },
+    {
+      "pushId": "PUSH_1790027203853_66223",
+      "frequency": "QUARTERLY",
+      "timestamp": 1790027203853,
+      "status": "ACCEPTED_BY_CBK_SECURE"
     }
   ],
   "maker_checker_queue": [
@@ -1467,5 +2002,84 @@
       "timestamp": 1789950497049
     }
   ],
+  "ai_enforcement_logs": [
+    {
+      "evaluationId": "AI_EVAL_1789922960572_56831",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789922960572
+    },
+    {
+      "evaluationId": "AI_EVAL_1789932570785_71832",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789932570785
+    },
+    {
+      "evaluationId": "AI_EVAL_1789950458379_44166",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_WIRE",
+      "parameters": {
+        "amount": 750000,
+        "beneficiaryName": "Sovereign Reserve Partner",
+        "purposeCode": "SETT"
+      },
+      "riskScore": "0.01%",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1789950458379
+    }
+  ],
+  "drivers": [],
+  "riders": [],
+  "products": [
+    {
+      "id": "p1",
+      "businessId": "INST-MPESA",
+      "category": "MOBILE_MONEY",
+      "merchant": "M-Pesa Gateway",
+      "name": "Mobile Money Liquidity Unit",
+      "price": 1000,
+      "currency": "KES",
+      "stock": 100000,
+      "image": "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+      "id": "p2",
+      "businessId": "INST-CBK-RTGS",
+      "category": "RESTAURANT",
+      "merchant": "CBK Bistro",
+      "name": "Sovereign Nyama Platter",
+      "price": 1500,
+      "currency": "KES",
+      "stock": 500,
+      "image": "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+      "id": "p3",
+      "businessId": "INST-WORLDBANK",
+      "category": "SUPERMARKET",
+      "merchant": "World Bank Depot",
+      "name": "Global Development Reserve Pack",
+      "price": 250,
+      "currency": "USD",
+      "stock": 1000,
+      "image": "https://images.unsplash.com/photo-1586880244406-556ebe37f282?w=400&auto=format&fit=crop&q=80"
+    }
+  ],
+  "interbank_clearing_settlements": [],
   "orders": []
 }

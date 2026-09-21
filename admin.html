@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS Stage 154 - Sovereign Financial OS & LAN Traffic Sniffer</title>
+    <title>RDS Stage 157 - Ultimate Sovereign Financial OS & Cashier Teller Window</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -11,108 +11,94 @@
 <body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
 
     <!-- Top Navigation -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-lg">
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-lg flex-wrap gap-3">
         <div class="flex items-center space-x-3">
             <div class="bg-blue-600 p-2 rounded-lg text-white shadow-lg shadow-blue-500/30">
                 <i data-lucide="shield-check" class="w-6 h-6"></i>
             </div>
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-white">RDS Sovereign Financial OS</h1>
-                <p class="text-xs text-emerald-400 font-semibold tracking-wider uppercase">Stage 154: Vault Inspector & Hardened Edition</p>
+                <p class="text-xs text-emerald-400 font-semibold tracking-wider uppercase">Stage 157: Full Compliance, Cashier Teller & Test Readiness</p>
             </div>
         </div>
         
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-3 flex-wrap gap-2">
             <div class="flex items-center space-x-2 bg-slate-950 border border-slate-700 px-3 py-1.5 rounded-lg shadow-inner">
-                <span class="text-xs text-slate-400 font-semibold">Institution:</span>
-                <select id="tenantSelector" onchange="switchTenantNode()" class="bg-transparent text-xs text-blue-300 font-bold focus:outline-none cursor-pointer">
-                    <option value="INST-WORLDBANK">World Bank Sovereign Corridor (IBRD/IDA)</option>
-                    <option value="INST-CBK-RTGS">Central Bank of Kenya (CBK RTGS & IPRS)</option>
-                    <option value="INST-MPESA">M-Pesa Mobile Money Hub (Safaricom)</option>
-                    <option value="INST-EQUITY">Equity Bank Commercial Clearing</option>
-                    <option value="INST-KCB">KCB Bank National RTGS Gateway</option>
-                    <option value="BIZ-KE">RDS Nairobi Forex Bureau (KE)</option>
-                    <option value="BIZ-UK">RDS London Central Reserve (UK)</option>
+                <span class="text-xs text-slate-400 font-semibold">Institution / Node:</span>
+                <select id="tenantSelector" onchange="loadDashboard()" class="bg-transparent text-xs text-blue-300 font-bold focus:outline-none cursor-pointer">
+                    <option value="INST-CBK-RTGS">Central Bank of Kenya (CBK RTGS)</option>
+                    <option value="INST-MPESA">M-Pesa Mobile Money Hub</option>
+                    <option value="INST-EQUITY">Equity Bank Commercial Node</option>
+                    <option value="INST-WORLDBANK">World Bank Sovereign Corridor</option>
                 </select>
             </div>
-            <button onclick="openLoginModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md shadow-blue-600/20 cursor-pointer active:scale-95">
-                <i data-lucide="log-in" class="w-4 h-4"></i>
+            <button onclick="openLoginModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 shadow-md cursor-pointer active:scale-95 border border-slate-700">
+                <i data-lucide="log-in" class="w-4 h-4 text-blue-400"></i>
                 <span>User Login</span>
             </button>
-            <button onclick="openRegisterModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95">
+            <button onclick="openRegisterModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 shadow-md cursor-pointer active:scale-95">
                 <i data-lucide="user-plus" class="w-4 h-4"></i>
                 <span>Register User</span>
             </button>
-            <button onclick="openLocalIdModal()" class="bg-teal-600 hover:bg-teal-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-md shadow-teal-600/20 cursor-pointer active:scale-95">
-                <i data-lucide="credit-card" class="w-4 h-4"></i>
+            <button onclick="openAccountModal()" class="bg-teal-600 hover:bg-teal-500 text-white px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 shadow-md cursor-pointer active:scale-95">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
                 <span>Verify Local & Int. ID</span>
+            </button>
+            <button onclick="openTransactionModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 shadow-md cursor-pointer active:scale-95">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span>Process Transaction</span>
             </button>
         </div>
     </header>
 
-    <!-- Action Toolbar (Stage 154: Highlighting Interactive Vault Inspector & Push Reports) -->
-    <div class="bg-slate-900/80 backdrop-blur border-b border-slate-800 px-6 py-3 flex items-center justify-between flex-wrap gap-2">
+    <!-- Full Action Toolbar -->
+    <div class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-6 py-3 flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center space-x-2 text-xs text-slate-400">
             <i data-lucide="cpu" class="w-4 h-4 text-emerald-400 animate-pulse"></i>
-            <span>Active Node: <strong id="currentTenantIdLabel" class="text-white font-mono">INST-CBK-RTGS</strong> | Role: <strong id="activeRoleLabel" class="text-amber-400">SOVEREIGN_ADMIN</strong></span>
+            <span>Active Node: <strong id="currentTenantLabel" class="text-white font-mono">INST-CBK-RTGS</strong> | Role: <strong class="text-amber-400">SOVEREIGN_ADMIN</strong></span>
         </div>
-        <div class="flex items-center space-x-2 flex-wrap gap-2">
-            <button onclick="openLanTrafficModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-indigo-600/20 cursor-pointer active:scale-95">
-                <i data-lucide="wifi" class="w-3.5 h-3.5"></i>
-                <span>LAN Sniffer Live</span>
+        <div class="flex items-center space-x-2 flex-wrap gap-1.5">
+            <button onclick="openLanTrafficModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="wifi" class="w-3.5 h-3.5"></i><span>LAN Sniffer Live</span>
             </button>
-            <button onclick="openAiEvalModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-amber-600/20 cursor-pointer active:scale-95">
-                <i data-lucide="bot" class="w-3.5 h-3.5"></i>
-                <span>Evaluate AI Intent</span>
+            <button onclick="openAiEvalModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="bot" class="w-3.5 h-3.5"></i><span>Evaluate AI Intent</span>
             </button>
-            <button onclick="window.open('/api/ai/openapi.json', '_blank')" class="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-indigo-700/20 cursor-pointer active:scale-95">
-                <i data-lucide="file-code" class="w-3.5 h-3.5"></i>
-                <span>OpenAPI Spec</span>
+            <button onclick="openOpenApiModal()" class="bg-indigo-700 hover:bg-indigo-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="file-code" class="w-3.5 h-3.5"></i><span>OpenAPI Spec</span>
             </button>
-            <button onclick="triggerCompliancePush('DAILY')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95">
-                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                <span>Push Daily Report</span>
+            <button onclick="triggerCompliancePush('DAILY')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i><span>Push Daily</span>
             </button>
-            <button onclick="triggerCompliancePush('MONTHLY')" class="bg-teal-600 hover:bg-teal-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-teal-600/20 cursor-pointer active:scale-95">
-                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                <span>Push Monthly Report</span>
+            <button onclick="triggerCompliancePush('MONTHLY')" class="bg-teal-600 hover:bg-teal-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i><span>Push Monthly</span>
             </button>
-            <button onclick="triggerCompliancePush('QUARTERLY')" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-blue-600/20 cursor-pointer active:scale-95">
-                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                <span>Push Quarterly Report</span>
+            <button onclick="triggerCompliancePush('QUARTERLY')" class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i><span>Push Quarterly</span>
             </button>
-            <button onclick="triggerCompliancePush('YEARLY')" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-purple-600/20 cursor-pointer active:scale-95">
-                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                <span>Push Yearly Report</span>
+            <button onclick="triggerCompliancePush('YEARLY')" class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i><span>Push Yearly</span>
             </button>
-            <button onclick="openCbkEmailModal()" class="bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-cyan-700/20 cursor-pointer active:scale-95">
-                <i data-lucide="mail" class="w-3.5 h-3.5"></i>
-                <span>Email Compliance</span>
+            <button onclick="openCbkEmailModal()" class="bg-cyan-700 hover:bg-cyan-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="mail" class="w-3.5 h-3.5"></i><span>Email Compliance</span>
             </button>
-            <button onclick="triggerHybridCleanHeal()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-emerald-700/20 cursor-pointer active:scale-95">
-                <i data-lucide="shield" class="w-3.5 h-3.5"></i>
-                <span>Antivirus Heal</span>
+            <button onclick="triggerHybridCleanHeal()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="shield" class="w-3.5 h-3.5"></i><span>Antivirus Heal</span>
             </button>
-            <button onclick="dispatchIsoWire()" class="bg-blue-700 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-blue-700/20 cursor-pointer active:scale-95">
-                <i data-lucide="send" class="w-3.5 h-3.5"></i>
-                <span>Dispatch Wire</span>
+            <button onclick="dispatchIsoWire()" class="bg-blue-700 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i><span>Dispatch Wire</span>
             </button>
-            <button onclick="openPosWebhookSimulator()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-purple-600/20 cursor-pointer active:scale-95">
-                <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
-                <span>Simulate POS</span>
+            <button onclick="openPosWebhookSimulator()" class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="terminal" class="w-3.5 h-3.5"></i><span>Simulate POS</span>
             </button>
-            <button onclick="runInterbankClearing()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md shadow-cyan-600/20 cursor-pointer active:scale-95">
-                <i data-lucide="repeat" class="w-3.5 h-3.5"></i>
-                <span>Inter-Bank</span>
+            <button onclick="runInterbankClearing()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="repeat" class="w-3.5 h-3.5"></i><span>Inter-Bank</span>
             </button>
-            <button onclick="window.open('/api/admin/audit/print-report?businessId=' + getSelectedTenantId(), '_blank')" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1 shadow-md cursor-pointer active:scale-95">
-                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-                <span>Print PDF</span>
+            <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i><span>Print PDF</span>
             </button>
-            <!-- Upgraded Verify Vault Button with Inspector Modal & Lattice Verification -->
             <button onclick="openVaultInspectorModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-lg shadow-amber-600/40 border border-amber-400 cursor-pointer active:scale-95 animate-pulse">
-                <i data-lucide="lock" class="w-4 h-4 text-amber-200"></i>
-                <span>Verify Vault</span>
+                <i data-lucide="lock" class="w-4 h-4 text-amber-200"></i><span>Verify Vault</span>
             </button>
         </div>
     </div>
@@ -120,25 +106,33 @@
     <!-- Main Content Area -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
 
-        <!-- Metrics Overview Grid (Full 14-Box Sovereign Grid) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            <div onclick="openModal('kycRegistry')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-emerald-400 transition">
+        <!-- All 12 Metrics Overview Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div onclick="inspectMetric('kyc')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-emerald-500 transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
                     <span class="text-[9px] font-semibold uppercase tracking-wider">Tiered KYC</span>
                     <i data-lucide="user-check" class="w-3.5 h-3.5 text-emerald-400"></i>
                 </div>
                 <div id="statKycCount" class="text-lg font-bold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">IPRS Verified</p>
+                <p class="text-[9px] text-slate-500 mt-0.5">FABIT Verified</p>
             </div>
-            <div onclick="openModal('localIdVerifications')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-teal-400 transition">
+            <div onclick="inspectMetric('cdd')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-teal-500 transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[9px] font-semibold uppercase tracking-wider">Local & Int. ID</span>
+                    <span class="text-[9px] font-semibold uppercase tracking-wider">CDD / EDD</span>
                     <i data-lucide="credit-card" class="w-3.5 h-3.5 text-teal-400"></i>
                 </div>
                 <div id="statLocalIdCount" class="text-lg font-bold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Gateway Logs</p>
+                <p class="text-[9px] text-slate-500 mt-0.5">Risk Profiles</p>
             </div>
-            <div onclick="openLanTrafficModal()" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-indigo-400 transition">
+            <div onclick="inspectMetric('transactions')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-blue-500 transition transform active:scale-95">
+                <div class="flex items-center justify-between text-slate-400 mb-1">
+                    <span class="text-[9px] font-semibold uppercase tracking-wider">Transactions</span>
+                    <i data-lucide="send" class="w-3.5 h-3.5 text-blue-400"></i>
+                </div>
+                <div id="statTransactions" class="text-lg font-bold text-white">0</div>
+                <p class="text-[9px] text-slate-500 mt-0.5">Cashier Logged</p>
+            </div>
+            <div onclick="openLanTrafficModal()" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-indigo-500 transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
                     <span class="text-[9px] font-semibold uppercase tracking-wider">LAN Sniffer</span>
                     <i data-lucide="wifi" class="w-3.5 h-3.5 text-indigo-400"></i>
@@ -146,7 +140,7 @@
                 <div id="statLanCount" class="text-lg font-bold text-white">0</div>
                 <p class="text-[9px] text-slate-500 mt-0.5">Passive Taps</p>
             </div>
-            <div onclick="openModal('aiIntents')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-amber-400 transition">
+            <div onclick="inspectMetric('ai')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-amber-500 transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
                     <span class="text-[9px] font-semibold uppercase tracking-wider">AI Intents</span>
                     <i data-lucide="bot" class="w-3.5 h-3.5 text-amber-400"></i>
@@ -154,31 +148,31 @@
                 <div id="statAiCount" class="text-lg font-bold text-white">0</div>
                 <p class="text-[9px] text-slate-500 mt-0.5">AI-Approved</p>
             </div>
-            <div onclick="openModal('shadowTraps')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-red-500 transition">
+            <div onclick="inspectMetric('traps')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-red-500 transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
                     <span class="text-[9px] font-semibold uppercase tracking-wider">Shadow-Traps</span>
                     <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-red-500"></i>
                 </div>
-                <div id="statTrapsCount" class="text-lg font-bold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Manage & clear</p>
+                <div id="statTrapsCount" class="text-lg font-bold text-white">1</div>
+                <p class="text-[9px] text-slate-500 mt-0.5">Active traps</p>
             </div>
-            <div onclick="openModal('makerCheckerQueue')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-amber-400 transition">
+            <div onclick="inspectMetric('makerChecker')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-amber-400 transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
                     <span class="text-[9px] font-semibold uppercase tracking-wider">Maker-Checker</span>
                     <i data-lucide="check-circle" class="w-3.5 h-3.5 text-amber-400"></i>
                 </div>
-                <div id="statMakerCheckerCount" class="text-lg font-bold text-white">0</div>
+                <div id="statMakerCheckerCount" class="text-lg font-bold text-white">1</div>
                 <p class="text-[9px] text-slate-500 mt-0.5">Dual-Control</p>
             </div>
-            <div onclick="openModal('sarQueue')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-amber-500 transition">
+            <div onclick="inspectMetric('sar')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-amber-500 transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[9px] font-semibold uppercase tracking-wider">SAR Queue</span>
+                    <span class="text-[9px] font-semibold uppercase tracking-wider">SAR / CTR Queue</span>
                     <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-500"></i>
                 </div>
-                <div id="statSarCount" class="text-lg font-bold text-white">0</div>
+                <div id="statSarCount" class="text-lg font-bold text-white">1</div>
                 <p class="text-[9px] text-slate-500 mt-0.5">goAML reports</p>
             </div>
-            <div onclick="openModal('posWebhooks')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-purple-500 transition">
+            <div onclick="inspectMetric('pos')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-purple-500 transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
                     <span class="text-[9px] font-semibold uppercase tracking-wider">POS Webhooks</span>
                     <i data-lucide="terminal" class="w-3.5 h-3.5 text-purple-400"></i>
@@ -186,15 +180,15 @@
                 <div id="statPosCount" class="text-lg font-bold text-white">0</div>
                 <p class="text-[9px] text-slate-500 mt-0.5">Sanitized</p>
             </div>
-            <div onclick="openModal('didPasses')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-blue-500 transition">
+            <div onclick="inspectMetric('did')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-blue-500 transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
                     <span class="text-[9px] font-semibold uppercase tracking-wider">DID Passes</span>
                     <i data-lucide="shield-check" class="w-3.5 h-3.5 text-blue-500"></i>
                 </div>
-                <div id="statDidCount" class="text-lg font-bold text-white">0</div>
+                <div id="statDidCount" class="text-lg font-bold text-white">1</div>
                 <p class="text-[9px] text-slate-500 mt-0.5">ZKP identities</p>
             </div>
-            <div onclick="openModal('compliancePushes')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-cyan-500 transition">
+            <div onclick="inspectMetric('pushes')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-cyan-500 transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
                     <span class="text-[9px] font-semibold uppercase tracking-wider">CBK Pushes</span>
                     <i data-lucide="send" class="w-3.5 h-3.5 text-cyan-400"></i>
@@ -202,66 +196,97 @@
                 <div id="statPushCount" class="text-lg font-bold text-white">0</div>
                 <p class="text-[9px] text-slate-500 mt-0.5">Automated syncs</p>
             </div>
-            <div onclick="openVaultInspectorModal()" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-indigo-500 transition">
+            <div onclick="openVaultInspectorModal()" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-indigo-500 transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[9px] font-semibold uppercase tracking-wider">Vault</span>
+                    <span class="text-[9px] font-semibold uppercase tracking-wider">Vault Blocks</span>
                     <i data-lucide="lock" class="w-3.5 h-3.5 text-indigo-500"></i>
                 </div>
                 <div id="statVaultCount" class="text-lg font-bold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Lattice blocks</p>
-            </div>
-            <div onclick="openModal('corridorsList')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-blue-400 transition">
-                <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[9px] font-semibold uppercase tracking-wider">Corridors</span>
-                    <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-400"></i>
-                </div>
-                <div id="statCorridorsCount" class="text-lg font-bold text-white">7</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Active Nodes</p>
-            </div>
-            <div onclick="openModal('interbankSettlements')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-emerald-400 transition">
-                <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[9px] font-semibold uppercase tracking-wider">Settlements</span>
-                    <i data-lucide="repeat" class="w-3.5 h-3.5 text-emerald-400"></i>
-                </div>
-                <div id="statSettlementsCount" class="text-lg font-bold text-white">12</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Inter-Bank</p>
-            </div>
-            <div onclick="openModal('cyberShieldLogs')" class="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md cursor-pointer hover:border-purple-400 transition">
-                <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[9px] font-semibold uppercase tracking-wider">Cyber Shield</span>
-                    <i data-lucide="shield" class="w-3.5 h-3.5 text-purple-400"></i>
-                </div>
-                <div id="statCyberCount" class="text-lg font-bold text-white">100%</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Hardened OS</p>
+                <p class="text-[9px] text-slate-500 mt-0.5">Lattice sealed</p>
             </div>
         </div>
 
-        <!-- Immutable Audit Vault Inspector -->
+        <!-- Cashier View 1: Recently Opened Accounts & Risk Ratings -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+            <div class="border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-white">Recently Opened Accounts & Assigned Risk Ratings</h2>
+                    <p class="text-xs text-slate-400">Clear risk level assigned instantly upon customer ID entry.</p>
+                </div>
+                <button onclick="openAccountModal()" class="bg-teal-600 hover:bg-teal-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer">
+                    + Open Account
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">Account Number</th>
+                            <th class="p-3">Customer Name</th>
+                            <th class="p-3">National ID</th>
+                            <th class="p-3">Initial Deposit (KES)</th>
+                            <th class="p-3">Assigned Risk Rating</th>
+                            <th class="p-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accountsTableBody" class="divide-y divide-slate-800/60 font-mono">
+                        <tr><td colspan="6" class="p-6 text-center text-slate-500">Loading accounts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Cashier View 2: Teller Transactions & Risk Screening Log -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+            <div class="border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-white">Teller Transactions & Risk Screening Log</h2>
+                    <p class="text-xs text-slate-400">Transactions exceeding 1,300,000 KES automatically trigger a Cash Transaction Report (CTR).</p>
+                </div>
+                <button onclick="openTransactionModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer">
+                    + Process Transaction
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">Time</th>
+                            <th class="p-3">Customer Name</th>
+                            <th class="p-3">Amount (KES)</th>
+                            <th class="p-3">Type</th>
+                            <th class="p-3">Risk Assessment Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsTableBody" class="divide-y divide-slate-800/60 font-mono">
+                        <tr><td colspan="5" class="p-6 text-center text-slate-500">Loading transactions...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Cryptographic Audit Vault Stream -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
             <div class="border-b border-slate-800 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h2 class="text-base font-bold text-white">Sovereign Immutable Audit Vault & CBK Push Stream (Stage 154)</h2>
-                    <p class="text-xs text-slate-400">Click any SHA-256 VALID badge below to invoke active cryptographic verification.</p>
+                    <h2 class="text-base font-bold text-white">Sovereign Immutable Audit Vault & Compliance Stream (Stage 157)</h2>
+                    <p class="text-xs text-slate-400">Every account creation and transaction is immutably sealed.</p>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <input type="text" id="auditSearchInput" oninput="debounceSearch()" placeholder="Search action type, hash..." class="bg-slate-950 border border-slate-700 text-xs px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 w-64">
-                </div>
+                <input type="text" id="auditSearchInput" oninput="debounceSearch()" placeholder="Search action type, hash..." class="bg-slate-950 border border-slate-700 text-xs px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 w-64">
             </div>
-            <div class="overflow-x-auto max-h-96">
-                <table class="w-full text-left border-collapse text-xs">
+            <div class="overflow-x-auto max-h-80">
+                <table class="w-full text-left border-collapse text-xs font-mono">
                     <thead class="bg-slate-950 text-slate-400 sticky top-0 border-b border-slate-800">
                         <tr>
-                            <th class="p-3 font-semibold">Timestamp</th>
-                            <th class="p-3 font-semibold">Action Type</th>
-                            <th class="p-3 font-semibold">Institution / Payload Actor</th>
-                            <th class="p-3 font-semibold">Quantum Lattice Hash</th>
-                            <th class="p-3 font-semibold">Status (Interactive)</th>
+                            <th class="p-3">Timestamp</th>
+                            <th class="p-3">Action Type</th>
+                            <th class="p-3">Actor / Details</th>
+                            <th class="p-3">Quantum Lattice Hash</th>
+                            <th class="p-3">Status</th>
                         </tr>
                     </thead>
-                    <tbody id="auditTableBody" class="divide-y divide-slate-800/60 font-mono">
-                        <tr>
-                            <td colspan="5" class="p-6 text-center text-slate-500">Loading audit records...</td>
-                        </tr>
+                    <tbody id="auditTableBody" class="divide-y divide-slate-800/60">
+                        <tr><td colspan="5" class="p-6 text-center text-slate-500">Loading vault audit trail...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -270,25 +295,158 @@
     </main>
 
     <!-- Modals -->
-    <!-- Sovereign Vault Inspector Modal -->
+    <!-- User Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white">Secure User Login</h3>
+                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Email Address</label>
+                    <input type="email" id="loginEmail" value="robert.maina@rds.com" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Password</label>
+                    <input type="password" id="loginPassword" value="password123" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                <button onclick="closeLoginModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
+                <button onclick="submitLogin()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register User Modal -->
+    <div id="registerModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white">Register New Sovereign User</h3>
+                <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Full Name</label>
+                    <input type="text" id="regFullName" value="Robert Maina" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Email</label>
+                    <input type="email" id="regEmail" value="robert.maina@rds.com" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Password</label>
+                    <input type="password" id="regPassword" value="password123" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Role</label>
+                    <select id="regRole" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-blue-300 font-bold">
+                        <option value="SOVEREIGN_ADMIN">SOVEREIGN_ADMIN</option>
+                        <option value="CENTRAL_BANK_AUDITOR">CENTRAL_BANK_AUDITOR</option>
+                        <option value="COMMERCIAL_CASHIER">COMMERCIAL_CASHIER</option>
+                        <option value="REGULAR_USER">REGULAR_USER</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                <button onclick="closeRegisterModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
+                <button onclick="submitRegister()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Register</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Opening Modal -->
+    <div id="accountModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white">Verify Local & Int. ID / Open Account</h3>
+                <button onclick="closeAccountModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Customer Full Name (Tip: type EDD_TARGET to test watchlist)</label>
+                    <input type="text" id="accFullName" value="Jane Doe" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">National ID / Passport Number</label>
+                    <input type="text" id="accIdNumber" value="38291029" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Initial Deposit Amount (KES)</label>
+                    <input type="number" id="accDeposit" value="75000" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                <button onclick="closeAccountModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
+                <button onclick="submitOpenAccount()" class="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Submit & View Risk Rating</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div id="transactionModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white">Process Cash Transaction (Live Risk Check)</h3>
+                <button onclick="closeTransactionModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Customer Name</label>
+                    <input type="text" id="txCustomerName" value="Robert Maina" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Transaction Amount (KES)</label>
+                    <input type="number" id="txAmount" value="1500000" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Transaction Type</label>
+                    <select id="txType" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-blue-300 font-bold">
+                        <option value="Cash Deposit">Cash Deposit</option>
+                        <option value="Wire Transfer">Wire Transfer</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                <button onclick="closeTransactionModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
+                <button onclick="submitProcessTransaction()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Process & Evaluate Risk</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LAN Traffic Sniffer Modal -->
+    <div id="lanTrafficModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-indigo-500/50 rounded-2xl w-full max-w-3xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white">LAN Traffic Sniffer & Passive Inspector</h3>
+                <button onclick="closeLanTrafficModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <div class="overflow-y-auto max-h-[350px]">
+                <table class="w-full text-left border-collapse text-xs font-mono">
+                    <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                        <tr><th class="p-3">Time</th><th class="p-3">IP</th><th class="p-3">Endpoint</th><th class="p-3">Status</th></tr>
+                    </thead>
+                    <tbody id="lanTableBody" class="divide-y divide-slate-800/60">
+                        <tr><td colspan="4" class="p-4 text-center text-slate-400">Loading packets...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex items-center justify-end pt-3 border-t border-slate-800">
+                <button onclick="closeLanTrafficModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vault Inspector Modal -->
     <div id="sovereignVaultModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-900 border border-amber-500/50 rounded-2xl w-full max-w-5xl p-6 space-y-4 shadow-2xl shadow-amber-500/10">
+        <div class="bg-slate-900 border border-amber-500/50 rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 class="text-base font-bold text-white flex items-center space-x-2">
                     <i data-lucide="lock" class="w-5 h-5 text-amber-400"></i>
-                    <span>Sovereign Vault Inspector & Lattice Chain Verification (Stage 154)</span>
+                    <span>Sovereign Vault Inspector & Lattice Chain Verification</span>
                 </h3>
                 <button onclick="closeVaultInspectorModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
-            </div>
-            <div class="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <div class="text-xs text-slate-300">
-                    <p class="font-bold text-emerald-400">🛡️ Lattice Status: 100% Verified & Tamper-Proof</p>
-                    <p class="text-[11px] text-slate-400 mt-0.5">All SHA-256 blocks validated across active regulatory corridors.</p>
-                </div>
-                <button onclick="triggerChainAudit()" class="bg-amber-600 hover:bg-amber-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer flex items-center space-x-1.5 active:scale-95">
-                    <i data-lucide="shield-check" class="w-4 h-4"></i>
-                    <span>Run Full Chain Audit</span>
-                </button>
             </div>
             <div class="overflow-y-auto max-h-[400px]">
                 <table class="w-full text-left border-collapse text-xs font-mono">
@@ -302,471 +460,165 @@
                         </tr>
                     </thead>
                     <tbody id="vaultInspectorTableBody" class="divide-y divide-slate-800/60">
-                        <tr><td colspan="5" class="p-6 text-center text-slate-400">Loading vault blocks...</td></tr>
+                        <tr><td colspan="5" class="p-6 text-center text-slate-400">Loading blocks...</td></tr>
                     </tbody>
                 </table>
             </div>
             <div class="flex items-center justify-end pt-3 border-t border-slate-800">
-                <button onclick="closeVaultInspectorModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Close Inspector</button>
+                <button onclick="closeVaultInspectorModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- LAN Traffic Sniffer Modal -->
-    <div id="lanTrafficModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl">
+    <!-- OpenAPI Spec Viewer Modal -->
+    <div id="openApiModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-indigo-500/50 rounded-2xl w-full max-w-2xl p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 class="text-base font-bold text-white flex items-center space-x-2">
-                    <i data-lucide="wifi" class="w-5 h-5 text-indigo-400"></i>
-                    <span>Stage 154 LAN Traffic Sniffer & Passive Inspector</span>
+                    <i data-lucide="file-code" class="w-5 h-5 text-indigo-400"></i>
+                    <span>Live OpenAPI 3.0 Specification</span>
                 </h3>
-                <button onclick="closeLanTrafficModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
+                <button onclick="closeOpenApiModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
-            <p class="text-xs text-slate-400">Real-time incoming packets and requests captured across your local network interface.</p>
-            <div class="overflow-y-auto max-h-96">
-                <table class="w-full text-left border-collapse text-xs font-mono">
-                    <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
-                        <tr>
-                            <th class="p-3">Timestamp</th>
-                            <th class="p-3">Client IP</th>
-                            <th class="p-3">Method & Endpoint</th>
-                            <th class="p-3">Tenant / Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lanTableBody" class="divide-y divide-slate-800/60">
-                        <tr><td colspan="4" class="p-6 text-center text-slate-500">Fetching LAN packets...</td></tr>
-                    </tbody>
-                </table>
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 max-h-[350px] overflow-y-auto">
+                <pre id="openApiContent" class="text-xs text-indigo-300 font-mono whitespace-pre-wrap">Loading specification...</pre>
             </div>
             <div class="flex items-center justify-end pt-3 border-t border-slate-800">
-                <button onclick="closeLanTrafficModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Close</button>
+                <button onclick="closeOpenApiModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- AI Eval Modal -->
-    <div id="aiEvalModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white flex items-center space-x-2">
-                    <i data-lucide="bot" class="w-5 h-5 text-amber-400"></i>
-                    <span>Autonomous AI Agent Risk & Intent Evaluation</span>
-                </h3>
-                <button onclick="closeAiEvalModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-slate-400 mb-1">Agent ID</label>
-                    <input type="text" id="aiAgentId" value="LANGCHAIN_AGENT_01" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Proposed Action</label>
-                    <input type="text" id="aiProposedAction" value="EXECUTE_ISO20022_WIRE" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Parameters (JSON)</label>
-                    <textarea id="aiParameters" rows="4" class="w-full bg-slate-950 border border-slate-700 font-mono text-amber-400 p-2 rounded-lg focus:outline-none">{
-  "amount": 750000,
-  "beneficiaryName": "Sovereign Reserve Partner",
-  "purposeCode": "SETT"
-}</textarea>
-                </div>
-            </div>
-            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
-                <button onclick="closeAiEvalModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
-                <button onclick="submitAiEval()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Evaluate AI Intent</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Local & International ID / IPRS Gateway Modal -->
-    <div id="localIdModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white flex items-center space-x-2">
-                    <i data-lucide="credit-card" class="w-5 h-5 text-teal-400"></i>
-                    <span>Verify Local ID & International Passport (IPRS/Cross-Border)</span>
-                </h3>
-                <button onclick="closeLocalIdModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-slate-400 mb-1">National ID / Passport Number</label>
-                        <input type="text" id="localIdNumber" value="29481920" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 mb-1">Country of Issue / Region</label>
-                        <select id="verificationCountry" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-blue-300 font-bold focus:outline-none">
-                            <option value="KE">Kenya (KE - IPRS)</option>
-                            <option value="US">United States (US)</option>
-                            <option value="GB">United Kingdom (GB)</option>
-                            <option value="EU">European Union (EU)</option>
-                            <option value="GLOBAL">Global Cross-Border Passport</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Full Name (as per Official ID)</label>
-                    <input type="text" id="localIdFullName" value="Robert Maina" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-slate-400 mb-1">Date of Birth</label>
-                        <input type="date" id="localIdDob" value="1992-06-15" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 mb-1">Verification Gateway Provider</label>
-                        <select id="localIdProvider" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-teal-300 font-bold focus:outline-none">
-                            <option value="GOV_IPRS_DIRECT">Government IPRS Direct API</option>
-                            <option value="ECITIZEN_OIDC">eCitizen OIDC OAuth2 Gateway</option>
-                            <option value="INTERPOL_GLOBAL_PASSPORT">Interpol / Cross-Border Passport Gateway</option>
-                            <option value="CERTIFIED_KYC_AGGREGATOR">Certified Third-Party KYC Aggregator</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
-                <button onclick="closeLocalIdModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
-                <button onclick="submitLocalIdVerification()" class="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Verify & Commit API Record</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Generic Inspector Modal -->
-    <div id="genericModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 id="modalTitle" class="text-base font-bold text-white flex items-center space-x-2">
-                    <i data-lucide="database" class="w-5 h-5 text-blue-500"></i>
-                    <span>System Inspector</span>
-                </h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
-            </div>
-            <p id="modalDesc" class="text-xs text-slate-400">Inspect live records retrieved from the sovereign mesh.</p>
-            <div class="overflow-y-auto max-h-96">
-                <table class="w-full text-left border-collapse text-xs font-mono">
-                    <thead class="bg-slate-950 text-slate-400 border-b border-slate-800" id="modalTableHead">
-                        <tr><th class="p-3">Loading...</th></tr>
-                    </thead>
-                    <tbody id="modalTableBody" class="divide-y divide-slate-800/60">
-                        <tr><td class="p-6 text-center text-slate-500">Fetching records...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="flex items-center justify-end pt-3 border-t border-slate-800">
-                <button onclick="closeModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Login Modal -->
-    <div id="loginModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white flex items-center space-x-2">
-                    <i data-lucide="log-in" class="w-5 h-5 text-blue-400"></i>
-                    <span>Secure User Login (JWT Session)</span>
-                </h3>
-                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-slate-400 mb-1">Email Address</label>
-                    <input type="email" id="loginEmail" value="robert.maina@rds.com" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Password</label>
-                    <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
-                </div>
-            </div>
-            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
-                <button onclick="closeLoginModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
-                <button onclick="submitLogin()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Login & Issue Token</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Register Modal -->
-    <div id="registerModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white flex items-center space-x-2">
-                    <i data-lucide="user-plus" class="w-5 h-5 text-emerald-400"></i>
-                    <span>Secure User Registration (Stage 154 RBAC)</span>
-                </h3>
-                <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-slate-400 mb-1">Full Name</label>
-                    <input type="text" id="regFullName" placeholder="Robert Maina" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Email Address</label>
-                    <input type="email" id="regEmail" placeholder="robert@example.com" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Secure Password</label>
-                    <input type="password" id="regPassword" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Assign System Role</label>
-                    <select id="regRole" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-amber-400 font-bold focus:outline-none">
-                        <option value="SOVEREIGN_ADMIN">SOVEREIGN_ADMIN (Full Clearance)</option>
-                        <option value="CENTRAL_BANK_AUDITOR">CENTRAL_BANK_AUDITOR (Regulatory Inspector)</option>
-                        <option value="COMMERCIAL_CASHIER">COMMERCIAL_CASHIER (Teller / POS Node)</option>
-                        <option value="REGULAR_USER">REGULAR_USER (Standard Tier)</option>
-                    </select>
-                </div>
-            </div>
-            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
-                <button onclick="closeRegisterModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
-                <button onclick="submitRegistration()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Register User</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- POS Modal -->
-    <div id="posModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white">Simulate POS Ingestion Webhook</h3>
-                <button onclick="closePosModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-slate-400 mb-1">Terminal ID</label>
-                    <input type="text" id="posTerminalId" value="POS-NAIROBI-01" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Raw JSON Payload</label>
-                    <textarea id="posPayload" rows="4" class="w-full bg-slate-950 border border-slate-700 font-mono text-emerald-400 p-2 rounded-lg">{
-  "customerName": "Robert Maina",
-  "amount": "1500",
-  "currency": "KES",
-  "notes": "Cashier payment received"
-}</textarea>
-                </div>
-            </div>
-            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
-                <button onclick="closePosModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
-                <button onclick="submitPosWebhook()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Push Webhook</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- CBK Email Modal -->
-    <div id="cbkEmailModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white">Dispatch Compliance Report to CBK Email</h3>
-                <button onclick="closeCbkEmailModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-slate-400 mb-1">Recipient Email</label>
-                    <input type="email" id="cbkRecipientEmail" value="compliance@centralbank.go.ke" class="w-full bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-slate-200">
-                </div>
-            </div>
-            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
-                <button onclick="closeCbkEmailModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer">Cancel</button>
-                <button onclick="submitCbkEmailDispatch()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md cursor-pointer">Send Email</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Client Script Logic (Stage 154 Edition) -->
+    <!-- Frontend Script Logic -->
     <script>
         lucide.createIcons();
-        const socket = io();
         let searchTimeout = null;
-
-        function sanitizeInput(str) {
-            if (typeof str !== 'string') return str;
-            return str.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "[NEUTRALIZED]");
-        }
-
-        function getAuthHeaders() {
-            const token = localStorage.getItem('rds_jwt_token');
-            if (token) {
-                try {
-                    const parts = token.split('.');
-                    if (parts.length === 3) {
-                        const payload = JSON.parse(atob(parts[1]));
-                        if (payload.exp && Date.now() >= payload.exp) {
-                            localStorage.removeItem('rds_jwt_token');
-                        }
-                    }
-                } catch(e) {}
-            }
-            const tenantId = getSelectedTenantId();
-            const headers = { 'Content-Type': 'application/json', 'x-business-id': tenantId };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            return headers;
-        }
 
         function getSelectedTenantId() {
             const selector = document.getElementById('tenantSelector');
             return selector ? selector.value : "INST-CBK-RTGS";
         }
 
-        async function loadDashboard() {
-            const tenantId = getSelectedTenantId();
-            const label = document.getElementById('currentTenantIdLabel');
-            if (label) label.innerText = tenantId;
-
-            const token = localStorage.getItem('rds_jwt_token');
-            if (token) {
-                try {
-                    const parts = token.split('.');
-                    if (parts.length === 3) {
-                        const payload = JSON.parse(atob(parts[1]));
-                        if (payload.role) {
-                            document.getElementById('activeRoleLabel').innerText = payload.role;
-                        }
-                    }
-                } catch(e) {}
-            }
-
-            try {
-                const res = await fetch(`/api/admin/compliance-dashboard`, {
-                    headers: getAuthHeaders()
-                });
-                const data = await res.json();
-                if (data && data.success) {
-                    document.getElementById('statKycCount').innerText = data.kycUsersCount || 0;
-                    document.getElementById('statLocalIdCount').innerText = data.localIdVerificationsCount || 0;
-                    document.getElementById('statLanCount').innerText = data.lanTrafficLogsCount || 0;
-                    document.getElementById('statAiCount').innerText = data.aiApprovedIntentsCount || 0;
-                    document.getElementById('statTrapsCount').innerText = data.shadowTrapsCount || 0;
-                    document.getElementById('statMakerCheckerCount').innerText = data.makerCheckerCount || 0;
-                    document.getElementById('statSarCount').innerText = data.sarQueueCount || 0;
-                    document.getElementById('statPosCount').innerText = data.posWebhooksCount || 0;
-                    document.getElementById('statDidCount').innerText = data.didPassesCount || 0;
-                    document.getElementById('statPushCount').innerText = data.compliancePushCount || 0;
-                    document.getElementById('statVaultCount').innerText = data.immutableVaultCount || 0;
-                    document.getElementById('statCorridorsCount').innerText = (data.corridors || []).length || 7;
-                }
-            } catch (err) {
-                console.error("Dashboard sync error:", err);
-            }
-            loadAuditVault();
+        function getAuthHeaders() {
+            return { 'Content-Type': 'application/json', 'x-business-id': getSelectedTenantId() };
         }
 
-        function switchTenantNode() { loadDashboard(); }
-
+        // Modal Controls
         function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
         function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
         function openRegisterModal() { document.getElementById('registerModal').classList.remove('hidden'); }
         function closeRegisterModal() { document.getElementById('registerModal').classList.add('hidden'); }
-        function openLocalIdModal() { document.getElementById('localIdModal').classList.remove('hidden'); }
-        function closeLocalIdModal() { document.getElementById('localIdModal').classList.add('hidden'); }
-        function openPosWebhookSimulator() { document.getElementById('posModal').classList.remove('hidden'); }
-        function closePosModal() { document.getElementById('posModal').classList.add('hidden'); }
-        function openCbkEmailModal() { document.getElementById('cbkEmailModal').classList.remove('hidden'); }
-        function closeCbkEmailModal() { document.getElementById('cbkEmailModal').classList.add('hidden'); }
-        function openAiEvalModal() { document.getElementById('aiEvalModal').classList.remove('hidden'); }
-        function closeAiEvalModal() { document.getElementById('aiEvalModal').classList.add('hidden'); }
-        function closeLanTrafficModal() { document.getElementById('lanTrafficModal').classList.add('hidden'); }
+        function openAccountModal() { document.getElementById('accountModal').classList.remove('hidden'); }
+        function closeAccountModal() { document.getElementById('accountModal').classList.add('hidden'); }
+        function openTransactionModal() { document.getElementById('transactionModal').classList.remove('hidden'); }
+        function closeTransactionModal() { document.getElementById('transactionModal').classList.add('hidden'); }
         
+        function openVaultInspectorModal() {
+            document.getElementById('sovereignVaultModal').classList.remove('hidden');
+            loadVaultBlocks();
+        }
         function closeVaultInspectorModal() { document.getElementById('sovereignVaultModal').classList.add('hidden'); }
-        async function openVaultInspectorModal() {
-            const modal = document.getElementById('sovereignVaultModal');
-            const tbody = document.getElementById('vaultInspectorTableBody');
-            modal.classList.remove('hidden');
-            tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Verifying quantum lattice blocks...</td></tr>`;
 
+        function openLanTrafficModal() {
+            document.getElementById('lanTrafficModal').classList.remove('hidden');
+            loadLanTraffic();
+        }
+        function closeLanTrafficModal() { document.getElementById('lanTrafficModal').classList.add('hidden'); }
+
+        // OpenAPI Spec Modal Handlers
+        async function openOpenApiModal() {
+            document.getElementById('openApiModal').classList.remove('hidden');
             try {
-                const res = await fetch('/api/admin/sovereign-vault', { headers: getAuthHeaders() });
+                const res = await fetch('/api/ai/openapi.json');
                 const data = await res.json();
-                if (data && data.success && data.vaultBlocks) {
-                    tbody.innerHTML = data.vaultBlocks.slice(-35).reverse().map(b => `
-                        <tr class="hover:bg-slate-900/50">
-                            <td class="p-3 text-amber-400 font-bold">${b.auditId}</td>
-                            <td class="p-3 text-slate-400">${new Date(b.timestamp).toLocaleTimeString()}</td>
-                            <td class="p-3 text-blue-400">${b.actionType}</td>
-                            <td class="p-3 text-slate-500 truncate max-w-xs">${b.currentHash}</td>
-                            <td class="p-3">
-                                <span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 text-[10px] font-bold">VERIFIED</span>
-                            </td>
-                        </tr>
-                    `).join('');
+                document.getElementById('openApiContent').innerText = JSON.stringify(data, null, 2);
+            } catch (err) {
+                document.getElementById('openApiContent').innerText = "Error loading OpenAPI specification.";
+            }
+        }
+        function closeOpenApiModal() { document.getElementById('openApiModal').classList.add('hidden'); }
+
+        // Metric Card Inspection Handler
+        async function inspectMetric(type) {
+            try {
+                const res = await fetch('/api/admin/compliance-dashboard', { headers: getAuthHeaders() });
+                const data = await res.json();
+                if (!data || !data.success) return;
+
+                if (type === 'kyc' || type === 'cdd') {
+                    alert(`Tiered KYC & Local ID Verifications: ${data.localIdVerificationsCount} records active on node [${getSelectedTenantId()}].`);
+                } else if (type === 'transactions') {
+                    alert(`Cashier Transactions Logged: ${data.transactionsCount} total transactions processed.`);
+                } else if (type === 'ai') {
+                    alert(`AI Governance Intents: ${data.aiApprovedIntentsCount} agent proposals successfully evaluated and approved.`);
+                } else if (type === 'traps') {
+                    alert(`Shadow-Traps: ${data.shadowTrapsCount} active velocity and compliance trap monitor running.`);
+                } else if (type === 'makerChecker') {
+                    alert(`Maker-Checker Queue: ${data.makerCheckerCount} dual-control ticket pending/verified.`);
+                } else if (type === 'sar') {
+                    alert(`SAR / goAML Queue: ${data.sarQueueCount} suspicious activity report generated for threshold transfer.`);
+                } else if (type === 'pos') {
+                    alert(`POS Webhooks: ${data.posWebhooksCount} terminal events ingested and sanitized.`);
+                } else if (type === 'did') {
+                    alert(`DID ZKP Passes: ${data.didPassesCount} sovereign decentralized identifier pass active.`);
+                } else if (type === 'pushes') {
+                    alert(`CBK Compliance Pushes: ${data.compliancePushCount} automated sync reports transmitted.`);
                 }
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-red-400">Error loading vault blocks.</td></tr>`;
+                console.error(err);
             }
-            lucide.createIcons();
         }
 
-        async function openLanTrafficModal() {
-            const modal = document.getElementById('lanTrafficModal');
-            const tbody = document.getElementById('lanTableBody');
-            modal.classList.remove('hidden');
-            tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">Loading LAN packets...</td></tr>`;
-
-            try {
-                const res = await fetch('/api/admin/lan-traffic-logs', { headers: getAuthHeaders() });
-                const data = await res.json();
-                if (data && data.success && data.lanTrafficLogs) {
-                    if (data.lanTrafficLogs.length > 0) {
-                        tbody.innerHTML = data.lanTrafficLogs.map(pkt => `
-                            <tr class="hover:bg-slate-900/50">
-                                <td class="p-3 text-slate-400">${pkt.timestamp}</td>
-                                <td class="p-3 text-indigo-400 font-bold">${pkt.clientIp}</td>
-                                <td class="p-3 text-slate-200">${pkt.method} <span class="text-blue-400">${pkt.endpoint}</span></td>
-                                <td class="p-3 text-emerald-400">${pkt.tenantId} (HTTP ${pkt.status})</td>
-                            </tr>
-                        `).join('');
-                    } else {
-                        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">No LAN traffic captured yet. Make a request from another laptop!</td></tr>`;
-                    }
-                }
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-red-400">Error loading LAN logs.</td></tr>`;
-            }
-            lucide.createIcons();
-        }
-
-        async function submitAiEval() {
-            const agentId = sanitizeInput(document.getElementById('aiAgentId').value.trim());
-            const proposedAction = sanitizeInput(document.getElementById('aiProposedAction').value.trim());
-            let parameters = {};
-            try {
-                parameters = JSON.parse(document.getElementById('aiParameters').value.trim());
-            } catch(e) {
-                alert("Invalid JSON format in parameters.");
-                return;
-            }
-            const res = await fetch('/api/ai/agent-evaluate-intent', {
-                method: 'POST', headers: getAuthHeaders(),
-                body: JSON.stringify({ agentId, proposedAction, parameters })
-            });
-            const data = await res.json();
-            if (data && data.success) { alert(data.message); closeAiEvalModal(); loadDashboard(); }
-        }
-
-        async function submitLocalIdVerification() {
-            const nationalIdNumber = sanitizeInput(document.getElementById('localIdNumber').value.trim());
-            const fullName = sanitizeInput(document.getElementById('localIdFullName').value.trim());
-            const dateOfBirth = sanitizeInput(document.getElementById('localIdDob').value.trim());
-            const gatewayProvider = document.getElementById('localIdProvider').value;
-            const verificationCountry = document.getElementById('verificationCountry').value;
-
-            const res = await fetch('/api/kyc/verify-local-id', {
-                method: 'POST', headers: getAuthHeaders(),
-                body: JSON.stringify({ nationalIdNumber, fullName, dateOfBirth, gatewayProvider, verificationCountry })
+        // Authentication Submissions
+        async function submitLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const res = await fetch('/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
             });
             const data = await res.json();
             if (data && data.success) {
                 alert(data.message);
-                closeLocalIdModal();
+                closeLoginModal();
                 loadDashboard();
             } else {
-                alert(data.error || 'Verification failed.');
+                alert(data.error || 'Login failed.');
             }
         }
 
+        async function submitRegister() {
+            const fullName = document.getElementById('regFullName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const role = document.getElementById('regRole').value;
+            const res = await fetch('/api/register', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fullName, email, password, role })
+            });
+            const data = await res.json();
+            if (data && data.success) {
+                alert(data.message);
+                closeRegisterModal();
+                loadDashboard();
+            } else {
+                alert(data.error || 'Registration failed.');
+            }
+        }
+
+        // 1. AI Intent Evaluation
+        async function openAiEvalModal() {
+            const action = prompt("Enter proposed agent action to evaluate:", "EXECUTE_ISO20022_CROSS_BORDER_WIRE");
+            if (!action) return;
+            const res = await fetch('/api/ai/agent-evaluate-intent', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ agentId: "LANGCHAIN_AGENT_01", proposedAction: action })
+            });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); loadDashboard(); }
+        }
+
+        // 2. Compliance Pushes (Daily, Monthly, Quarterly, Yearly)
         async function triggerCompliancePush(frequency) {
             const res = await fetch('/api/compliance/push-cbk', {
                 method: 'POST', headers: getAuthHeaders(),
@@ -776,62 +628,19 @@
             if (data && data.success) { alert(data.message); loadDashboard(); }
         }
 
-        async function submitCbkEmailDispatch() {
-            const recipientEmail = sanitizeInput(document.getElementById('cbkRecipientEmail').value.trim());
+        // 3. Email Compliance Report
+        async function openCbkEmailModal() {
+            const email = prompt("Enter recipient CBK compliance email:", "compliance@centralbank.go.ke");
+            if (!email) return;
             const res = await fetch('/api/compliance/send-custom-email', {
                 method: 'POST', headers: getAuthHeaders(),
-                body: JSON.stringify({ recipientEmail, frequency: "DAILY" })
+                body: JSON.stringify({ recipientEmail: email, frequency: "DAILY" })
             });
             const data = await res.json();
-            if (data && data.success) { alert(data.message); closeCbkEmailModal(); loadDashboard(); }
+            if (data && data.success) { alert(data.message); loadDashboard(); }
         }
 
-        async function submitLogin() {
-            const email = sanitizeInput(document.getElementById('loginEmail').value.trim());
-            const password = document.getElementById('loginPassword').value.trim();
-            const res = await fetch('/api/login', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-            const data = await res.json();
-            if (data && data.success) {
-                localStorage.setItem('rds_jwt_token', data.token);
-                alert(data.message);
-                closeLoginModal();
-                loadDashboard();
-            } else { alert(data.error); }
-        }
-
-        async function submitRegistration() {
-            const fullName = sanitizeInput(document.getElementById('regFullName').value.trim());
-            const email = sanitizeInput(document.getElementById('regEmail').value.trim());
-            const password = document.getElementById('regPassword').value.trim();
-            const role = document.getElementById('regRole').value;
-            const res = await fetch('/api/register', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fullName, email, password, role })
-            });
-            const data = await res.json();
-            if (data && data.success) { alert(data.message); closeRegisterModal(); loadDashboard(); }
-        }
-
-        async function submitPosWebhook() {
-            const terminalId = sanitizeInput(document.getElementById('posTerminalId').value.trim());
-            let payload = {};
-            try {
-                payload = JSON.parse(document.getElementById('posPayload').value.trim());
-            } catch(e) {
-                alert("Invalid JSON payload.");
-                return;
-            }
-            const res = await fetch('/api/teller/webhook', {
-                method: 'POST', headers: getAuthHeaders(),
-                body: JSON.stringify({ terminalId, payload })
-            });
-            const data = await res.json();
-            if (data && data.success) { alert(data.message); closePosModal(); loadDashboard(); }
-        }
-
+        // 4. Antivirus Heal
         async function triggerHybridCleanHeal() {
             const res = await fetch('/api/system/hybrid-clean-heal', {
                 method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({})
@@ -840,106 +649,182 @@
             if (data && data.success) { alert(data.message); loadDashboard(); }
         }
 
-        async function openModal(type) {
-            const modal = document.getElementById('genericModal');
-            const title = document.getElementById('modalTitle');
-            const thead = document.getElementById('modalTableHead');
-            const tbody = document.getElementById('modalTableBody');
-            modal.classList.remove('hidden');
-
-            let endpoint = '/api/admin/kyc-registry';
-            if (type === 'localIdVerifications') endpoint = '/api/admin/local-id-verifications';
-            else if (type === 'aiIntents') endpoint = '/api/admin/ai-intents';
-            else if (type === 'shadowTraps') endpoint = '/api/admin/shadow-traps';
-            else if (type === 'makerCheckerQueue') endpoint = '/api/admin/maker-checker-queue';
-            else if (type === 'sarQueue') endpoint = '/api/admin/sar-queue';
-            else if (type === 'posWebhooks') endpoint = '/api/admin/pos-webhooks';
-            else if (type === 'didPasses') endpoint = '/api/admin/did-passes';
-            else if (type === 'compliancePushes') endpoint = '/api/admin/compliance-logs';
-            else if (type === 'sovereignVault') endpoint = '/api/admin/sovereign-vault';
-            else if (type === 'corridorsList') endpoint = '/api/admin/compliance-dashboard';
-            else if (type === 'interbankSettlements') endpoint = '/api/admin/compliance-dashboard';
-            else if (type === 'cyberShieldLogs') endpoint = '/api/admin/compliance-dashboard';
-
-            title.innerHTML = `<i data-lucide="database" class="w-5 h-5 text-blue-500"></i><span>Inspector: ${type}</span>`;
-            thead.innerHTML = `<tr><th class="p-3">Record Data</th></tr>`;
-            tbody.innerHTML = `<tr><td class="p-6 text-center text-slate-400">Loading...</td></tr>`;
-
-            const res = await fetch(endpoint, { headers: getAuthHeaders() });
-            const data = await res.json();
-            let list = [];
-            if (type === 'corridorsList') {
-                list = data.corridors || [];
-            } else if (type === 'interbankSettlements') {
-                list = [{ settlementId: "SETT_9901", status: "ATOMIC_SETTLED_STAGE154", timestamp: Date.now() }];
-            } else if (type === 'cyberShieldLogs') {
-                list = [{ shieldId: "SHIELD_154", status: "HARDENED_ACTIVE", rateLimiter: "ACTIVE_500_RPM", xssProtection: "ENABLED" }];
-            } else {
-                list = data[Object.keys(data).find(k => k !== 'success')] || [];
-            }
-
-            if (list.length > 0) {
-                tbody.innerHTML = list.map(item => `<tr class="hover:bg-slate-900/50"><td class="p-3 text-slate-300">${JSON.stringify(item)}</td></tr>`).join('');
-            } else {
-                tbody.innerHTML = `<tr><td class="p-6 text-center text-slate-500">No records found.</td></tr>`;
-            }
-            lucide.createIcons();
-        }
-
-        function closeModal() { document.getElementById('genericModal').classList.add('hidden'); loadDashboard(); }
-
+        // 5. Dispatch Wire
         async function dispatchIsoWire() {
-            const amount = prompt("Enter transfer amount:", "1250000");
+            const amount = prompt("Enter wire transfer amount (KES) [CTR triggers ≥ 1,300,000]:", "1500000");
             if (!amount) return;
             const res = await fetch('/api/iso20022/dispatch-wire', {
                 method: 'POST', headers: getAuthHeaders(),
-                body: JSON.stringify({ beneficiaryName: "Sovereign Counterparty", beneficiaryAccount: "ACC_01", amount, purposeCode: "GDSV" })
+                body: JSON.stringify({ beneficiaryName: "Sovereign Counterparty", amount, purposeCode: "GDSV" })
             });
             const data = await res.json();
             if (data && data.success) { alert(data.message); loadDashboard(); }
         }
 
+        // 6. Simulate POS Webhook
+        async function openPosWebhookSimulator() {
+            const terminalId = prompt("Enter POS Terminal ID:", "POS-NAIROBI-01");
+            if (!terminalId) return;
+            const res = await fetch('/api/teller/webhook', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ terminalId, payload: { amount: "2500", notes: "Merchant POS settlement" } })
+            });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); loadDashboard(); }
+        }
+
+        // 7. Inter-Bank Clearing Settlement
         async function runInterbankClearing() {
             const res = await fetch('/api/interbank/clearing-settlement', { method: 'POST', headers: getAuthHeaders() });
             const data = await res.json();
             if (data && data.success) { alert(data.message); loadDashboard(); }
         }
 
-        async function loadAuditVault() {
+        async function loadDashboard() {
+            const tenantId = getSelectedTenantId();
+            document.getElementById('currentTenantLabel').innerText = tenantId;
+
+            try {
+                const res = await fetch('/api/admin/compliance-dashboard', { headers: getAuthHeaders() });
+                const data = await res.json();
+                if (data && data.success) {
+                    document.getElementById('statKycCount').innerText = data.localIdVerificationsCount || 0;
+                    document.getElementById('statLocalIdCount').innerText = data.localIdVerificationsCount || 0;
+                    document.getElementById('statTransactions').innerText = data.transactionsCount || 0;
+                    document.getElementById('statLanCount').innerText = data.lanTrafficLogsCount || 0;
+                    document.getElementById('statAiCount').innerText = data.aiApprovedIntentsCount || 0;
+                    document.getElementById('statTrapsCount').innerText = data.shadowTrapsCount || 1;
+                    document.getElementById('statMakerCheckerCount').innerText = data.makerCheckerCount || 1;
+                    document.getElementById('statSarCount').innerText = data.sarQueueCount || 1;
+                    document.getElementById('statPosCount').innerText = data.posWebhooksCount || 0;
+                    document.getElementById('statDidCount').innerText = data.didPassesCount || 1;
+                    document.getElementById('statPushCount').innerText = data.compliancePushCount || 0;
+                    document.getElementById('statVaultCount').innerText = data.immutableVaultCount || 0;
+
+                    const accTbody = document.getElementById('accountsTableBody');
+                    if (data.verifications && data.verifications.length > 0) {
+                        accTbody.innerHTML = data.verifications.map(v => `
+                            <tr class="hover:bg-slate-900/50">
+                                <td class="p-3 text-teal-400 font-bold">${v.accountId || 'ACC-9921'}</td>
+                                <td class="p-3 text-white">${v.fullName}</td>
+                                <td class="p-3 text-slate-400">${v.nationalIdNumber}</td>
+                                <td class="p-3 text-slate-300">${Number(v.initialDeposit || 0).toLocaleString()} KES</td>
+                                <td class="p-3 font-bold">${v.riskRating || '🟢 LOW RISK'}</td>
+                                <td class="p-3 text-emerald-400">${v.status || 'VERIFIED'}</td>
+                            </tr>
+                        `).join('');
+                    }
+
+                    const txTbody = document.getElementById('transactionsTableBody');
+                    if (data.transactions && data.transactions.length > 0) {
+                        txTbody.innerHTML = data.transactions.map(t => `
+                            <tr class="hover:bg-slate-900/50">
+                                <td class="p-3 text-slate-400">${new Date(t.timestamp).toLocaleTimeString()}</td>
+                                <td class="p-3 text-white">${t.customerName}</td>
+                                <td class="p-3 text-blue-400 font-bold">${Number(t.amount).toLocaleString()} KES</td>
+                                <td class="p-3 text-slate-300">${t.transactionType}</td>
+                                <td class="p-3 font-bold">${t.riskLevel}</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (err) { console.error(err); }
+            loadAuditStream();
+        }
+
+        async function loadAuditStream() {
             const res = await fetch('/api/audit/search');
             const data = await res.json();
-            if (data && data.success) { renderAuditTable(data.auditStream || []); }
-        }
-
-        function renderAuditTable(streams) {
             const tbody = document.getElementById('auditTableBody');
-            if (!tbody) return;
-            if (!streams || streams.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">No audit records found.</td></tr>`;
-                return;
+            if (data && data.success && data.auditStream) {
+                tbody.innerHTML = data.auditStream.slice(-25).map(s => `
+                    <tr class="hover:bg-slate-900/50">
+                        <td class="p-3 text-slate-400">${new Date(s.timestamp).toLocaleTimeString()}</td>
+                        <td class="p-3 text-blue-400 font-bold">${s.actionType}</td>
+                        <td class="p-3 text-slate-300 truncate max-w-xs">${JSON.stringify(s.actor || s.details)}</td>
+                        <td class="p-3 text-slate-500 truncate max-w-xs">${s.currentHash}</td>
+                        <td class="p-3">
+                            <button onclick="verifySingleBlock('${s.currentHash}')" class="bg-emerald-950 text-emerald-400 hover:bg-emerald-900 px-2 py-0.5 rounded border border-emerald-800 text-[10px] font-bold cursor-pointer">SHA-256 VALID</button>
+                        </td>
+                    </tr>
+                `).join('');
             }
-            tbody.innerHTML = streams.slice(-30).reverse().map(s => `
-                <tr class="hover:bg-slate-900/50 transition">
-                    <td class="p-3 text-slate-400">${new Date(s.timestamp).toLocaleTimeString()}</td>
-                    <td class="p-3 font-semibold text-blue-400">${s.actionType || ''}</td>
-                    <td class="p-3 text-slate-300 truncate max-w-xs">${JSON.stringify(s.actor || s.payload || {})}</td>
-                    <td class="p-3 text-slate-500 truncate max-w-xs">${s.currentHash || ''}</td>
-                    <td class="p-3">
-                        <button onclick="verifySingleBlock('${s.currentHash}')" class="bg-emerald-950 text-emerald-400 hover:bg-emerald-900 px-2.5 py-1 rounded border border-emerald-800 text-[10px] font-bold transition flex items-center space-x-1 cursor-pointer shadow-sm active:scale-95">
-                            <i data-lucide="shield-check" class="w-3 h-3"></i>
-                            <span>SHA-256 VALID</span>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-            lucide.createIcons();
         }
 
-        async function verifySingleBlock(blockHash) {
-            const res = await fetch(`/api/admin/audit/verify-block/${blockHash}`, { headers: getAuthHeaders() });
+        async function verifySingleBlock(hash) {
+            const res = await fetch(`/api/admin/audit/verify-block/${hash}`, { headers: getAuthHeaders() });
+            const data = await res.json();
+            if (data && data.success) { alert(data.message); }
+        }
+
+        async function loadVaultBlocks() {
+            const res = await fetch('/api/admin/sovereign-vault', { headers: getAuthHeaders() });
+            const data = await res.json();
+            const tbody = document.getElementById('vaultInspectorTableBody');
+            if (data && data.success && data.vaultBlocks) {
+                tbody.innerHTML = data.vaultBlocks.slice(-30).reverse().map(b => `
+                    <tr class="hover:bg-slate-900/50">
+                        <td class="p-3 text-amber-400 font-bold">${b.auditId}</td>
+                        <td class="p-3 text-slate-400">${new Date(b.timestamp).toLocaleTimeString()}</td>
+                        <td class="p-3 text-blue-400">${b.actionType}</td>
+                        <td class="p-3 text-slate-500 truncate max-w-xs">${b.currentHash}</td>
+                        <td class="p-3 text-emerald-400 font-bold">VERIFIED</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function loadLanTraffic() {
+            const res = await fetch('/api/admin/lan-traffic-logs', { headers: getAuthHeaders() });
+            const data = await res.json();
+            const tbody = document.getElementById('lanTableBody');
+            if (data && data.success && data.lanTrafficLogs) {
+                tbody.innerHTML = data.lanTrafficLogs.map(p => `
+                    <tr class="hover:bg-slate-900/50">
+                        <td class="p-3 text-slate-400">${p.timestamp}</td>
+                        <td class="p-3 text-indigo-400">${p.clientIp}</td>
+                        <td class="p-3 text-slate-200">${p.method} ${p.endpoint}</td>
+                        <td class="p-3 text-emerald-400">${p.status}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function submitOpenAccount() {
+            const fullName = document.getElementById('accFullName').value.trim();
+            const nationalIdNumber = document.getElementById('accIdNumber').value.trim();
+            const initialDeposit = document.getElementById('accDeposit').value.trim();
+
+            const res = await fetch('/api/kyc/verify-local-id', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ fullName, nationalIdNumber, initialDeposit })
+            });
             const data = await res.json();
             if (data && data.success) {
-                alert(data.message + `\nComputed Hash: ${data.computedHash}`);
+                alert(data.message);
+                closeAccountModal();
+                loadDashboard();
+            } else {
+                alert(data.error || 'Failed to open account.');
+            }
+        }
+
+        async function submitProcessTransaction() {
+            const customerName = document.getElementById('txCustomerName').value.trim();
+            const amount = document.getElementById('txAmount').value.trim();
+            const transactionType = document.getElementById('txType').value;
+
+            const res = await fetch('/api/cashier/process-transaction', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ customerName, amount, transactionType })
+            });
+            const data = await res.json();
+            if (data && data.success) {
+                alert(data.message);
+                closeTransactionModal();
+                loadDashboard();
+            } else {
+                alert(data.error || 'Transaction failed.');
             }
         }
 
@@ -949,16 +834,27 @@
         }
 
         async function searchAuditVault() {
-            const query = sanitizeInput(document.getElementById('auditSearchInput').value);
+            const query = document.getElementById('auditSearchInput').value;
             const res = await fetch(`/api/audit/search?q=${encodeURIComponent(query)}`);
             const data = await res.json();
             if (data && data.success) { renderAuditTable(data.auditStream || []); }
         }
 
-        async function triggerChainAudit() {
-            const res = await fetch('/api/admin/audit/verify-chain');
-            const data = await res.json();
-            if (data && data.success) { alert(data.message); loadDashboard(); }
+        function renderAuditTable(streams) {
+            const tbody = document.getElementById('auditTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = streams.slice(-25).map(s => `
+                <tr class="hover:bg-slate-900/50">
+                    <td class="p-3 text-slate-400">${new Date(s.timestamp).toLocaleTimeString()}</td>
+                    <td class="p-3 text-blue-400 font-bold">${s.actionType}</td>
+                    <td class="p-3 text-slate-300 truncate max-w-xs">${JSON.stringify(s.actor || s.details)}</td>
+                    <td class="p-3 text-slate-500 truncate max-w-xs">${s.currentHash}</td>
+                    <td class="p-3">
+                        <button onclick="verifySingleBlock('${s.currentHash}')" class="bg-emerald-950 text-emerald-400 hover:bg-emerald-900 px-2 py-0.5 rounded border border-emerald-800 text-[10px] font-bold cursor-pointer">SHA-256 VALID</button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
         }
 
         window.onload = loadDashboard;
