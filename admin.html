@@ -58,7 +58,7 @@
         </div>
     </header>
 
-    <!-- Master Action Terminal Toolbar (All 14 Buttons Fully Unlocked & Active) -->
+    <!-- Master Action Terminal Toolbar -->
     <div class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-6 py-3 flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center space-x-2 text-xs text-slate-400">
             <i data-lucide="cpu" class="w-4 h-4 text-emerald-400 animate-pulse"></i>
@@ -95,9 +95,6 @@
             <button onclick="openPosWebhookSimulator()" class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="terminal" class="w-3.5 h-3.5"></i><span>Simulate POS</span>
             </button>
-            <button onclick="openPosWebhookSimulator()" class="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
-                <i data-lucide="webhook" class="w-3.5 h-3.5"></i><span>POS Webhook</span>
-            </button>
             <button onclick="runInterbankClearing()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="repeat" class="w-3.5 h-3.5"></i><span>Inter-Bank</span>
             </button>
@@ -129,7 +126,7 @@
                     <i data-lucide="credit-card" class="w-4 h-4 text-teal-400"></i>
                 </div>
                 <div id="statLocalIdCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Risk Profiles</p>
+                <p class="text-[9px] text-slate-500 mt-0.5">IPRS Linked</p>
             </div>
             <div onclick="inspectMetric('transactions')" class="bg-slate-900/90 border border-slate-800 hover:border-blue-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
@@ -213,15 +210,15 @@
             </div>
         </div>
 
-        <!-- Accounts & Risk Matrix View -->
+        <!-- Accounts & Civil Registry Source Matrix View -->
         <div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden backdrop-blur">
             <div class="border-b border-slate-800 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h2 class="text-base font-bold text-white">Recently Opened Accounts & Numeric Risk Matrix (0-100)</h2>
-                    <p class="text-xs text-slate-400">Dynamic score calculated from KYC tier, deposit size, and entity graph metadata.</p>
+                    <h2 class="text-base font-bold text-white">Civil Registry Verified Accounts (Kenya IPRS & Worldwide Registries)</h2>
+                    <p class="text-xs text-slate-400">Linked directly to national identification databases with automated risk score assignment.</p>
                 </div>
                 <button onclick="openAccountModal()" class="bg-teal-600 hover:bg-teal-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow transition cursor-pointer active:scale-95">
-                    + Open Account
+                    + Open Account & Verify ID
                 </button>
             </div>
             <div class="overflow-x-auto">
@@ -230,14 +227,15 @@
                         <tr>
                             <th class="p-3.5">Account Number</th>
                             <th class="p-3.5">Customer Name</th>
-                            <th class="p-3.5">National ID</th>
-                            <th class="p-3.5">Initial Deposit (KES)</th>
+                            <th class="p-3.5">National ID / Passport</th>
+                            <th class="p-3.5">Civil Registry Source</th>
+                            <th class="p-3.5">Deposit (KES)</th>
                             <th class="p-3.5">Risk Score & Assessment</th>
                             <th class="p-3.5">Status</th>
                         </tr>
                     </thead>
                     <tbody id="accountsTableBody" class="divide-y divide-slate-800/60 font-mono">
-                        <tr><td colspan="6" class="p-6 text-center text-slate-500">Loading accounts...</td></tr>
+                        <tr><td colspan="7" class="p-6 text-center text-slate-500">Loading registry accounts...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -361,20 +359,30 @@
         </div>
     </div>
 
+    <!-- Account Opening Modal with Civil Registry Selection -->
     <div id="accountModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white">Verify Local & Int. ID / Open Account</h3>
+                <h3 class="text-base font-bold text-white">Kenya IPRS & Worldwide Registry Verification</h3>
                 <button onclick="closeAccountModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
                 <div>
-                    <label class="block text-slate-400 mb-1">Customer Full Name (Tip: type EDD_TARGET for sanctions test)</label>
+                    <label class="block text-slate-400 mb-1">Customer Full Name</label>
                     <input type="text" id="accFullName" value="Jane Doe" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">National ID / Passport Number</label>
                     <input type="text" id="accIdNumber" value="38291029" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Jurisdiction & Civil Registry Source</label>
+                    <select id="accCountryCode" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-teal-300 font-bold">
+                        <option value="KE">Kenya National Registration Bureau (IPRS)</option>
+                        <option value="US">US Social Security Administration Registry</option>
+                        <option value="UK">UK HM Passport Office Registry</option>
+                        <option value="INT">Other International Civil Registry</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Initial Deposit Amount (KES)</label>
@@ -383,7 +391,7 @@
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
                 <button onclick="closeAccountModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer">Cancel</button>
-                <button onclick="submitOpenAccount()" class="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md cursor-pointer">Submit & Calculate Risk Score</button>
+                <button onclick="submitOpenAccount()" class="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md cursor-pointer">Verify & Open Account</button>
             </div>
         </div>
     </div>
@@ -489,7 +497,7 @@
         </div>
     </div>
 
-    <!-- Frontend Script Logic (Secured with JWT Token Management) -->
+    <!-- Frontend Script Logic -->
     <script>
         lucide.createIcons();
         let searchTimeout = null;
@@ -584,7 +592,7 @@
                 }
 
                 if (type === 'kyc' || type === 'cdd') {
-                    alert(`Tiered KYC & Local ID Verifications: ${data.localIdVerificationsCount} records active. Ledger Proof Verified: ${data.ledgerConsistency.isBalanced}`);
+                    alert(`Tiered KYC & Civil Registry Verifications: ${data.localIdVerificationsCount} records linked to Kenya IPRS / Global Registries.`);
                 } else if (type === 'transactions') {
                     alert(`Cashier Transactions Logged: ${data.transactionsCount} total transactions processed.`);
                 } else if (type === 'ai') {
@@ -751,6 +759,7 @@
                                 <td class="p-3.5 text-teal-400 font-bold">${v.accountId || 'ACC-9921'}</td>
                                 <td class="p-3.5 text-white">${v.fullName}</td>
                                 <td class="p-3.5 text-slate-400">${v.nationalIdNumber}</td>
+                                <td class="p-3.5 text-indigo-300 text-[11px]">${v.registrySource || 'Kenya National Registration Bureau (IPRS)'}</td>
                                 <td class="p-3.5 text-slate-300">${Number(v.initialDeposit || 0).toLocaleString()} KES</td>
                                 <td class="p-3.5 font-bold">${v.riskRating || '🟢 LOW RISK'}</td>
                                 <td class="p-3.5 text-emerald-400">${v.status || 'VERIFIED'}</td>
@@ -841,11 +850,12 @@
         async function submitOpenAccount() {
             const fullName = document.getElementById('accFullName').value.trim();
             const nationalIdNumber = document.getElementById('accIdNumber').value.trim();
+            const countryCode = document.getElementById('accCountryCode').value;
             const initialDeposit = document.getElementById('accDeposit').value.trim();
 
             const res = await fetch('/api/kyc/verify-local-id', {
                 method: 'POST', headers: getAuthHeaders(),
-                body: JSON.stringify({ fullName, nationalIdNumber, initialDeposit })
+                body: JSON.stringify({ fullName, nationalIdNumber, countryCode, initialDeposit })
             });
             const data = await res.json();
             if (data && data.success) {
