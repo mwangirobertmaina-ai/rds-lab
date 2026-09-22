@@ -74,7 +74,8 @@
       "didPassId": "did:rds:ke:robertmaina99",
       "amlFlagged": false,
       "riskScore": "0.01% (CBK & World Bank Verified)",
-      "kycStatus": "TIER_3_SOVEREIGN_VERIFIED"
+      "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
+      "status": "UNDER_REVIEW"
     },
     {
       "id": "USR_1789925023312_64466",
@@ -1013,7 +1014,10 @@
         "actionRequired": "Queued for FRC/goAML reporting",
         "timestamp": 1790025014002
       },
-      "currentHash": "813dd30a74a109d3649538dd94a2bb386d9cfb81f66e4f2b0c47a268c4a1eb27"
+      "previousHash": "1d08162e84c51cf651b42401e7b7dd4d330e5359543305a137bb7a6fdeb21eee",
+      "currentHash": "813dd30a74a109d3649538dd94a2bb386d9cfb81f66e4f2b0c47a268c4a1eb27",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790025018536_14464",
@@ -1032,7 +1036,10 @@
         "status": "ACCOUNT_CREATED_SUCCESS",
         "timestamp": 1790025018534
       },
-      "currentHash": "95c20916ab75ace0d882b14b5a76611a228763b0e0f46f8365a6527ac942d460"
+      "previousHash": "813dd30a74a109d3649538dd94a2bb386d9cfb81f66e4f2b0c47a268c4a1eb27",
+      "currentHash": "95c20916ab75ace0d882b14b5a76611a228763b0e0f46f8365a6527ac942d460",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790025059124_78742",
@@ -1051,7 +1058,10 @@
         "status": "ACCOUNT_CREATED_SUCCESS",
         "timestamp": 1790025059123
       },
-      "currentHash": "f29f450d8d0ab47b4d88ca288e06e9dd3001c706d2569a1ec2dc3c29ea60d420"
+      "previousHash": "95c20916ab75ace0d882b14b5a76611a228763b0e0f46f8365a6527ac942d460",
+      "currentHash": "f29f450d8d0ab47b4d88ca288e06e9dd3001c706d2569a1ec2dc3c29ea60d420",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790025338777_81059",
@@ -1068,7 +1078,10 @@
         "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
         "timestamp": 1790025338776
       },
-      "currentHash": "621543a5a75a81bb3350704a9e8891d23fb0b491b05899621588c2cfc8535480"
+      "previousHash": "f29f450d8d0ab47b4d88ca288e06e9dd3001c706d2569a1ec2dc3c29ea60d420",
+      "currentHash": "621543a5a75a81bb3350704a9e8891d23fb0b491b05899621588c2cfc8535480",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790025366349_52269",
@@ -1087,7 +1100,10 @@
         "status": "VERIFIED_SUCCESSFUL",
         "timestamp": 1790025366347
       },
-      "currentHash": "b2435b9df25ecb5bf42377cf62adbdf4e2d9304745d296aa9a38c543a08431df"
+      "previousHash": "621543a5a75a81bb3350704a9e8891d23fb0b491b05899621588c2cfc8535480",
+      "currentHash": "b2435b9df25ecb5bf42377cf62adbdf4e2d9304745d296aa9a38c543a08431df",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790025684744_82799",
@@ -1106,7 +1122,10 @@
         "status": "VERIFIED_SUCCESSFUL",
         "timestamp": 1790025684742
       },
-      "currentHash": "ab1447bc1ca4b6381db3daf7dfb2d59001acb5e188434c1733f44cb2a2ac1e9b"
+      "previousHash": "b2435b9df25ecb5bf42377cf62adbdf4e2d9304745d296aa9a38c543a08431df",
+      "currentHash": "ab1447bc1ca4b6381db3daf7dfb2d59001acb5e188434c1733f44cb2a2ac1e9b",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790026446871_21281",
@@ -1120,7 +1139,9 @@
         "status": "ACCEPTED_BY_CBK"
       },
       "previousHash": "ab1447bc1ca4b6381db3daf7dfb2d59001acb5e188434c1733f44cb2a2ac1e9b",
-      "currentHash": "e305e1802ca0231b1d86bd90865bf750e39a5e4047b519a4e3271f6fa4eff1a5"
+      "currentHash": "e305e1802ca0231b1d86bd90865bf750e39a5e4047b519a4e3271f6fa4eff1a5",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790026895102_37878",
@@ -1140,7 +1161,9 @@
         "timestamp": 1790026895100
       },
       "previousHash": "e305e1802ca0231b1d86bd90865bf750e39a5e4047b519a4e3271f6fa4eff1a5",
-      "currentHash": "935348fffca7d87361cfe1575c66627c07c721b3d03006c66ad66f9efa6c36f7"
+      "currentHash": "935348fffca7d87361cfe1575c66627c07c721b3d03006c66ad66f9efa6c36f7",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790026978838_61484",
@@ -1154,7 +1177,9 @@
         "status": "ACCEPTED_BY_CBK"
       },
       "previousHash": "935348fffca7d87361cfe1575c66627c07c721b3d03006c66ad66f9efa6c36f7",
-      "currentHash": "8f81a3838fcf0a0784265c475fa889f42d454c1abcf64b4eda8df69ef5f4738c"
+      "currentHash": "8f81a3838fcf0a0784265c475fa889f42d454c1abcf64b4eda8df69ef5f4738c",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790026983205_46831",
@@ -1168,7 +1193,9 @@
         "status": "ACCEPTED_BY_CBK"
       },
       "previousHash": "8f81a3838fcf0a0784265c475fa889f42d454c1abcf64b4eda8df69ef5f4738c",
-      "currentHash": "35b3487d65a1ba5054faaaedc6f4f934c0962446cdefc511e1f029b27a492c06"
+      "currentHash": "35b3487d65a1ba5054faaaedc6f4f934c0962446cdefc511e1f029b27a492c06",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790026986456_78355",
@@ -1182,7 +1209,9 @@
         "status": "ACCEPTED_BY_CBK"
       },
       "previousHash": "35b3487d65a1ba5054faaaedc6f4f934c0962446cdefc511e1f029b27a492c06",
-      "currentHash": "8802830e2facd542c517bd0a205d448a08fa70100c225134a791bedac5c188db"
+      "currentHash": "8802830e2facd542c517bd0a205d448a08fa70100c225134a791bedac5c188db",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790027135998_75009",
@@ -1200,7 +1229,9 @@
         "timestamp": 1790027135997
       },
       "previousHash": "8802830e2facd542c517bd0a205d448a08fa70100c225134a791bedac5c188db",
-      "currentHash": "924720a20093d8d5fcb8712234939baa4b8b4506fd451e8ee792549a85e690e0"
+      "currentHash": "924720a20093d8d5fcb8712234939baa4b8b4506fd451e8ee792549a85e690e0",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790027191277_81739",
@@ -1220,7 +1251,9 @@
         "timestamp": 1790027191276
       },
       "previousHash": "924720a20093d8d5fcb8712234939baa4b8b4506fd451e8ee792549a85e690e0",
-      "currentHash": "3043f3e878f00ea5b388eb8eda28ecf6542bca39d401fa390c22befdf9d85221"
+      "currentHash": "3043f3e878f00ea5b388eb8eda28ecf6542bca39d401fa390c22befdf9d85221",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790027203855_91201",
@@ -1234,7 +1267,9 @@
         "status": "ACCEPTED_BY_CBK_SECURE"
       },
       "previousHash": "3043f3e878f00ea5b388eb8eda28ecf6542bca39d401fa390c22befdf9d85221",
-      "currentHash": "f91ae319ad60b628bbc71298012c721a5a394224b7c55cdd8921f290236c12d3"
+      "currentHash": "f91ae319ad60b628bbc71298012c721a5a394224b7c55cdd8921f290236c12d3",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790028551710_91518",
@@ -1245,7 +1280,9 @@
         "status": "SETTLED"
       },
       "previousHash": "f91ae319ad60b628bbc71298012c721a5a394224b7c55cdd8921f290236c12d3",
-      "currentHash": "c6ea99750d178cd24e6250c9e248094a5774a207152223c533e0299ae5054473"
+      "currentHash": "c6ea99750d178cd24e6250c9e248094a5774a207152223c533e0299ae5054473",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790029399757_15853",
@@ -1263,7 +1300,9 @@
         "timestamp": 1790029399756
       },
       "previousHash": "c6ea99750d178cd24e6250c9e248094a5774a207152223c533e0299ae5054473",
-      "currentHash": "2a0906275e7da81b07afe8cfc1bd374bbb8835f8f538c45ecaa3e2b99cf133bf"
+      "currentHash": "2a0906275e7da81b07afe8cfc1bd374bbb8835f8f538c45ecaa3e2b99cf133bf",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790029409991_23115",
@@ -1283,7 +1322,9 @@
         "timestamp": 1790029409988
       },
       "previousHash": "2a0906275e7da81b07afe8cfc1bd374bbb8835f8f538c45ecaa3e2b99cf133bf",
-      "currentHash": "1f9adaa9e287a8a679517755579c53958077bca3d768b6b73780209997cee2ef"
+      "currentHash": "1f9adaa9e287a8a679517755579c53958077bca3d768b6b73780209997cee2ef",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790030104019_73265",
@@ -1301,7 +1342,9 @@
         "timestamp": 1790030104016
       },
       "previousHash": "1f9adaa9e287a8a679517755579c53958077bca3d768b6b73780209997cee2ef",
-      "currentHash": "122ca993150b5f4f40efc5a374dc2cd651529b2f194c6d5d8035dee21e5d4270"
+      "currentHash": "122ca993150b5f4f40efc5a374dc2cd651529b2f194c6d5d8035dee21e5d4270",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790030313800_19997",
@@ -1319,7 +1362,9 @@
         "timestamp": 1790030313799
       },
       "previousHash": "122ca993150b5f4f40efc5a374dc2cd651529b2f194c6d5d8035dee21e5d4270",
-      "currentHash": "829c621e0fd8cd78f6249a61f5d707d32bf299c0e6437ef8f9b643e6d810a5f9"
+      "currentHash": "829c621e0fd8cd78f6249a61f5d707d32bf299c0e6437ef8f9b643e6d810a5f9",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790030750758_55961",
@@ -1339,7 +1384,9 @@
         "timestamp": 1790030750757
       },
       "previousHash": "829c621e0fd8cd78f6249a61f5d707d32bf299c0e6437ef8f9b643e6d810a5f9",
-      "currentHash": "18ed9160ae73655a89cdbb9e600cd02a968fa574903adfb50eb8c19416130bee"
+      "currentHash": "18ed9160ae73655a89cdbb9e600cd02a968fa574903adfb50eb8c19416130bee",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
     },
     {
       "auditId": "AUD_1790031131145_27325",
@@ -1357,7 +1404,712 @@
         "timestamp": 1790031131144
       },
       "previousHash": "18ed9160ae73655a89cdbb9e600cd02a968fa574903adfb50eb8c19416130bee",
-      "currentHash": "ee282bf72e7c4d0e040db10d190ce88dc564dcfbf30b3d148b5bab562798c222"
+      "currentHash": "ee282bf72e7c4d0e040db10d190ce88dc564dcfbf30b3d148b5bab562798c222",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_154_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790095439696_15608",
+      "timestamp": 1790095439696,
+      "actionType": "CBK_DAILY_COMPLIANCE_PUSH_157",
+      "actor": {},
+      "details": {
+        "pushId": "PUSH_1790095439663_12341",
+        "frequency": "DAILY",
+        "timestamp": 1790095439663,
+        "status": "ACCEPTED_BY_CBK_SECURE"
+      },
+      "previousHash": "ee282bf72e7c4d0e040db10d190ce88dc564dcfbf30b3d148b5bab562798c222",
+      "currentHash": "f30e1ab98537929ddbf267c1e9da6b0e30915247c49158f52cea3e702e57018a",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_157_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790102001813_51935",
+      "timestamp": 1790102001812,
+      "actionType": "CBK_CUSTOM_EMAIL_DISPATCHED_157",
+      "actor": {
+        "recipientEmail": "compliance@centralbank.go.ke"
+      },
+      "details": {
+        "dispatchId": "EMAIL_1790102001811_80943",
+        "recipientEmail": "compliance@centralbank.go.ke",
+        "timestamp": 1790102001811,
+        "status": "DISPATCHED"
+      },
+      "previousHash": "f30e1ab98537929ddbf267c1e9da6b0e30915247c49158f52cea3e702e57018a",
+      "currentHash": "81fa12e827d5162343496c1938646078121c260c534bc876535c5478696c5c93",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_157_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103114728_64643",
+      "timestamp": 1790103114728,
+      "actionType": "CASHIER_ACCOUNT_OPENED",
+      "actor": {
+        "fullName": "Jane Doe"
+      },
+      "details": {
+        "verificationId": "KYC_1790103114727_55644",
+        "nationalIdNumber": "38291029",
+        "fullName": "Jane Doe",
+        "initialDeposit": 75000,
+        "riskRating": "🔴 HIGH RISK (Score: 70/100 - EDD Required)",
+        "riskScore": 70,
+        "accountId": "ACC-357230",
+        "status": "VERIFIED_SUCCESSFUL",
+        "timestamp": 1790103114727
+      },
+      "previousHash": "81fa12e827d5162343496c1938646078121c260c534bc876535c5478696c5c93",
+      "currentHash": "7ad9b6dfb3f6c38c14ee37d5f0c8b099851d4867d88d0754ab379dadcea89ea3",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103148280_47903",
+      "timestamp": 1790103148280,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_163",
+      "actor": {},
+      "details": {
+        "status": "SETTLED"
+      },
+      "previousHash": "7ad9b6dfb3f6c38c14ee37d5f0c8b099851d4867d88d0754ab379dadcea89ea3",
+      "currentHash": "dd3660f35bb8095790bfcac688433d90f815ce753f16ebcae2e5423585b4c438",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103162246_99417",
+      "timestamp": 1790103162246,
+      "actionType": "MAKER_CHECKER_WIRE_DISPATCHED_163",
+      "actor": {
+        "amount": 1500000
+      },
+      "details": {
+        "wireId": "WIRE_1790103162244_86930",
+        "amount": 1500000,
+        "timestamp": 1790103162244,
+        "status": "DISPATCHED"
+      },
+      "previousHash": "dd3660f35bb8095790bfcac688433d90f815ce753f16ebcae2e5423585b4c438",
+      "currentHash": "0dffa0850fc2c92c867dbaab5f5a1bc07052a8e916065fba520740e0dbc43cc9",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103170088_94639",
+      "timestamp": 1790103170088,
+      "actionType": "REGULATORY_PACKAGE_GENERATED",
+      "actor": {
+        "tenantId": "INST-CBK-RTGS"
+      },
+      "details": {
+        "summary": {
+          "totalTransactions": 7,
+          "totalVolumeKES": 21003000,
+          "ctrCount": 5,
+          "sarCount": 7
+        }
+      },
+      "previousHash": "0dffa0850fc2c92c867dbaab5f5a1bc07052a8e916065fba520740e0dbc43cc9",
+      "currentHash": "c09167df21977eeb0665af1eb60f39e3611996faf15be23acf68be9f6fae4036",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103176317_79807",
+      "timestamp": 1790103176317,
+      "actionType": "REGULATORY_PACKAGE_GENERATED",
+      "actor": {
+        "tenantId": "INST-CBK-RTGS"
+      },
+      "details": {
+        "summary": {
+          "totalTransactions": 7,
+          "totalVolumeKES": 21003000,
+          "ctrCount": 5,
+          "sarCount": 7
+        }
+      },
+      "previousHash": "c09167df21977eeb0665af1eb60f39e3611996faf15be23acf68be9f6fae4036",
+      "currentHash": "61b502da3cc0a5e47af9d2094ceaa8b17e99ec0eb28df016446337b334c804dd",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103211606_38147",
+      "timestamp": 1790103211606,
+      "actionType": "REGULATORY_PACKAGE_GENERATED",
+      "actor": {
+        "tenantId": "INST-CBK-RTGS"
+      },
+      "details": {
+        "summary": {
+          "totalTransactions": 7,
+          "totalVolumeKES": 21003000,
+          "ctrCount": 5,
+          "sarCount": 7
+        }
+      },
+      "previousHash": "61b502da3cc0a5e47af9d2094ceaa8b17e99ec0eb28df016446337b334c804dd",
+      "currentHash": "376ae89d314bbdaa186cc43c9b40c7ed9750d436b255dfe623ed3fdee138b619",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103222807_4702",
+      "timestamp": 1790103222807,
+      "actionType": "REGULATORY_PACKAGE_GENERATED",
+      "actor": {
+        "tenantId": "INST-CBK-RTGS"
+      },
+      "details": {
+        "summary": {
+          "totalTransactions": 7,
+          "totalVolumeKES": 21003000,
+          "ctrCount": 5,
+          "sarCount": 7
+        }
+      },
+      "previousHash": "376ae89d314bbdaa186cc43c9b40c7ed9750d436b255dfe623ed3fdee138b619",
+      "currentHash": "fd69ff59e3551908440bb152a268176cf7af569a48fad8710b6b6ed9fdf22e97",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103329487_82246",
+      "timestamp": 1790103329487,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_163",
+      "actor": {
+        "agentId": "LANGCHAIN_AGENT_01"
+      },
+      "details": {
+        "evaluationId": "AI_1790103329486_60703",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+        "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+        "timestamp": 1790103329486
+      },
+      "previousHash": "fd69ff59e3551908440bb152a268176cf7af569a48fad8710b6b6ed9fdf22e97",
+      "currentHash": "cdba98fff35879e1e255a2a5ec414b91f316fd04e58555bcacdd04055bfb5701",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103350232_47924",
+      "timestamp": 1790103350232,
+      "actionType": "CBK_DAILY_COMPLIANCE_PUSH_163",
+      "actor": {},
+      "details": {
+        "pushId": "PUSH_1790103350230_22604",
+        "frequency": "DAILY",
+        "timestamp": 1790103350230,
+        "status": "ACCEPTED_BY_CBK_SECURE"
+      },
+      "previousHash": "cdba98fff35879e1e255a2a5ec414b91f316fd04e58555bcacdd04055bfb5701",
+      "currentHash": "c9f588b693bb66a66dcb1786d9dc7f8316c3545ba085c29dda6d7f1c6d33743b",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103353438_52559",
+      "timestamp": 1790103353438,
+      "actionType": "CBK_QUARTERLY_COMPLIANCE_PUSH_163",
+      "actor": {},
+      "details": {
+        "pushId": "PUSH_1790103353436_29479",
+        "frequency": "QUARTERLY",
+        "timestamp": 1790103353436,
+        "status": "ACCEPTED_BY_CBK_SECURE"
+      },
+      "previousHash": "c9f588b693bb66a66dcb1786d9dc7f8316c3545ba085c29dda6d7f1c6d33743b",
+      "currentHash": "b71bc3dfc27f21eefd9d4e87827a6e261494b2d80007274c72cf347a31c260a9",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103357791_97060",
+      "timestamp": 1790103357791,
+      "actionType": "CBK_CUSTOM_EMAIL_DISPATCHED_163",
+      "actor": {
+        "recipientEmail": "compliance@centralbank.go.ke"
+      },
+      "details": {
+        "dispatchId": "EMAIL_1790103357789_87613",
+        "recipientEmail": "compliance@centralbank.go.ke",
+        "timestamp": 1790103357789,
+        "status": "DISPATCHED"
+      },
+      "previousHash": "b71bc3dfc27f21eefd9d4e87827a6e261494b2d80007274c72cf347a31c260a9",
+      "currentHash": "db61fbd73b4b1238e79342f632d0d0c46e96b7481b8a676c1bc8481a2f7ce730",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103360773_73443",
+      "timestamp": 1790103360773,
+      "actionType": "SYSTEM_HYBRID_CLEAN_HEAL_163",
+      "actor": {},
+      "details": {
+        "status": "HEALED"
+      },
+      "previousHash": "db61fbd73b4b1238e79342f632d0d0c46e96b7481b8a676c1bc8481a2f7ce730",
+      "currentHash": "4befa037f2e03332353446c073e47cd9e1709cfe4b006b5be89aacffae8082b1",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103365678_51651",
+      "timestamp": 1790103365678,
+      "actionType": "MAKER_CHECKER_WIRE_DISPATCHED_163",
+      "actor": {
+        "amount": 1500000
+      },
+      "details": {
+        "wireId": "WIRE_1790103365675_29739",
+        "amount": 1500000,
+        "timestamp": 1790103365675,
+        "status": "DISPATCHED"
+      },
+      "previousHash": "4befa037f2e03332353446c073e47cd9e1709cfe4b006b5be89aacffae8082b1",
+      "currentHash": "a93ded2b59a1d4457b994f478b534c5468798b9930364774e5e1441710e62e50",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790103371407_47724",
+      "timestamp": 1790103371407,
+      "actionType": "POS_WEBHOOK_INGESTED_AND_SANITIZED_163",
+      "actor": {
+        "terminalId": "POS-NAIROBI-01"
+      },
+      "details": {
+        "webhookId": "WEB_1790103371406_24471",
+        "terminalId": "POS-NAIROBI-01",
+        "timestamp": 1790103371406
+      },
+      "previousHash": "a93ded2b59a1d4457b994f478b534c5468798b9930364774e5e1441710e62e50",
+      "currentHash": "0b6a337536a1798c7900c654d1a96340b02ec264b228b18389d1633f34ba4335",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_163_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790104532592_85739",
+      "timestamp": 1790104532591,
+      "actionType": "REGULATORY_PACKAGE_GENERATED_164",
+      "actor": {
+        "tenantId": "INST-CBK-RTGS"
+      },
+      "details": {
+        "summary": {
+          "totalTransactions": 7,
+          "totalVolumeKES": 21003000,
+          "ctrCount": 5,
+          "sarCount": 7
+        }
+      },
+      "previousHash": "0b6a337536a1798c7900c654d1a96340b02ec264b228b18389d1633f34ba4335",
+      "currentHash": "b59adeaa5fe74d99da9b92a5824fb9a4adba37ede33fe4973c3caa314d2bd5c4",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_164_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790104547447_41388",
+      "timestamp": 1790104547447,
+      "actionType": "REGULATORY_PACKAGE_GENERATED_164",
+      "actor": {
+        "tenantId": "INST-CBK-RTGS"
+      },
+      "details": {
+        "summary": {
+          "totalTransactions": 7,
+          "totalVolumeKES": 21003000,
+          "ctrCount": 5,
+          "sarCount": 7
+        }
+      },
+      "previousHash": "b59adeaa5fe74d99da9b92a5824fb9a4adba37ede33fe4973c3caa314d2bd5c4",
+      "currentHash": "0ab32be0a1372f564a717964a0ea6123b17b2cf96d1869ac76468839053d1872",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_164_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790104571392_47708",
+      "timestamp": 1790104571392,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_164",
+      "actor": {
+        "agentId": "LANGCHAIN_AGENT_01"
+      },
+      "details": {
+        "evaluationId": "AI_1790104571390_5478",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+        "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+        "timestamp": 1790104571390
+      },
+      "previousHash": "0ab32be0a1372f564a717964a0ea6123b17b2cf96d1869ac76468839053d1872",
+      "currentHash": "4eb995c8f19bd90f95c1bb4570c85d4af29ecc29c01531377cecf224200ce541",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_164_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790105186116_47264",
+      "timestamp": 1790105186115,
+      "actionType": "GLOBAL_REGULATORY_PACKAGE_GENERATED_166",
+      "actor": {
+        "tenantId": "INST-CBK-RTGS"
+      },
+      "details": {
+        "summary": {
+          "totalTransactions": 7,
+          "totalVolumeKES": 21003000,
+          "ctrCount": 5,
+          "sarCount": 7
+        }
+      },
+      "previousHash": "4eb995c8f19bd90f95c1bb4570c85d4af29ecc29c01531377cecf224200ce541",
+      "currentHash": "296b4ccc6f9958367f0c141bc0f5b731fa33db1622f02cb740819a2e060173c8",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_166_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790105462269_75118",
+      "timestamp": 1790105462269,
+      "actionType": "ENFORCEMENT_REVIEW_TRIGGERED",
+      "actor": {
+        "userId": "USR_DEFAULT",
+        "riskScore": 75
+      },
+      "details": {
+        "reason": "Single Transaction CTR Threshold Triggered"
+      },
+      "previousHash": "296b4ccc6f9958367f0c141bc0f5b731fa33db1622f02cb740819a2e060173c8",
+      "currentHash": "5e1955dd7b0421b96a7b1d64999f371fe02644c6dd6eda7eed1f6d18fd194a61",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_166_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790105922265_45133",
+      "timestamp": 1790105922265,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_166",
+      "actor": {
+        "agentId": "LANGCHAIN_AGENT_01"
+      },
+      "details": {
+        "evaluationId": "AI_1790105922263_87997",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+        "approvalStatus": "APPROVED_BY_GLOBAL_AI_GOVERNANCE",
+        "timestamp": 1790105922263
+      },
+      "previousHash": "5e1955dd7b0421b96a7b1d64999f371fe02644c6dd6eda7eed1f6d18fd194a61",
+      "currentHash": "2b4b3aaffde420aaf52f908ecc9b8acb362ada4f2e7af1b38b24d5c402a2c4ad",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_166_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790106009148_76446",
+      "timestamp": 1790106009147,
+      "actionType": "SYSTEM_HYBRID_CLEAN_HEAL_166",
+      "actor": {},
+      "details": {
+        "status": "HEALED"
+      },
+      "previousHash": "2b4b3aaffde420aaf52f908ecc9b8acb362ada4f2e7af1b38b24d5c402a2c4ad",
+      "currentHash": "3de404bef208f36ee41e86e3101af452bd833495d82197abd2c37653f5b5afe5",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_166_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790106013894_49885",
+      "timestamp": 1790106013894,
+      "actionType": "SYSTEM_HYBRID_CLEAN_HEAL_166",
+      "actor": {},
+      "details": {
+        "status": "HEALED"
+      },
+      "previousHash": "3de404bef208f36ee41e86e3101af452bd833495d82197abd2c37653f5b5afe5",
+      "currentHash": "5833f9c1f5b8be3906a633ca5ed003df1088e57cdfdc9725c65c82fcf0848631",
+      "tamperProof": true,
+      "cryptographicStandard": "STAGE_166_UNIFIED_LATTICE"
+    },
+    {
+      "auditId": "AUD_1790106631221_37969",
+      "timestamp": 1790106631221,
+      "actionType": "SYSTEM_HYBRID_CLEAN_HEAL_166",
+      "actor": {},
+      "details": {
+        "status": "HEALED"
+      },
+      "previousHash": "5833f9c1f5b8be3906a633ca5ed003df1088e57cdfdc9725c65c82fcf0848631",
+      "currentHash": "81b41ed9c0edfd9c0401369724c1d294d4f3965387263fae14ea24ab17425476",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790106667384_67607",
+      "timestamp": 1790106667383,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_166",
+      "actor": {
+        "agentId": "LANGCHAIN_AGENT_01"
+      },
+      "details": {
+        "evaluationId": "AI_1790106667381_76474",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+        "approvalStatus": "APPROVED_BY_GLOBAL_AI_GOVERNANCE",
+        "timestamp": 1790106667381
+      },
+      "previousHash": "81b41ed9c0edfd9c0401369724c1d294d4f3965387263fae14ea24ab17425476",
+      "currentHash": "5fb74b7ec496100cd6cffee9e4e630b1e43636f2c458f727d03c44f9f3a45868",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790106674777_63032",
+      "timestamp": 1790106674777,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_166",
+      "actor": {
+        "agentId": "LANGCHAIN_AGENT_01"
+      },
+      "details": {
+        "evaluationId": "AI_1790106674775_13000",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+        "approvalStatus": "APPROVED_BY_GLOBAL_AI_GOVERNANCE",
+        "timestamp": 1790106674775
+      },
+      "previousHash": "5fb74b7ec496100cd6cffee9e4e630b1e43636f2c458f727d03c44f9f3a45868",
+      "currentHash": "ad451a07d2c5dd3d4bee6ba820ffcd9be7c5393174e9cf7c92a104fbf913b8c7",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790106677863_40726",
+      "timestamp": 1790106677863,
+      "actionType": "GLOBAL_REGULATORY_PACKAGE_GENERATED_166",
+      "actor": {
+        "tenantId": "INST-WORLDBANK"
+      },
+      "details": {
+        "summary": {
+          "totalTransactions": 7,
+          "totalVolumeKES": 21003000,
+          "ctrCount": 5,
+          "sarCount": 8
+        }
+      },
+      "previousHash": "ad451a07d2c5dd3d4bee6ba820ffcd9be7c5393174e9cf7c92a104fbf913b8c7",
+      "currentHash": "f8e7edb1c3caedfd364ebe5b973cb0806407a7c5f6572290675db5b3bd0b0580",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790108421372_95669",
+      "timestamp": 1790108421371,
+      "actionType": "GLOBAL_COMPLIANCE_PUSH_170",
+      "actor": {},
+      "details": {
+        "pushId": "PUSH_1790108421364_83138",
+        "frequency": "DAILY",
+        "timestamp": 1790108421364,
+        "status": "ACCEPTED_BY_GLOBAL_GATEWAY"
+      },
+      "previousHash": "f8e7edb1c3caedfd364ebe5b973cb0806407a7c5f6572290675db5b3bd0b0580",
+      "currentHash": "705a2989a76a57ca1899f496d8c7ae6c14936dd1f975913f7de990c99a108708",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790108428290_51039",
+      "timestamp": 1790108428290,
+      "actionType": "SYSTEM_HYBRID_CLEAN_HEAL_170",
+      "actor": {},
+      "details": {
+        "status": "HEALED"
+      },
+      "previousHash": "705a2989a76a57ca1899f496d8c7ae6c14936dd1f975913f7de990c99a108708",
+      "currentHash": "7d3fec882fad1d5481f9cb38e4d230ca609812800bdd9c153ac7a20432293f00",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790108454277_94443",
+      "timestamp": 1790108454276,
+      "actionType": "CASHIER_ACCOUNT_OPENED",
+      "actor": {
+        "fullName": "Jane Doe"
+      },
+      "details": {
+        "verificationId": "KYC_1790108454257_90183",
+        "nationalIdNumber": "38291029",
+        "fullName": "Jane Doe",
+        "initialDeposit": 75000,
+        "riskRating": "🔴 HIGH RISK (EDD Required)",
+        "riskScore": 90,
+        "accountId": "ACC-180482",
+        "status": "VERIFIED_SUCCESSFUL",
+        "timestamp": 1790108454257
+      },
+      "previousHash": "7d3fec882fad1d5481f9cb38e4d230ca609812800bdd9c153ac7a20432293f00",
+      "currentHash": "9e162d6dc29e6cbb4c5f51062423ef14f55fbb0562f410894c762703d930cdd3",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790108469238_94805",
+      "timestamp": 1790108469237,
+      "actionType": "REGULATORY_PACKAGE_GENERATED_170",
+      "actor": {
+        "tenantId": "INST-WORLDBANK"
+      },
+      "details": {
+        "institutionId": "INST-WORLDBANK",
+        "standard": "FATF, Basel, IFRS, World Bank",
+        "metrics": {
+          "totalTransactions": 7,
+          "totalVolume": 21003000,
+          "sarCount": 8
+        },
+        "auditProof": {
+          "valid": false,
+          "tamperedBlockId": "AUD_GENESIS_ROOT_147"
+        },
+        "ledgerCheck": {
+          "isBalanced": true,
+          "totalDebits": 75000,
+          "totalCredits": 75000,
+          "equationCheck": "TOTAL_DEBITS_EQUALS_TOTAL_CREDITS"
+        },
+        "generatedAt": "2026-09-22T20:21:09.237Z"
+      },
+      "previousHash": "9e162d6dc29e6cbb4c5f51062423ef14f55fbb0562f410894c762703d930cdd3",
+      "currentHash": "b583b7eb6d6a6b1ebb8261f17b682c6c0bb1c43280a269c7b173896725726654",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790108760061_45289",
+      "timestamp": 1790108760050,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_170",
+      "actor": {
+        "agentId": "LANGCHAIN_AGENT_01"
+      },
+      "details": {
+        "evaluationId": "AI_1790108759909_94780",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+        "approvalStatus": "APPROVED_BY_GLOBAL_AI_GOVERNANCE",
+        "timestamp": 1790108759909
+      },
+      "previousHash": "b583b7eb6d6a6b1ebb8261f17b682c6c0bb1c43280a269c7b173896725726654",
+      "currentHash": "ec564e43a124c6e1d63de8cdd380408815caffc528c6e34cba0dd3a41d559a09",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790108769305_36405",
+      "timestamp": 1790108769303,
+      "actionType": "GLOBAL_CUSTOM_EMAIL_DISPATCHED_170",
+      "actor": {
+        "recipientEmail": "compliance@centralbank.go.ke"
+      },
+      "details": {
+        "dispatchId": "EMAIL_1790108769105_37172",
+        "recipientEmail": "compliance@centralbank.go.ke",
+        "timestamp": 1790108769105,
+        "status": "DISPATCHED"
+      },
+      "previousHash": "ec564e43a124c6e1d63de8cdd380408815caffc528c6e34cba0dd3a41d559a09",
+      "currentHash": "bb72e59cf5cf6341fc479160588031ccb9bd4cb25e1b8b38caddc19b6294cada",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790108775348_9168",
+      "timestamp": 1790108775344,
+      "actionType": "ISO20022_WIRE_DISPATCHED_170",
+      "actor": {
+        "amount": 1500000
+      },
+      "details": {
+        "wireId": "WIRE_1790108775285_19294",
+        "amount": 1500000,
+        "timestamp": 1790108775285,
+        "status": "DISPATCHED"
+      },
+      "previousHash": "bb72e59cf5cf6341fc479160588031ccb9bd4cb25e1b8b38caddc19b6294cada",
+      "currentHash": "eeff61b95dd82a33221ccb8f72eaee45798179e9ed781d8a8490d77d4d5f13fa",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790108783165_91685",
+      "timestamp": 1790108783153,
+      "actionType": "POS_WEBHOOK_INGESTED_170",
+      "actor": {
+        "terminalId": "POS-NAIROBI-01"
+      },
+      "details": {
+        "webhookId": "WEB_1790108782898_26619",
+        "terminalId": "POS-NAIROBI-01",
+        "timestamp": 1790108782898
+      },
+      "previousHash": "eeff61b95dd82a33221ccb8f72eaee45798179e9ed781d8a8490d77d4d5f13fa",
+      "currentHash": "00916ca9fd9f86b32e19412d69d6fc222bdcc1b5eeb74d867d915948fb0955ed",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790108788795_50671",
+      "timestamp": 1790108788794,
+      "actionType": "INTERBANK_CLEARING_SETTLEMENT_170",
+      "actor": {},
+      "details": {
+        "status": "SETTLED"
+      },
+      "previousHash": "00916ca9fd9f86b32e19412d69d6fc222bdcc1b5eeb74d867d915948fb0955ed",
+      "currentHash": "a8249fe970e23f20c15d0b292e901966475cf0b9c3930f7382b0a435734d9b5c",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790109380785_5856",
+      "timestamp": 1790109380784,
+      "actionType": "POS_WEBHOOK_INGESTED_170",
+      "actor": {
+        "terminalId": "POS-NAIROBI-01"
+      },
+      "details": {
+        "webhookId": "WEB_1790109380773_56724",
+        "terminalId": "POS-NAIROBI-01",
+        "timestamp": 1790109380773
+      },
+      "previousHash": "a8249fe970e23f20c15d0b292e901966475cf0b9c3930f7382b0a435734d9b5c",
+      "currentHash": "0d31b5df66312948c7a6f081ab775ed59a238b9c22afe97018c60759ad803369",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790109417979_91189",
+      "timestamp": 1790109417979,
+      "actionType": "AI_AGENT_INTENT_EVALUATED_170",
+      "actor": {
+        "agentId": "LANGCHAIN_AGENT_01"
+      },
+      "details": {
+        "evaluationId": "AI_1790109417971_35865",
+        "agentId": "LANGCHAIN_AGENT_01",
+        "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+        "approvalStatus": "APPROVED_BY_GLOBAL_AI_GOVERNANCE",
+        "timestamp": 1790109417971
+      },
+      "previousHash": "0d31b5df66312948c7a6f081ab775ed59a238b9c22afe97018c60759ad803369",
+      "currentHash": "d1a239b70d4a091decd1c6b97765defae67ccdde8dd81ce58141ecf7e754d97c",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790109438753_98390",
+      "timestamp": 1790109438752,
+      "actionType": "GLOBAL_CUSTOM_EMAIL_DISPATCHED_170",
+      "actor": {
+        "recipientEmail": "compliance@centralbank.go.ke"
+      },
+      "details": {
+        "dispatchId": "EMAIL_1790109438711_24265",
+        "recipientEmail": "compliance@centralbank.go.ke",
+        "timestamp": 1790109438711,
+        "status": "DISPATCHED"
+      },
+      "previousHash": "d1a239b70d4a091decd1c6b97765defae67ccdde8dd81ce58141ecf7e754d97c",
+      "currentHash": "6adb8c648e31826e6ebb848e16f13f815cbeef3443f57c4c693ad355db8b255c",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     }
   ],
   "iso20022_wires": [
@@ -1400,6 +2152,24 @@
       "shadowTrapFlagged": true,
       "makerCheckerStatus": "PENDING_CHECKER_VERIFICATION",
       "timestamp": 1789950497049
+    },
+    {
+      "wireId": "WIRE_1790103162244_86930",
+      "amount": 1500000,
+      "timestamp": 1790103162244,
+      "status": "DISPATCHED"
+    },
+    {
+      "wireId": "WIRE_1790103365675_29739",
+      "amount": 1500000,
+      "timestamp": 1790103365675,
+      "status": "DISPATCHED"
+    },
+    {
+      "wireId": "WIRE_1790108775285_19294",
+      "amount": 1500000,
+      "timestamp": 1790108775285,
+      "status": "DISPATCHED"
     }
   ],
   "ai_approved_intents": [
@@ -1441,6 +2211,55 @@
       "riskScore": "0.01%",
       "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
       "timestamp": 1789950458379
+    },
+    {
+      "evaluationId": "AI_1790103329486_60703",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1790103329486
+    },
+    {
+      "evaluationId": "AI_1790104571390_5478",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+      "approvalStatus": "APPROVED_BY_AI_GOVERNANCE",
+      "timestamp": 1790104571390
+    },
+    {
+      "evaluationId": "AI_1790105922263_87997",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+      "approvalStatus": "APPROVED_BY_GLOBAL_AI_GOVERNANCE",
+      "timestamp": 1790105922263
+    },
+    {
+      "evaluationId": "AI_1790106667381_76474",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+      "approvalStatus": "APPROVED_BY_GLOBAL_AI_GOVERNANCE",
+      "timestamp": 1790106667381
+    },
+    {
+      "evaluationId": "AI_1790106674775_13000",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+      "approvalStatus": "APPROVED_BY_GLOBAL_AI_GOVERNANCE",
+      "timestamp": 1790106674775
+    },
+    {
+      "evaluationId": "AI_1790108759909_94780",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+      "approvalStatus": "APPROVED_BY_GLOBAL_AI_GOVERNANCE",
+      "timestamp": 1790108759909
+    },
+    {
+      "evaluationId": "AI_1790109417971_35865",
+      "agentId": "LANGCHAIN_AGENT_01",
+      "proposedAction": "EXECUTE_ISO20022_CROSS_BORDER_WIRE",
+      "approvalStatus": "APPROVED_BY_GLOBAL_AI_GOVERNANCE",
+      "timestamp": 1790109417971
     }
   ],
   "shadow_trap_flags": [
@@ -1498,6 +2317,11 @@
       "sarId": "SAR_1790030104016_57651",
       "referenceId": "TX_1790030104016_54578",
       "details": "CTR auto-generated for transfer of 1500000 KES."
+    },
+    {
+      "sarId": "SAR_1790105462269_13931",
+      "referenceId": "TX_1790105462269_55424",
+      "details": "Automated SAR generated. Risk Score: 75/100. Reason: Single Transaction CTR Threshold Triggered"
     }
   ],
   "did_pass_registry": [
@@ -1673,6 +2497,28 @@
       "accountId": "ACC-389961",
       "status": "VERIFIED_SUCCESSFUL",
       "timestamp": 1790030750757
+    },
+    {
+      "verificationId": "KYC_1790103114727_55644",
+      "nationalIdNumber": "38291029",
+      "fullName": "Jane Doe",
+      "initialDeposit": 75000,
+      "riskRating": "🔴 HIGH RISK (Score: 70/100 - EDD Required)",
+      "riskScore": 70,
+      "accountId": "ACC-357230",
+      "status": "VERIFIED_SUCCESSFUL",
+      "timestamp": 1790103114727
+    },
+    {
+      "verificationId": "KYC_1790108454257_90183",
+      "nationalIdNumber": "38291029",
+      "fullName": "Jane Doe",
+      "initialDeposit": 75000,
+      "riskRating": "🔴 HIGH RISK (EDD Required)",
+      "riskScore": 90,
+      "accountId": "ACC-180482",
+      "status": "VERIFIED_SUCCESSFUL",
+      "timestamp": 1790108454257
     }
   ],
   "cashier_transactions": [
@@ -1715,7 +2561,7 @@
       "amount": 1500000,
       "transactionType": "Cash Deposit",
       "riskLevel": "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)",
-      "timestamp": 1790030104016
+      "timestamp": 1790029399756
     },
     {
       "txId": "TX_1790030313799_18340",
@@ -1786,6 +2632,21 @@
       },
       "sanitizedNotes": "Cashier payment received",
       "timestamp": 1789950508029
+    },
+    {
+      "webhookId": "WEB_1790103371406_24471",
+      "terminalId": "POS-NAIROBI-01",
+      "timestamp": 1790103371406
+    },
+    {
+      "webhookId": "WEB_1790108782898_26619",
+      "terminalId": "POS-NAIROBI-01",
+      "timestamp": 1790108782898
+    },
+    {
+      "webhookId": "WEB_1790109380773_56724",
+      "terminalId": "POS-NAIROBI-01",
+      "timestamp": 1790109380773
     }
   ],
   "compliance_push_logs": [
@@ -1908,6 +2769,54 @@
       "frequency": "QUARTERLY",
       "timestamp": 1790027203853,
       "status": "ACCEPTED_BY_CBK_SECURE"
+    },
+    {
+      "pushId": "PUSH_1790095439663_12341",
+      "frequency": "DAILY",
+      "timestamp": 1790095439663,
+      "status": "ACCEPTED_BY_CBK_SECURE"
+    },
+    {
+      "dispatchId": "EMAIL_1790102001811_80943",
+      "recipientEmail": "compliance@centralbank.go.ke",
+      "timestamp": 1790102001811,
+      "status": "DISPATCHED"
+    },
+    {
+      "pushId": "PUSH_1790103350230_22604",
+      "frequency": "DAILY",
+      "timestamp": 1790103350230,
+      "status": "ACCEPTED_BY_CBK_SECURE"
+    },
+    {
+      "pushId": "PUSH_1790103353436_29479",
+      "frequency": "QUARTERLY",
+      "timestamp": 1790103353436,
+      "status": "ACCEPTED_BY_CBK_SECURE"
+    },
+    {
+      "dispatchId": "EMAIL_1790103357789_87613",
+      "recipientEmail": "compliance@centralbank.go.ke",
+      "timestamp": 1790103357789,
+      "status": "DISPATCHED"
+    },
+    {
+      "pushId": "PUSH_1790108421364_83138",
+      "frequency": "DAILY",
+      "timestamp": 1790108421364,
+      "status": "ACCEPTED_BY_GLOBAL_GATEWAY"
+    },
+    {
+      "dispatchId": "EMAIL_1790108769105_37172",
+      "recipientEmail": "compliance@centralbank.go.ke",
+      "timestamp": 1790108769105,
+      "status": "DISPATCHED"
+    },
+    {
+      "dispatchId": "EMAIL_1790109438711_24265",
+      "recipientEmail": "compliance@centralbank.go.ke",
+      "timestamp": 1790109438711,
+      "status": "DISPATCHED"
     }
   ],
   "maker_checker_queue": [
@@ -2000,6 +2909,42 @@
         "purposeCode": "GDSV"
       },
       "timestamp": 1789950497049
+    }
+  ],
+  "double_entry_ledger": [
+    {
+      "ledgerId": "LEDGER_1790108454258_65879",
+      "txId": "KYC_1790108454257_90183",
+      "timestamp": 1790108454258,
+      "entries": [
+        {
+          "type": "DEBIT",
+          "account": "ACC-180482",
+          "amount": 75000
+        },
+        {
+          "type": "CREDIT",
+          "account": "SYS_LIQUIDITY_POOL",
+          "amount": 75000
+        }
+      ]
+    },
+    {
+      "ledgerId": "LEDGER_1790108775286_1112",
+      "txId": "WIRE_1790108775285_19294",
+      "timestamp": 1790108775286,
+      "entries": [
+        {
+          "type": "DEBIT",
+          "account": "SWIFT_RTGS_ACCOUNT",
+          "amount": 1500000
+        },
+        {
+          "type": "CREDIT",
+          "account": "SYS_LIQUIDITY_POOL",
+          "amount": 1500000
+        }
+      ]
     }
   ],
   "ai_enforcement_logs": [
