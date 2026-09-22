@@ -1,7 +1,7 @@
 {
   "name": "rds-lab",
-  "version": "51.0.0",
-  "description": "RDS Enterprise Universal Sovereign Fleet Management & Escrow Clearinghouse Engine",
+  "version": "170.0.0",
+  "description": "RDS Enterprise Universal Sovereign Fleet Management, Escrow Clearinghouse & Mathematical Truth Engine",
   "main": "server.js",
   "type": "commonjs",
   "author": "Robert Maina",
@@ -13,7 +13,7 @@
     "build": "echo \"Sovereign pipeline compiled successfully - zero leakage architecture active\""
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=20.0.0 <25.0.0",
     "npm": ">=8.0.0"
   },
   "dependencies": {
@@ -27,5 +27,10 @@
     "socket.io": "^4.8.3",
     "stripe": "^22.6.2"
   },
-  "keywords": []
+  "keywords": [
+    "sovereign-financial-os",
+    "escrow",
+    "fleet-management",
+    "compliance"
+  ]
 }
