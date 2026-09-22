@@ -2110,6 +2110,66 @@
       "previousHash": "d1a239b70d4a091decd1c6b97765defae67ccdde8dd81ce58141ecf7e754d97c",
       "currentHash": "6adb8c648e31826e6ebb848e16f13f815cbeef3443f57c4c693ad355db8b255c",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790119246034_17346",
+      "timestamp": 1790119246034,
+      "actionType": "CTR_STR_TRIGGERED",
+      "actor": {
+        "userId": "USR_DEFAULT"
+      },
+      "details": {
+        "amount": 1500000,
+        "riskScore": 100
+      },
+      "previousHash": "6adb8c648e31826e6ebb848e16f13f815cbeef3443f57c4c693ad355db8b255c",
+      "currentHash": "4390dbccf1f6c7bff989c18b0a5d0b539ffe727ec477e2308ab3a630f4ec8096",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790119246051_90886",
+      "timestamp": 1790119246050,
+      "actionType": "ENFORCEMENT_ACCOUNT_FROZEN",
+      "actor": {
+        "userId": "USR_DEFAULT"
+      },
+      "details": {
+        "riskScore": 100
+      },
+      "previousHash": "4390dbccf1f6c7bff989c18b0a5d0b539ffe727ec477e2308ab3a630f4ec8096",
+      "currentHash": "abbd7198cbcd225f6a71ec5113504bf1f85dc7488fcc70086692271104871662",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790119541997_32300",
+      "timestamp": 1790119541996,
+      "actionType": "REGULATORY_PACKAGE_GENERATED_170",
+      "actor": {
+        "tenantId": "INST-WORLDBANK"
+      },
+      "details": {
+        "institutionId": "INST-WORLDBANK",
+        "standard": "FATF, Basel, IFRS, World Bank",
+        "metrics": {
+          "totalTransactions": 7,
+          "totalVolume": 21003000,
+          "sarCount": 9
+        },
+        "auditProof": {
+          "valid": false,
+          "tamperedBlockId": "AUD_GENESIS_ROOT_147"
+        },
+        "ledgerCheck": {
+          "isBalanced": true,
+          "totalDebits": 1575000,
+          "totalCredits": 1575000,
+          "equationCheck": "TOTAL_DEBITS_EQUALS_TOTAL_CREDITS"
+        },
+        "generatedAt": "2026-09-22T23:25:41.995Z"
+      },
+      "previousHash": "abbd7198cbcd225f6a71ec5113504bf1f85dc7488fcc70086692271104871662",
+      "currentHash": "3844398e0ed2da597f893eb5ce6a9e9bc26ff9550a3f4ef15c538b16c3089d18",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     }
   ],
   "iso20022_wires": [
@@ -2322,6 +2382,11 @@
       "sarId": "SAR_1790105462269_13931",
       "referenceId": "TX_1790105462269_55424",
       "details": "Automated SAR generated. Risk Score: 75/100. Reason: Single Transaction CTR Threshold Triggered"
+    },
+    {
+      "sarId": "SAR_1790119246034_10491",
+      "referenceId": "TX_1790119246034_4470",
+      "details": "CTR / STR auto-generated for high-value transfer of 1500000 KES. Risk Score: 100"
     }
   ],
   "did_pass_registry": [
@@ -2404,7 +2469,8 @@
       "status": "VERIFIED_SUCCESSFUL",
       "zkpProofHash": "94a2e89058fac8350cc36b13d8e402dc4333506ab92be8675e2bc545c9a8e666",
       "timestamp": 1789930092321,
-      "riskRating": "🟢 LOW RISK (Standard Account)"
+      "riskRating": "🟢 LOW RISK (Standard Account)",
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     },
     {
       "verificationId": "KYC_IPRS_1789931696622_12575",
@@ -2416,7 +2482,8 @@
       "status": "VERIFIED_SUCCESSFUL",
       "zkpProofHash": "6773e0890b847de9f206733901e60a96dd077987c9f3be468df1a23c954da404",
       "timestamp": 1789931696622,
-      "riskRating": "🟢 LOW RISK (Standard Account)"
+      "riskRating": "🟢 LOW RISK (Standard Account)",
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     },
     {
       "verificationId": "KYC_1790025018534_15084",
@@ -2426,7 +2493,8 @@
       "riskRating": "🟢 LOW RISK (Standard Account)",
       "accountId": "ACC-407840",
       "status": "ACCOUNT_CREATED_SUCCESS",
-      "timestamp": 1790025018534
+      "timestamp": 1790025018534,
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     },
     {
       "verificationId": "KYC_1790025059123_80310",
@@ -2436,7 +2504,8 @@
       "riskRating": "🟢 LOW RISK (Standard Account)",
       "accountId": "ACC-351449",
       "status": "ACCOUNT_CREATED_SUCCESS",
-      "timestamp": 1790025059123
+      "timestamp": 1790025059123,
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     },
     {
       "verificationId": "KYC_1790025366347_25411",
@@ -2446,7 +2515,8 @@
       "riskRating": "🟢 LOW RISK (Standard Account)",
       "accountId": "ACC-494929",
       "status": "VERIFIED_SUCCESSFUL",
-      "timestamp": 1790025366347
+      "timestamp": 1790025366347,
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     },
     {
       "verificationId": "KYC_1790025684742_1406",
@@ -2456,7 +2526,8 @@
       "riskRating": "🟢 LOW RISK (Standard Account)",
       "accountId": "ACC-873807",
       "status": "VERIFIED_SUCCESSFUL",
-      "timestamp": 1790025684742
+      "timestamp": 1790025684742,
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     },
     {
       "verificationId": "KYC_1790026895100_49418",
@@ -2466,7 +2537,8 @@
       "riskRating": "🟢 LOW RISK (Standard Account)",
       "accountId": "ACC-204213",
       "status": "VERIFIED_SUCCESSFUL",
-      "timestamp": 1790026895100
+      "timestamp": 1790026895100,
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     },
     {
       "verificationId": "KYC_1790027191276_52216",
@@ -2476,7 +2548,8 @@
       "riskRating": "🟢 LOW RISK (Standard Account)",
       "accountId": "ACC-703820",
       "status": "VERIFIED_SUCCESSFUL",
-      "timestamp": 1790027191276
+      "timestamp": 1790027191276,
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     },
     {
       "verificationId": "KYC_1790029409988_99918",
@@ -2486,7 +2559,8 @@
       "riskRating": "🟢 LOW RISK (Standard Account)",
       "accountId": "ACC-461895",
       "status": "VERIFIED_SUCCESSFUL",
-      "timestamp": 1790029409988
+      "timestamp": 1790029409988,
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     },
     {
       "verificationId": "KYC_1790030750757_23010",
@@ -2496,7 +2570,8 @@
       "riskRating": "🔴 HIGH RISK (EDD Enhanced Review Required)",
       "accountId": "ACC-389961",
       "status": "VERIFIED_SUCCESSFUL",
-      "timestamp": 1790030750757
+      "timestamp": 1790030750757,
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     },
     {
       "verificationId": "KYC_1790103114727_55644",
@@ -2507,7 +2582,8 @@
       "riskScore": 70,
       "accountId": "ACC-357230",
       "status": "VERIFIED_SUCCESSFUL",
-      "timestamp": 1790103114727
+      "timestamp": 1790103114727,
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     },
     {
       "verificationId": "KYC_1790108454257_90183",
@@ -2518,7 +2594,8 @@
       "riskScore": 90,
       "accountId": "ACC-180482",
       "status": "VERIFIED_SUCCESSFUL",
-      "timestamp": 1790108454257
+      "timestamp": 1790108454257,
+      "registrySource": "Kenya National Registration Bureau (IPRS)"
     }
   ],
   "cashier_transactions": [
@@ -2947,6 +3024,10 @@
       ]
     }
   ],
+  "merchants": [],
+  "merchant_inventories": [],
+  "escrow_vaults": [],
+  "delivery_dispatches": [],
   "ai_enforcement_logs": [
     {
       "evaluationId": "AI_EVAL_1789922960572_56831",
