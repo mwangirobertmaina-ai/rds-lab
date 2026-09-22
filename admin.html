@@ -35,6 +35,10 @@
                     <option value="INST-WORLDBANK">World Bank Sovereign Corridor</option>
                 </select>
             </div>
+            <!-- Auth Status Indicator -->
+            <div id="authStatusBadge" class="hidden text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2.5 py-1.5 rounded-xl font-mono">
+                🔒 SECURED (GUEST)
+            </div>
             <button onclick="openLoginModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-md cursor-pointer active:scale-95 border border-slate-700">
                 <i data-lucide="log-in" class="w-4 h-4 text-blue-400"></i>
                 <span>Login</span>
@@ -61,59 +65,45 @@
             <span>Active Corridor: <strong id="currentTenantLabel" class="text-white font-mono">INST-CBK-RTGS</strong> | Ledger Proof: <strong id="ledgerEquationBadge" class="text-emerald-400 font-mono">VERIFIED</strong> | Vault State: <strong id="vaultStatusBadge" class="text-emerald-400 font-mono">PROVABLE</strong></span>
         </div>
         <div class="flex items-center space-x-1.5 flex-wrap">
-            <!-- 1. Export Package -->
             <button onclick="exportRegulatoryPackage()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i><span>Export Package</span>
             </button>
-            <!-- 2. LAN Sniffer -->
             <button onclick="openLanTrafficModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="wifi" class="w-3.5 h-3.5"></i><span>LAN Sniffer</span>
             </button>
-            <!-- 3. AI Intent -->
             <button onclick="openAiEvalModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="bot" class="w-3.5 h-3.5"></i><span>AI Intent</span>
             </button>
-            <!-- 4. OpenAPI Spec -->
             <button onclick="openOpenApiModal()" class="bg-indigo-700 hover:bg-indigo-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="file-code" class="w-3.5 h-3.5"></i><span>OpenAPI Spec</span>
             </button>
-            <!-- 5. Push Daily -->
             <button onclick="triggerCompliancePush('DAILY')" class="bg-teal-600 hover:bg-teal-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="calendar" class="w-3.5 h-3.5"></i><span>Push Daily</span>
             </button>
-            <!-- 6. Push Qtr -->
             <button onclick="triggerCompliancePush('QUARTERLY')" class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="calendar" class="w-3.5 h-3.5"></i><span>Push Qtr</span>
             </button>
-            <!-- 7. Email Sync -->
             <button onclick="openCbkEmailModal()" class="bg-cyan-700 hover:bg-cyan-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="mail" class="w-3.5 h-3.5"></i><span>Email Sync</span>
             </button>
-            <!-- 8. Antivirus Heal -->
             <button onclick="triggerHybridCleanHeal()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="shield" class="w-3.5 h-3.5"></i><span>Antivirus Heal</span>
             </button>
-            <!-- 9. ISO20022 Wire -->
             <button onclick="dispatchIsoWire()" class="bg-blue-700 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="send" class="w-3.5 h-3.5"></i><span>ISO20022 Wire</span>
             </button>
-            <!-- 10. Simulate POS -->
             <button onclick="openPosWebhookSimulator()" class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="terminal" class="w-3.5 h-3.5"></i><span>Simulate POS</span>
             </button>
-            <!-- 11. POS Webhook -->
             <button onclick="openPosWebhookSimulator()" class="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="webhook" class="w-3.5 h-3.5"></i><span>POS Webhook</span>
             </button>
-            <!-- 12. Inter-Bank -->
             <button onclick="runInterbankClearing()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="repeat" class="w-3.5 h-3.5"></i><span>Inter-Bank</span>
             </button>
-            <!-- 13. Print -->
             <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
                 <i data-lucide="printer" class="w-3.5 h-3.5"></i><span>Print</span>
             </button>
-            <!-- 14. Verify Proofs -->
             <button onclick="openVaultInspectorModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-lg shadow-amber-600/40 border border-amber-400 cursor-pointer active:scale-95 animate-pulse">
                 <i data-lucide="lock" class="w-4 h-4 text-amber-200"></i><span>Verify Proofs</span>
             </button>
@@ -499,10 +489,11 @@
         </div>
     </div>
 
-    <!-- Frontend Script Logic -->
+    <!-- Frontend Script Logic (Secured with JWT Token Management) -->
     <script>
         lucide.createIcons();
         let searchTimeout = null;
+        let sovereignJwtToken = localStorage.getItem('rds_jwt_token') || null;
 
         function getSelectedTenantId() {
             const selector = document.getElementById('tenantSelector');
@@ -510,7 +501,24 @@
         }
 
         function getAuthHeaders() {
-            return { 'Content-Type': 'application/json', 'x-business-id': getSelectedTenantId() };
+            const headers = { 'Content-Type': 'application/json', 'x-business-id': getSelectedTenantId() };
+            if (sovereignJwtToken) {
+                headers['Authorization'] = `Bearer ${sovereignJwtToken}`;
+            }
+            return headers;
+        }
+
+        function updateAuthBadge(role) {
+            const badge = document.getElementById('authStatusBadge');
+            if (badge) {
+                if (sovereignJwtToken) {
+                    badge.classList.remove('hidden');
+                    badge.innerText = `🛡️ AUTH ACTIVE (${role || 'ADMIN'})`;
+                    badge.className = "text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl font-mono";
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
         }
 
         function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
@@ -559,7 +567,7 @@
                     a.click();
                     alert("✅ Global compliance package successfully downloaded.");
                 } else {
-                    alert("Failed to export package.");
+                    alert("Failed to export package. Ensure you are logged in with admin privileges.");
                 }
             } catch (err) {
                 alert("Error exporting regulatory package.");
@@ -570,7 +578,10 @@
             try {
                 const res = await fetch('/api/admin/compliance-dashboard', { headers: getAuthHeaders() });
                 const data = await res.json();
-                if (!data || !data.success) return;
+                if (!data || !data.success) {
+                    alert("⚠️ Access Denied: Admin authentication required to inspect protected metrics.");
+                    return;
+                }
 
                 if (type === 'kyc' || type === 'cdd') {
                     alert(`Tiered KYC & Local ID Verifications: ${data.localIdVerificationsCount} records active. Ledger Proof Verified: ${data.ledgerConsistency.isBalanced}`);
@@ -602,7 +613,10 @@
                 body: JSON.stringify({ email, password })
             });
             const data = await res.json();
-            if (data && data.success) {
+            if (data && data.success && data.token) {
+                sovereignJwtToken = data.token;
+                localStorage.setItem('rds_jwt_token', data.token);
+                updateAuthBadge(data.user ? data.user.role : 'ADMIN');
                 alert(data.message);
                 closeLoginModal();
                 loadDashboard();
@@ -784,6 +798,7 @@
             const res = await fetch(`/api/admin/audit/verify-block/${hash}`, { headers: getAuthHeaders() });
             const data = await res.json();
             if (data && data.success) { alert(data.message); }
+            else { alert("⚠️ Authorization required. Please log in as Sovereign Admin."); }
         }
 
         async function loadVaultBlocks() {
@@ -800,6 +815,8 @@
                         <td class="p-3.5 text-emerald-400 font-bold">SHA-256 PROVED</td>
                     </tr>
                 `).join('');
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-red-400">⚠️ Admin token required to view sovereign vault blocks. Please login.</td></tr>`;
             }
         }
 
@@ -816,6 +833,8 @@
                         <td class="p-3.5 text-emerald-400">${p.status}</td>
                     </tr>
                 `).join('');
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-400">⚠️ Admin token required.</td></tr>`;
             }
         }
 
@@ -890,7 +909,12 @@
             lucide.createIcons();
         }
 
-        window.onload = loadDashboard;
+        window.onload = () => {
+            if (sovereignJwtToken) {
+                updateAuthBadge('ADMIN');
+            }
+            loadDashboard();
+        };
     </script>
 </body>
 </html>

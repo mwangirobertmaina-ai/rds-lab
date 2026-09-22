@@ -1,5 +1,5 @@
 // ==========================================
-// RDS - STAGE 170 ULTIMATE GLOBAL COMPLIANCE ENGINE & FINANCIAL KERNEL
+// RDS - STAGE 170 ULTIMATE GLOBAL COMPLIANCE ENGINE & FINANCIAL KERNEL (SECURED & PROTECTED)
 // ==========================================
 
 const express = require("express");
@@ -47,6 +47,37 @@ function stableStringify(obj) {
     if (Array.isArray(obj)) return '[' + obj.map(stableStringify).join(',') + ']';
     const keys = Object.keys(obj).sort();
     return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(obj[k])).join(',') + '}';
+}
+
+// --- SECURE JWT & RBAC PROTECTION MIDDLEWARES ---
+function verifySovereignToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, error: "ACCESS_DENIED: Missing or invalid token." });
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) throw new Error('Invalid token structure');
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+        
+        const expectedSignature = crypto.createHmac('sha256', DYNAMIC_JWT_SECRET).update(`${parts[0]}.${parts[1]}`).digest('base64url');
+        if (expectedSignature !== parts[2]) {
+            return res.status(403).json({ success: false, error: "SECURITY_BREACH: Invalid token signature." });
+        }
+
+        req.user = payload;
+        next();
+    } catch (err) {
+        return res.status(403).json({ success: false, error: "AUTHENTICATION_FAILED: Token expired or malformed." });
+    }
+}
+
+function requireAdminRole(req, res, next) {
+    if (!req.user || (req.user.role !== ROLES.SOVEREIGN_ADMIN && req.user.role !== ROLES.CENTRAL_BANK_AUDITOR)) {
+        return res.status(403).json({ success: false, error: "FORBIDDEN: Sovereign Admin or Auditor privileges required." });
+    }
+    next();
 }
 
 // --- LAN TRAFFIC SNIFFER & PASSIVE INSPECTOR ---
@@ -540,7 +571,8 @@ app.get('/api/compliance/generate-regulatory-package', enforceTenantIsolation, a
     return res.json({ success: true, regulatoryPackage });
 });
 
-app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, (req, res) => {
+// Protected Admin Dashboard Route (Requires Token + Admin Role)
+app.get('/api/admin/compliance-dashboard', verifySovereignToken, requireAdminRole, enforceTenantIsolation, (req, res) => {
     ensureState();
     return res.json({
         success: true,
@@ -564,7 +596,7 @@ app.get('/api/admin/compliance-dashboard', enforceTenantIsolation, (req, res) =>
     });
 });
 
-app.get('/api/admin/sovereign-vault', enforceTenantIsolation, (req, res) => {
+app.get('/api/admin/sovereign-vault', verifySovereignToken, requireAdminRole, enforceTenantIsolation, (req, res) => {
     ensureState();
     return res.json({ success: true, vaultBlocks: data.immutable_audit_vault, integrityProof: verifyImmutableVaultIntegrity(), ledgerProof: verifyLedgerEquation() });
 });
@@ -579,12 +611,12 @@ app.get('/api/audit/search', (req, res) => {
     return res.json({ success: true, auditStream: stream.slice(-30).reverse() });
 });
 
-app.get('/api/admin/lan-traffic-logs', enforceTenantIsolation, (req, res) => {
+app.get('/api/admin/lan-traffic-logs', verifySovereignToken, requireAdminRole, enforceTenantIsolation, (req, res) => {
     ensureState();
     return res.json({ success: true, lanTrafficLogs: lanTrafficLogs.slice(-50).reverse() });
 });
 
-app.get('/api/admin/audit/verify-block/:hash', enforceTenantIsolation, async (req, res) => {
+app.get('/api/admin/audit/verify-block/:hash', verifySovereignToken, requireAdminRole, enforceTenantIsolation, async (req, res) => {
     ensureState();
     const targetHash = req.params.hash;
     const block = data.immutable_audit_vault.find(b => b.currentHash === targetHash);
@@ -627,5 +659,5 @@ if (fs.existsSync(DB_FILE)) {
 }
 
 server.listen(PORT, () => {
-  console.log(`🚀 RDS Stage 170 Global Compliance Engine Fully Active on Port ${PORT}`);
+  console.log(`🚀 RDS Stage 170 Global Compliance Engine Fully Active & Secured on Port ${PORT}`);
 });
