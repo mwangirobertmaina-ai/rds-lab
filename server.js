@@ -837,7 +837,11 @@ if (fs.existsSync(DB_FILE)) {
   } catch (e) {}
 }
 
-server.listen(PORT, () => {
-  console.log(`🚀 RDS Stage 170 Global Compliance Engine Fully Active & Secured on Port ${PORT}`);
+// ==========================================
+// RDS - CLOUD-SECURED SERVER STARTUP (0.0.0.0 BINDING)
+// ==========================================
+const HOST = '0.0.0.0'; // Essential for cloud platforms (Render, Railway, etc.)
+server.listen(PORT, HOST, () => {
+  console.log(`🚀 RDS Stage 170 Global Compliance Engine Fully Active & Secured on ${HOST}:${PORT}`);
   console.log(`🛡️ Sovereign Owner Email Set To: ${SOVEREIGN_OWNER_EMAIL}`);
 });
