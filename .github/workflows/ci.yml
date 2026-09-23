@@ -14,10 +14,10 @@ jobs:
     - name: Checkout Sovereign Repository
       uses: actions/checkout@v4
 
-    - name: Initialize Node.js Environment (v22.0.0 or Greater)
+    - name: Initialize Node.js Environment
       uses: actions/setup-node@v4
       with:
-        node-version: '^22.0.0'
+        node-version: '>=22.0.0'
         cache: 'npm'
 
     - name: Eliminate Lock Sync Error by Generating Fresh Lockfile
