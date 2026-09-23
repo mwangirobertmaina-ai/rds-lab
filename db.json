@@ -5007,6 +5007,60 @@
       "previousHash": "fab431a3a9ecaf709c387c82cd5dfd816347c3646d558c54a6aea31ca18fa0f5",
       "currentHash": "2cb3e240e02776513e20a7195c899865672665d0c4b54e624e51e7d1f5f5d3cd",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790146520880_728",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790146520879,
+      "actionType": "STORE_CHECKOUT_ESCROW_AND_DISPATCH",
+      "actor": {
+        "merchantId": "MERCH_DEFAULT",
+        "orderId": "ORD_1790146520872_2266",
+        "escrowId": "ESCROW_1790146520872_3632",
+        "deliveryId": "DEL_1790146520872_5728"
+      },
+      "details": {
+        "orderId": "ORD_1790146520872_2266",
+        "escrowId": "ESCROW_1790146520872_3632",
+        "tenantId": "INST-CBK-RTGS",
+        "merchantId": "MERCH_DEFAULT",
+        "customerName": "Robert Maina",
+        "itemsTotal": 1500,
+        "deliveryFee": 1005,
+        "grossTotal": 2535,
+        "splits": {
+          "merchantPayout": 1500,
+          "systemFeeOnItems": 30,
+          "driverPayout": 954.75,
+          "appDeliveryCommission": 50.25,
+          "totalSystemIncome": 80.25,
+          "kraTaxOnSystemIncome": 12.84,
+          "netSystemIncome": 67.41
+        },
+        "delivery": {
+          "deliveryId": "DEL_1790146520872_5728",
+          "orderId": "ORD_1790146520872_2266",
+          "escrowId": "ESCROW_1790146520872_3632",
+          "tenantId": "INST-CBK-RTGS",
+          "distanceKm": 17.5,
+          "estimatedMinutes": 61,
+          "pickupLocation": "Nairobi CBD Supermarket Hub (-1.2863, 36.8172)",
+          "dropoffLocation": "Live GPS Drop-off (-1.2136, 36.9565)",
+          "assignedDriver": {
+            "driverId": "DRV_57886",
+            "name": "Brian Omondi",
+            "phone": "+254 736627732",
+            "vehicle": "Yamaha Boda Express (KAQ 402B)"
+          },
+          "status": "DISPATCHED_TO_RIDER",
+          "timestamp": 1790146520872
+        },
+        "status": "DISPATCHED_AND_SETTLED",
+        "timestamp": 1790146520872
+      },
+      "previousHash": "2cb3e240e02776513e20a7195c899865672665d0c4b54e624e51e7d1f5f5d3cd",
+      "currentHash": "ab7dbde2afccebdeb8f4f6d0245eb945caeae4f67019083252111c82ced1acf9",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     }
   ],
   "iso20022_wires": [
@@ -7857,6 +7911,60 @@
           "amount": 950
         }
       ]
+    },
+    {
+      "ledgerId": "LEDGER_1790146520872_77010",
+      "tenantId": "INST-CBK-RTGS",
+      "txId": "ORD_1790146520872_2266",
+      "timestamp": 1790146520872,
+      "entries": [
+        {
+          "type": "DEBIT",
+          "account": "ESCROW_HOLDING_ACCOUNT",
+          "amount": 1500
+        },
+        {
+          "type": "CREDIT",
+          "account": "MERCHANT_MERCH_DEFAULT_ACC",
+          "amount": 1500
+        }
+      ]
+    },
+    {
+      "ledgerId": "LEDGER_1790146520872_56789",
+      "tenantId": "INST-CBK-RTGS",
+      "txId": "ORD_1790146520872_2266_FEE",
+      "timestamp": 1790146520872,
+      "entries": [
+        {
+          "type": "DEBIT",
+          "account": "ESCROW_HOLDING_ACCOUNT",
+          "amount": 80.25
+        },
+        {
+          "type": "CREDIT",
+          "account": "SYS_SYSTEM_REVENUE_ACC",
+          "amount": 80.25
+        }
+      ]
+    },
+    {
+      "ledgerId": "LEDGER_1790146520872_60461",
+      "tenantId": "INST-CBK-RTGS",
+      "txId": "ORD_1790146520872_2266_TAX",
+      "timestamp": 1790146520872,
+      "entries": [
+        {
+          "type": "DEBIT",
+          "account": "SYS_SYSTEM_REVENUE_ACC",
+          "amount": 12.84
+        },
+        {
+          "type": "CREDIT",
+          "account": "KRA_TAX_CLEARING_ACC",
+          "amount": 12.84
+        }
+      ]
     }
   ],
   "merchants": [],
@@ -8104,6 +8212,16 @@
       "escrowId": "ESCROW_FALLBACK_1790145788685",
       "tenantId": "INST-CBK-RTGS",
       "status": "RELEASED_AND_SETTLED"
+    },
+    {
+      "escrowId": "ESCROW_1790146520872_3632",
+      "tenantId": "INST-CBK-RTGS",
+      "orderId": "ORD_1790146520872_2266",
+      "merchantId": "MERCH_DEFAULT",
+      "buyerName": "Robert Maina",
+      "amount": 1500,
+      "status": "HELD_IN_ESCROW",
+      "timestamp": 1790146520872
     }
   ],
   "delivery_dispatches": [
@@ -8523,6 +8641,24 @@
       "status": "COMPLETED_AND_PAID",
       "timestamp": 1790145767218,
       "completedAt": 1790145788685
+    },
+    {
+      "deliveryId": "DEL_1790146520872_5728",
+      "orderId": "ORD_1790146520872_2266",
+      "escrowId": "ESCROW_1790146520872_3632",
+      "tenantId": "INST-CBK-RTGS",
+      "distanceKm": 17.5,
+      "estimatedMinutes": 61,
+      "pickupLocation": "Nairobi CBD Supermarket Hub (-1.2863, 36.8172)",
+      "dropoffLocation": "Live GPS Drop-off (-1.2136, 36.9565)",
+      "assignedDriver": {
+        "driverId": "DRV_57886",
+        "name": "Brian Omondi",
+        "phone": "+254 736627732",
+        "vehicle": "Yamaha Boda Express (KAQ 402B)"
+      },
+      "status": "DISPATCHED_TO_RIDER",
+      "timestamp": 1790146520872
     }
   ],
   "ai_enforcement_logs": [
