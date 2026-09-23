@@ -45,6 +45,7 @@ const ROLES = {
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
+app.use(express.static(__dirname));
 
 function stableStringify(obj) {
     if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
@@ -108,11 +109,25 @@ app.use((req, res, next) => {
     next();
 });
 
-app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "store.html") || __filename); });
-app.use(express.static("."));
+// --- MULTI-PANEL FRONTEND ROUTES ---
+app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "store.html")); });
+app.get("/store", (req, res) => { res.sendFile(path.join(__dirname, "store.html")); });
+app.get("/driver", (req, res) => { res.sendFile(path.join(__dirname, "driver.html")); });
+app.get("/merchant", (req, res) => { res.sendFile(path.join(__dirname, "merchant.html")); });
+app.get("/admin", (req, res) => { res.sendFile(path.join(__dirname, "admin.html")); });
+
+// --- MOUNT ISOLATED PANEL API ROUTERS (Jumia / Uber / Bolt / Glovo Architecture) ---
+app.use('/api/store', require('./routes/store'));
+app.use('/api/driver', require('./routes/driver'));
+app.use('/api/merchant', require('./routes/merchant'));
+app.use('/api/admin', require('./routes/admin'));
 
 function defaultDB() {
   return { 
+    store: { products: [], cart: [], orders: [] },
+    admin: { verifications: [], audit_trail: [] },
+    driver: { dispatches: [] },
+    merchant: { inventory: [] },
     businesses: [
       { id: "INST-WORLDBANK", name: "World Bank Sovereign Development Corridor (IBRD/IDA)", status: "APPROVED_ACTIVE", region: "US", currency: "USD", type: "INTERNATIONAL_RESERVE" },
       { id: "INST-CBK-RTGS", name: "Central Bank of Kenya (CBK) National RTGS Gateway", status: "APPROVED_ACTIVE", region: "KE", currency: "KES", type: "CENTRAL_BANK" },
@@ -145,6 +160,10 @@ let data = defaultDB();
 function ensureState() {
   try {
     if (!data || typeof data !== 'object') data = defaultDB();
+    if (!data.store) data.store = { products: [], cart: [], orders: [] };
+    if (!data.admin) data.admin = { verifications: [], audit_trail: [] };
+    if (!data.driver) data.driver = { dispatches: [] };
+    if (!data.merchant) data.merchant = { inventory: [] };
     if (!Array.isArray(data.businesses)) data.businesses = defaultDB().businesses;
     data.businesses.forEach(b => { if (!b.status) b.status = "APPROVED_ACTIVE"; });
     if (!Array.isArray(data.immutable_audit_vault)) data.immutable_audit_vault = [];
@@ -488,6 +507,11 @@ app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (re
     return res.json({ success: true, message: "Inter-bank RTGS clearing and settlement batch completed successfully." });
 });
 
+// Fallback error handler
+app.use((err, req, res, next) => {
+    res.status(500).json({ success: false, error: err.message });
+});
+
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 RDS Stage 172 Financial OS Kernel Fully Active & Connected on port ${PORT}`);
+    console.log(`🚀 RDS Stage 172 Financial OS Kernel & Multi-Panel Backend Fully Active on port ${PORT}`);
 });

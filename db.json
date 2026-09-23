@@ -50,14 +50,14 @@
       "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
       "riskScore": "0.01%",
       "status": "ACTIVE",
-      "registeredAt": 1790200026247
+      "registeredAt": 1790206189431
     }
   ],
   "immutable_audit_vault": [
     {
       "auditId": "AUD_GENESIS",
       "tenantId": "SYSTEM",
-      "timestamp": 1790200026247,
+      "timestamp": 1790206189431,
       "actionType": "GENESIS_ROOT_INIT",
       "actor": {
         "system": "RDS_CORE"
@@ -66,43 +66,83 @@
         "message": "Secure genesis block initialized for Stage 172."
       },
       "previousHash": "GENESIS_ROOT_HASH_000000000000000000000000",
-      "currentHash": "61f2664e7166df5dfa960579777102f47034643bb617b26ac14e7e010fa9c28f",
+      "currentHash": "8ce76f55e32bee19f5c84f1bf85f63f288fd3671b5cdacaedd6d37b46fb91109",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     },
     {
-      "auditId": "AUD_1790200150302_24084",
+      "auditId": "AUD_1790206932805_46253",
       "tenantId": "INST-CBK-RTGS",
-      "timestamp": 1790200150301,
-      "actionType": "AI_INTENT_EVALUATED",
+      "timestamp": 1790206932805,
+      "actionType": "BIOMETRIC_FACE_AND_REGISTRY_VERIFIED",
       "actor": {
-        "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant."
+        "fullName": "Jane Doe"
       },
       "details": {
-        "intentId": "AI_1790200150294_87720",
-        "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant.",
-        "status": "APPROVED",
-        "confidence": "99.8%",
-        "timestamp": 1790200150294
+        "verificationId": "KYC_1790206932798_82930",
+        "tenantId": "INST-CBK-RTGS",
+        "nationalIdNumber": "38291029",
+        "fullName": "Jane Doe",
+        "registrySource": "Kenya National Registration Bureau (IPRS)",
+        "initialDeposit": 75000,
+        "riskRating": "🟢 LOW RISK (Standard Account)",
+        "accountId": "ACC-INST-CBK-RTGS-103605",
+        "status": "VERIFIED_SUCCESSFUL",
+        "timestamp": 1790206932798
       },
-      "previousHash": "61f2664e7166df5dfa960579777102f47034643bb617b26ac14e7e010fa9c28f",
-      "currentHash": "ed9ce48c23af0cbe90d4eedbf940cf862ffa13fa7407b82cb832d28adb18c254",
+      "previousHash": "8ce76f55e32bee19f5c84f1bf85f63f288fd3671b5cdacaedd6d37b46fb91109",
+      "currentHash": "dcab061f4a59af07f1d6fe19ad820ed04e9ee1c0b9f692ce67dec1d416c6abd2",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790206939483_83405",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790206939483,
+      "actionType": "REGULATORY_PACKAGE_EXPORTED",
+      "actor": {
+        "tenantId": "INST-CBK-RTGS"
+      },
+      "details": {
+        "status": "SUCCESS"
+      },
+      "previousHash": "dcab061f4a59af07f1d6fe19ad820ed04e9ee1c0b9f692ce67dec1d416c6abd2",
+      "currentHash": "9a12fd9d0d330a2fd6542c56d12f63f02aacf537564380568ad4c3010ed6249f",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790206948033_40469",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790206948033,
+      "actionType": "HYBRID_ANTIVIRUS_HEAL_EXECUTED",
+      "actor": {
+        "system": "RDS_SHIELD"
+      },
+      "details": {
+        "status": "ALL_SYSTEMS_SANITIZED"
+      },
+      "previousHash": "9a12fd9d0d330a2fd6542c56d12f63f02aacf537564380568ad4c3010ed6249f",
+      "currentHash": "5527492f07ae3dd120c80f5fdf23445cdc85915acc348a1a9634baa8bb9b8b74",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     }
   ],
   "iso20022_wires": [],
-  "ai_approved_intents": [
-    {
-      "intentId": "AI_1790200150294_87720",
-      "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant.",
-      "status": "APPROVED",
-      "confidence": "99.8%",
-      "timestamp": 1790200150294
-    }
-  ],
+  "ai_approved_intents": [],
   "shadow_trap_flags": [],
   "sar_queue": [],
   "did_pass_registry": [],
-  "local_id_verifications": [],
+  "local_id_verifications": [
+    {
+      "verificationId": "KYC_1790206932798_82930",
+      "tenantId": "INST-CBK-RTGS",
+      "nationalIdNumber": "38291029",
+      "fullName": "Jane Doe",
+      "registrySource": "Kenya National Registration Bureau (IPRS)",
+      "initialDeposit": 75000,
+      "riskRating": "🟢 LOW RISK (Standard Account)",
+      "accountId": "ACC-INST-CBK-RTGS-103605",
+      "status": "VERIFIED_SUCCESSFUL",
+      "timestamp": 1790206932798
+    }
+  ],
   "cashier_transactions": [],
   "pos_transactions": [],
   "compliance_push_logs": [],
