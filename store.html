@@ -464,7 +464,11 @@
     </div>
 
     <script>
-        const API_BASE = window.location.origin;
+        // Bulletproof API_BASE: Falls back safely to http://localhost:3000 if origin or hostname is invalid
+        const API_BASE = (window.location && window.location.origin && window.location.origin !== 'null') 
+            ? window.location.origin 
+            : 'http://localhost:3000';
+
         let allProductsCache = [];
         let activeCategory = 'ALL';
         let cart = {};
@@ -739,9 +743,9 @@
             let totalPrice = 0;
             for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
             
-            // Fallback: If cart is empty during testing, automatically assign a default item so escrow & orders are never missing!
+            // Auto-fallback if cart is empty for testing dispatches
             if (totalPrice <= 0) {
-                totalPrice = 1500; // Default test order amount
+                totalPrice = 1500; 
                 cart["TEST_ITEM"] = { name: "Sovereign Test Commodity", price: 1500, qty: 1 };
             }
 
@@ -752,6 +756,7 @@
             const estimatedMinutes = Number(document.getElementById('estimatedMinsInput').value) || 18;
             
             try {
+                console.log(`Connecting to API at: ${API_BASE}/api/store/checkout-and-split`);
                 const res = await fetch(`${API_BASE}/api/store/checkout-and-split`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
@@ -777,8 +782,8 @@
                     alert(data.error || "Checkout failed."); 
                 }
             } catch (e) { 
-                console.error("Error during checkout:", e);
-                alert("Network connection error."); 
+                console.error("Network connection error details:", e);
+                alert(`Network connection error: Unable to reach backend at ${API_BASE}. Please ensure server is running.`); 
             }
         }
 
