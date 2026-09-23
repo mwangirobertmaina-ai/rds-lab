@@ -7,7 +7,8 @@
       "currency": "USD",
       "type": "INTERNATIONAL_RESERVE",
       "ownerPhone": "12024731000",
-      "taxPin": "WB-99482710X"
+      "taxPin": "WB-99482710X",
+      "status": "APPROVED_ACTIVE"
     },
     {
       "id": "INST-CBK-RTGS",
@@ -16,7 +17,8 @@
       "currency": "KES",
       "type": "CENTRAL_BANK",
       "ownerPhone": "254202860000",
-      "taxPin": "P051000000A"
+      "taxPin": "P051000000A",
+      "status": "APPROVED_ACTIVE"
     },
     {
       "id": "INST-MPESA",
@@ -25,7 +27,8 @@
       "currency": "KES",
       "type": "MOBILE_MONEY",
       "ownerPhone": "254721862397",
-      "taxPin": "P051234567X"
+      "taxPin": "P051234567X",
+      "status": "APPROVED_ACTIVE"
     },
     {
       "id": "INST-EQUITY",
@@ -34,7 +37,8 @@
       "currency": "KES",
       "type": "COMMERCIAL_BANK",
       "ownerPhone": "254711000000",
-      "taxPin": "P051111111Y"
+      "taxPin": "P051111111Y",
+      "status": "APPROVED_ACTIVE"
     },
     {
       "id": "INST-KCB",
@@ -43,7 +47,8 @@
       "currency": "KES",
       "type": "COMMERCIAL_BANK",
       "ownerPhone": "254722000000",
-      "taxPin": "P052222222Z"
+      "taxPin": "P052222222Z",
+      "status": "APPROVED_ACTIVE"
     },
     {
       "id": "BIZ-KE",
@@ -52,7 +57,8 @@
       "currency": "KES",
       "type": "FOREX_BUREAU",
       "ownerPhone": "254721862397",
-      "taxPin": "P055123456Z"
+      "taxPin": "P055123456Z",
+      "status": "APPROVED_ACTIVE"
     },
     {
       "id": "BIZ-UK",
@@ -61,7 +67,8 @@
       "currency": "GBP",
       "type": "CENTRAL_RESERVE",
       "ownerPhone": "447123456789",
-      "taxPin": "GB123456789"
+      "taxPin": "GB123456789",
+      "status": "APPROVED_ACTIVE"
     }
   ],
   "users": [
@@ -143,6 +150,14 @@
       "riskScore": "0.00%",
       "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
       "registeredAt": 1789953741297
+    },
+    {
+      "id": "USR_WALKIN_1790123791952_29887",
+      "tenantId": "INST-CBK-RTGS",
+      "fullName": "Robert Maina",
+      "status": "ACTIVE",
+      "kycStatus": "TIER_1",
+      "registeredAt": 1790123791952
     }
   ],
   "immutable_audit_vault": [
@@ -2170,6 +2185,149 @@
       "previousHash": "abbd7198cbcd225f6a71ec5113504bf1f85dc7488fcc70086692271104871662",
       "currentHash": "3844398e0ed2da597f893eb5ce6a9e9bc26ff9550a3f4ef15c538b16c3089d18",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790121664188_994",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790121664187,
+      "actionType": "BIOMETRIC_FACE_KYC_VERIFIED",
+      "actor": {
+        "fullName": "Jane Doe",
+        "accountId": "ACC-BIO-INST-CBK-RTGS-124318"
+      },
+      "details": {
+        "verificationId": "BIO_KYC_1790121664175_49646",
+        "faceHashSnippet": "c21bb453e01d9453..."
+      },
+      "previousHash": "3844398e0ed2da597f893eb5ce6a9e9bc26ff9550a3f4ef15c538b16c3089d18",
+      "currentHash": "7914b0fce813087b9e6d87a88bd979e651095777e6d88cd3d46a912f6924cfc5",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790123747815_81413",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790123747815,
+      "actionType": "REGULATORY_PACKAGE_GENERATED_170",
+      "actor": {
+        "tenantId": "INST-CBK-RTGS"
+      },
+      "details": {
+        "institutionId": "INST-CBK-RTGS",
+        "standard": "FATF, Basel, IFRS, World Bank",
+        "metrics": {
+          "totalTransactions": 0,
+          "totalVolume": 0,
+          "sarCount": 0
+        },
+        "auditProof": {
+          "valid": false,
+          "tamperedBlockId": "AUD_GENESIS_ROOT_147"
+        },
+        "ledgerCheck": {
+          "isBalanced": true,
+          "totalDebits": 75000,
+          "totalCredits": 75000,
+          "equationCheck": "TOTAL_DEBITS_EQUALS_TOTAL_CREDITS"
+        },
+        "generatedAt": "2026-09-23T00:35:47.815Z"
+      },
+      "previousHash": "7914b0fce813087b9e6d87a88bd979e651095777e6d88cd3d46a912f6924cfc5",
+      "currentHash": "e84af3b543955d82f2ef1360fb435f9776d22f054e0c875eccf9ccdc780915a9",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790123791953_69707",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790123791953,
+      "actionType": "CTR_STR_TRIGGERED",
+      "actor": {
+        "userId": "USR_WALKIN_1790123791952_29887"
+      },
+      "details": {
+        "amount": 1500000,
+        "riskScore": 100
+      },
+      "previousHash": "e84af3b543955d82f2ef1360fb435f9776d22f054e0c875eccf9ccdc780915a9",
+      "currentHash": "c94e81ae6b8200c41bf671808c7ef86469ed9abd7ca672081c39ac2e52d70db7",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790123791960_56914",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790123791960,
+      "actionType": "ENFORCEMENT_ACCOUNT_FROZEN",
+      "actor": {
+        "userId": "USR_WALKIN_1790123791952_29887"
+      },
+      "details": {
+        "riskScore": 100
+      },
+      "previousHash": "c94e81ae6b8200c41bf671808c7ef86469ed9abd7ca672081c39ac2e52d70db7",
+      "currentHash": "c88b294d54b987f0dc9fd04f46d76c2c778359c24b46461c17936b622c957546",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790123809891_25227",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790123809891,
+      "actionType": "CTR_STR_TRIGGERED",
+      "actor": {
+        "userId": "USR_WALKIN_1790123791952_29887"
+      },
+      "details": {
+        "amount": 1500000,
+        "riskScore": 100
+      },
+      "previousHash": "c88b294d54b987f0dc9fd04f46d76c2c778359c24b46461c17936b622c957546",
+      "currentHash": "9aaae0661aaceddafeb4efd32d0167b25d3a70e206071de8bee044875ac38b51",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790123809904_51088",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790123809903,
+      "actionType": "ENFORCEMENT_ACCOUNT_FROZEN",
+      "actor": {
+        "userId": "USR_WALKIN_1790123791952_29887"
+      },
+      "details": {
+        "riskScore": 100
+      },
+      "previousHash": "9aaae0661aaceddafeb4efd32d0167b25d3a70e206071de8bee044875ac38b51",
+      "currentHash": "a51fa65fd0d6053efd790879ea2de60c88c206d19d10f542f62186605d2c0199",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790123823599_33904",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790123823599,
+      "actionType": "ENFORCEMENT_ACCOUNT_FROZEN",
+      "actor": {
+        "userId": "USR_WALKIN_1790123791952_29887"
+      },
+      "details": {
+        "riskScore": 100
+      },
+      "previousHash": "a51fa65fd0d6053efd790879ea2de60c88c206d19d10f542f62186605d2c0199",
+      "currentHash": "a55b263d9d8acb3fca588200ffcb3cdb602133db6ef5371e21ace39f38562be2",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790123865859_43970",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790123865858,
+      "actionType": "BIOMETRIC_FACE_KYC_VERIFIED",
+      "actor": {
+        "fullName": "Jane Doe",
+        "accountId": "ACC-BIO-INST-CBK-RTGS-161737"
+      },
+      "details": {
+        "verificationId": "BIO_KYC_1790123865851_36854",
+        "faceHashSnippet": "c21bb453e01d9453..."
+      },
+      "previousHash": "a55b263d9d8acb3fca588200ffcb3cdb602133db6ef5371e21ace39f38562be2",
+      "currentHash": "66907ef5a8dc020554d5f4dcb5e08bc96eaaecd1a6f928d6c21441cba7e37270",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     }
   ],
   "iso20022_wires": [
@@ -2387,6 +2545,18 @@
       "sarId": "SAR_1790119246034_10491",
       "referenceId": "TX_1790119246034_4470",
       "details": "CTR / STR auto-generated for high-value transfer of 1500000 KES. Risk Score: 100"
+    },
+    {
+      "sarId": "SAR_1790123791953_81904",
+      "tenantId": "INST-CBK-RTGS",
+      "referenceId": "TX_1790123791953_58896",
+      "details": "CTR / STR auto-generated for high-value transfer of 1500000 KES. Risk Score: 100"
+    },
+    {
+      "sarId": "SAR_1790123809891_94825",
+      "tenantId": "INST-CBK-RTGS",
+      "referenceId": "TX_1790123809891_80367",
+      "details": "CTR / STR auto-generated for high-value transfer of 1500000 KES. Risk Score: 100"
     }
   ],
   "did_pass_registry": [
@@ -2596,6 +2766,34 @@
       "status": "VERIFIED_SUCCESSFUL",
       "timestamp": 1790108454257,
       "registrySource": "Kenya National Registration Bureau (IPRS)"
+    },
+    {
+      "verificationId": "BIO_KYC_1790121664175_49646",
+      "tenantId": "INST-CBK-RTGS",
+      "nationalIdNumber": "38291029",
+      "fullName": "Jane Doe",
+      "registrySource": "Kenya National Registration Bureau (IPRS) + Biometric Liveness AI",
+      "initialDeposit": 75000,
+      "faceHashSnippet": "c21bb453e01d9453...",
+      "riskRating": "🟢 BIOMETRICALLY VERIFIED (Tier-3 Sovereign)",
+      "riskScore": 0.05,
+      "accountId": "ACC-BIO-INST-CBK-RTGS-124318",
+      "status": "BIOMETRIC_MATCH_SUCCESSFUL",
+      "timestamp": 1790121664175
+    },
+    {
+      "verificationId": "BIO_KYC_1790123865851_36854",
+      "tenantId": "INST-CBK-RTGS",
+      "nationalIdNumber": "38291029",
+      "fullName": "Jane Doe",
+      "registrySource": "Kenya National Registration Bureau (IPRS) + Biometric Liveness AI",
+      "initialDeposit": 75000,
+      "faceHashSnippet": "c21bb453e01d9453...",
+      "riskRating": "🟢 BIOMETRICALLY VERIFIED (Tier-3 Sovereign)",
+      "riskScore": 0.05,
+      "accountId": "ACC-BIO-INST-CBK-RTGS-161737",
+      "status": "BIOMETRIC_MATCH_SUCCESSFUL",
+      "timestamp": 1790123865851
     }
   ],
   "cashier_transactions": [
@@ -3020,6 +3218,42 @@
           "type": "CREDIT",
           "account": "SYS_LIQUIDITY_POOL",
           "amount": 1500000
+        }
+      ]
+    },
+    {
+      "ledgerId": "LEDGER_1790121664175_63262",
+      "tenantId": "INST-CBK-RTGS",
+      "txId": "BIO_KYC_1790121664175_49646",
+      "timestamp": 1790121664175,
+      "entries": [
+        {
+          "type": "DEBIT",
+          "account": "ACC-BIO-INST-CBK-RTGS-124318",
+          "amount": 75000
+        },
+        {
+          "type": "CREDIT",
+          "account": "SYS_LIQUIDITY_POOL",
+          "amount": 75000
+        }
+      ]
+    },
+    {
+      "ledgerId": "LEDGER_1790123865852_20610",
+      "tenantId": "INST-CBK-RTGS",
+      "txId": "BIO_KYC_1790123865851_36854",
+      "timestamp": 1790123865852,
+      "entries": [
+        {
+          "type": "DEBIT",
+          "account": "ACC-BIO-INST-CBK-RTGS-161737",
+          "amount": 75000
+        },
+        {
+          "type": "CREDIT",
+          "account": "SYS_LIQUIDITY_POOL",
+          "amount": 75000
         }
       ]
     }

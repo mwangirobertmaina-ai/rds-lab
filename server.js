@@ -7,7 +7,7 @@
 // ============================================================================
 
 // ==========================================
-// RDS - STAGE 170 ULTIMATE GLOBAL COMPLIANCE ENGINE & FINANCIAL KERNEL (SECURED & PROTECTED)
+// RDS - STAGE 170 ULTIMATE GLOBAL COMPLIANCE ENGINE & FINANCIAL KERNEL (STRICTLY MULTI-TENANT SECURED WITH OWNER EMAIL GATEWAY)
 // ==========================================
 
 const express = require("express");
@@ -38,6 +38,7 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
 const SALT_ROUNDS = 12;
 const DYNAMIC_JWT_SECRET = crypto.randomBytes(64).toString('hex');
+const SOVEREIGN_OWNER_EMAIL = "mwangirobertmaina@gmail.com";
 
 const ROLES = {
   SOVEREIGN_ADMIN: "SOVEREIGN_ADMIN",
@@ -151,40 +152,28 @@ app.use(express.static("."));
 function defaultDB() {
   return { 
     businesses: [
-      { id: "INST-WORLDBANK", name: "World Bank Sovereign Development Corridor (IBRD/IDA)", region: "US", currency: "USD", type: "INTERNATIONAL_RESERVE" },
-      { id: "INST-CBK-RTGS", name: "Central Bank of Kenya (CBK) National RTGS Gateway", region: "KE", currency: "KES", type: "CENTRAL_BANK" },
-      { id: "INST-MPESA", name: "M-Pesa Mobile Money Clearing Hub", region: "KE", currency: "KES", type: "MOBILE_MONEY" },
-      { id: "INST-EQUITY", name: "Equity Bank Commercial Clearing Node", region: "KE", currency: "KES", type: "COMMERCIAL_BANK" },
-      { id: "INST-KCB", name: "KCB Bank National RTGS Gateway", region: "KE", currency: "KES", type: "COMMERCIAL_BANK" },
-      { id: "BIZ-KE", name: "RDS Nairobi Forex Bureau", region: "KE", currency: "KES", type: "FOREX_BUREAU" },
-      { id: "BIZ-UK", name: "RDS London Central Reserve", region: "UK", currency: "GBP", type: "CENTRAL_RESERVE" }
+      { id: "INST-WORLDBANK", name: "World Bank Sovereign Development Corridor (IBRD/IDA)", status: "APPROVED_ACTIVE", region: "US", currency: "USD", type: "INTERNATIONAL_RESERVE" },
+      { id: "INST-CBK-RTGS", name: "Central Bank of Kenya (CBK) National RTGS Gateway", status: "APPROVED_ACTIVE", region: "KE", currency: "KES", type: "CENTRAL_BANK" },
+      { id: "INST-MPESA", name: "M-Pesa Mobile Money Clearing Hub", status: "APPROVED_ACTIVE", region: "KE", currency: "KES", type: "MOBILE_MONEY" },
+      { id: "INST-EQUITY", name: "Equity Bank Commercial Clearing Node", status: "APPROVED_ACTIVE", region: "KE", currency: "KES", type: "COMMERCIAL_BANK" },
+      { id: "INST-KCB", name: "KCB Bank National RTGS Gateway", status: "APPROVED_ACTIVE", region: "KE", currency: "KES", type: "COMMERCIAL_BANK" },
+      { id: "BIZ-KE", name: "RDS Nairobi Forex Bureau", status: "APPROVED_ACTIVE", region: "KE", currency: "KES", type: "FOREX_BUREAU" },
+      { id: "BIZ-UK", name: "RDS London Central Reserve", status: "APPROVED_ACTIVE", region: "UK", currency: "GBP", type: "CENTRAL_RESERVE" }
     ], 
     users: [
-      { id: "USR_DEFAULT", fullName: "Robert Maina", email: "robert.maina@rds.com", role: "SOVEREIGN_ADMIN", kycStatus: "TIER_3_SOVEREIGN_VERIFIED", riskScore: "0.01% (Global Verified)", status: "ACTIVE", registeredAt: Date.now() }
+      { id: "USR_DEFAULT", fullName: "Robert Maina", email: SOVEREIGN_OWNER_EMAIL, role: "SOVEREIGN_ADMIN", kycStatus: "TIER_3_SOVEREIGN_VERIFIED", riskScore: "0.01% (Global Verified)", status: "ACTIVE", registeredAt: Date.now() }
     ],
     immutable_audit_vault: [],
     iso20022_wires: [],
     ai_approved_intents: [],
-    shadow_trap_flags: [
-      { trapId: "TRAP_9901", institution: "Central Bank of Kenya", reason: "Velocity threshold exceeded for foreign exchange transfer.", status: "ACTIVE" }
-    ],
-    sar_queue: [
-      { sarId: "SAR_5501", referenceId: "WIRE_88921", details: "Automated goAML report generated for threshold transfer." }
-    ],
-    did_pass_registry: [
-      { didPassId: "did:rds:ke:robertmaina99", holderName: "Robert Maina", status: "ACTIVE_SOVEREIGN_PASS" }
-    ],
-    local_id_verifications: [
-      { verificationId: "KYC_01", nationalIdNumber: "29481920", fullName: "Robert Maina", registrySource: "Kenya National Registration Bureau (IPRS)", riskRating: "🟢 LOW RISK (Standard Account)", accountId: "ACC-884920", initialDeposit: 50000, status: "VERIFIED_SUCCESSFUL", timestamp: Date.now() }
-    ],
-    cashier_transactions: [
-      { txId: "TX_01", customerName: "Robert Maina", amount: 1500000, transactionType: "Cash Deposit", riskLevel: "🚨 HIGH RISK (Cash Transaction Report - CTR Triggered)", state: "SETTLED", timestamp: Date.now() }
-    ],
+    shadow_trap_flags: [],
+    sar_queue: [],
+    did_pass_registry: [],
+    local_id_verifications: [],
+    cashier_transactions: [],
     pos_transactions: [],
     compliance_push_logs: [],
-    maker_checker_queue: [
-      { ticketId: "MC_01", actionType: "ISO20022_WIRE_TRANSFER", status: "PENDING_CHECKER_VERIFICATION", timestamp: Date.now() }
-    ],
+    maker_checker_queue: [],
     double_entry_ledger: [],
     merchants: [],
     merchant_inventories: [],
@@ -199,6 +188,9 @@ function ensureState() {
   try {
     if (!data || typeof data !== 'object') data = defaultDB();
     if (!Array.isArray(data.businesses)) data.businesses = defaultDB().businesses;
+    data.businesses.forEach(b => {
+        if (!b.status) b.status = "APPROVED_ACTIVE";
+    });
     if (!Array.isArray(data.immutable_audit_vault)) data.immutable_audit_vault = [];
     if (!Array.isArray(data.local_id_verifications)) data.local_id_verifications = [];
     if (!Array.isArray(data.cashier_transactions)) data.cashier_transactions = [];
@@ -228,7 +220,7 @@ function ensureState() {
       const prev = "GENESIS_ROOT_HASH_000000000000000000000000";
       const hash = crypto.createHash("sha256").update(`${ts}:GENESIS_ROOT_INIT:${prev}:STAGE_170`).digest("hex");
       data.immutable_audit_vault.push({
-        auditId: "AUD_GENESIS", timestamp: ts, actionType: "GENESIS_ROOT_INIT",
+        auditId: "AUD_GENESIS", tenantId: "SYSTEM", timestamp: ts, actionType: "GENESIS_ROOT_INIT",
         actor: { system: "RDS_CORE" }, details: { message: "Secure genesis block initialized for Stage 170 kernel with Kenya IPRS registry linkage." }, previousHash: prev, currentHash: hash, proofState: "GLOBAL_MATHEMATICALLY_VERIFIED"
       });
     }
@@ -244,16 +236,17 @@ const saveDB = async () => {
   } catch (e) {}
 };
 
-async function recordAudit(actionType, actor, details) {
+async function recordAudit(tenantId, actionType, actor, details) {
     ensureState();
     const timestamp = Date.now();
     const prev = data.immutable_audit_vault.length > 0 ? data.immutable_audit_vault[data.immutable_audit_vault.length - 1].currentHash : "GENESIS_ROOT_HASH_000000000000000000000000";
     
-    const rawString = `${timestamp}:${actionType}:${stableStringify(actor || {})}:${stableStringify(details)}:${prev}`;
+    const rawString = `${timestamp}:${tenantId}:${actionType}:${stableStringify(actor || {})}:${stableStringify(details)}:${prev}`;
     const currentHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
     data.immutable_audit_vault.push({ 
         auditId: id("AUD"), 
+        tenantId: tenantId || "GLOBAL",
         timestamp, 
         actionType, 
         actor, 
@@ -265,17 +258,155 @@ async function recordAudit(actionType, actor, details) {
     await saveDB();
 }
 
+// --- SECURE TENANT ISOLATION & OWNER APPROVAL MIDDLEWARE ---
 function enforceTenantIsolation(req, res, next) {
     try {
         const businessId = req.headers['x-business-id'] || req.query.businessId || req.body.businessId || "INST-CBK-RTGS";
         ensureState();
+        
+        const tenantObj = data.businesses.find(b => b.id === businessId);
+        if (!tenantObj) {
+            return res.status(403).json({ success: false, error: "ACCESS_DENIED: Unauthorized or unknown tenant node." });
+        }
+        if (tenantObj.status === "PENDING_SOVEREIGN_APPROVAL") {
+            return res.status(403).json({ success: false, error: "ACCESS_DENIED: Tenant node is pending Sovereign Owner approval from mwangirobertmaina@gmail.com." });
+        }
+        if (tenantObj.status === "SUSPENDED_DEFAULTED") {
+            return res.status(403).json({ success: false, error: "ACCOUNT_FROZEN: Tenant account has been disabled due to non-payment or breach of agreement." });
+        }
+
         req.tenantId = businessId;
-        req.tenantObj = data.businesses.find(b => b.id === businessId) || data.businesses[0];
+        req.tenantObj = tenantObj;
         next();
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
     }
 }
+
+// --- SOVEREIGN TENANT REGISTRATION & OWNER EMAIL APPROVAL GATEWAY ---
+app.post('/api/admin/request-tenant-corridor', async (req, res) => {
+    ensureState();
+    const { businessName, region, currency, type, ownerEmail } = req.body;
+    const tenantId = `BIZ_${Date.now()}_${Math.floor(Math.random() * 9000 + 1000)}`;
+    const approvalToken = crypto.randomBytes(32).toString('hex');
+    
+    const newCorridor = {
+        id: tenantId,
+        name: businessName,
+        region: region || "KE",
+        currency: currency || "KES",
+        type: type || "FOREX_BUREAU",
+        status: "PENDING_SOVEREIGN_APPROVAL",
+        ownerEmail: ownerEmail || SOVEREIGN_OWNER_EMAIL,
+        approvalToken,
+        registeredAt: Date.now()
+    };
+
+    data.businesses.push(newCorridor);
+    await saveDB();
+    await recordAudit("SYSTEM", "TENANT_CORRIDOR_REQUESTED", { ownerEmail: newCorridor.ownerEmail }, newCorridor);
+
+    // Construct the email approval link sent directly to mwangirobertmaina@gmail.com
+    const approvalLink = `${req.protocol}://${req.get('host')}/api/admin/email-approve-tenant?token=${approvalToken}`;
+    const disableLink = `${req.protocol}://${req.get('host')}/api/admin/email-disable-tenant?token=${approvalToken}`;
+
+    console.log("\n============================================================");
+    console.log(`📧 [SIMULATED EMAIL DISPATCH TO SOVEREIGN OWNER: ${SOVEREIGN_OWNER_EMAIL}]`);
+    console.log(`New Tenant Corridor Request: ${businessName} (${tenantId})`);
+    console.log(`👉 APPROVAL LINK: ${approvalLink}`);
+    console.log(`👉 DISABLE / FREEZE LINK: ${disableLink}`);
+    console.log("============================================================\n");
+
+    return res.json({ 
+        success: true, 
+        message: `Tenant corridor requested. Approval email dispatched to owner [${SOVEREIGN_OWNER_EMAIL}].`, 
+        tenantId,
+        simulatedEmailNotice: `Approval link sent to ${SOVEREIGN_OWNER_EMAIL}`
+    });
+});
+
+// One-Click Email Approval Route
+app.get('/api/admin/email-approve-tenant', async (req, res) => {
+    ensureState();
+    const { token } = req.query;
+    const business = data.businesses.find(b => b.approvalToken === token);
+    
+    if (!business) {
+        return res.status(404).send(`<html><body style="background:#090f1d;color:#fff;font-family:sans-serif;text-align:center;padding-top:50px;"><h2>❌ Invalid or Expired Approval Token.</h2></body></html>`);
+    }
+
+    business.status = "APPROVED_ACTIVE";
+    await saveDB();
+    await recordAudit("SYSTEM", "TENANT_CORRIDOR_APPROVED_VIA_EMAIL", { owner: SOVEREIGN_OWNER_EMAIL }, business);
+
+    return res.send(`
+        <html>
+        <body style="background:#090f1d;color:#fff;font-family:sans-serif;text-align:center;padding-top:50px;">
+            <div style="max-width:500px;margin:auto;background:#111827;padding:30px;border-radius:15px;border:1px solid #10b981;">
+                <h2 style="color:#10b981;">✅ Tenant Corridor Approved Successfully!</h2>
+                <p>Institution <b>${business.name}</b> (ID: <code>${business.id}</code>) has been unlocked for live operations.</p>
+                <p style="font-size:12px;color:#9ca3af;">Authorized by Sovereign Owner: ${SOVEREIGN_OWNER_EMAIL}</p>
+                <a href="/" style="display:inline-block;margin-top:20px;background:#2563eb;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;">Return to Financial OS</a>
+            </div>
+        </body>
+        </html>
+    `);
+});
+
+// One-Click Email Disable / Freeze Route (for clients refusing to pay)
+app.get('/api/admin/email-disable-tenant', async (req, res) => {
+    ensureState();
+    const { token } = req.query;
+    const business = data.businesses.find(b => b.approvalToken === token);
+    
+    if (!business) {
+        return res.status(404).send(`<html><body style="background:#090f1d;color:#fff;font-family:sans-serif;text-align:center;padding-top:50px;"><h2>❌ Invalid Token.</h2></body></html>`);
+    }
+
+    business.status = "SUSPENDED_DEFAULTED";
+    await saveDB();
+    await recordAudit("SYSTEM", "TENANT_CORRIDOR_SUSPENDED_DUE_TO_DEFAULT", { owner: SOVEREIGN_OWNER_EMAIL }, business);
+
+    return res.send(`
+        <html>
+        <body style="background:#090f1d;color:#fff;font-family:sans-serif;text-align:center;padding-top:50px;">
+            <div style="max-width:500px;margin:auto;background:#111827;padding:30px;border-radius:15px;border:1px solid #ef4444;">
+                <h2 style="color:#ef4444;">🔴 Tenant Corridor Suspended & Frozen!</h2>
+                <p>Institution <b>${business.name}</b> (ID: <code>${business.id}</code>) has been disabled due to non-payment or agreement breach.</p>
+                <p style="font-size:12px;color:#9ca3af;">Executed by Sovereign Owner: ${SOVEREIGN_OWNER_EMAIL}</p>
+                <a href="/" style="display:inline-block;margin-top:20px;background:#374151;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;">Return to Financial OS</a>
+            </div>
+        </body>
+        </html>
+    `);
+});
+
+// Manual Admin Toggle Status (Active / Suspended)
+app.post('/api/admin/toggle-tenant-status', verifySovereignToken, requireAdminRole, async (req, res) => {
+    ensureState();
+    const { tenantId, status } = req.body; // status: "APPROVED_ACTIVE" or "SUSPENDED_DEFAULTED"
+    const business = data.businesses.find(b => b.id === tenantId);
+    if (!business) return res.status(404).json({ success: false, error: "Tenant not found." });
+
+    business.status = status;
+    await saveDB();
+    await recordAudit("SYSTEM", "TENANT_STATUS_MANUALLY_TOGGLED", { admin: req.user.email, newStatus: status }, business);
+
+    return res.json({ success: true, message: `✅ Tenant [${tenantId}] status updated to [${status}] by Sovereign Owner.` });
+});
+
+app.post('/api/admin/approve-tenant-corridor', verifySovereignToken, requireAdminRole, async (req, res) => {
+    ensureState();
+    const { tenantId } = req.body;
+    const business = data.businesses.find(b => b.id === tenantId);
+    if (!business) return res.status(404).json({ success: false, error: "Tenant not found." });
+
+    business.status = "APPROVED_ACTIVE";
+    await saveDB();
+    await recordAudit("SYSTEM", "TENANT_CORRIDOR_APPROVED_BY_OWNER", { admin: req.user.email }, business);
+
+    return res.json({ success: true, message: `✅ Tenant corridor [${tenantId}] officially approved and unlocked by Sovereign Owner!` });
+});
 
 function validateTransactionInvariants(txPayload) {
     const errors = [];
@@ -310,9 +441,10 @@ function computeMathematicalRisk(user, amount, velocity = 1, geoRiskFactor = 1.0
     };
 }
 
-function postDoubleEntryEntries(txId, amount, customerAccount, systemAccount = "SYS_LIQUIDITY_POOL") {
+function postDoubleEntryEntries(tenantId, txId, amount, customerAccount, systemAccount = "SYS_LIQUIDITY_POOL") {
     const entry = {
         ledgerId: id("LEDGER"),
+        tenantId,
         txId,
         timestamp: Date.now(),
         entries: [
@@ -324,11 +456,11 @@ function postDoubleEntryEntries(txId, amount, customerAccount, systemAccount = "
     return entry;
 }
 
-function verifyLedgerEquation() {
+function verifyTenantLedgerEquation(tenantId) {
     ensureState();
     let totalDebits = 0;
     let totalCredits = 0;
-    data.double_entry_ledger.forEach(l => {
+    data.double_entry_ledger.filter(l => l.tenantId === tenantId).forEach(l => {
         if (l && Array.isArray(l.entries)) {
             l.entries.forEach(e => {
                 if (e.type === "DEBIT") totalDebits += Number(e.amount || 0);
@@ -348,40 +480,42 @@ async function enforceTransactionGate(req, res, next) {
     ensureState();
     const { amount, customerName, userId, currency = "KES" } = req.body;
     const numAmount = Number(amount) || 0;
+    const tenantId = req.tenantId;
 
     const invariantCheck = validateTransactionInvariants({ amount: numAmount, currency });
     if (!invariantCheck.valid) {
-        await recordAudit("INVARIANT_VALIDATION_FAILED", { userId }, { errors: invariantCheck.errors });
+        await recordAudit(tenantId, "INVARIANT_VALIDATION_FAILED", { userId }, { errors: invariantCheck.errors });
         return res.status(400).json({ success: false, enforcementAction: "BLOCK", errors: invariantCheck.errors });
     }
 
     let user = null;
     if (userId) {
-        user = data.users.find(u => u.id === userId);
+        user = data.users.find(u => u.id === userId && u.tenantId === tenantId);
     } else if (customerName) {
-        user = data.users.find(u => u.fullName && u.fullName.toLowerCase() === customerName.toLowerCase());
+        user = data.users.find(u => u.tenantId === tenantId && u.fullName && u.fullName.toLowerCase() === customerName.toLowerCase());
     }
 
     if (!user && customerName) {
-        user = { id: id("USR_WALKIN"), fullName: customerName, status: "ACTIVE", kycStatus: "TIER_1", registeredAt: Date.now() };
+        user = { id: id("USR_WALKIN"), tenantId, fullName: customerName, status: "ACTIVE", kycStatus: "TIER_1", registeredAt: Date.now() };
         data.users.push(user);
     }
 
     const riskEval = computeMathematicalRisk(user, numAmount);
     req.numericRiskScore = riskEval.riskScore;
-    req.verifiedUser = user || { id: id("USR_ANON"), fullName: customerName || "Anonymous" };
+    req.verifiedUser = user || { id: id("USR_ANON"), tenantId, fullName: customerName || "Anonymous" };
 
     if (numAmount >= 1000000) {
         data.sar_queue.push({
             sarId: id("SAR"),
+            tenantId,
             referenceId: id("TX"),
             details: `CTR / STR auto-generated for high-value transfer of ${numAmount} ${currency}. Risk Score: ${riskEval.riskScore}`
         });
-        await recordAudit("CTR_STR_TRIGGERED", { userId: req.verifiedUser.id }, { amount: numAmount, riskScore: riskEval.riskScore });
+        await recordAudit(tenantId, "CTR_STR_TRIGGERED", { userId: req.verifiedUser.id }, { amount: numAmount, riskScore: riskEval.riskScore });
     }
 
     if (riskEval.riskScore >= 95) {
-        await recordAudit("ENFORCEMENT_ACCOUNT_FROZEN", { userId: req.verifiedUser.id }, { riskScore: riskEval.riskScore });
+        await recordAudit(tenantId, "ENFORCEMENT_ACCOUNT_FROZEN", { userId: req.verifiedUser.id }, { riskScore: riskEval.riskScore });
         return res.status(403).json({ success: false, enforcementAction: "BLOCK", error: `Enforcement Engine: High risk score (${riskEval.riskScore}/100). Account locked & transaction blocked.` });
     }
 
@@ -394,7 +528,7 @@ function verifyImmutableVaultIntegrity() {
     for (let i = 0; i < data.immutable_audit_vault.length; i++) {
         const block = data.immutable_audit_vault[i];
         if (i > 0) computedPrevHash = data.immutable_audit_vault[i - 1].currentHash;
-        const rawString = `${block.timestamp}:${block.actionType}:${stableStringify(block.actor || {})}:${stableStringify(block.details || {})}:${block.previousHash}`;
+        const rawString = `${block.timestamp}:${block.tenantId || "GLOBAL"}:${block.actionType}:${stableStringify(block.actor || {})}:${stableStringify(block.details || {})}:${block.previousHash}`;
         const recalculatedHash = crypto.createHash("sha256").update(rawString).digest("hex");
         if (recalculatedHash !== block.currentHash || block.previousHash !== computedPrevHash) {
             return { valid: false, tamperedBlockId: block.auditId };
@@ -404,47 +538,50 @@ function verifyImmutableVaultIntegrity() {
 }
 
 // --- SECURE ENDPOINTS ---
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', enforceTenantIsolation, async (req, res) => {
   try {
     ensureState();
     const { email, password, fullName, phone, role } = req.body;
+    const tenantId = req.tenantId;
     if (!email || !password) return res.status(400).json({ success: false, error: 'Email and password required.' });
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     const assignedRole = role && ROLES[role] ? role : ROLES.REGULAR_USER;
-    const newUser = { id: id("USR"), email, password: hashedPassword, fullName: fullName || "User", phone: phone || "254700000000", role: assignedRole, didPassId: `did:rds:sovereign:${Math.floor(Math.random() * 900000)}`, kycStatus: "VERIFIED", status: "ACTIVE", registeredAt: Date.now() };
+    const newUser = { id: id("USR"), tenantId, email, password: hashedPassword, fullName: fullName || "User", phone: phone || "254700000000", role: assignedRole, didPassId: `did:rds:sovereign:${Math.floor(Math.random() * 900000)}`, kycStatus: "VERIFIED", status: "ACTIVE", registeredAt: Date.now() };
     data.users.push(newUser);
     await saveDB();
-    await recordAudit("USER_REGISTERED", { email }, { userId: newUser.id });
-    return res.json({ success: true, message: `User registered successfully with role [${assignedRole}]!`, userId: newUser.id });
+    await recordAudit(tenantId, "USER_REGISTERED", { email }, { userId: newUser.id });
+    return res.json({ success: true, message: `User registered successfully under tenant [${tenantId}] with role [${assignedRole}]!`, userId: newUser.id });
   } catch (e) { return res.status(500).json({ success: false, error: e.message }); }
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', enforceTenantIsolation, async (req, res) => {
   try {
     ensureState();
     const { email, password } = req.body;
-    const user = data.users.find(u => u.email === email);
+    const tenantId = req.tenantId;
+    const user = data.users.find(u => u.email === email && (u.tenantId === tenantId || !u.tenantId));
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials.' });
+      return res.status(401).json({ success: false, error: 'Invalid credentials for this tenant.' });
     }
     const assignedRole = user.role || ROLES.SOVEREIGN_ADMIN;
     const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString('base64url');
-    const payload = Buffer.from(JSON.stringify({ userId: user.id, email: user.email, role: assignedRole })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify({ userId: user.id, tenantId, email: user.email, role: assignedRole })).toString('base64url');
     const signature = crypto.createHmac('sha256', DYNAMIC_JWT_SECRET).update(`${header}.${payload}`).digest('base64url');
     const token = `${header}.${payload}.${signature}`;
-    await recordAudit("SECURE_USER_LOGIN_JWT", { email }, { userId: user.id });
-    return res.json({ success: true, message: 'Login successful!', token, user: { email: user.email, role: assignedRole } });
+    await recordAudit(tenantId, "SECURE_USER_LOGIN_JWT", { email }, { userId: user.id });
+    return res.json({ success: true, message: 'Login successful!', token, user: { email: user.email, role: assignedRole, tenantId } });
   } catch (e) { return res.status(500).json({ success: false, error: e.message }); }
 });
 
 app.post('/api/kyc/verify-local-id', enforceTenantIsolation, async (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
     const { nationalIdNumber, fullName, initialDeposit, countryCode = "KE" } = req.body;
     if (!nationalIdNumber || !fullName) return res.status(400).json({ success: false, error: "ID and Name are required." });
 
     const depositNum = Number(initialDeposit || 0);
     const riskEval = computeMathematicalRisk(null, depositNum);
-    const accountId = `ACC-${Math.floor(100000 + Math.random() * 90000)}`;
+    const accountId = `ACC-${tenantId}-${Math.floor(100000 + Math.random() * 90000)}`;
     
     let registrySource = "Kenya National Registration Bureau (IPRS)";
     if (countryCode === "US") registrySource = "US Social Security Administration Registry";
@@ -453,6 +590,7 @@ app.post('/api/kyc/verify-local-id', enforceTenantIsolation, async (req, res) =>
 
     const record = {
         verificationId: id("KYC"),
+        tenantId,
         nationalIdNumber,
         fullName,
         registrySource,
@@ -466,14 +604,14 @@ app.post('/api/kyc/verify-local-id', enforceTenantIsolation, async (req, res) =>
 
     data.local_id_verifications.push(record);
     if (depositNum > 0) {
-        postDoubleEntryEntries(record.verificationId, depositNum, accountId);
+        postDoubleEntryEntries(tenantId, record.verificationId, depositNum, accountId);
     }
     await saveDB();
-    await recordAudit("CASHIER_ACCOUNT_OPENED_WITH_REGISTRY_LOOKUP", { fullName, registrySource }, record);
+    await recordAudit(tenantId, "CASHIER_ACCOUNT_OPENED_WITH_REGISTRY_LOOKUP", { fullName, registrySource }, record);
 
     return res.json({ 
         success: true, 
-        message: `Account [${accountId}] verified via ${registrySource} and created successfully!`, 
+        message: `Account [${accountId}] verified via ${registrySource} and created successfully under [${tenantId}]!`, 
         record 
     });
 });
@@ -481,6 +619,7 @@ app.post('/api/kyc/verify-local-id', enforceTenantIsolation, async (req, res) =>
 app.post('/api/cashier/process-transaction', enforceTenantIsolation, enforceTransactionGate, async (req, res) => {
     try {
         ensureState();
+        const tenantId = req.tenantId;
         const { customerName, amount, transactionType } = req.body;
         const numAmount = Number(amount) || 0;
         const user = req.verifiedUser;
@@ -488,6 +627,7 @@ app.post('/api/cashier/process-transaction', enforceTenantIsolation, enforceTran
 
         const txRecord = {
             txId: id("TX"),
+            tenantId,
             customerName: customerName || user.fullName,
             amount: numAmount,
             transactionType: transactionType || "Deposit",
@@ -498,16 +638,16 @@ app.post('/api/cashier/process-transaction', enforceTenantIsolation, enforceTran
         };
 
         data.cashier_transactions.push(txRecord);
-        postDoubleEntryEntries(txRecord.txId, numAmount, user.id || "CUST_ACC");
+        postDoubleEntryEntries(tenantId, txRecord.txId, numAmount, user.id || "CUST_ACC");
         await saveDB();
-        await recordAudit("CASHIER_TRANSACTION_COMMITTED", { customerName: txRecord.customerName }, txRecord);
+        await recordAudit(tenantId, "CASHIER_TRANSACTION_COMMITTED", { customerName: txRecord.customerName }, txRecord);
 
         return res.status(200).json({
             success: true,
             enforcementAction: "ALLOW",
             riskScore,
             txId: txRecord.txId,
-            message: `Transaction of ${numAmount.toLocaleString()} successfully executed with mathematical proof.`,
+            message: `Transaction of ${numAmount.toLocaleString()} successfully executed with mathematical proof under [${tenantId}].`,
             txRecord
         });
     } catch (error) {
@@ -517,120 +657,153 @@ app.post('/api/cashier/process-transaction', enforceTenantIsolation, enforceTran
 
 app.post('/api/iso20022/dispatch-wire', enforceTenantIsolation, async (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
     const numAmount = Number(req.body.amount) || 0;
-    const wireRecord = { wireId: id("WIRE"), amount: numAmount, timestamp: Date.now(), status: "DISPATCHED" };
+    const wireRecord = { wireId: id("WIRE"), tenantId, amount: numAmount, timestamp: Date.now(), status: "DISPATCHED" };
     data.iso20022_wires.push(wireRecord);
-    postDoubleEntryEntries(wireRecord.wireId, numAmount, "SWIFT_RTGS_ACCOUNT");
+    postDoubleEntryEntries(tenantId, wireRecord.wireId, numAmount, "SWIFT_RTGS_ACCOUNT");
     await saveDB();
-    await recordAudit("ISO20022_WIRE_DISPATCHED_170", { amount: numAmount }, wireRecord);
-    return res.json({ success: true, message: `✅ Sovereign cross-border wire of ${numAmount.toLocaleString()} dispatched successfully!` });
+    await recordAudit(tenantId, "ISO20022_WIRE_DISPATCHED_170", { amount: numAmount }, wireRecord);
+    return res.json({ success: true, message: `✅ Sovereign cross-border wire of ${numAmount.toLocaleString()} dispatched successfully for [${tenantId}]!` });
 });
 
 app.post('/api/teller/webhook', enforceTenantIsolation, async (req, res) => {
     ensureState();
-    const webhookRecord = { webhookId: id("WEB"), terminalId: req.body.terminalId || "POS-01", timestamp: Date.now() };
+    const tenantId = req.tenantId;
+    const webhookRecord = { webhookId: id("WEB"), tenantId, terminalId: req.body.terminalId || "POS-01", timestamp: Date.now() };
     data.pos_transactions.push(webhookRecord);
     await saveDB();
-    await recordAudit("POS_WEBHOOK_INGESTED_170", { terminalId: req.body.terminalId }, webhookRecord);
+    await recordAudit(tenantId, "POS_WEBHOOK_INGESTED_170", { terminalId: req.body.terminalId }, webhookRecord);
     return res.json({ success: true, message: "🛡️ POS Webhook Sanitized & Committed Successfully!" });
 });
 
 app.post('/api/interbank/clearing-settlement', enforceTenantIsolation, async (req, res) => {
     ensureState();
-    await recordAudit("INTERBANK_CLEARING_SETTLEMENT_170", {}, { status: "SETTLED" });
-    return res.json({ success: true, message: "✅ Inter-bank global clearing settlement executed atomically!" });
+    const tenantId = req.tenantId;
+    await recordAudit(tenantId, "INTERBANK_CLEARING_SETTLEMENT_170", {}, { status: "SETTLED" });
+    return res.json({ success: true, message: `✅ Inter-bank global clearing settlement executed atomically for [${tenantId}]!` });
 });
 
 app.post('/api/ai/agent-evaluate-intent', enforceTenantIsolation, async (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
     const { agentId, proposedAction } = req.body;
-    const aiLog = { evaluationId: id("AI"), agentId, proposedAction, approvalStatus: "APPROVED_BY_GLOBAL_AI_GOVERNANCE", timestamp: Date.now() };
+    const aiLog = { evaluationId: id("AI"), tenantId, agentId, proposedAction, approvalStatus: "APPROVED_BY_GLOBAL_AI_GOVERNANCE", timestamp: Date.now() };
     data.ai_approved_intents.push(aiLog);
     await saveDB();
-    await recordAudit("AI_AGENT_INTENT_EVALUATED_170", { agentId }, aiLog);
+    await recordAudit(tenantId, "AI_AGENT_INTENT_EVALUATED_170", { agentId }, aiLog);
     return res.json({ success: true, message: "🤖 Global AI Governance Engine approved agent intent.", evaluation: aiLog });
 });
 
 app.post('/api/compliance/push-cbk', enforceTenantIsolation, async (req, res) => {
     ensureState();
-    const pushRecord = { pushId: id("PUSH"), frequency: req.body.frequency || "DAILY", timestamp: Date.now(), status: "ACCEPTED_BY_GLOBAL_GATEWAY" };
+    const tenantId = req.tenantId;
+    const pushRecord = { pushId: id("PUSH"), tenantId, frequency: req.body.frequency || "DAILY", timestamp: Date.now(), status: "ACCEPTED_BY_GLOBAL_GATEWAY" };
     data.compliance_push_logs.push(pushRecord);
     await saveDB();
-    await recordAudit("GLOBAL_COMPLIANCE_PUSH_170", {}, pushRecord);
-    return res.json({ success: true, message: "✅ Global compliance report successfully synchronized!" });
+    await recordAudit(tenantId, "GLOBAL_COMPLIANCE_PUSH_170", {}, pushRecord);
+    return res.json({ success: true, message: `✅ Global compliance report successfully synchronized for [${tenantId}]!` });
 });
 
 app.post('/api/compliance/send-custom-email', enforceTenantIsolation, async (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
     const { recipientEmail } = req.body;
-    const dispatchRecord = { dispatchId: id("EMAIL"), recipientEmail, timestamp: Date.now(), status: "DISPATCHED" };
+    const dispatchRecord = { dispatchId: id("EMAIL"), tenantId, recipientEmail: recipientEmail || SOVEREIGN_OWNER_EMAIL, timestamp: Date.now(), status: "DISPATCHED" };
     data.compliance_push_logs.push(dispatchRecord);
     await saveDB();
-    await recordAudit("GLOBAL_CUSTOM_EMAIL_DISPATCHED_170", { recipientEmail }, dispatchRecord);
-    return res.json({ success: true, message: `✅ Compliance report successfully dispatched to ${recipientEmail}` });
+    await recordAudit(tenantId, "GLOBAL_CUSTOM_EMAIL_DISPATCHED_170", { recipientEmail }, dispatchRecord);
+    return res.json({ success: true, message: `✅ Compliance report successfully dispatched to ${recipientEmail || SOVEREIGN_OWNER_EMAIL}` });
 });
 
 app.post('/api/system/hybrid-clean-heal', enforceTenantIsolation, async (req, res) => {
     ensureState();
-    await recordAudit("SYSTEM_HYBRID_CLEAN_HEAL_170", {}, { status: "HEALED" });
+    const tenantId = req.tenantId;
+    await recordAudit(tenantId, "SYSTEM_HYBRID_CLEAN_HEAL_170", {}, { status: "HEALED" });
     return res.json({ success: true, message: "🛡️ Global cyber defense deep scan completed and system successfully healed!" });
 });
 
 app.get('/api/compliance/generate-regulatory-package', enforceTenantIsolation, async (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
+    const tenantTxs = data.cashier_transactions.filter(t => t.tenantId === tenantId);
+    const tenantSars = data.sar_queue.filter(s => s.tenantId === tenantId);
+
     const auditProof = verifyImmutableVaultIntegrity();
-    const ledgerCheck = verifyLedgerEquation();
+    const ledgerCheck = verifyTenantLedgerEquation(tenantId);
 
     const regulatoryPackage = {
-        institutionId: req.tenantId,
+        institutionId: tenantId,
         standard: "FATF, Basel, IFRS, World Bank",
         metrics: {
-            totalTransactions: data.cashier_transactions.length,
-            totalVolume: data.cashier_transactions.reduce((sum, t) => sum + Number(t.amount || 0), 0),
-            sarCount: data.sar_queue.length
+            totalTransactions: tenantTxs.length,
+            totalVolume: tenantTxs.reduce((sum, t) => sum + Number(t.amount || 0), 0),
+            sarCount: tenantSars.length
         },
         auditProof,
         ledgerCheck,
         generatedAt: new Date().toISOString()
     };
 
-    await recordAudit("REGULATORY_PACKAGE_GENERATED_170", { tenantId: req.tenantId }, regulatoryPackage);
+    await recordAudit(tenantId, "REGULATORY_PACKAGE_GENERATED_170", { tenantId }, regulatoryPackage);
     return res.json({ success: true, regulatoryPackage });
 });
 
 app.get('/api/admin/compliance-dashboard', verifySovereignToken, requireAdminRole, enforceTenantIsolation, (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
+
+    const tenantVerifications = data.local_id_verifications.filter(v => v.tenantId === tenantId);
+    const tenantTransactions = data.cashier_transactions.filter(t => t.tenantId === tenantId);
+    const tenantAiIntents = data.ai_approved_intents.filter(a => a.tenantId === tenantId);
+    const tenantShadowTraps = data.shadow_trap_flags.filter(s => s.tenantId === tenantId);
+    const tenantMakerChecker = data.maker_checker_queue.filter(m => m.tenantId === tenantId);
+    const tenantSarQueue = data.sar_queue.filter(s => s.tenantId === tenantId);
+    const tenantPosWebhooks = data.pos_transactions.filter(p => p.tenantId === tenantId);
+    const tenantDidPasses = data.did_pass_registry.filter(d => d.tenantId === tenantId);
+    const tenantCompliancePushes = data.compliance_push_logs.filter(c => c.tenantId === tenantId);
+    const tenantVaultBlocks = data.immutable_audit_vault.filter(b => b.tenantId === tenantId || b.tenantId === "SYSTEM");
+    const tenantLanTraffic = lanTrafficLogs.filter(l => l.tenantId === tenantId);
+
     return res.json({
         success: true,
         activeTenant: req.tenantObj,
         corridors: data.businesses,
         auditIntegrity: verifyImmutableVaultIntegrity(),
-        ledgerConsistency: verifyLedgerEquation(),
-        transactionsCount: data.cashier_transactions.length,
-        vaultBlocksCount: data.immutable_audit_vault.length,
-        lanTrafficLogsCount: lanTrafficLogs.length,
-        localIdVerificationsCount: data.local_id_verifications.length,
-        aiApprovedIntentsCount: data.ai_approved_intents.length,
-        shadowTrapsCount: data.shadow_trap_flags.length,
-        makerCheckerCount: data.maker_checker_queue.length,
-        sarQueueCount: data.sar_queue.length,
-        posWebhooksCount: data.pos_transactions.length,
-        didPassesCount: data.did_pass_registry.length,
-        compliancePushCount: data.compliance_push_logs.length,
-        verifications: data.local_id_verifications.slice(-15).reverse(),
-        transactions: data.cashier_transactions.slice(-15).reverse()
+        ledgerConsistency: verifyTenantLedgerEquation(tenantId),
+        transactionsCount: tenantTransactions.length,
+        vaultBlocksCount: tenantVaultBlocks.length,
+        lanTrafficLogsCount: tenantLanTraffic.length,
+        localIdVerificationsCount: tenantVerifications.length,
+        aiApprovedIntentsCount: tenantAiIntents.length,
+        shadowTrapsCount: tenantShadowTraps.length,
+        makerCheckerCount: tenantMakerChecker.length,
+        sarQueueCount: tenantSarQueue.length,
+        posWebhooksCount: tenantPosWebhooks.length,
+        didPassesCount: tenantDidPasses.length,
+        compliancePushCount: tenantCompliancePushes.length,
+        verifications: tenantVerifications.slice(-15).reverse(),
+        transactions: tenantTransactions.slice(-15).reverse()
     });
 });
 
 app.get('/api/admin/sovereign-vault', verifySovereignToken, requireAdminRole, enforceTenantIsolation, (req, res) => {
     ensureState();
-    return res.json({ success: true, vaultBlocks: data.immutable_audit_vault, integrityProof: verifyImmutableVaultIntegrity(), ledgerProof: verifyLedgerEquation() });
+    const tenantId = req.tenantId;
+    const tenantBlocks = data.immutable_audit_vault.filter(b => b.tenantId === tenantId || b.tenantId === "SYSTEM");
+    return res.json({ 
+        success: true, 
+        vaultBlocks: tenantBlocks, 
+        integrityProof: verifyImmutableVaultIntegrity(), 
+        ledgerProof: verifyTenantLedgerEquation(tenantId) 
+    });
 });
 
-app.get('/api/audit/search', (req, res) => {
+app.get('/api/audit/search', enforceTenantIsolation, (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
     const q = (req.query.q || "").toLowerCase();
-    let stream = data.immutable_audit_vault;
+    let stream = data.immutable_audit_vault.filter(b => b.tenantId === tenantId || b.tenantId === "SYSTEM");
     if (q) {
         stream = stream.filter(s => (s.actionType && s.actionType.toLowerCase().includes(q)) || (s.currentHash && s.currentHash.toLowerCase().includes(q)));
     }
@@ -639,16 +812,19 @@ app.get('/api/audit/search', (req, res) => {
 
 app.get('/api/admin/lan-traffic-logs', verifySovereignToken, requireAdminRole, enforceTenantIsolation, (req, res) => {
     ensureState();
-    return res.json({ success: true, lanTrafficLogs: lanTrafficLogs.slice(-50).reverse() });
+    const tenantId = req.tenantId;
+    const tenantLogs = lanTrafficLogs.filter(l => l.tenantId === tenantId);
+    return res.json({ success: true, lanTrafficLogs: tenantLogs.slice(-50).reverse() });
 });
 
 app.get('/api/admin/audit/verify-block/:hash', verifySovereignToken, requireAdminRole, enforceTenantIsolation, async (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
     const targetHash = req.params.hash;
-    const block = data.immutable_audit_vault.find(b => b.currentHash === targetHash);
-    if (!block) return res.status(404).json({ success: false, error: "Block not found." });
+    const block = data.immutable_audit_vault.find(b => b.currentHash === targetHash && (b.tenantId === tenantId || b.tenantId === "SYSTEM"));
+    if (!block) return res.status(404).json({ success: false, error: "Block not found in this tenant scope." });
 
-    const rawString = `${block.timestamp}:${block.actionType}:${stableStringify(block.actor || {})}:${stableStringify(block.details || {})}:${block.previousHash}`;
+    const rawString = `${block.timestamp}:${block.tenantId || "GLOBAL"}:${block.actionType}:${stableStringify(block.actor || {})}:${stableStringify(block.details || {})}:${block.previousHash}`;
     const computedHash = crypto.createHash("sha256").update(rawString).digest("hex");
 
     return res.json({
@@ -656,7 +832,7 @@ app.get('/api/admin/audit/verify-block/:hash', verifySovereignToken, requireAdmi
         block,
         integrityVerified: computedHash === block.currentHash,
         computedHash,
-        message: "✅ SHA-256 cryptographic proof verified successfully against global mathematical chain."
+        message: "✅ SHA-256 cryptographic proof verified successfully against tenant mathematical chain."
     });
 });
 
@@ -673,7 +849,7 @@ app.get('/api/ai/openapi.json', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
-    return res.json({ success: true, stage: "170", status: "ONLINE", auditIntegrity: verifyImmutableVaultIntegrity(), ledgerConsistency: verifyLedgerEquation() });
+    return res.json({ success: true, stage: "170", status: "ONLINE", auditIntegrity: verifyImmutableVaultIntegrity() });
 });
 
 
@@ -683,12 +859,14 @@ app.get('/api/health', (req, res) => {
 
 app.post('/api/merchant/register', enforceTenantIsolation, async (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
     const { storeName, ownerName, email, category } = req.body;
     if (!storeName || !email) return res.status(400).json({ success: false, error: "Store name and email required." });
 
     const merchantId = `MERCH_${Date.now()}_${Math.floor(Math.random() * 9000 + 1000)}`;
     const merchantRecord = {
         merchantId,
+        tenantId,
         storeName,
         ownerName: ownerName || "Partner",
         email,
@@ -700,19 +878,21 @@ app.post('/api/merchant/register', enforceTenantIsolation, async (req, res) => {
     if (!data.merchants) data.merchants = [];
     data.merchants.push(merchantRecord);
     await saveDB();
-    await recordAudit("MERCHANT_REGISTERED", { merchantId }, merchantRecord);
+    await recordAudit(tenantId, "MERCHANT_REGISTERED", { merchantId }, merchantRecord);
 
-    return res.json({ success: true, message: `Merchant store [${storeName}] registered successfully!`, merchantRecord });
+    return res.json({ success: true, message: `Merchant store [${storeName}] registered successfully for [${tenantId}]!`, merchantRecord });
 });
 
 app.post('/api/escrow/lock-funds', enforceTenantIsolation, enforceTransactionGate, async (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
     const { merchantId, buyerName, amount, orderItems } = req.body;
     const numAmount = Number(amount) || 0;
 
     const escrowId = `ESCROW_${Date.now()}_${Math.floor(Math.random() * 9000 + 1000)}`;
     const escrowRecord = {
         escrowId,
+        tenantId,
         merchantId,
         buyerName: buyerName || "Consumer",
         amount: numAmount,
@@ -724,24 +904,26 @@ app.post('/api/escrow/lock-funds', enforceTenantIsolation, enforceTransactionGat
     if (!data.escrow_vaults) data.escrow_vaults = [];
     data.escrow_vaults.push(escrowRecord);
     
-    postDoubleEntryEntries(escrowId, numAmount, "ESCROW_HOLDING_ACCOUNT", "SYS_LIQUIDITY_POOL");
+    postDoubleEntryEntries(tenantId, escrowId, numAmount, "ESCROW_HOLDING_ACCOUNT", "SYS_LIQUIDITY_POOL");
     await saveDB();
-    await recordAudit("ESCROW_FUNDS_LOCKED", { escrowId, merchantId }, escrowRecord);
+    await recordAudit(tenantId, "ESCROW_FUNDS_LOCKED", { escrowId, merchantId }, escrowRecord);
 
     return res.json({ 
         success: true, 
-        message: `🔒 Funds of ${numAmount.toLocaleString()} securely locked in escrow. Awaiting delivery dispatch.`, 
+        message: `🔒 Funds of ${numAmount.toLocaleString()} securely locked in escrow for [${tenantId}]. Awaiting delivery dispatch.`, 
         escrowRecord 
     });
 });
 
 app.post('/api/logistics/dispatch-delivery', enforceTenantIsolation, verifySovereignToken, async (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
     const { escrowId, merchantId, deliveryType, dropoffLocation } = req.body;
     
     const deliveryId = `DEL_${Date.now()}_${Math.floor(Math.random() * 9000 + 1000)}`;
     const dispatchRecord = {
         deliveryId,
+        tenantId,
         escrowId,
         merchantId,
         deliveryType: deliveryType || "BODA_EXPRESS",
@@ -754,11 +936,11 @@ app.post('/api/logistics/dispatch-delivery', enforceTenantIsolation, verifySover
     if (!data.delivery_dispatches) data.delivery_dispatches = [];
     data.delivery_dispatches.push(dispatchRecord);
     await saveDB();
-    await recordAudit("LOGISTICS_DISPATCHED", { deliveryId, deliveryType }, dispatchRecord);
+    await recordAudit(tenantId, "LOGISTICS_DISPATCHED", { deliveryId, deliveryType }, dispatchRecord);
 
     return res.json({ 
         success: true, 
-        message: `🏍️ ${deliveryType} rider assigned successfully! En route to merchant for pickup.`, 
+        message: `🏍️ ${deliveryType} rider assigned successfully for [${tenantId}]! En route to merchant for pickup.`, 
         dispatchRecord 
     });
 });
@@ -769,13 +951,14 @@ app.post('/api/logistics/dispatch-delivery', enforceTenantIsolation, verifySover
 
 app.post('/api/kyc/verify-biometric-face', enforceTenantIsolation, async (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
     const { nationalIdNumber, fullName, selfieDataUrl, countryCode = "KE", initialDeposit } = req.body;
     if (!nationalIdNumber || !fullName || !selfieDataUrl) {
         return res.status(400).json({ success: false, error: "ID, Full Name, and Biometric Selfie capture are required." });
     }
 
     const depositNum = Number(initialDeposit || 0);
-    const accountId = `ACC-BIO-${Math.floor(100000 + Math.random() * 90000)}`;
+    const accountId = `ACC-BIO-${tenantId}-${Math.floor(100000 + Math.random() * 90000)}`;
     const verificationId = id("BIO_KYC");
 
     const faceHash = crypto.createHash("sha256").update(selfieDataUrl).digest("hex");
@@ -786,6 +969,7 @@ app.post('/api/kyc/verify-biometric-face', enforceTenantIsolation, async (req, r
 
     const record = {
         verificationId,
+        tenantId,
         nationalIdNumber,
         fullName,
         registrySource,
@@ -800,14 +984,14 @@ app.post('/api/kyc/verify-biometric-face', enforceTenantIsolation, async (req, r
 
     data.local_id_verifications.push(record);
     if (depositNum > 0) {
-        postDoubleEntryEntries(record.verificationId, depositNum, accountId);
+        postDoubleEntryEntries(tenantId, record.verificationId, depositNum, accountId);
     }
     await saveDB();
-    await recordAudit("BIOMETRIC_FACE_KYC_VERIFIED", { fullName, accountId }, { verificationId, faceHashSnippet: record.faceHashSnippet });
+    await recordAudit(tenantId, "BIOMETRIC_FACE_KYC_VERIFIED", { fullName, accountId }, { verificationId, faceHashSnippet: record.faceHashSnippet });
 
     return res.json({
         success: true,
-        message: `✅ Biometric face verification successful! Sovereign account [${accountId}] opened with facial anchor.`,
+        message: `✅ Biometric face verification successful! Sovereign account [${accountId}] opened under [${tenantId}].`,
         record
     });
 });
@@ -820,6 +1004,7 @@ const activeHardwarePeripherals = new Map();
 
 app.post('/api/hardware/peripheral-sync', enforceTenantIsolation, async (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
     const { peripheralId, deviceType, connectionMode, documentDataUrl, metadata } = req.body;
     
     if (!peripheralId || !documentDataUrl) {
@@ -830,6 +1015,7 @@ app.post('/api/hardware/peripheral-sync', enforceTenantIsolation, async (req, re
     
     const peripheralRecord = {
         peripheralId,
+        tenantId,
         deviceType: deviceType || "OPTICAL_DOCUMENT_SCANNER",
         connectionMode: connectionMode || "WIRED",
         docHashSnippet: docHash.substring(0, 16) + "...",
@@ -837,25 +1023,27 @@ app.post('/api/hardware/peripheral-sync', enforceTenantIsolation, async (req, re
         timestamp: Date.now()
     };
 
-    activeHardwarePeripherals.set(peripheralId, peripheralRecord);
-    await recordAudit("TELLER_HARDWARE_DOCUMENT_CAPTURED", { peripheralId, deviceType, connectionMode }, peripheralRecord);
+    activeHardwarePeripherals.set(`${tenantId}_${peripheralId}`, peripheralRecord);
+    await recordAudit(tenantId, "TELLER_HARDWARE_DOCUMENT_CAPTURED", { peripheralId, deviceType, connectionMode }, peripheralRecord);
 
     if (global.io) {
-        global.io.emit('hardware_document_stream', peripheralRecord);
+        global.io.to(tenantId).emit('hardware_document_stream', peripheralRecord);
     }
 
     return res.json({
         success: true,
-        message: `✅ [${connectionMode}] Peripheral [${peripheralId}] successfully synced document capture!`,
+        message: `✅ [${connectionMode}] Peripheral [${peripheralId}] successfully synced document capture for [${tenantId}]!`,
         docHashSnippet: peripheralRecord.docHashSnippet
     });
 });
 
 app.get('/api/hardware/peripherals', verifySovereignToken, requireAdminRole, enforceTenantIsolation, (req, res) => {
     ensureState();
+    const tenantId = req.tenantId;
+    const tenantPeripherals = Array.from(activeHardwarePeripherals.values()).filter(p => p.tenantId === tenantId);
     return res.json({
         success: true,
-        connectedPeripherals: Array.from(activeHardwarePeripherals.values())
+        connectedPeripherals: tenantPeripherals
     });
 });
 
@@ -870,4 +1058,5 @@ if (fs.existsSync(DB_FILE)) {
 
 server.listen(PORT, () => {
   console.log(`🚀 RDS Stage 170 Global Compliance Engine Fully Active & Secured on Port ${PORT}`);
+  console.log(`🛡️ Sovereign Owner Email Set To: ${SOVEREIGN_OWNER_EMAIL}`);
 });

@@ -27,11 +27,13 @@
         
         <div class="flex items-center space-x-2.5 flex-wrap">
             <div class="flex items-center space-x-2 bg-slate-950 border border-slate-700/80 px-3 py-1.5 rounded-xl shadow-inner">
-                <span class="text-[11px] text-slate-400 font-semibold">Node:</span>
-                <select id="tenantSelector" onchange="loadDashboard()" class="bg-transparent text-xs text-blue-300 font-bold focus:outline-none cursor-pointer">
+                <span class="text-[11px] text-slate-400 font-semibold">Node / Corridor:</span>
+                <select id="tenantSelector" onchange="onTenantChanged()" class="bg-transparent text-xs text-blue-300 font-bold focus:outline-none cursor-pointer">
                     <option value="INST-CBK-RTGS">Central Bank of Kenya (CBK RTGS)</option>
                     <option value="INST-MPESA">M-Pesa Mobile Money Hub</option>
                     <option value="INST-EQUITY">Equity Bank Commercial Node</option>
+                    <option value="BIZ-KE">RDS Nairobi Forex Bureau</option>
+                    <option value="BIZ-UK">RDS London Central Reserve</option>
                     <option value="INST-WORLDBANK">World Bank Sovereign Corridor</option>
                 </select>
             </div>
@@ -46,6 +48,14 @@
             <button onclick="openRegisterModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-md cursor-pointer active:scale-95">
                 <i data-lucide="user-plus" class="w-4 h-4"></i>
                 <span>Register</span>
+            </button>
+            <button onclick="openRequestCorridorModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-md cursor-pointer active:scale-95">
+                <i data-lucide="building-2" class="w-4 h-4"></i>
+                <span>Request Tenant</span>
+            </button>
+            <button onclick="openSovereignManagementModal()" class="bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-md cursor-pointer active:scale-95">
+                <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                <span>Manage Tenants (Owner)</span>
             </button>
             <button onclick="openAccountModal()" class="bg-teal-600 hover:bg-teal-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-md cursor-pointer active:scale-95">
                 <i data-lucide="shield-check" class="w-4 h-4"></i>
@@ -62,7 +72,7 @@
     <div class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-6 py-3 flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center space-x-2 text-xs text-slate-400">
             <i data-lucide="cpu" class="w-4 h-4 text-emerald-400 animate-pulse"></i>
-            <span>Active Corridor: <strong id="currentTenantLabel" class="text-white font-mono">INST-CBK-RTGS</strong> | Ledger Proof: <strong id="ledgerEquationBadge" class="text-emerald-400 font-mono">VERIFIED</strong> | Vault State: <strong id="vaultStatusBadge" class="text-emerald-400 font-mono">PROVABLE</strong></span>
+            <span>Active Tenant Corridor: <strong id="currentTenantLabel" class="text-white font-mono">INST-CBK-RTGS</strong> | Tenant Ledger Proof: <strong id="ledgerEquationBadge" class="text-emerald-400 font-mono">VERIFIED</strong> | Vault State: <strong id="vaultStatusBadge" class="text-emerald-400 font-mono">PROVABLE</strong></span>
         </div>
         <div class="flex items-center space-x-1.5 flex-wrap">
             <button onclick="exportRegulatoryPackage()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow transition cursor-pointer flex items-center space-x-1 active:scale-95">
@@ -121,7 +131,7 @@
                     <i data-lucide="user-check" class="w-4 h-4 text-emerald-400"></i>
                 </div>
                 <div id="statKycCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Global Verified</p>
+                <p class="text-[9px] text-slate-500 mt-0.5">Tenant Verified</p>
             </div>
             <div onclick="inspectMetric('cdd')" class="bg-slate-900/90 border border-slate-800 hover:border-teal-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
@@ -160,7 +170,7 @@
                     <span class="text-[10px] font-bold uppercase tracking-wider">Shadow-Traps</span>
                     <i data-lucide="shield-alert" class="w-4 h-4 text-red-500"></i>
                 </div>
-                <div id="statTrapsCount" class="text-xl font-extrabold text-white">1</div>
+                <div id="statTrapsCount" class="text-xl font-extrabold text-white">0</div>
                 <p class="text-[9px] text-slate-500 mt-0.5">Active traps</p>
             </div>
             <div onclick="inspectMetric('makerChecker')" class="bg-slate-900/90 border border-slate-800 hover:border-amber-400/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
@@ -168,7 +178,7 @@
                     <span class="text-[10px] font-bold uppercase tracking-wider">Maker-Checker</span>
                     <i data-lucide="check-circle" class="w-4 h-4 text-amber-400"></i>
                 </div>
-                <div id="statMakerCheckerCount" class="text-xl font-extrabold text-white">1</div>
+                <div id="statMakerCheckerCount" class="text-xl font-extrabold text-white">0</div>
                 <p class="text-[9px] text-slate-500 mt-0.5">Dual-Control</p>
             </div>
             <div onclick="inspectMetric('sar')" class="bg-slate-900/90 border border-slate-800 hover:border-amber-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
@@ -176,7 +186,7 @@
                     <span class="text-[10px] font-bold uppercase tracking-wider">SAR / CTR</span>
                     <i data-lucide="file-text" class="w-4 h-4 text-amber-500"></i>
                 </div>
-                <div id="statSarCount" class="text-xl font-extrabold text-white">1</div>
+                <div id="statSarCount" class="text-xl font-extrabold text-white">0</div>
                 <p class="text-[9px] text-slate-500 mt-0.5">goAML reports</p>
             </div>
             <div onclick="inspectMetric('pos')" class="bg-slate-900/90 border border-slate-800 hover:border-purple-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
@@ -192,7 +202,7 @@
                     <span class="text-[10px] font-bold uppercase tracking-wider">DID Passes</span>
                     <i data-lucide="shield-check" class="w-4 h-4 text-blue-500"></i>
                 </div>
-                <div id="statDidCount" class="text-xl font-extrabold text-white">1</div>
+                <div id="statDidCount" class="text-xl font-extrabold text-white">0</div>
                 <p class="text-[9px] text-slate-500 mt-0.5">ZKP identities</p>
             </div>
             <div onclick="inspectMetric('pushes')" class="bg-slate-900/90 border border-slate-800 hover:border-cyan-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
@@ -209,7 +219,7 @@
                     <i data-lucide="lock" class="w-4 h-4 text-indigo-500"></i>
                 </div>
                 <div id="statVaultCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Lattice sealed</p>
+                <p class="text-[9px] text-slate-500 mt-0.5">Tenant sealed</p>
             </div>
         </div>
 
@@ -217,8 +227,8 @@
         <div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden backdrop-blur">
             <div class="border-b border-slate-800 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h2 class="text-base font-bold text-white">Civil Registry Verified Accounts (Kenya IPRS & Worldwide Registries)</h2>
-                    <p class="text-xs text-slate-400">Linked directly to national identification databases with automated risk score assignment.</p>
+                    <h2 class="text-base font-bold text-white">Civil Registry Verified Accounts (Isolated Tenant Corridor)</h2>
+                    <p class="text-xs text-slate-400">Strictly siloed accounts and verifications belonging exclusively to the selected tenant node.</p>
                 </div>
                 <button onclick="openAccountModal()" class="bg-teal-600 hover:bg-teal-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow transition cursor-pointer active:scale-95">
                     + Open Account & Verify ID
@@ -232,13 +242,13 @@
                             <th class="p-3.5">Customer Name</th>
                             <th class="p-3.5">National ID / Passport</th>
                             <th class="p-3.5">Civil Registry Source</th>
-                            <th class="p-3.5">Deposit (KES)</th>
+                            <th class="p-3.5">Deposit</th>
                             <th class="p-3.5">Risk Score & Assessment</th>
                             <th class="p-3.5">Status</th>
                         </tr>
                     </thead>
                     <tbody id="accountsTableBody" class="divide-y divide-slate-800/60 font-mono">
-                        <tr><td colspan="7" class="p-6 text-center text-slate-500">Loading registry accounts...</td></tr>
+                        <tr><td colspan="7" class="p-6 text-center text-slate-500">Loading tenant registry accounts...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -248,8 +258,8 @@
         <div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden backdrop-blur">
             <div class="border-b border-slate-800 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h2 class="text-base font-bold text-white">Teller Transactions & Global Enforcement Gate Log</h2>
-                    <p class="text-xs text-slate-400">Evaluates rolling 24-hour behavioral window, replay attack prevention, and risk scoring.</p>
+                    <h2 class="text-base font-bold text-white">Tenant Teller Transactions & Enforcement Gate Log</h2>
+                    <p class="text-xs text-slate-400">Transactions partitioned exclusively to this institution corridor.</p>
                 </div>
                 <button onclick="openTransactionModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow transition cursor-pointer active:scale-95">
                     + Process Transaction
@@ -261,13 +271,13 @@
                         <tr>
                             <th class="p-3.5">Time</th>
                             <th class="p-3.5">Customer Name</th>
-                            <th class="p-3.5">Amount (KES)</th>
+                            <th class="p-3.5">Amount</th>
                             <th class="p-3.5">Type</th>
                             <th class="p-3.5">Enforcement & Risk Score</th>
                         </tr>
                     </thead>
                     <tbody id="transactionsTableBody" class="divide-y divide-slate-800/60 font-mono">
-                        <tr><td colspan="5" class="p-6 text-center text-slate-500">Loading transactions...</td></tr>
+                        <tr><td colspan="5" class="p-6 text-center text-slate-500">Loading tenant transactions...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -277,8 +287,8 @@
         <div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden backdrop-blur">
             <div class="border-b border-slate-800 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h2 class="text-base font-bold text-white">Global Mathematical Proof Chain & Immutable Vault</h2>
-                    <p class="text-xs text-slate-400">Every block cryptographically linked to previous hashes with zero tampering.</p>
+                    <h2 class="text-base font-bold text-white">Tenant Mathematical Proof Chain & Immutable Vault</h2>
+                    <p class="text-xs text-slate-400">Cryptographic audit proof blocks filtered specifically for this business corridor.</p>
                 </div>
                 <input type="text" id="auditSearchInput" oninput="debounceSearch()" placeholder="Search action type, hash..." class="bg-slate-950 border border-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 focus:outline-none focus:border-blue-500 w-64 shadow-inner">
             </div>
@@ -294,7 +304,7 @@
                         </tr>
                     </thead>
                     <tbody id="auditTableBody" class="divide-y divide-slate-800/60">
-                        <tr><td colspan="5" class="p-6 text-center text-slate-500">Loading cryptographic audit trail...</td></tr>
+                        <tr><td colspan="5" class="p-6 text-center text-slate-500">Loading tenant cryptographic audit trail...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -306,13 +316,13 @@
     <div id="loginModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white">Secure User Login</h3>
+                <h3 class="text-base font-bold text-white">Secure Tenant User Login</h3>
                 <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
                 <div>
                     <label class="block text-slate-400 mb-1">Email Address</label>
-                    <input type="email" id="loginEmail" value="robert.maina@rds.com" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
+                    <input type="email" id="loginEmail" value="mwangirobertmaina@gmail.com" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Password</label>
@@ -329,7 +339,7 @@
     <div id="registerModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white">Register New Sovereign User</h3>
+                <h3 class="text-base font-bold text-white">Register Tenant User</h3>
                 <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
@@ -339,7 +349,7 @@
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Email</label>
-                    <input type="email" id="regEmail" value="robert.maina@rds.com" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
+                    <input type="email" id="regEmail" value="mwangirobertmaina@gmail.com" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Password</label>
@@ -362,11 +372,92 @@
         </div>
     </div>
 
+    <!-- Request New Tenant Corridor Modal -->
+    <div id="requestCorridorModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-purple-500/50 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i data-lucide="building-2" class="w-5 h-5 text-purple-400"></i>
+                    <span>Request New Tenant Corridor</span>
+                </h3>
+                <button onclick="closeRequestCorridorModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <p class="text-xs text-slate-400">Submit a new business branch or institution node. An automated approval link will be dispatched to owner: <code class="text-emerald-400">mwangirobertmaina@gmail.com</code></p>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Business / Institution Name</label>
+                    <input type="text" id="reqBusinessName" placeholder="e.g. Mombasa Sovereign Forex" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Owner Email (Approval Target)</label>
+                    <input type="email" id="reqOwnerEmail" value="mwangirobertmaina@gmail.com" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Region Code</label>
+                        <input type="text" id="reqRegion" value="KE" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Currency</label>
+                        <input type="text" id="reqCurrency" value="KES" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Institution Type</label>
+                    <select id="reqType" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-purple-300 font-bold">
+                        <option value="FOREX_BUREAU">FOREX_BUREAU</option>
+                        <option value="COMMERCIAL_BANK">COMMERCIAL_BANK</option>
+                        <option value="CENTRAL_BANK">CENTRAL_BANK</option>
+                        <option value="MOBILE_MONEY">MOBILE_MONEY</option>
+                        <option value="CENTRAL_RESERVE">CENTRAL_RESERVE</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                <button onclick="closeRequestCorridorModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer">Cancel</button>
+                <button onclick="submitRequestCorridor()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md cursor-pointer">Submit for Owner Approval</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sovereign Owner Tenant Management Modal (Freeze / Disable Non-Paying Tenants) -->
+    <div id="sovereignManagementModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-rose-500/50 rounded-2xl w-full max-w-4xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i data-lucide="shield-alert" class="w-5 h-5 text-rose-400"></i>
+                    <span>Sovereign Owner Tenant Management (Default & Payment Control)</span>
+                </h3>
+                <button onclick="closeSovereignManagementModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <p class="text-xs text-slate-400">Manage all registered tenant corridors. If a client refuses to pay or breaches terms, instantly disable or freeze their account below.</p>
+            <div class="overflow-y-auto max-h-[380px]">
+                <table class="w-full text-left border-collapse text-xs font-mono">
+                    <thead class="bg-slate-950 text-slate-400 sticky top-0 border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">Tenant ID</th>
+                            <th class="p-3">Institution Name</th>
+                            <th class="p-3">Type / Currency</th>
+                            <th class="p-3">Status</th>
+                            <th class="p-3">Actions (Approve / Freeze)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sovereignTenantsTableBody" class="divide-y divide-slate-800/60">
+                        <tr><td colspan="5" class="p-6 text-center text-slate-400">Loading tenants...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex items-center justify-end pt-3 border-t border-slate-800">
+                <button onclick="closeSovereignManagementModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Account Opening Modal with Civil Registry Selection & Biometric Selfie Capture -->
     <div id="accountModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white">Kenya IPRS & Worldwide Registry Verification</h3>
+                <h3 class="text-base font-bold text-white">Tenant Registry Verification</h3>
                 <button onclick="closeAccountModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs max-h-[380px] overflow-y-auto pr-1">
@@ -388,7 +479,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">Initial Deposit Amount (KES)</label>
+                    <label class="block text-slate-400 mb-1">Initial Deposit Amount</label>
                     <input type="number" id="accDeposit" value="75000" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
                 </div>
                 <!-- Biometric Face Capture Integration -->
@@ -401,7 +492,7 @@
                             <span>Live Cam</span>
                         </button>
                     </div>
-                    <p id="captureStatusText" class="text-[10px] text-slate-500 mt-1">Required for Tier-3 sovereign facial liveness anchoring.</p>
+                    <p id="captureStatusText" class="text-[10px] text-slate-500 mt-1">Required for tenant biometric liveness anchoring.</p>
                 </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
@@ -417,14 +508,13 @@
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 class="text-base font-bold text-white flex items-center space-x-2">
                     <i data-lucide="camera" class="w-5 h-5 text-teal-400"></i>
-                    <span>Sovereign Face & Liveness Scanner</span>
+                    <span>Tenant Face & Liveness Scanner</span>
                 </h3>
                 <button onclick="closeCameraModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             
             <div class="relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center aspect-video">
                 <video id="webcamVideo" autoplay playsinline class="w-full h-full object-cover"></video>
-                <!-- Face Detection Targeting Reticle Overlay -->
                 <div class="absolute inset-0 border-[3px] border-dashed border-teal-500/40 m-12 rounded-2xl pointer-events-none flex items-center justify-center">
                     <div class="w-32 h-40 border-2 border-teal-400 rounded-full animate-pulse shadow-[0_0_15px_rgba(20,184,166,0.5)]"></div>
                 </div>
@@ -451,11 +541,11 @@
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 class="text-base font-bold text-white flex items-center space-x-2">
                     <i data-lucide="wifi" class="w-5 h-5 text-teal-400"></i>
-                    <span>Connected Wired & Wireless Teller Peripherals</span>
+                    <span>Tenant Connected Hardware Peripherals</span>
                 </h3>
                 <button onclick="closeHardwarePeripheralsModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
-            <p class="text-xs text-slate-400">Inspects connected optical document scanners, passport readers, and wireless teller cameras streaming feeds to the sovereign kernel.</p>
+            <p class="text-xs text-slate-400">Inspected hardware peripherals exclusively linked to this active tenant corridor.</p>
             <div class="overflow-y-auto max-h-[350px]">
                 <table class="w-full text-left border-collapse text-xs font-mono">
                     <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
@@ -481,7 +571,7 @@
     <div id="transactionModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white">Process Cash Transaction (Global Enforcement Gate)</h3>
+                <h3 class="text-base font-bold text-white">Process Tenant Cash Transaction</h3>
                 <button onclick="closeTransactionModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="space-y-3 text-xs">
@@ -490,7 +580,7 @@
                     <input type="text" id="txCustomerName" value="Robert Maina" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">Transaction Amount (KES)</label>
+                    <label class="block text-slate-400 mb-1">Transaction Amount</label>
                     <input type="number" id="txAmount" value="1500000" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200">
                 </div>
                 <div>
@@ -503,7 +593,7 @@
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
                 <button onclick="closeTransactionModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer">Cancel</button>
-                <button onclick="submitProcessTransaction()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md cursor-pointer">Process Through Enforcement Gate</button>
+                <button onclick="submitProcessTransaction()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md cursor-pointer">Process Transaction</button>
             </div>
         </div>
     </div>
@@ -511,7 +601,7 @@
     <div id="lanTrafficModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-indigo-500/50 rounded-2xl w-full max-w-3xl p-6 space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white">LAN Traffic Sniffer & Passive Inspector</h3>
+                <h3 class="text-base font-bold text-white">Tenant LAN Traffic Sniffer</h3>
                 <button onclick="closeLanTrafficModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
             <div class="overflow-y-auto max-h-[350px]">
@@ -535,7 +625,7 @@
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 class="text-base font-bold text-white flex items-center space-x-2">
                     <i data-lucide="lock" class="w-5 h-5 text-amber-400"></i>
-                    <span>Global Mathematical Proof Chain Inspector</span>
+                    <span>Tenant Mathematical Proof Chain Inspector</span>
                 </h3>
                 <button onclick="closeVaultInspectorModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
             </div>
@@ -586,6 +676,7 @@
         let sovereignJwtToken = localStorage.getItem('rds_jwt_token') || null;
         let mediaStream = null;
         let capturedFaceDataUrl = null;
+        let socket = null;
 
         function getSelectedTenantId() {
             const selector = document.getElementById('tenantSelector');
@@ -593,7 +684,8 @@
         }
 
         function getAuthHeaders() {
-            const headers = { 'Content-Type': 'application/json', 'x-business-id': getSelectedTenantId() };
+            const tenantId = getSelectedTenantId();
+            const headers = { 'Content-Type': 'application/json', 'x-business-id': tenantId };
             if (sovereignJwtToken) {
                 headers['Authorization'] = `Bearer ${sovereignJwtToken}`;
             }
@@ -613,15 +705,85 @@
             }
         }
 
+        function onTenantChanged() {
+            const tenantId = getSelectedTenantId();
+            document.getElementById('currentTenantLabel').innerText = tenantId;
+            if (socket) {
+                socket.disconnect();
+            }
+            initSocketConnection();
+            loadDashboard();
+        }
+
+        function initSocketConnection() {
+            const tenantId = getSelectedTenantId();
+            socket = io({
+                extraHeaders: { 'x-business-id': tenantId }
+            });
+            socket.on('connect', () => {
+                console.log(`🔌 Connected to socket server for tenant: ${tenantId}`);
+            });
+            socket.on('hardware_document_stream', (data) => {
+                if (data.tenantId === tenantId) {
+                    checkConnectedPeripherals();
+                }
+            });
+        }
+
         function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
         function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
         function openRegisterModal() { document.getElementById('registerModal').classList.remove('hidden'); }
         function closeRegisterModal() { document.getElementById('registerModal').classList.add('hidden'); }
+        function openRequestCorridorModal() { document.getElementById('requestCorridorModal').classList.remove('hidden'); }
+        function closeRequestCorridorModal() { document.getElementById('requestCorridorModal').classList.add('hidden'); }
         function openAccountModal() { document.getElementById('accountModal').classList.remove('hidden'); }
         function closeAccountModal() { document.getElementById('accountModal').classList.add('hidden'); }
         function openTransactionModal() { document.getElementById('transactionModal').classList.remove('hidden'); }
         function closeTransactionModal() { document.getElementById('transactionModal').classList.add('hidden'); }
         
+        function openSovereignManagementModal() {
+            document.getElementById('sovereignManagementModal').classList.remove('hidden');
+            loadSovereignTenants();
+        }
+        function closeSovereignManagementModal() { document.getElementById('sovereignManagementModal').classList.add('hidden'); }
+
+        async function loadSovereignTenants() {
+            try {
+                const res = await fetch('/api/admin/compliance-dashboard', { headers: getAuthHeaders() });
+                const data = await res.json();
+                const tbody = document.getElementById('sovereignTenantsTableBody');
+                if (data && data.success && data.corridors) {
+                    tbody.innerHTML = data.corridors.map(c => `
+                        <tr class="hover:bg-slate-900/50 transition">
+                            <td class="p-3 text-teal-400 font-bold">${c.id}</td>
+                            <td class="p-3 text-white">${c.name}</td>
+                            <td class="p-3 text-slate-300">${c.type} (${c.currency})</td>
+                            <td class="p-3 font-bold ${c.status === 'APPROVED_ACTIVE' ? 'text-emerald-400' : c.status === 'PENDING_SOVEREIGN_APPROVAL' ? 'text-amber-400' : 'text-red-400'}">${c.status}</td>
+                            <td class="p-3 space-x-1">
+                                ${c.status !== 'APPROVED_ACTIVE' ? `<button onclick="toggleTenantStatus('${c.id}', 'APPROVED_ACTIVE')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded text-[10px] font-bold cursor-pointer">Approve</button>` : ''}
+                                ${c.status !== 'SUSPENDED_DEFAULTED' ? `<button onclick="toggleTenantStatus('${c.id}', 'SUSPENDED_DEFAULTED')" class="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-[10px] font-bold cursor-pointer">Freeze / Disable</button>` : `<button onclick="toggleTenantStatus('${c.id}', 'APPROVED_ACTIVE')" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-[10px] font-bold cursor-pointer">Restore</button>`}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function toggleTenantStatus(tenantId, newStatus) {
+            const res = await fetch('/api/admin/toggle-tenant-status', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ tenantId, status: newStatus })
+            });
+            const data = await res.json();
+            if (data && data.success) {
+                alert(data.message);
+                loadSovereignTenants();
+                loadDashboard();
+            } else {
+                alert(data.error || 'Failed to update tenant status.');
+            }
+        }
+
         async function openCameraModal() {
             document.getElementById('cameraModal').classList.remove('hidden');
             const video = document.getElementById('webcamVideo');
@@ -629,7 +791,7 @@
                 mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
                 video.srcObject = mediaStream;
             } catch (err) {
-                alert("⚠️ Camera access denied or not available on this device/connection. You can still upload a photo file.");
+                alert("⚠️ Camera access denied or not available. You can still upload a photo file.");
             }
             lucide.createIcons();
         }
@@ -655,11 +817,11 @@
             
             const statusText = document.getElementById('captureStatusText');
             if (statusText) {
-                statusText.innerHTML = "✅ <span class='text-teal-400 font-bold'>Face captured successfully via live camera feed!</span>";
+                statusText.innerHTML = "✅ <span class='text-teal-400 font-bold'>Face captured successfully!</span>";
             }
             
             closeCameraModal();
-            alert("✅ Biometric face successfully locked and anchored for verification.");
+            alert("✅ Biometric face successfully locked and anchored for this tenant.");
         }
         
         function openVaultInspectorModal() {
@@ -687,7 +849,7 @@
                 const tbody = document.getElementById('hardwarePeripheralsTableBody');
                 if (data && data.success && data.connectedPeripherals) {
                     if (data.connectedPeripherals.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No active wired/wireless peripherals currently registered.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No active peripherals registered for this tenant.</td></tr>`;
                         return;
                     }
                     tbody.innerHTML = data.connectedPeripherals.map(p => `
@@ -708,7 +870,7 @@
         async function openOpenApiModal() {
             document.getElementById('openApiModal').classList.remove('hidden');
             try {
-                const res = await fetch('/api/ai/openapi.json');
+                const res = await fetch('/api/ai/openapi.json', { headers: getAuthHeaders() });
                 const data = await res.json();
                 document.getElementById('openApiContent').innerText = JSON.stringify(data, null, 2);
             } catch (err) {
@@ -726,11 +888,11 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `RDS_Global_Regulatory_Package_${getSelectedTenantId()}_${Date.now()}.json`;
+                    a.download = `RDS_Tenant_Regulatory_Package_${getSelectedTenantId()}_${Date.now()}.json`;
                     a.click();
-                    alert("✅ Global compliance package successfully downloaded.");
+                    alert("✅ Tenant compliance package successfully downloaded.");
                 } else {
-                    alert("Failed to export package. Ensure you are logged in with admin privileges.");
+                    alert("Failed to export package. Ensure admin authorization.");
                 }
             } catch (err) {
                 alert("Error exporting regulatory package.");
@@ -747,23 +909,23 @@
                 }
 
                 if (type === 'kyc' || type === 'cdd') {
-                    alert(`Tiered KYC & Civil Registry Verifications: ${data.localIdVerificationsCount} records linked to Kenya IPRS / Global Registries.`);
+                    alert(`Tenant Tiered KYC & Registry Verifications: ${data.localIdVerificationsCount} records.`);
                 } else if (type === 'transactions') {
-                    alert(`Cashier Transactions Logged: ${data.transactionsCount} total transactions processed.`);
+                    alert(`Tenant Cashier Transactions: ${data.transactionsCount} processed.`);
                 } else if (type === 'ai') {
-                    alert(`AI Governance Intents: ${data.aiApprovedIntentsCount} agent proposals approved.`);
+                    alert(`Tenant AI Governance Intents: ${data.aiApprovedIntentsCount} approved.`);
                 } else if (type === 'traps') {
-                    alert(`Shadow-Traps: ${data.shadowTrapsCount} active velocity traps.`);
+                    alert(`Tenant Shadow-Traps: ${data.shadowTrapsCount} active.`);
                 } else if (type === 'makerChecker') {
-                    alert(`Maker-Checker Queue: ${data.makerCheckerCount} tickets pending.`);
+                    alert(`Tenant Maker-Checker Queue: ${data.makerCheckerCount} pending.`);
                 } else if (type === 'sar') {
-                    alert(`SAR / CTR Queue: ${data.sarQueueCount} reports generated.`);
+                    alert(`Tenant SAR / CTR Queue: ${data.sarQueueCount} generated.`);
                 } else if (type === 'pos') {
-                    alert(`POS Webhooks: ${data.posWebhooksCount} sanitized.`);
+                    alert(`Tenant POS Webhooks: ${data.posWebhooksCount} sanitized.`);
                 } else if (type === 'did') {
-                    alert(`DID ZKP Passes: ${data.didPassesCount} active.`);
+                    alert(`Tenant DID ZKP Passes: ${data.didPassesCount} active.`);
                 } else if (type === 'pushes') {
-                    alert(`CBK Pushes: ${data.compliancePushCount} sync reports.`);
+                    alert(`Tenant CBK Pushes: ${data.compliancePushCount} sync reports.`);
                 }
             } catch (err) { console.error(err); }
         }
@@ -772,7 +934,7 @@
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
             const res = await fetch('/api/login', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: getAuthHeaders(),
                 body: JSON.stringify({ email, password })
             });
             const data = await res.json();
@@ -792,7 +954,7 @@
             const password = document.getElementById('regPassword').value.trim();
             const role = document.getElementById('regRole').value;
             const res = await fetch('/api/register', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: getAuthHeaders(),
                 body: JSON.stringify({ fullName, email, password, role })
             });
             const data = await res.json();
@@ -801,6 +963,31 @@
                 closeRegisterModal();
                 loadDashboard();
             } else { alert(data.error || 'Registration failed.'); }
+        }
+
+        async function submitRequestCorridor() {
+            const businessName = document.getElementById('reqBusinessName').value.trim();
+            const ownerEmail = document.getElementById('reqOwnerEmail').value.trim();
+            const region = document.getElementById('reqRegion').value.trim();
+            const currency = document.getElementById('reqCurrency').value.trim();
+            const type = document.getElementById('reqType').value;
+
+            if (!businessName) {
+                alert("Business name is required.");
+                return;
+            }
+
+            const res = await fetch('/api/admin/request-tenant-corridor', {
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ businessName, ownerEmail, region, currency, type })
+            });
+            const data = await res.json();
+            if (data && data.success) {
+                alert(`✅ ${data.message}\nTenant ID: ${data.tenantId}\nStatus: PENDING_SOVEREIGN_APPROVAL\n\n(Note: An approval email has been simulated and sent to mwangirobertmaina@gmail.com)`);
+                closeRequestCorridorModal();
+            } else {
+                alert(data.error || 'Failed to submit tenant request.');
+            }
         }
 
         async function openAiEvalModal() {
@@ -824,7 +1011,7 @@
         }
 
         async function openCbkEmailModal() {
-            const email = prompt("Enter recipient compliance email:", "compliance@centralbank.go.ke");
+            const email = prompt("Enter recipient compliance email:", "mwangirobertmaina@gmail.com");
             if (!email) return;
             const res = await fetch('/api/compliance/send-custom-email', {
                 method: 'POST', headers: getAuthHeaders(),
@@ -843,22 +1030,22 @@
         }
 
         async function dispatchIsoWire() {
-            const amount = prompt("Enter wire transfer amount (KES):", "1500000");
+            const amount = prompt("Enter wire transfer amount:", "1500000");
             if (!amount) return;
             const res = await fetch('/api/iso20022/dispatch-wire', {
                 method: 'POST', headers: getAuthHeaders(),
-                body: JSON.stringify({ beneficiaryName: "Sovereign Counterparty", amount, purposeCode: "GDSV" })
+                body: JSON.stringify({ amount })
             });
             const data = await res.json();
             if (data && data.success) { alert(data.message); loadDashboard(); }
         }
 
         async function openPosWebhookSimulator() {
-            const terminalId = prompt("Enter POS Terminal ID:", "POS-NAIROBI-01");
+            const terminalId = prompt("Enter POS Terminal ID:", "POS-TERMINAL-01");
             if (!terminalId) return;
             const res = await fetch('/api/teller/webhook', {
                 method: 'POST', headers: getAuthHeaders(),
-                body: JSON.stringify({ terminalId, payload: { amount: "2500", notes: "Merchant POS settlement" } })
+                body: JSON.stringify({ terminalId })
             });
             const data = await res.json();
             if (data && data.success) { alert(data.message); loadDashboard(); }
@@ -883,11 +1070,11 @@
                     document.getElementById('statTransactions').innerText = data.transactionsCount || 0;
                     document.getElementById('statLanCount').innerText = data.lanTrafficLogsCount || 0;
                     document.getElementById('statAiCount').innerText = data.aiApprovedIntentsCount || 0;
-                    document.getElementById('statTrapsCount').innerText = data.shadowTrapsCount || 1;
-                    document.getElementById('statMakerCheckerCount').innerText = data.makerCheckerCount || 1;
-                    document.getElementById('statSarCount').innerText = data.sarQueueCount || 1;
+                    document.getElementById('statTrapsCount').innerText = data.shadowTrapsCount || 0;
+                    document.getElementById('statMakerCheckerCount').innerText = data.makerCheckerCount || 0;
+                    document.getElementById('statSarCount').innerText = data.sarQueueCount || 0;
                     document.getElementById('statPosCount').innerText = data.posWebhooksCount || 0;
-                    document.getElementById('statDidCount').innerText = data.didPassesCount || 1;
+                    document.getElementById('statDidCount').innerText = data.didPassesCount || 0;
                     document.getElementById('statPushCount').innerText = data.compliancePushCount || 0;
                     document.getElementById('statVaultCount').innerText = data.vaultBlocksCount || 0;
 
@@ -914,12 +1101,14 @@
                                 <td class="p-3.5 text-teal-400 font-bold">${v.accountId || 'ACC-9921'}</td>
                                 <td class="p-3.5 text-white">${v.fullName}</td>
                                 <td class="p-3.5 text-slate-400">${v.nationalIdNumber}</td>
-                                <td class="p-3.5 text-indigo-300 text-[11px]">${v.registrySource || 'Kenya National Registration Bureau (IPRS)'}</td>
-                                <td class="p-3.5 text-slate-300">${Number(v.initialDeposit || 0).toLocaleString()} KES</td>
-                                <td class="p-3.5 font-bold">${v.riskRating || '🟢 LOW RISK'}</td>
-                                <td class="p-3.5 text-emerald-400">${v.status || 'VERIFIED'}</td>
+                                <td class="p-3.5 text-indigo-300 text-[11px]">${v.registrySource}</td>
+                                <td class="p-3.5 text-slate-300">${Number(v.initialDeposit || 0).toLocaleString()}</td>
+                                <td class="p-3.5 font-bold">${v.riskRating}</td>
+                                <td class="p-3.5 text-emerald-400">${v.status}</td>
                             </tr>
                         `).join('');
+                    } else {
+                        accTbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No verified accounts found for this tenant corridor.</td></tr>`;
                     }
 
                     const txTbody = document.getElementById('transactionsTableBody');
@@ -928,22 +1117,33 @@
                             <tr class="hover:bg-slate-900/50 transition">
                                 <td class="p-3.5 text-slate-400">${new Date(t.timestamp).toLocaleTimeString()}</td>
                                 <td class="p-3.5 text-white">${t.customerName}</td>
-                                <td class="p-3.5 text-blue-400 font-bold">${Number(t.amount).toLocaleString()} KES</td>
+                                <td class="p-3.5 text-blue-400 font-bold">${Number(t.amount).toLocaleString()}</td>
                                 <td class="p-3.5 text-slate-300">${t.transactionType}</td>
                                 <td class="p-3.5 font-bold">${t.riskLevel}</td>
                             </tr>
                         `).join('');
+                    } else {
+                        txTbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">No transactions recorded for this tenant corridor.</td></tr>`;
                     }
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) {
+                if (err.status === 403) {
+                    alert("⚠️ Tenant Account Frozen or Suspended due to Default / Breach of Agreement.");
+                }
+            }
             loadAuditStream();
         }
 
         async function loadAuditStream() {
-            const res = await fetch('/api/audit/search');
+            const query = document.getElementById('auditSearchInput').value;
+            const res = await fetch(`/api/audit/search?q=${encodeURIComponent(query)}`, { headers: getAuthHeaders() });
             const data = await res.json();
             const tbody = document.getElementById('auditTableBody');
             if (data && data.success && data.auditStream) {
+                if (data.auditStream.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">No audit records found for this tenant.</td></tr>`;
+                    return;
+                }
                 tbody.innerHTML = data.auditStream.slice(-25).map(s => `
                     <tr class="hover:bg-slate-900/50 transition">
                         <td class="p-3.5 text-slate-400">${new Date(s.timestamp).toLocaleTimeString()}</td>
@@ -962,7 +1162,7 @@
             const res = await fetch(`/api/admin/audit/verify-block/${hash}`, { headers: getAuthHeaders() });
             const data = await res.json();
             if (data && data.success) { alert(data.message); }
-            else { alert("⚠️ Authorization required. Please log in as Sovereign Admin."); }
+            else { alert("⚠️ Authorization required or block not in tenant scope."); }
         }
 
         async function loadVaultBlocks() {
@@ -980,7 +1180,7 @@
                     </tr>
                 `).join('');
             } else {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-red-400">⚠️ Admin token required to view sovereign vault blocks. Please login.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-red-400">⚠️ Admin token required to view tenant sovereign vault blocks.</td></tr>`;
             }
         }
 
@@ -1026,7 +1226,7 @@
             const data = await res.json();
             if (data && data.success) {
                 alert(data.message);
-                capturedFaceDataUrl = null; // Reset
+                capturedFaceDataUrl = null;
                 closeAccountModal();
                 loadDashboard();
             } else { alert(data.error || 'Failed to open account.'); }
@@ -1059,37 +1259,14 @@
 
         function debounceSearch() {
             clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(searchAuditVault, 300);
-        }
-
-        async function searchAuditVault() {
-            const query = document.getElementById('auditSearchInput').value;
-            const res = await fetch(`/api/audit/search?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            if (data && data.success) { renderAuditTable(data.auditStream || []); }
-        }
-
-        function renderAuditTable(streams) {
-            const tbody = document.getElementById('auditTableBody');
-            if (!tbody) return;
-            tbody.innerHTML = streams.slice(-25).map(s => `
-                <tr class="hover:bg-slate-900/50 transition">
-                    <td class="p-3.5 text-slate-400">${new Date(s.timestamp).toLocaleTimeString()}</td>
-                    <td class="p-3.5 text-blue-400 font-bold">${s.actionType}</td>
-                    <td class="p-3.5 text-slate-300 truncate max-w-xs">${JSON.stringify(s.actor || s.details)}</td>
-                    <td class="p-3.5 text-slate-500 truncate max-w-xs">${s.currentHash}</td>
-                    <td class="p-3.5">
-                        <button onclick="verifySingleBlock('${s.currentHash}')" class="bg-emerald-950 text-emerald-400 hover:bg-emerald-900 px-2.5 py-1 rounded-lg border border-emerald-800 text-[10px] font-bold cursor-pointer transition active:scale-95">MATHEMATICAL PROOF</button>
-                    </td>
-                </tr>
-            `).join('');
-            lucide.createIcons();
+            searchTimeout = setTimeout(loadAuditStream, 300);
         }
 
         window.onload = () => {
             if (sovereignJwtToken) {
                 updateAuthBadge('ADMIN');
             }
+            initSocketConnection();
             loadDashboard();
         };
     </script>
