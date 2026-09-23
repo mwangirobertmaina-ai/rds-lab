@@ -50,14 +50,14 @@
       "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
       "riskScore": "0.01%",
       "status": "ACTIVE",
-      "registeredAt": 1790200026247
+      "registeredAt": 1790193172285
     }
   ],
   "immutable_audit_vault": [
     {
       "auditId": "AUD_GENESIS",
       "tenantId": "SYSTEM",
-      "timestamp": 1790200026247,
+      "timestamp": 1790193172285,
       "actionType": "GENESIS_ROOT_INIT",
       "actor": {
         "system": "RDS_CORE"
@@ -66,48 +66,71 @@
         "message": "Secure genesis block initialized for Stage 172."
       },
       "previousHash": "GENESIS_ROOT_HASH_000000000000000000000000",
-      "currentHash": "61f2664e7166df5dfa960579777102f47034643bb617b26ac14e7e010fa9c28f",
+      "currentHash": "be263943b358cfd0375fe16999c26355bd633b06afc567e40c473a076a29f127",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     },
     {
-      "auditId": "AUD_1790200150302_24084",
+      "auditId": "AUD_1790193215323_79997",
       "tenantId": "INST-CBK-RTGS",
-      "timestamp": 1790200150301,
-      "actionType": "AI_INTENT_EVALUATED",
+      "timestamp": 1790193215322,
+      "actionType": "CASHIER_TRANSACTION_PROCESSED",
       "actor": {
-        "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant."
+        "customerName": "Robert Maina"
       },
       "details": {
-        "intentId": "AI_1790200150294_87720",
-        "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant.",
-        "status": "APPROVED",
-        "confidence": "99.8%",
-        "timestamp": 1790200150294
+        "txId": "TX_1790193215312_40964",
+        "tenantId": "INST-CBK-RTGS",
+        "customerName": "Robert Maina",
+        "amount": 1500000,
+        "transactionType": "Cash Deposit",
+        "riskLevel": "HIGH_RISK_CTR_GENERATED",
+        "timestamp": 1790193215312
       },
-      "previousHash": "61f2664e7166df5dfa960579777102f47034643bb617b26ac14e7e010fa9c28f",
-      "currentHash": "ed9ce48c23af0cbe90d4eedbf940cf862ffa13fa7407b82cb832d28adb18c254",
+      "previousHash": "be263943b358cfd0375fe16999c26355bd633b06afc567e40c473a076a29f127",
+      "currentHash": "fa5fd0a32f8678b8f8ef02d2278588c84fec2528f6d2b4053c5e9de3eb6e9392",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     }
   ],
   "iso20022_wires": [],
-  "ai_approved_intents": [
-    {
-      "intentId": "AI_1790200150294_87720",
-      "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant.",
-      "status": "APPROVED",
-      "confidence": "99.8%",
-      "timestamp": 1790200150294
-    }
-  ],
+  "ai_approved_intents": [],
   "shadow_trap_flags": [],
   "sar_queue": [],
   "did_pass_registry": [],
   "local_id_verifications": [],
-  "cashier_transactions": [],
+  "cashier_transactions": [
+    {
+      "txId": "TX_1790193215312_40964",
+      "tenantId": "INST-CBK-RTGS",
+      "customerName": "Robert Maina",
+      "amount": 1500000,
+      "transactionType": "Cash Deposit",
+      "riskLevel": "HIGH_RISK_CTR_GENERATED",
+      "timestamp": 1790193215312
+    }
+  ],
   "pos_transactions": [],
   "compliance_push_logs": [],
   "maker_checker_queue": [],
-  "double_entry_ledger": [],
+  "double_entry_ledger": [
+    {
+      "ledgerId": "LEDGER_1790193215312_43698",
+      "tenantId": "INST-CBK-RTGS",
+      "txId": "TX_1790193215312_40964",
+      "timestamp": 1790193215312,
+      "entries": [
+        {
+          "type": "DEBIT",
+          "account": "CUST_Robert Maina",
+          "amount": 1500000
+        },
+        {
+          "type": "CREDIT",
+          "account": "SYS_TELLERS_VAULT",
+          "amount": 1500000
+        }
+      ]
+    }
+  ],
   "escrow_vaults": [],
   "delivery_dispatches": []
 }

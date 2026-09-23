@@ -37,7 +37,6 @@
                     <option value="INST-WORLDBANK">World Bank Sovereign Corridor</option>
                 </select>
             </div>
-            <!-- Auth Status Indicator -->
             <div id="authStatusBadge" class="hidden text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2.5 py-1.5 rounded-xl font-mono">
                 🔒 SECURED (GUEST)
             </div>
@@ -534,6 +533,35 @@
         </div>
     </div>
 
+    <!-- AI Intent Evaluation Modal -->
+    <div id="aiEvalModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-amber-500/50 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i data-lucide="bot" class="w-5 h-5 text-amber-400"></i>
+                    <span>AI Intent Evaluation & Verification</span>
+                </h3>
+                <button onclick="closeAiEvalModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Intent Prompt / Rule Statement</label>
+                    <textarea id="aiPromptInput" rows="3" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200 focus:outline-none focus:border-amber-500">Verify regulatory compliance and cross-border settlement safety for current tenant.</textarea>
+                </div>
+                <!-- Corrected ID to match submitAiEval() expectation -->
+                <div id="aiResultBox" class="hidden bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-amber-300 space-y-1">
+                    <div>Status: <span id="aiResStatus" class="text-emerald-400">APPROVED</span></div>
+                    <div>Confidence: <span id="aiResConfidence" class="text-teal-400">99.8%</span></div>
+                    <div>Intent ID: <span id="aiResId" class="text-slate-400"></span></div>
+                </div>
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                <button onclick="closeAiEvalModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer">Close</button>
+                <button onclick="submitAiEval()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md cursor-pointer">Run AI Evaluation</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Wired & Wireless Hardware Peripherals Manager Modal -->
     <div id="hardwarePeripheralsModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border border-teal-500/50 rounded-2xl w-full max-w-3xl p-6 space-y-4 shadow-2xl">
@@ -727,6 +755,29 @@
         function closeAccountModal() { document.getElementById('accountModal').classList.add('hidden'); }
         function openTransactionModal() { document.getElementById('transactionModal').classList.remove('hidden'); }
         function closeTransactionModal() { document.getElementById('transactionModal').classList.add('hidden'); }
+        
+        function openAiEvalModal() { document.getElementById('aiEvalModal').classList.remove('hidden'); }
+        function closeAiEvalModal() { document.getElementById('aiEvalModal').classList.add('hidden'); }
+
+        async function submitAiEval() {
+            const prompt = document.getElementById('aiPromptInput').value.trim();
+            try {
+                const res = await fetch('/api/ai/intent-eval', {
+                    method: 'POST', headers: getAuthHeaders(),
+                    body: JSON.stringify({ prompt })
+                });
+                const data = await res.json();
+                if (data && data.success) {
+                    document.getElementById('aiResultBox').classList.remove('hidden');
+                    document.getElementById('aiResId').innerText = data.intentResult.intentId;
+                    loadDashboard();
+                } else {
+                    alert(data.error || 'AI intent evaluation failed.');
+                }
+            } catch (err) {
+                alert('Network error during AI intent evaluation.');
+            }
+        }
         
         function openSovereignManagementModal() {
             document.getElementById('sovereignManagementModal').classList.remove('hidden');
@@ -1059,7 +1110,6 @@
             }
         }
 
-        // --- FIXED ACCOUNT OPENING FUNCTION (Matching /api/kyc/verify-biometric-face) ---
         async function submitOpenAccount() {
             const fullName = document.getElementById('accFullName').value.trim();
             const nationalIdNumber = document.getElementById('accIdNumber').value.trim();
@@ -1090,7 +1140,6 @@
             } else { alert(data.error || 'Failed to open account.'); }
         }
 
-        // --- FIXED TRANSACTION FUNCTION ---
         async function submitProcessTransaction() {
             const customerName = document.getElementById('txCustomerName').value.trim();
             const amount = document.getElementById('txAmount').value.trim();
