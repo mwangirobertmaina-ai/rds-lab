@@ -464,7 +464,6 @@
     </div>
 
     <script>
-        // Bulletproof API_BASE: Falls back safely to http://localhost:3000 if origin or hostname is invalid
         const API_BASE = (window.location && window.location.origin && window.location.origin !== 'null') 
             ? window.location.origin 
             : 'http://localhost:3000';
@@ -570,7 +569,8 @@
             const bizId = document.getElementById('storeBusinessId').value;
 
             try {
-                const res = await fetch(`${API_BASE}/api/logistics/rider-action`, {
+                // Fixed URL prefix to match the mounted store router
+                const res = await fetch(`${API_BASE}/api/store/logistics/rider-action`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId, 'Authorization': 'Bearer SIMULATED_TOKEN' },
                     body: JSON.stringify({ deliveryId: activeDeliveryId, action })
@@ -602,7 +602,8 @@
             const bizId = document.getElementById('storeBusinessId').value;
 
             try {
-                const res = await fetch(`${API_BASE}/api/logistics/complete-trip`, {
+                // Fixed URL prefix to match the mounted store router
+                const res = await fetch(`${API_BASE}/api/store/logistics/complete-trip`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
                     body: JSON.stringify({ deliveryId: activeDeliveryId })
@@ -646,18 +647,26 @@
             loadStoreCatalog();
         }
 
-        function loadStoreCatalog() {
-            const items = [
-                { id: "M_01", category: "SUPERMARKET", name: "Sovereign Organic Milk (1L)", price: 180, merchant: "Nakumatt Supermarket", image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300" },
-                { id: "M_02", category: "SUPERMARKET", name: "Fresh Farm Bread (Loaf)", price: 110, merchant: "Naivas Supermarket", image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300" },
-                { id: "H_01", category: "HOTELS", name: "Executive Suite (1 Night Stay)", price: 15000, merchant: "Serena Hotel", image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=300" },
-                { id: "H_02", category: "HOTELS", name: "Deluxe Double Room (Breakfast)", price: 9500, merchant: "Radisson Blu", image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=300" },
-                { id: "R_01", category: "RESTAURANT", name: "Sovereign Nyama Platter", price: 2500, merchant: "Carnivore Grill", image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=300" },
-                { id: "R_02", category: "RESTAURANT", name: "Artisan Wood-Fired Pizza", price: 1400, merchant: "Artcaffe Bistro", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300" }
-            ];
+        async function loadStoreCatalog() {
+            try {
+                const response = await fetch(`${API_BASE}/api/store/products`);
+                const data = await response.json();
+                
+                const defaultItems = [
+                    { id: "M_01", category: "SUPERMARKET", name: "Sovereign Organic Milk (1L)", price: 180, merchant: "Nakumatt Supermarket", image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300" },
+                    { id: "M_02", category: "SUPERMARKET", name: "Fresh Farm Bread (Loaf)", price: 110, merchant: "Naivas Supermarket", image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300" },
+                    { id: "H_01", category: "HOTELS", name: "Executive Suite (1 Night Stay)", price: 15000, merchant: "Serena Hotel", image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=300" },
+                    { id: "H_02", category: "HOTELS", name: "Deluxe Double Room (Breakfast)", price: 9500, merchant: "Radisson Blu", image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=300" },
+                    { id: "R_01", category: "RESTAURANT", name: "Sovereign Nyama Platter", price: 2500, merchant: "Carnivore Grill", image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=300" },
+                    { id: "R_02", category: "RESTAURANT", name: "Artisan Wood-Fired Pizza", price: 1400, merchant: "Artcaffe Bistro", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300" }
+                ];
 
-            allProductsCache = activeCategory === 'ALL' ? items : items.filter(i => i.category === activeCategory);
-            renderCatalog(allProductsCache);
+                let items = (data.success && data.products && data.products.length > 0) ? data.products : defaultItems;
+                allProductsCache = activeCategory === 'ALL' ? items : items.filter(i => i.category === activeCategory || !i.category);
+                renderCatalog(allProductsCache);
+            } catch (err) {
+                console.error("Failed to load catalog from API, using fallback cache:", err);
+            }
         }
 
         function renderCatalog(products) {
@@ -670,11 +679,13 @@
             let html = '';
             products.forEach(p => {
                 const qty = cart[p.id] ? cart[p.id].qty : 0;
+                const img = p.image || "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300";
+                const merchant = p.merchant || "RDS Supermarket Hub";
                 html += `
                     <div class="product-card">
-                        <div class="image-wrapper"><span class="merchant-badge">${p.merchant}</span><img src="${p.image}" class="product-img"></div>
+                        <div class="image-wrapper"><span class="merchant-badge">${merchant}</span><img src="${img}" class="product-img"></div>
                         <div class="product-info">
-                            <div><div class="product-title">${p.name}</div><div class="product-price">${curr} ${p.price.toLocaleString()}</div></div>
+                            <div><div class="product-title">${p.name}</div><div class="product-price">${curr} ${Number(p.price).toLocaleString()}</div></div>
                             <div class="quantity-stepper">
                                 <button onclick="updateCart('${p.id}', '${p.name}', ${p.price}, -1)">-</button>
                                 <span class="quantity-display" id="qty-${p.id}">${qty}</span>
@@ -743,7 +754,6 @@
             let totalPrice = 0;
             for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
             
-            // Auto-fallback if cart is empty for testing dispatches
             if (totalPrice <= 0) {
                 totalPrice = 1500; 
                 cart["TEST_ITEM"] = { name: "Sovereign Test Commodity", price: 1500, qty: 1 };
@@ -756,8 +766,7 @@
             const estimatedMinutes = Number(document.getElementById('estimatedMinsInput').value) || 18;
             
             try {
-                console.log(`Connecting to API at: ${API_BASE}/api/store/checkout-and-split`);
-                const res = await fetch(`${API_BASE}/api/store/checkout-and-split`, {
+                const res = await fetch(`${API_BASE}/api/store/checkout`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
                     body: JSON.stringify({ 
@@ -767,16 +776,20 @@
                         distanceKm,
                         estimatedMinutes,
                         pickupLocation,
-                        dropoffLocation
+                        dropoffLocation,
+                        cartItems: Object.values(cart)
                     })
                 });
                 
                 const data = await res.json();
                 if (res.ok && data.success) {
                     alert(`✅ ${data.message}`);
-                    handleRiderDispatchPayload(data.orderRecord);
+                    if(data.orderRecord) {
+                        handleRiderDispatchPayload(data.orderRecord);
+                    }
                     cart = {}; 
                     recalculateCartSummary();
+                    loadStoreCatalog();
                     fetchTenantOrders();
                 } else { 
                     alert(data.error || "Checkout failed."); 
@@ -801,12 +814,10 @@
                         html += `
                             <div class="order-history-card">
                                 <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--cyan); margin-bottom:4px;">
-                                    <span>${o.orderId} (Escrow: ${o.escrowId})</span>
-                                    <span style="color:var(--neon-green);">KES ${o.grossTotal.toLocaleString()}</span>
+                                    <span>${o.orderId}</span>
+                                    <span style="color:var(--neon-green);">KES ${(o.totalAmount || 0).toLocaleString()}</span>
                                 </div>
-                                <div>Merchant Paid: <b>KES ${o.splits.merchantPayout.toLocaleString()}</b></div>
-                                <div>Driver Payout: <b>KES ${o.splits.driverPayout.toLocaleString()}</b></div>
-                                <div style="color:var(--alert-red);">KRA Tax (16%): KES ${o.splits.kraTaxOnSystemIncome.toFixed(2)}</div>
+                                <div>Status: <b>${o.status}</b></div>
                             </div>
                         `;
                     });

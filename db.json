@@ -102,6 +102,40 @@
       "previousHash": "f8a66fa4c643a780ed7a7c9740282887ff776d008eb643aef313b2fcc80ea2d3",
       "currentHash": "38b24cc932af65ee32484983f73a51c3753d3d48229f48ac86fb5e6018a59801",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790209879713_40626",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790209879712,
+      "actionType": "AI_INTENT_EVALUATED",
+      "actor": {
+        "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant."
+      },
+      "details": {
+        "intentId": "AI_1790209879711_71952",
+        "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant.",
+        "status": "APPROVED",
+        "confidence": "99.8%",
+        "timestamp": 1790209879711
+      },
+      "previousHash": "38b24cc932af65ee32484983f73a51c3753d3d48229f48ac86fb5e6018a59801",
+      "currentHash": "0b0701f1693be465a1eba6b7d7f7e926d01cfec795cd023570a4b5f16bdd7c41",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
+    },
+    {
+      "auditId": "AUD_1790209914940_36554",
+      "tenantId": "INST-CBK-RTGS",
+      "timestamp": 1790209914939,
+      "actionType": "HYBRID_ANTIVIRUS_HEAL_EXECUTED",
+      "actor": {
+        "system": "RDS_SHIELD"
+      },
+      "details": {
+        "status": "ALL_SYSTEMS_SANITIZED"
+      },
+      "previousHash": "0b0701f1693be465a1eba6b7d7f7e926d01cfec795cd023570a4b5f16bdd7c41",
+      "currentHash": "25b2081e535be0315e3262e43def5ce53465b17cfef38bf4042cb7efa154a39a",
+      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     }
   ],
   "iso20022_wires": [],
@@ -112,6 +146,13 @@
       "status": "APPROVED",
       "confidence": "99.8%",
       "timestamp": 1790209276566
+    },
+    {
+      "intentId": "AI_1790209879711_71952",
+      "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant.",
+      "status": "APPROVED",
+      "confidence": "99.8%",
+      "timestamp": 1790209879711
     }
   ],
   "shadow_trap_flags": [],
