@@ -17,7 +17,7 @@ router.get('/products', (req, res) => {
     res.json({ success: true, products: storeProducts });
 });
 
-// POST: Checkout & Dispatch (Uber / Bolt Standard)
+// POST: Checkout & Dispatch with Precise Kenyan Tariff & Tax Splits (Uber / Bolt / Jumia Standard)
 router.post('/checkout', (req, res) => {
     const tenantId = req.headers['x-business-id'] || 'INST-CBK-RTGS';
     const orderId = `ORD_${Date.now()}`;
@@ -25,26 +25,48 @@ router.post('/checkout', (req, res) => {
     
     const { itemsTotal, distanceKm, pickupLocation, dropoffLocation, cartItems } = req.body;
     
+    const totalPrice = itemsTotal || 1500;
+    const km = distanceKm || 6.5;
+    
+    // Kenyan Tariff & Fee Calculations
+    const deliveryFee = Math.round((150 + (km * 35) + (18 * 4)) / 5) * 5;
+    const merchantPayout = totalPrice;
+    const sysFeeOnItems = totalPrice * 0.02;
+    const driverPayout = deliveryFee * 0.95;
+    const appDeliveryComm = deliveryFee * 0.05;
+    const totalSysIncome = sysFeeOnItems + appDeliveryComm;
+    const kraTax = totalSysIncome * 0.16;
+    const netSysIncome = totalSysIncome - kraTax;
+    const grossTotal = totalPrice + sysFeeOnItems + deliveryFee;
+
     const newOrder = {
         orderId,
         escrowId,
         tenantId,
         items: cartItems || [],
-        totalAmount: itemsTotal || 1500,
+        totalAmount: grossTotal,
+        splits: {
+            merchantPayout,
+            driverPayout,
+            appDeliveryComm,
+            sysFeeOnItems,
+            kraTaxOnSystemIncome: kraTax,
+            netSystemRevenue: netSysIncome
+        },
         status: "DISPATCHED_TO_RIDER",
         timestamp: Date.now(),
         delivery: {
             deliveryId: `DEL_${Date.now()}`,
             pickupLocation: pickupLocation || "Nairobi CBD",
             dropoffLocation: dropoffLocation || "Westlands",
-            distanceKm: distanceKm || 6.5,
+            distanceKm: km,
             status: "DISPATCHED",
             assignedDriver: { name: "Kiprono Driver (Bolt/Uber Pro)", phone: "+254 712 345678" }
         }
     };
 
     storeOrders.push(newOrder);
-    res.json({ success: true, message: "Order processed and dispatched successfully!", orderRecord: newOrder });
+    res.json({ success: true, message: "Order auto-dispatched, merchant paid, and escrow locked!", orderRecord: newOrder });
 });
 
 // GET: Fetch tenant orders history
@@ -86,7 +108,7 @@ router.post('/logistics/complete-trip', (req, res) => {
     order.delivery.status = 'COMPLETED';
     order.status = 'COMPLETED_SETTLED';
 
-    const deliveryFee = 1005; // Kenyan standard tariff model preview
+    const deliveryFee = order.splits && order.splits.driverPayout ? (order.splits.driverPayout / 0.95) : 1005;
     const driverPayout = deliveryFee * 0.95;
 
     res.json({

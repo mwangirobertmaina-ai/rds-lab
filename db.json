@@ -65,14 +65,14 @@
       "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
       "riskScore": "0.01%",
       "status": "ACTIVE",
-      "registeredAt": 1790209265351
+      "registeredAt": 1790212778203
     }
   ],
   "immutable_audit_vault": [
     {
       "auditId": "AUD_GENESIS",
       "tenantId": "SYSTEM",
-      "timestamp": 1790209265351,
+      "timestamp": 1790212778203,
       "actionType": "GENESIS_ROOT_INIT",
       "actor": {
         "system": "RDS_CORE"
@@ -81,84 +81,53 @@
         "message": "Secure genesis block initialized for Stage 172."
       },
       "previousHash": "GENESIS_ROOT_HASH_000000000000000000000000",
-      "currentHash": "f8a66fa4c643a780ed7a7c9740282887ff776d008eb643aef313b2fcc80ea2d3",
+      "currentHash": "7eeb36fbbeabd318df8a351b000ddc1b3f5d218658455e551311d7580d18ae55",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     },
     {
-      "auditId": "AUD_1790209276570_97202",
+      "auditId": "AUD_1790213123002_40469",
       "tenantId": "INST-CBK-RTGS",
-      "timestamp": 1790209276569,
-      "actionType": "AI_INTENT_EVALUATED",
+      "timestamp": 1790213123002,
+      "actionType": "BIOMETRIC_FACE_AND_REGISTRY_VERIFIED",
       "actor": {
-        "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant."
+        "fullName": "Robert Maina"
       },
       "details": {
-        "intentId": "AI_1790209276566_71",
-        "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant.",
-        "status": "APPROVED",
-        "confidence": "99.8%",
-        "timestamp": 1790209276566
+        "verificationId": "KYC_1790213122999_62998",
+        "tenantId": "INST-CBK-RTGS",
+        "nationalIdNumber": "38291029",
+        "fullName": "Robert Maina",
+        "registrySource": "Kenya National Registration Bureau (IPRS)",
+        "initialDeposit": 25000,
+        "riskRating": "🟢 LOW RISK (Standard Account)",
+        "accountId": "ACC-INST-CBK-RTGS-142929",
+        "status": "VERIFIED_SUCCESSFUL",
+        "timestamp": 1790213122999
       },
-      "previousHash": "f8a66fa4c643a780ed7a7c9740282887ff776d008eb643aef313b2fcc80ea2d3",
-      "currentHash": "38b24cc932af65ee32484983f73a51c3753d3d48229f48ac86fb5e6018a59801",
-      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
-    },
-    {
-      "auditId": "AUD_1790209879713_40626",
-      "tenantId": "INST-CBK-RTGS",
-      "timestamp": 1790209879712,
-      "actionType": "AI_INTENT_EVALUATED",
-      "actor": {
-        "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant."
-      },
-      "details": {
-        "intentId": "AI_1790209879711_71952",
-        "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant.",
-        "status": "APPROVED",
-        "confidence": "99.8%",
-        "timestamp": 1790209879711
-      },
-      "previousHash": "38b24cc932af65ee32484983f73a51c3753d3d48229f48ac86fb5e6018a59801",
-      "currentHash": "0b0701f1693be465a1eba6b7d7f7e926d01cfec795cd023570a4b5f16bdd7c41",
-      "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
-    },
-    {
-      "auditId": "AUD_1790209914940_36554",
-      "tenantId": "INST-CBK-RTGS",
-      "timestamp": 1790209914939,
-      "actionType": "HYBRID_ANTIVIRUS_HEAL_EXECUTED",
-      "actor": {
-        "system": "RDS_SHIELD"
-      },
-      "details": {
-        "status": "ALL_SYSTEMS_SANITIZED"
-      },
-      "previousHash": "0b0701f1693be465a1eba6b7d7f7e926d01cfec795cd023570a4b5f16bdd7c41",
-      "currentHash": "25b2081e535be0315e3262e43def5ce53465b17cfef38bf4042cb7efa154a39a",
+      "previousHash": "7eeb36fbbeabd318df8a351b000ddc1b3f5d218658455e551311d7580d18ae55",
+      "currentHash": "19cf5714a8885289ef63168f32e06ac62e5e771cf37e4481de5060d28605f912",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     }
   ],
   "iso20022_wires": [],
-  "ai_approved_intents": [
-    {
-      "intentId": "AI_1790209276566_71",
-      "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant.",
-      "status": "APPROVED",
-      "confidence": "99.8%",
-      "timestamp": 1790209276566
-    },
-    {
-      "intentId": "AI_1790209879711_71952",
-      "prompt": "Verify regulatory compliance and cross-border settlement safety for current tenant.",
-      "status": "APPROVED",
-      "confidence": "99.8%",
-      "timestamp": 1790209879711
-    }
-  ],
+  "ai_approved_intents": [],
   "shadow_trap_flags": [],
   "sar_queue": [],
   "did_pass_registry": [],
-  "local_id_verifications": [],
+  "local_id_verifications": [
+    {
+      "verificationId": "KYC_1790213122999_62998",
+      "tenantId": "INST-CBK-RTGS",
+      "nationalIdNumber": "38291029",
+      "fullName": "Robert Maina",
+      "registrySource": "Kenya National Registration Bureau (IPRS)",
+      "initialDeposit": 25000,
+      "riskRating": "🟢 LOW RISK (Standard Account)",
+      "accountId": "ACC-INST-CBK-RTGS-142929",
+      "status": "VERIFIED_SUCCESSFUL",
+      "timestamp": 1790213122999
+    }
+  ],
   "cashier_transactions": [],
   "pos_transactions": [],
   "compliance_push_logs": [],
