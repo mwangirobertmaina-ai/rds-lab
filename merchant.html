@@ -1,471 +1,291 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0b0f19">
-  <title>RDS | Sovereign Merchant & Vendor Console</title>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-
-  <style>
-    :root {
-      --neon-green: #00ff88;
-      --dark-bg: #0b0f19;
-      --panel-bg: #111827;
-      --card-bg: #181824;
-      --text-dim: #9ca3af;
-      --cyan: #38bdf8;
-      --alert-red: #ff3366;
-      --gold: #ffd700;
-      --stage-purple: #a855f7;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
-
-    body {
-      background-color: var(--dark-bg);
-      color: #fff;
-      padding: 15px;
-      max-width: 480px;
-      margin: 0 auto;
-      padding-bottom: 110px;
-    }
-
-    .app-view { display: none; }
-    .app-view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .telemetry-ribbon {
-      background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(56,189,248,0.1));
-      border: 1px solid var(--stage-purple);
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 0.65rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      color: var(--stage-purple);
-      font-weight: bold;
-    }
-
-    .header-location {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    .location-box { display: flex; align-items: center; gap: 8px; }
-    .location-text span { font-size: 0.75rem; color: var(--text-dim); display: block; }
-    .location-text strong { font-size: 0.95rem; color: #fff; }
-
-    .corridor-selector {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      margin-bottom: 15px;
-      padding-bottom: 4px;
-      scrollbar-width: none;
-    }
-    .corridor-selector::-webkit-scrollbar { display: none; }
-    .corridor-btn {
-      background: var(--panel-bg);
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 8px 10px;
-      text-align: center;
-      cursor: pointer;
-      color: var(--text-dim);
-      font-size: 0.75rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .corridor-btn.active, .corridor-btn:hover {
-      border-color: var(--stage-purple);
-      background: rgba(168, 85, 247, 0.1);
-      color: #fff;
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .section-header h3 { font-size: 1rem; color: #fff; font-weight: 700; }
-
-    .checkout-panel {
-      background: var(--panel-bg);
-      border: 1px solid #222c3d;
-      border-radius: 12px;
-      padding: 15px;
-      margin-bottom: 20px;
-    }
-    .checkout-panel h3 { font-size: 0.9rem; margin-bottom: 12px; color: var(--cyan); text-transform: uppercase; }
-
-    input, select {
-      width: 100%;
-      background: var(--dark-bg);
-      border: 1px solid #374151;
-      color: #fff;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      outline: none;
-    }
-    input:focus, select:focus { border-color: var(--stage-purple); }
-
-    button {
-      background: var(--stage-purple);
-      color: #fff;
-      border: none;
-      padding: 9px;
-      font-weight: 700;
-      width: 100%;
-      cursor: pointer;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-    }
-    button:hover { background: var(--cyan); color: #000; }
-
-    .btn-cyan { background: var(--cyan); color: #000; }
-    .btn-cyan:hover { background: var(--neon-green); }
-
-    .bottom-nav {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: var(--panel-bg);
-      border-top: 1px solid #222c3d;
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-      z-index: 1000;
-      max-width: 480px;
-      margin: 0 auto;
-    }
-    .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
-    .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
-    .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
-
-    .item-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--dark-bg);
-      border: 1px solid #374151;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      font-size: 0.8rem;
-    }
-
-    .live-order-card {
-      background: rgba(0,0,0,0.4);
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 10px;
-    }
-    .live-order-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
-      margin-bottom: 6px;
-      color: var(--cyan);
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDS Sovereign Multi-Tenant Merchant Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
 
-    <!-- AUTHENTICATION VIEW -->
-    <div id="viewAuth" class="app-view active-view">
-        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🛡️ MERCHANT VENDOR PORTAL LOGIN</span>
-        </div>
-
-        <div class="checkout-panel" style="padding: 20px;">
-            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Merchant Portal</h2>
-            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Manage live storefront inventory, publish catalog items, and fulfill incoming dispatches.</p>
-
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Merchant Email</label>
-            <input type="email" id="authEmail" value="merchant@rds.com">
-
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Vendor Phone / Node ID</label>
-            <input type="text" id="authPhone" value="254721862397">
-
-            <div id="phoneStep">
-                <button onclick="requestMerchantOtp()" class="btn-cyan" style="padding: 12px; font-weight: bold; margin-top: 5px;">Send Verification OTP</button>
-            </div>
-
-            <div id="otpStep" style="display: none; margin-top: 15px;">
-                <label style="font-size: 0.75rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP Code (Use 1234)</label>
-                <input type="text" id="authOtp" value="1234" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" maxlength="4">
-                <button onclick="verifyMerchantOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch Portal</button>
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="bg-emerald-500 text-slate-950 p-2 rounded-lg font-black text-xl"><i class="fa-solid fa-store"></i></div>
+            <div>
+                <h1 id="shopTitle" class="text-xl font-bold tracking-wide text-emerald-400">RDS Multi-Tenant Hub</h1>
+                <p id="shopVertical" class="text-xs text-slate-400">Vertical: Loading...</p>
             </div>
         </div>
-    </div>
-
-    <!-- CATALOG & INVENTORY MANAGEMENT VIEW -->
-    <div id="viewCatalog" class="app-view">
-        <div class="telemetry-ribbon">
-            <span>📦 MERCHANT CATALOG & INVENTORY MANAGEMENT</span>
-            <span id="nodeLatency">Secure • Active</span>
+        <div class="flex items-center space-x-4">
+            <span id="merchantIdBadge" class="bg-slate-800 text-emerald-400 text-xs px-3 py-1 rounded-full font-mono border border-emerald-500/30">ID: Loading...</span>
+            <button onclick="logoutMerchant()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white px-3 py-1.5 rounded-lg text-sm transition border border-rose-500/30">
+                <i class="fa-solid fa-power-off mr-1"></i> Logout
+            </button>
         </div>
+    </header>
 
-        <div class="header-location">
-            <div class="location-box">
-                <span class="icon">📍</span>
-                <div class="location-text">
-                    <span>Active Corridor Node</span>
-                    <strong id="corridorLabel">Nairobi, Kenya (KES)</strong>
+    <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column: Add / Update Product Form with Camera & Upload Support -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl lg:col-span-1 h-fit">
+            <h2 class="text-lg font-semibold mb-4 text-emerald-400 flex items-center">
+                <i class="fa-solid fa-circle-plus mr-2"></i> Add / Update Tenant Item
+            </h2>
+            
+            <form id="catalogForm" onsubmit="handleCatalogUpdate(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Product / Service Name</label>
+                    <input type="text" id="itemName" required placeholder="e.g. Sovereign Organic Milk or Heavy Duty Pads" 
+                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
                 </div>
+
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Tenant Vertical Category</label>
+                    <select id="itemCategory" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
+                        <option value="SUPERMARKET">Supermarket & Groceries</option>
+                        <option value="HOTEL">Hotel & Accommodation</option>
+                        <option value="AUTO_SPARE">Auto Spares & Hardware</option>
+                        <option value="RETAIL_SHOP">General Retail Shop</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Price (KES)</label>
+                        <input type="number" id="itemPrice" required placeholder="180" 
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Stock Qty / Units</label>
+                        <input type="number" id="itemStock" required value="50" 
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <!-- Image Source Options: URL, File Upload, or Camera Snapshot -->
+                <div class="space-y-2">
+                    <label class="block text-xs uppercase tracking-wider text-slate-400">Product Image Source</label>
+                    
+                    <div class="flex space-x-2">
+                        <button type="button" onclick="switchImageMode('url')" id="btnModeUrl" class="flex-1 bg-emerald-500 text-slate-950 text-xs font-bold py-1.5 rounded-lg">Image URL</button>
+                        <button type="button" onclick="switchImageMode('file')" id="btnModeFile" class="flex-1 bg-slate-800 text-slate-300 text-xs py-1.5 rounded-lg">Upload File</button>
+                        <button type="button" onclick="switchImageMode('camera')" id="btnModeCamera" class="flex-1 bg-slate-800 text-slate-300 text-xs py-1.5 rounded-lg">Snap Camera</button>
+                    </div>
+
+                    <!-- Input 1: URL -->
+                    <div id="imageInputUrlContainer">
+                        <input type="url" id="itemImage" placeholder="https://images.unsplash.com/..." 
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                    </div>
+
+                    <!-- Input 2: File Upload -->
+                    <div id="imageInputFileContainer" class="hidden">
+                        <input type="file" id="itemImageFile" accept="image/*" onchange="encodeFileToBase64(this)"
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-400 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400">
+                    </div>
+
+                    <!-- Input 3: Camera Capture -->
+                    <div id="imageInputCameraContainer" class="hidden space-y-2">
+                        <div class="relative bg-black rounded-xl overflow-hidden border border-slate-800 flex justify-center">
+                            <video id="cameraStream" autoplay playsinline class="w-full h-36 object-cover"></video>
+                            <canvas id="cameraCanvas" class="hidden"></canvas>
+                        </div>
+                        <button type="button" onclick="captureCameraSnapshot()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-semibold py-1.5 rounded-xl text-xs transition">
+                            <i class="fa-solid fa-camera mr-1"></i> Capture Snapshot
+                        </button>
+                    </div>
+                    
+                    <!-- Hidden field storing the final base64 or URL string -->
+                    <input type="hidden" id="finalImageValue" value="">
+                </div>
+
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Publish to Tenant Store
+                </button>
+            </form>
+        </section>
+
+        <!-- Right Column: Live Tenant Inventory Display -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl lg:col-span-2">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-emerald-400 flex items-center">
+                    <i class="fa-solid fa-boxes-stacked mr-2"></i> Active Tenant Inventory Catalog
+                </h2>
+                <button onclick="loadCatalog()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition">
+                    <i class="fa-solid fa-rotate mr-1"></i> Refresh
+                </button>
             </div>
-            <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
-        </div>
 
-        <div class="corridor-selector" id="dynamicCorridorSelector">
-            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE Hub</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK Hub</div>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>Publish New Catalog Item</h3>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Item Name</label>
-            <input type="text" id="adminProdName" placeholder="e.g. Deluxe Burger & Fries">
-            
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Price</label>
-            <input type="number" id="adminProdPrice" placeholder="850">
-            
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Category</label>
-            <select id="adminProdCategory">
-                <option value="RESTAURANT">Restaurant</option>
-                <option value="SUPERMARKET">Supermarket</option>
-                <option value="HOTEL">Hotel</option>
-            </select>
-
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Image URL</label>
-            <input type="text" id="adminProdImage" value="https://images.unsplash.com/photo-1562967914-608f82629710?w=400">
-            
-            <button onclick="adminAddProduct()">Publish Product to Live Network</button>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>Active Store Inventory</h3>
-            <div id="adminInventoryList">
-                <em style="color:var(--text-dim); font-size: 0.75rem;">Loading catalog inventory...</em>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase tracking-wider">
+                            <th class="py-3 px-4">Item Name</th>
+                            <th class="py-3 px-4">Category</th>
+                            <th class="py-3 px-4">Price (KES)</th>
+                            <th class="py-3 px-4">Stock</th>
+                            <th class="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="catalogTableBody" class="divide-y divide-slate-800 text-sm">
+                        <tr>
+                            <td colspan="5" class="py-6 text-center text-slate-500">Loading tenant catalog...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <!-- LIVE DISPATCH ORDERS & FULFILLMENT VIEW -->
-    <div id="viewOrders" class="app-view">
-        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>🚀 LIVE DISPATCH & ORDER FULFILLMENT</span>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>Incoming Store Dispatches</h3>
-            <div id="merchantLiveOrdersContainer">
-                <em style="color:var(--text-dim); font-size: 0.75rem;">No active customer orders.</em>
-            </div>
-        </div>
-    </div>
-
-    <!-- PROFILE VIEW -->
-    <div id="viewProfile" class="app-view">
-        <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Merchant Vendor Profile</h3>
-        </div>
-        <div class="checkout-panel">
-            <p><strong>Node ID:</strong> <span id="profileBusinessId">BIZ-KE</span></p>
-            <p style="margin-top: 6px;"><strong>Email:</strong> merchant@rds.com</p>
-            <p style="margin-top: 6px;"><strong>Role:</strong> <span style="color: var(--neon-green);">Sovereign Merchant</span></p>
-        </div>
-    </div>
-
-    <input type="hidden" id="storeBusinessId" value="BIZ-KE">
-    <input type="hidden" id="storeCurrency" value="KES">
-
-    <div class="bottom-nav" id="bottomNav" style="display: none;">
-        <a class="nav-item active" onclick="switchTab('viewCatalog', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Catalog</a>
-        <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.03-.42 1.98-1.07 2.75z"/></svg>Dispatches</a>
-        <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
-    </div>
+    </main>
 
     <script>
-        const LOCAL_API = "http://localhost:3000";
-        const CLOUD_API = "https://rds-lab.onrender.com";
-        let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
+        let currentMerchantId = localStorage.getItem('rds_merchantId') || 'MERCH_DEF_172';
+        let mediaStream = null;
 
-        let currentMerchantUser = null;
-        let socket = io();
-
-        window.addEventListener('DOMContentLoaded', () => {
-            socket.on('orderListUpdated', () => { fetchMerchantOrders(); });
-            socket.on('catalogUpdated', () => { loadAdminInventory(); });
-        });
-
-        async function requestMerchantOtp() {
-            const phone = document.getElementById('authPhone').value.trim();
-            const email = document.getElementById('authEmail').value.trim();
-            const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, email })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(data.message);
-                document.getElementById('phoneStep').style.display = 'none';
-                document.getElementById('otpStep').style.display = 'block';
-            }
-        }
-
-        async function verifyMerchantOtpAndEnter() {
-            const phone = document.getElementById('authPhone').value.trim();
-            const email = document.getElementById('authEmail').value.trim();
-            const otp = document.getElementById('authOtp').value.trim();
-            const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, otp, role: 'MERCHANT', email })
-            });
-            const data = await res.json();
-            if (data.success) {
-                currentMerchantUser = data.user;
-                document.getElementById('bottomNav').style.display = 'flex';
-                switchTab('viewCatalog', document.querySelectorAll('.bottom-nav .nav-item')[0]);
-                loadAdminInventory();
-                fetchMerchantOrders();
-            }
-        }
-
-        function switchCorridor(tenantId, locationName, currencyCode, el) {
-            document.querySelectorAll('.corridor-btn').forEach(b => b.classList.remove('active'));
-            if(el) el.classList.add('active');
-            document.getElementById('storeBusinessId').value = tenantId;
-            document.getElementById('storeCurrency').value = currencyCode;
-            document.getElementById('tenantBadge').innerText = tenantId;
-            document.getElementById('corridorLabel').innerText = locationName;
-            document.getElementById('profileBusinessId').innerText = tenantId;
-            loadAdminInventory();
-            fetchMerchantOrders();
-        }
-
-        async function loadAdminInventory() {
-            const bizId = document.getElementById('storeBusinessId').value;
+        async function loadCatalog() {
             try {
-                const res = await fetch(`${API_BASE}/api/products`, { headers: { "x-business-id": bizId } });
+                const res = await fetch(`/api/merchant/catalog/${currentMerchantId}`);
                 const data = await res.json();
-                const container = document.getElementById('adminInventoryList');
-                const curr = document.getElementById('storeCurrency').value;
+                
+                if (data.success && data.profile) {
+                    document.getElementById('shopTitle').innerText = data.profile.shopName;
+                    document.getElementById('shopVertical').innerText = `Vertical Corridor: ${data.profile.businessType}`;
+                    document.getElementById('merchantIdBadge').innerText = `ID: ${currentMerchantId}`;
+                }
 
-                if (!data.success || !data.products || data.products.length === 0) {
-                    container.innerHTML = '<em style="color:var(--text-dim); font-size: 0.75rem;">No active inventory registered.</em>';
+                const tbody = document.getElementById('catalogTableBody');
+                if (!data.success || !data.catalog || data.catalog.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-500">No active items in tenant catalog yet.</td></tr>`;
                     return;
                 }
-                let html = '';
-                data.products.forEach(p => {
-                    html += `
-                        <div class="item-row">
-                            <div><strong>${p.name}</strong><br><span style="color:var(--stage-purple);">${curr} ${p.price}</span> (${p.category || 'GENERAL'})</div>
-                            <button onclick="adminDeleteProduct('${p.id}')" style="background:var(--alert-red); color:#fff; width:auto; padding:6px 12px; font-size:0.65rem;">🗑️ Delete</button>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            } catch (e) {}
-        }
 
-        async function adminAddProduct() {
-            const name = document.getElementById('adminProdName').value.trim();
-            const price = document.getElementById('adminProdPrice').value.trim();
-            const category = document.getElementById('adminProdCategory').value;
-            const image = document.getElementById('adminProdImage').value.trim();
-            const bizId = document.getElementById('storeBusinessId').value;
-            const curr = document.getElementById('storeCurrency').value;
-            const merchantName = bizId === 'BIZ-KE' ? 'Nairobi Grill & Chicken' : 'London Boutique Hub';
-
-            if (!name || !price) { alert("Provide name and price"); return; }
-
-            const res = await fetch(`${API_BASE}/api/products/add`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                body: JSON.stringify({ shopId: bizId, businessId: bizId, name, price, currency: curr, category, merchant: merchantName, image })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert("Product published successfully to live catalog!");
-                document.getElementById('adminProdName').value = '';
-                document.getElementById('adminProdPrice').value = '';
-                loadAdminInventory();
-            } else { alert(data.error); }
-        }
-
-        async function adminDeleteProduct(productId) {
-            if (!confirm("Are you sure you want to remove this item from the active catalog?")) return;
-            const bizId = document.getElementById('storeBusinessId').value;
-            const res = await fetch(`${API_BASE}/api/products/${productId}`, {
-                method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                body: JSON.stringify({ shopId: bizId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert("Product successfully deleted!");
-                loadAdminInventory();
+                tbody.innerHTML = data.catalog.map(item => `
+                    <tr class="hover:bg-slate-800/50 transition">
+                        <td class="py-3 px-4 font-medium text-slate-200 flex items-center space-x-3">
+                            <img src="${item.image || 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=100'}" class="w-10 h-10 rounded-lg object-cover border border-slate-800">
+                            <span>${item.name}</span>
+                        </td>
+                        <td class="py-3 px-4"><span class="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded border border-slate-700">${item.category}</span></td>
+                        <td class="py-3 px-4 text-emerald-400 font-semibold">KES ${Number(item.price).toLocaleString()}</td>
+                        <td class="py-3 px-4"><span class="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded text-xs border border-emerald-500/20">${item.stock} Units</span></td>
+                        <td class="py-3 px-4 text-right">
+                            <button onclick="deleteItem('${item.id}')" class="text-rose-400 hover:text-rose-300 text-xs bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20 transition">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error("Failed to load catalog:", err);
             }
         }
 
-        async function fetchMerchantOrders() {
-            const bizId = document.getElementById('storeBusinessId').value;
+        function switchImageMode(mode) {
+            document.getElementById('imageInputUrlContainer').classList.toggle('hidden', mode !== 'url');
+            document.getElementById('imageInputFileContainer').classList.toggle('hidden', mode !== 'file');
+            document.getElementById('imageInputCameraContainer').classList.toggle('hidden', mode !== 'camera');
+
+            document.getElementById('btnModeUrl').className = mode === 'url' ? 'flex-1 bg-emerald-500 text-slate-950 text-xs font-bold py-1.5 rounded-lg' : 'flex-1 bg-slate-800 text-slate-300 text-xs py-1.5 rounded-lg';
+            document.getElementById('btnModeFile').className = mode === 'file' ? 'flex-1 bg-emerald-500 text-slate-950 text-xs font-bold py-1.5 rounded-lg' : 'flex-1 bg-slate-800 text-slate-300 text-xs py-1.5 rounded-lg';
+            document.getElementById('btnModeCamera').className = mode === 'camera' ? 'flex-1 bg-emerald-500 text-slate-950 text-xs font-bold py-1.5 rounded-lg' : 'flex-1 bg-slate-800 text-slate-300 text-xs py-1.5 rounded-lg';
+
+            if (mode === 'camera') {
+                startCamera();
+            } else {
+                stopCamera();
+            }
+        }
+
+        async function startCamera() {
             try {
-                const res = await fetch(`${API_BASE}/api/orders/live`, { headers: { "x-business-id": bizId } });
-                const data = await res.json();
-                if (data.success && data.orders) {
-                    renderMerchantOrders(data.orders);
-                }
-            } catch (e) {}
-        }
-
-        function renderMerchantOrders(orders) {
-            const container = document.getElementById('merchantLiveOrdersContainer');
-            if (!orders || orders.length === 0) {
-                container.innerHTML = '<em style="color:var(--text-dim); font-size: 0.75rem;">No active customer orders.</em>';
-                return;
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                document.getElementById('cameraStream').srcObject = mediaStream;
+            } catch (err) {
+                alert("Camera access denied or unavailable.");
             }
-            let html = '';
-            orders.slice(-4).reverse().forEach(o => {
-                html += `
-                    <div class="live-order-card">
-                        <div class="live-order-header">
-                            <span>🆔 ${o.id}</span>
-                            <span style="color: var(--neon-green);">${o.status}</span>
-                        </div>
-                        <div style="font-size: 0.75rem; color: #fff; margin-bottom: 6px;">
-                            <div>📍 Pickup: ${o.pickup}</div>
-                            <div>🏁 Dropoff: ${o.destination}</div>
-                            <div>💰 Total: <strong>${o.currency} ${o.total}</strong></div>
-                        </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
         }
 
-        function switchTab(viewId, el) {
-            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
-            document.getElementById(viewId).classList.add('active-view');
-            document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
-            if(el) el.classList.add('active');
-            window.scrollTo(0, 0);
+        function stopCamera() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
         }
+
+        function captureCameraSnapshot() {
+            const video = document.getElementById('cameraStream');
+            const canvas = document.getElementById('cameraCanvas');
+            canvas.width = video.videoWidth || 320;
+            canvas.height = video.videoHeight || 240;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/png');
+            document.getElementById('finalImageValue').value = dataUrl;
+            alert("Snapshot captured successfully!");
+            stopCamera();
+        }
+
+        function encodeFileToBase64(element) {
+            const file = element.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('finalImageValue').value = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function handleCatalogUpdate(event) {
+            event.preventDefault();
+            
+            let imgVal = document.getElementById('finalImageValue').value;
+            if (!imgVal) {
+                imgVal = document.getElementById('itemImage').value || 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300';
+            }
+
+            const payload = {
+                merchantId: currentMerchantId,
+                name: document.getElementById('itemName').value,
+                category: document.getElementById('itemCategory').value,
+                price: document.getElementById('itemPrice').value,
+                stock: document.getElementById('itemStock').value,
+                image: imgVal
+            };
+
+            try {
+                const res = await fetch('/api/merchant/catalog/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('catalogForm').reset();
+                    document.getElementById('finalImageValue').value = '';
+                    loadCatalog();
+                } else {
+                    alert("Error updating catalog: " + data.error);
+                }
+            } catch (err) {
+                console.error("Error:", err);
+                alert("Network error connecting to server.");
+            }
+        }
+
+        function deleteItem(itemId) {
+            alert("Delete requested for item: " + itemId);
+        }
+
+        function logoutMerchant() {
+            localStorage.removeItem('rds_merchantId');
+            localStorage.removeItem('rds_shopName');
+            stopCamera();
+            window.location.href = '/merchant';
+        }
+
+        // Initialize on load
+        loadCatalog();
     </script>
 </body>
 </html>

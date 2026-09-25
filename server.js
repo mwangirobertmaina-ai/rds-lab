@@ -122,6 +122,26 @@ app.use('/api/driver', require('./routes/driver'));
 app.use('/api/merchant', require('./routes/merchant'));
 app.use('/api/admin', require('./routes/admin'));
 
+// --- ADDITIVE AUTHENTICATION (OTP) ENDPOINTS FOR MERCHANT PORTAL ---
+app.post('/api/auth/send-otp', (req, res) => {
+    const { phone, email } = req.body;
+    console.log(`[AUTH] OTP requested for Phone: ${phone}, Email: ${email}`);
+    res.json({ success: true, message: "OTP sent successfully! Use 1234 to verify." });
+});
+
+app.post('/api/auth/verify-otp', (req, res) => {
+    const { phone, otp, role, email } = req.body;
+    if (otp === "1234") {
+        res.json({ 
+            success: true, 
+            message: "Authentication successful!", 
+            user: { phone, email, role: role || 'MERCHANT' } 
+        });
+    } else {
+        res.status(400).json({ success: false, error: "Invalid OTP code. Please use 1234." });
+    }
+});
+
 function defaultDB() {
   return { 
     store: { products: [], cart: [], orders: [] },

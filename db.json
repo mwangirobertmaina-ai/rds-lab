@@ -65,14 +65,14 @@
       "kycStatus": "TIER_3_SOVEREIGN_VERIFIED",
       "riskScore": "0.01%",
       "status": "ACTIVE",
-      "registeredAt": 1790212778203
+      "registeredAt": 1790282205543
     }
   ],
   "immutable_audit_vault": [
     {
       "auditId": "AUD_GENESIS",
       "tenantId": "SYSTEM",
-      "timestamp": 1790212778203,
+      "timestamp": 1790282205543,
       "actionType": "GENESIS_ROOT_INIT",
       "actor": {
         "system": "RDS_CORE"
@@ -81,31 +81,31 @@
         "message": "Secure genesis block initialized for Stage 172."
       },
       "previousHash": "GENESIS_ROOT_HASH_000000000000000000000000",
-      "currentHash": "7eeb36fbbeabd318df8a351b000ddc1b3f5d218658455e551311d7580d18ae55",
+      "currentHash": "46327ed5eebb0d063f4966dc9d1a360bc4e9f23f2aaa436c78dc4e79f6e85d4a",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     },
     {
-      "auditId": "AUD_1790213123002_40469",
+      "auditId": "AUD_1790287982021_18740",
       "tenantId": "INST-CBK-RTGS",
-      "timestamp": 1790213123002,
+      "timestamp": 1790287982020,
       "actionType": "BIOMETRIC_FACE_AND_REGISTRY_VERIFIED",
       "actor": {
         "fullName": "Robert Maina"
       },
       "details": {
-        "verificationId": "KYC_1790213122999_62998",
+        "verificationId": "KYC_1790287982017_49119",
         "tenantId": "INST-CBK-RTGS",
         "nationalIdNumber": "38291029",
         "fullName": "Robert Maina",
         "registrySource": "Kenya National Registration Bureau (IPRS)",
         "initialDeposit": 25000,
         "riskRating": "🟢 LOW RISK (Standard Account)",
-        "accountId": "ACC-INST-CBK-RTGS-142929",
+        "accountId": "ACC-INST-CBK-RTGS-160699",
         "status": "VERIFIED_SUCCESSFUL",
-        "timestamp": 1790213122999
+        "timestamp": 1790287982017
       },
-      "previousHash": "7eeb36fbbeabd318df8a351b000ddc1b3f5d218658455e551311d7580d18ae55",
-      "currentHash": "19cf5714a8885289ef63168f32e06ac62e5e771cf37e4481de5060d28605f912",
+      "previousHash": "46327ed5eebb0d063f4966dc9d1a360bc4e9f23f2aaa436c78dc4e79f6e85d4a",
+      "currentHash": "df6ace71d231201e4d95f0a60a4ebafa4132c18fee9b7169cb44fb422b02dca4",
       "proofState": "GLOBAL_MATHEMATICALLY_VERIFIED"
     }
   ],
@@ -116,16 +116,16 @@
   "did_pass_registry": [],
   "local_id_verifications": [
     {
-      "verificationId": "KYC_1790213122999_62998",
+      "verificationId": "KYC_1790287982017_49119",
       "tenantId": "INST-CBK-RTGS",
       "nationalIdNumber": "38291029",
       "fullName": "Robert Maina",
       "registrySource": "Kenya National Registration Bureau (IPRS)",
       "initialDeposit": 25000,
       "riskRating": "🟢 LOW RISK (Standard Account)",
-      "accountId": "ACC-INST-CBK-RTGS-142929",
+      "accountId": "ACC-INST-CBK-RTGS-160699",
       "status": "VERIFIED_SUCCESSFUL",
-      "timestamp": 1790213122999
+      "timestamp": 1790287982017
     }
   ],
   "cashier_transactions": [],
