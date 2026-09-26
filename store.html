@@ -569,7 +569,6 @@
             const bizId = document.getElementById('storeBusinessId').value;
 
             try {
-                // Fixed URL prefix to match the mounted store router
                 const res = await fetch(`${API_BASE}/api/store/logistics/rider-action`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId, 'Authorization': 'Bearer SIMULATED_TOKEN' },
@@ -602,7 +601,6 @@
             const bizId = document.getElementById('storeBusinessId').value;
 
             try {
-                // Fixed URL prefix to match the mounted store router
                 const res = await fetch(`${API_BASE}/api/store/logistics/complete-trip`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
@@ -662,7 +660,14 @@
                 ];
 
                 let items = (data.success && data.products && data.products.length > 0) ? data.products : defaultItems;
-                allProductsCache = activeCategory === 'ALL' ? items : items.filter(i => i.category === activeCategory || !i.category);
+                
+                // Flexible filtering accommodating any custom open-text business vertical/category
+                if (activeCategory === 'ALL') {
+                    allProductsCache = items;
+                } else {
+                    allProductsCache = items.filter(i => (i.category || '').toUpperCase().includes(activeCategory.toUpperCase()) || !i.category);
+                }
+
                 renderCatalog(allProductsCache);
             } catch (err) {
                 console.error("Failed to load catalog from API, using fallback cache:", err);
@@ -673,14 +678,14 @@
             const grid = document.getElementById('catalogGrid');
             const curr = document.getElementById('storeCurrency').value;
             if (!products || products.length === 0) {
-                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No items found.</em>';
+                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No items found for this category.</em>';
                 return;
             }
             let html = '';
             products.forEach(p => {
                 const qty = cart[p.id] ? cart[p.id].qty : 0;
                 const img = p.image || "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300";
-                const merchant = p.merchant || "RDS Supermarket Hub";
+                const merchant = p.merchant || "RDS Independent Shop";
                 html += `
                     <div class="product-card">
                         <div class="image-wrapper"><span class="merchant-badge">${merchant}</span><img src="${img}" class="product-img"></div>
@@ -770,7 +775,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
                     body: JSON.stringify({ 
-                        merchantId: "MERCH_DEFAULT", 
+                        merchantId: "MERCH_DEF_172", 
                         customerName: "Robert Maina", 
                         itemsTotal: totalPrice,
                         distanceKm,

@@ -12,9 +12,38 @@ let storeProducts = [
 
 let storeOrders = [];
 
-// GET: Fetch catalog products
+// GET: Fetch catalog products (Dynamically syncs with live approved merchant catalogs from the merchant backend)
 router.get('/products', (req, res) => {
-    res.json({ success: true, products: storeProducts });
+    try {
+        let dynamicProducts = [...storeProducts];
+        
+        // Pull live merchant catalogs & profiles if available in global memory
+        const merchantCatalogs = global.merchantCatalogs || {};
+        const merchantProfiles = global.merchantProfiles || {};
+
+        Object.keys(merchantCatalogs).forEach(merchantId => {
+            const profile = merchantProfiles[merchantId] || { shopName: "Independent Shop", businessType: "General Retail" };
+            const catalogList = merchantCatalogs[merchantId] || [];
+
+            catalogList.forEach(item => {
+                // Prevent duplicate entries if already present
+                if (!dynamicProducts.some(p => p.id === item.id)) {
+                    dynamicProducts.push({
+                        id: item.id,
+                        category: (item.category || profile.businessType || "General Retail").toUpperCase(),
+                        name: item.name,
+                        price: item.price,
+                        merchant: profile.shopName || "Independent Shop",
+                        image: item.image || "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300"
+                    });
+                }
+            });
+        });
+
+        res.json({ success: true, products: dynamicProducts });
+    } catch (err) {
+        res.json({ success: true, products: storeProducts });
+    }
 });
 
 // POST: Checkout & Dispatch with Precise Kenyan Tariff & Tax Splits (Uber / Bolt / Jumia Standard)
@@ -23,7 +52,7 @@ router.post('/checkout', (req, res) => {
     const orderId = `ORD_${Date.now()}`;
     const escrowId = `ESC_${Date.now()}`;
     
-    const { itemsTotal, distanceKm, pickupLocation, dropoffLocation, cartItems } = req.body;
+    const { itemsTotal, distanceKm, pickupLocation, dropoffLocation, cartItems, merchantId } = req.body;
     
     const totalPrice = itemsTotal || 1500;
     const km = distanceKm || 6.5;
@@ -66,6 +95,29 @@ router.post('/checkout', (req, res) => {
     };
 
     storeOrders.push(newOrder);
+
+    // Automatically sync and push incoming order into the specific merchant's active dashboard orders pool
+    const targetMerchantId = merchantId || 'MERCH_DEF_172';
+    if (!global.merchantOrders) {
+        global.merchantOrders = {};
+    }
+    if (!global.merchantOrders[targetMerchantId]) {
+        global.merchantOrders[targetMerchantId] = [];
+    }
+    
+    global.merchantOrders[targetMerchantId].push({
+        orderId,
+        items: cartItems || [{ name: "Store Item", qty: 1, price: totalPrice }],
+        totalAmount: totalPrice,
+        status: 'PENDING_VENDOR_ACCEPTANCE',
+        createdAt: Date.now()
+    });
+
+    // Real-time socket broadcast to the merchant dashboard
+    if (global.io) {
+        global.io.to(targetMerchantId).emit('new_customer_order', { orderId });
+    }
+
     res.json({ success: true, message: "Order auto-dispatched, merchant paid, and escrow locked!", orderRecord: newOrder });
 });
 
