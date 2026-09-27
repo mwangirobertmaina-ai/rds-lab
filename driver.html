@@ -137,6 +137,23 @@
     .btn-snaps { background: #374151; color: var(--cyan); border: 1px solid var(--cyan); margin-bottom: 8px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-snaps:hover { background: var(--cyan); color: #000; }
 
+    /* Ringing Alert Overlay / Banner */
+    #incomingAlertBanner {
+      display: none;
+      background: linear-gradient(135deg, rgba(255,51,102,0.9), rgba(255,215,0,0.9));
+      color: #000;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 15px;
+      animation: pulseAlert 0.8s infinite alternate;
+    }
+    @keyframes pulseAlert {
+      from { transform: scale(1); opacity: 0.9; }
+      to { transform: scale(1.02); opacity: 1; }
+    }
+
     /* Camera Modal Overlay */
     #cameraModal {
       display: none;
@@ -238,8 +255,8 @@
 
             <label>Select Fleet Category</label>
             <select id="regVehicleType">
-                <option value="BODA">Boda (Motorbike - Quick Delivery & Rides)</option>
-                <option value="CAB">Cab (Car - Comfort Ride & Heavy Logistics)</option>
+                <option value="BODA">Boda (Motorbike - Direct Ride & Quick Delivery)</option>
+                <option value="CAB">Cab (Car - Direct Comfort Ride & Heavy Logistics)</option>
             </select>
 
             <label>Vehicle Number Plate</label>
@@ -317,14 +334,18 @@
 
     <!-- DISPATCH & FULFILLMENT VIEW -->
     <div id="viewDispatches" class="app-view">
+        <div id="incomingAlertBanner">
+            🚨 NEW RIDE / DELIVERY REQUEST RECEIVED! RINGING RADAR...
+        </div>
+
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>📦 INCOMING RIDE & DELIVERY DISPATCHES</span>
+            <span>📦 UNIFIED USER RIDES & MERCHANT DELIVERIES RADAR</span>
         </div>
 
         <div class="checkout-panel">
-            <h3>Direct Customer & Merchant Requests</h3>
+            <h3>Incoming Direct Rides & Merchant Dispatches</h3>
             <div id="driverDispatchesContainer">
-                <em style="color:var(--text-dim); font-size: 0.75rem;">Scanning radar for incoming rides and deliveries...</em>
+                <em style="color:var(--text-dim); font-size: 0.75rem;">Scanning radar for incoming user rides, cab/boda requests, and store dispatches...</em>
             </div>
         </div>
     </div>
@@ -389,8 +410,57 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             initMapSafely();
-            socket.on('orderListUpdated', () => { fetchDriverDispatches(); });
+            socket.on('orderListUpdated', () => {
+                triggerRingingAlert();
+                fetchDriverDispatches();
+            });
+            socket.on('new_customer_order', () => {
+                triggerRingingAlert();
+                fetchDriverDispatches();
+            });
         });
+
+        // --- WEB AUDIO API RINGING ALERT ---
+        function triggerRingingAlert() {
+            // Show visual banner
+            const banner = document.getElementById('incomingAlertBanner');
+            if (banner) {
+                banner.style.display = 'block';
+                setTimeout(() => { banner.style.display = 'none'; }, 6000);
+            }
+
+            // Play synthesized ring tone using Web Audio API
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                let beepCount = 0;
+                const interval = setInterval(() => {
+                    if (beepCount >= 4) {
+                        clearInterval(interval);
+                        return;
+                    }
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitch ring
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.4);
+                    beepCount++;
+                }, 500);
+            } catch (e) {
+                console.log("Audio alert suppressed by browser policy.");
+            }
+        }
+        // ----------------------------------
 
         // --- LIVE CAMERA SNAP FUNCTIONS ---
         async function openCamera(targetType, titleText) {
@@ -576,12 +646,16 @@
         function renderDriverDispatches(dispatches) {
             const container = document.getElementById('driverDispatchesContainer');
             if (!dispatches || dispatches.length === 0) {
-                container.innerHTML = '<em style="color:var(--text-dim); font-size: 0.75rem;">No incoming rides or deliveries on radar.</em>';
+                container.innerHTML = '<em style="color:var(--text-dim); font-size: 0.75rem;">No incoming direct user rides or merchant dispatches on radar.</em>';
                 return;
             }
             let html = '';
-            dispatches.slice(-5).reverse().forEach(d => {
+            dispatches.slice(-6).reverse().forEach(d => {
                 const isAccepted = d.status === 'ACCEPTED_BY_DRIVER' || d.status === 'COMPLETED';
+                const isDirect = d.isDirectRide;
+                const dispatchTypeLabel = isDirect ? '⚡ Direct User Ride Request (Cab / Boda)' : '📦 Store / Merchant Order Dispatch';
+                const typeColor = isDirect ? 'var(--gold)' : 'var(--cyan)';
+
                 html += `
                     <div class="live-order-card">
                         <div class="live-order-header">
@@ -589,9 +663,10 @@
                             <span style="color: var(--neon-green);">${d.status}</span>
                         </div>
                         <div style="font-size: 0.75rem; color: #fff; margin-bottom: 8px;">
+                            <div style="color: ${typeColor}; font-weight: bold; margin-bottom: 3px;">${dispatchTypeLabel}</div>
                             <div>📍 Pickup: ${d.pickup}</div>
                             <div>🏁 Dropoff: ${d.destination}</div>
-                            <div>💰 Fare / Total: <strong>${d.currency} ${Number(d.total).toLocaleString()}</strong></div>
+                            <div>💰 Total / Fare: <strong>${d.currency} ${Number(d.total).toLocaleString()}</strong></div>
                         </div>
                         ${!isAccepted ? `<button onclick="acceptDispatch('${d.id}')" class="btn-cyan" style="padding:8px; font-size:0.7rem;">Accept Dispatch & Route</button>` : `<button onclick="completeDispatch('${d.id}')" style="background:var(--gold); color:#000; padding:8px; font-size:0.7rem;">Complete & Release Escrow</button>`}
                     </div>

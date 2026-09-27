@@ -7,8 +7,31 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="/socket.io/socket.io.js"></script>
+    <style>
+        @keyframes pulseAlert {
+            from { transform: scale(1); opacity: 0.9; }
+            to { transform: scale(1.02); opacity: 1; }
+        }
+        .ringing-banner {
+            animation: pulseAlert 0.8s infinite alternate;
+        }
+    </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+
+    <!-- INCOMING ORDER RINGER / ALERT BANNER -->
+    <div id="incomingOrderAlert" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-full mx-4 bg-gradient-to-r from-emerald-500 to-sky-500 text-slate-950 p-4 rounded-2xl shadow-2xl ringing-banner border-2 border-white flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="bg-slate-950 text-emerald-400 p-3 rounded-xl text-xl animate-bounce">
+                <i class="fa-solid fa-bell"></i>
+            </div>
+            <div>
+                <h4 class="font-black text-sm tracking-wide">🚨 NEW INCOMING ORDER!</h4>
+                <p class="text-xs font-semibold" id="alertOrderDetails">A customer just placed an order. Check your live feed!</p>
+            </div>
+        </div>
+        <button onclick="dismissOrderAlert()" class="bg-slate-950 hover:bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition">Dismiss</button>
+    </div>
 
     <!-- VIEW 1: AUTHENTICATION / LOGIN WITH SMS TOKEN -->
     <div id="viewAuth" class="max-w-md mx-auto mt-16 p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
@@ -46,7 +69,7 @@
     <div id="viewRegister" class="max-w-2xl mx-auto mt-10 p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl hidden">
         <div class="text-center mb-6">
             <h1 class="text-xl font-bold text-emerald-400">Merchant Registration & Verification</h1>
-            <p class="text-xs text-slate-400 mt-1">Applications are reviewed and approved by admin (mwangirobertmaina@gmail.com).</p>
+            <p class="text-xs text-slate-400 mt-1">Applications are reviewed and approved by admin.</p>
         </div>
 
         <form onsubmit="submitMerchantRegistration(event)" class="space-y-4">
@@ -109,7 +132,7 @@
                     </div>
                 </div>
                 <input type="hidden" id="regPassportInput" value="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300">
-                <div id="ownerIdPreview" class="text-xs text-emerald-400">Default image selected (or snap photo / upload file).</div>
+                <div id="ownerIdPreview" class="text-xs text-emerald-400">Default image selected.</div>
             </div>
 
             <!-- Storefront / Shop Photo -->
@@ -127,7 +150,7 @@
                     </div>
                 </div>
                 <input type="hidden" id="regStorePhotoInput" value="https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=300">
-                <div id="storePhotoPreview" class="text-xs text-emerald-400">Default storefront image selected (or snap photo / upload file).</div>
+                <div id="storePhotoPreview" class="text-xs text-emerald-400">Default storefront image selected.</div>
             </div>
 
             <div class="flex space-x-3 pt-2">
@@ -158,7 +181,6 @@
 
     <!-- VIEW 3: LIVE VENDOR CONSOLE -->
     <div id="viewDashboard" class="hidden min-h-screen flex flex-col">
-        <!-- Top Navigation Header -->
         <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-lg">
             <div class="flex items-center space-x-3">
                 <div class="bg-emerald-500 text-slate-950 p-2 rounded-lg font-black text-xl"><i class="fa-solid fa-store"></i></div>
@@ -305,6 +327,49 @@
             showDashboard();
         }
 
+        // --- WEB AUDIO API INCOMING ORDER RINGER ---
+        function triggerMerchantRinger(orderId) {
+            const banner = document.getElementById('incomingOrderAlert');
+            const details = document.getElementById('alertOrderDetails');
+            if (details) details.innerText = `New order ${orderId} received for ${currentShopName}!`;
+            if (banner) banner.classList.remove('hidden');
+
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                let count = 0;
+                const ringInterval = setInterval(() => {
+                    if (count >= 5) {
+                        clearInterval(ringInterval);
+                        return;
+                    }
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5 note
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                    count++;
+                }, 400);
+            } catch (e) {
+                console.log("Audio alert suppressed.");
+            }
+        }
+
+        function dismissOrderAlert() {
+            document.getElementById('incomingOrderAlert').classList.add('hidden');
+        }
+        // ------------------------------------------
+
         function switchAuthMode(mode) {
             if (mode === 'REGISTER') {
                 document.getElementById('viewAuth').classList.add('hidden');
@@ -351,7 +416,7 @@
                 const videoElement = document.getElementById('cameraStream');
                 videoElement.srcObject = mediaStreamInstance;
             } catch (err) {
-                alert("Unable to access camera. Please check camera permissions.");
+                alert("Unable to access camera.");
                 closeCameraModal();
             }
         }
@@ -377,7 +442,7 @@
             const dataUrl = canvasElement.toDataURL('image/jpeg', 0.85);
             if (activeTargetInput) activeTargetInput.value = dataUrl;
             if (activePreviewElement) {
-                activePreviewElement.innerHTML = `<img src="${dataUrl}" class="w-10 h-10 rounded-lg object-cover border border-emerald-500/50 inline-block mr-2"> <span class="text-emerald-400 font-semibold">✅ Live Photo Captured Successfully!</span>`;
+                activePreviewElement.innerHTML = `<img src="${dataUrl}" class="w-10 h-10 rounded-lg object-cover border border-emerald-500/50 inline-block mr-2"> <span class="text-emerald-400 font-semibold">✅ Live Photo Captured!</span>`;
             }
 
             closeCameraModal();
@@ -407,7 +472,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ ${data.message} Email notification sent to admin (mwangirobertmaina@gmail.com).`);
+                    alert(`✅ ${data.message}`);
                     switchAuthMode('LOGIN');
                 } else {
                     alert(data.error || "Registration failed.");
@@ -420,7 +485,7 @@
             const token = document.getElementById('loginToken').value.trim();
 
             if (!phone || !token) {
-                alert("Enter your phone number and SMS login token.");
+                alert("Enter phone and token.");
                 return;
             }
 
@@ -438,7 +503,7 @@
                     localStorage.setItem('rds_shopName', currentShopName);
                     showDashboard();
                 } else {
-                    alert(data.error || "Invalid login credentials or token.");
+                    alert(data.error || "Invalid login credentials.");
                 }
             } catch (e) { alert("Network connection error."); }
         }
@@ -448,16 +513,16 @@
             document.getElementById('viewRegister').classList.add('hidden');
             document.getElementById('viewDashboard').classList.remove('hidden');
             
-            // Join targeted socket room mapped strictly to this specific merchant ID
             socket.emit('join_merchant_room', currentMerchantId);
             loadDashboardData();
         }
 
-        // Real-time targeted socket listeners
+        // Real-time targeted socket listeners with audio ringer
         socket.on('new_customer_order', (order) => { 
             loadOrders(); 
-            alert(`🚨 New Customer Order Received for ${currentShopName}! (ID: ${order.orderId})`); 
+            triggerMerchantRinger(order.orderId || 'NEW_ORDER');
         });
+        socket.on('orderListUpdated', () => { loadOrders(); });
         socket.on('new_driver_dispatch', () => { loadDriverQueue(); });
 
         async function loadDashboardData() {
