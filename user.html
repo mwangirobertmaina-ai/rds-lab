@@ -57,10 +57,9 @@
         .delivery-address-row h3 { font-size: 0.95rem; color: #fff; display: flex; align-items: center; gap: 6px; }
         .delivery-address-row h3 i { color: var(--glovo-yellow); }
 
-        /* Expanded Service Bubbles including Cab & Boda */
         .service-bubbles {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 6px;
             margin-bottom: 18px;
         }
@@ -218,9 +217,19 @@
         .live-order-card { background: rgba(0,0,0,0.4); border: 1px solid #374151; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
         .live-order-header { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; color: var(--cyan); font-weight: bold; }
 
-        /* Rider section styling */
         .rider-card { background: rgba(168,85,247,0.1); border: 1px solid var(--stage-purple); border-radius: 10px; padding: 10px; margin-top: 10px; display: flex; align-items: center; gap: 10px; }
         .rider-avatar { width: 40px; height: 40px; background: var(--stage-purple); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #fff; }
+
+        .rider-live-icon {
+            background: var(--stage-purple);
+            color: #fff;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 34px;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.8);
+        }
     </style>
 </head>
 <body>
@@ -254,33 +263,28 @@
         </div>
     </div>
 
-    <!-- VIEW 2: HOME STOREFRONT, SHOPS & RIDE-HAILING (CAB & BODA) -->
+    <!-- VIEW 2: HOME STOREFRONT & RIDE CHOICE -->
     <div id="viewHome" class="app-view">
         <div class="uber-header">
-            <div class="delivery-location-label">Current Location / Destination</div>
+            <div class="delivery-location-label">Service & Transport Choice</div>
             <div class="delivery-address-row">
                 <h3 id="currentSelectedShopTitle"><i class="fa-solid fa-location-dot"></i> Nairobi CBD (Kenyatta Ave)</h3>
                 <span class="user-pill" id="activeShopBadge">Live Feed</span>
             </div>
         </div>
 
-        <!-- Expanded Service Bubbles (Shops, Supermarket, Restaurant, Hotel, Boda, Cab) -->
         <div class="service-bubbles">
             <div class="bubble-btn active" onclick="filterServiceType('ALL', this)">
                 <i class="fa-solid fa-bolt"></i>
-                <span>All Shops</span>
+                <span>Shops</span>
             </div>
             <div class="bubble-btn" onclick="filterServiceType('SUPERMARKET', this)">
                 <i class="fa-solid fa-cart-shopping"></i>
-                <span>Supermarket</span>
+                <span>Market</span>
             </div>
-            <div class="bubble-btn" onclick="filterServiceType('RESTAURANT', this)">
-                <i class="fa-solid fa-utensils"></i>
-                <span>Food</span>
-            </div>
-            <div class="bubble-btn" onclick="requestRide('MOTORBIKE', this)">
+            <div class="bubble-btn" onclick="requestRide('BODA', this)">
                 <i class="fa-solid fa-motorcycle"></i>
-                <span>Boda Boda</span>
+                <span>Boda Ride</span>
             </div>
             <div class="bubble-btn" onclick="requestRide('CAR', this)">
                 <i class="fa-solid fa-taxi"></i>
@@ -289,13 +293,12 @@
         </div>
 
         <div id="merchantFeedContainer">
-            <div class="section-title">Featured Merchants & Hubs</div>
+            <div class="section-title">Select Shop to Buy Commodity</div>
             <div class="merchant-vertical-feed" id="merchantFeedList">
                 <em style="color:var(--text-dim); text-align:center; padding:15px; font-size:0.75rem;">Loading nearby merchant shops...</em>
             </div>
         </div>
 
-        <!-- Standalone Ride Hailing Booking Panel -->
         <div id="rideBookingSection" style="display: none;">
             <div class="checkout-panel">
                 <h3 id="rideBookingHeading"><i class="fa-solid fa-taxi"></i> Request Standalone Ride</h3>
@@ -303,11 +306,11 @@
                 <input type="text" id="ridePickupInput" value="Nairobi CBD">
                 
                 <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Drop-off Destination</label>
-                <input type="text" id="rideDestInput" value="Westlands (Sarit Centre)">
+                <input type="text" id="rideDestInput" value="Kasarani (Mwiki Rd)">
                 
                 <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; font-size: 0.75rem; margin: 8px 0;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Estimated Distance:</span> <strong id="rideDistDisplay">4.2 km</strong></div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Fare Amount:</span> <strong id="rideFareDisplay" style="color:var(--neon-green);">KES 350.00</strong></div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Estimated Distance:</span> <strong id="rideDistDisplay">12.5 km</strong></div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Fare Amount:</span> <strong id="rideFareDisplay" style="color:var(--neon-green);">KES 712.50</strong></div>
                 </div>
 
                 <button onclick="confirmRideBooking()" class="btn-cyan">Dispatch Driver Now ➔</button>
@@ -329,7 +332,7 @@
         <div class="uber-header">
             <div class="delivery-location-label">Logistics & Fleet Dispatch</div>
             <div class="delivery-address-row">
-                <h3><i class="fa-solid fa-motorcycle"></i> Escrow & Assigned Rider</h3>
+                <h3><i class="fa-solid fa-motorcycle"></i> System Escrow & Rider Telemetry</h3>
             </div>
         </div>
 
@@ -341,17 +344,16 @@
             <input type="text" id="pickupInput" value="Nairobi CBD" oninput="updateCoordsFromInputs()">
             
             <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Drop-off Destination</label>
-            <input type="text" id="destinationInput" value="Westlands" oninput="updateCoordsFromInputs()">
+            <input type="text" id="destinationInput" value="Kasarani" oninput="updateCoordsFromInputs()">
             
             <input type="hidden" id="pickupLat" value="-1.286389">
             <input type="hidden" id="pickupLng" value="36.817223">
-            <input type="hidden" id="destLat" value="-1.265556">
-            <input type="hidden" id="destLng" value="36.802778">
+            <input type="hidden" id="destLat" value="-1.215000">
+            <input type="hidden" id="destLng" value="36.890000">
             
-            <div style="font-size: 0.75rem; color: var(--neon-green); margin-top:2px;">Distance: <strong id="calculatedDistanceDisplay">3.5 km</strong></div>
+            <div style="font-size: 0.75rem; color: var(--neon-green); margin-top:2px;">Accurate Road Distance: <strong id="calculatedDistanceDisplay">12.5 km</strong></div>
         </div>
 
-        <!-- Dedicated Rider Section -->
         <div class="checkout-panel" id="riderSectionPanel">
             <h3>2. Assigned Rider / Driver Telemetry</h3>
             <div class="rider-card">
@@ -359,32 +361,38 @@
                 <div>
                     <strong style="font-size:0.8rem; color:var(--cyan);" id="assignedRiderName">John Kiprop (Boda Rider)</strong>
                     <div style="font-size:0.7rem; color:var(--text-dim);">Vehicle: Honda Ace (KBX 420Y) • Rating: 4.9★</div>
-                    <div style="font-size:0.7rem; color:var(--neon-green); margin-top:2px;">Status: En route to pickup (ETA 3 mins)</div>
+                    <div style="font-size:0.7rem; color:var(--neon-green); margin-top:2px;">Status: En route to pickup & delivery (ETA 3 mins)</div>
                 </div>
             </div>
         </div>
 
         <div class="checkout-panel">
-            <h3>3. Financial Breakdown (2% Fee on Top)</h3>
+            <h3>3. Real-Time Tariff & Settlement Split</h3>
             <div style="background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 8px; font-size: 0.75rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Commodity / Fare (100%):</span> <strong id="previewProduct">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>System Fee (2% on top):</span> <strong id="previewSystemFee" style="color:var(--gold);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Delivery Fee:</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>KRA Tax (16% on Fee):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Items Total:</span> <strong id="previewProduct">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Shop Owner Payout (100% on Dispatch):</span> <strong id="previewMerchantPayout" style="color:var(--neon-green);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>System Fee (2% on commodity):</span> <strong id="previewSystemFee" style="color:var(--gold);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Calculated Delivery Fee:</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Rider Payout (95% of Delivery):</span> <strong id="previewDriverPayout">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>App Delivery Commission (5%):</span> <strong id="previewAppCommission">0.00</strong></div>
                 <hr style="border:0; border-top:1px solid #374151; margin:5px 0;">
-                <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span>Total User Pays:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Total System Income:</span> <strong id="previewTotalSystemIncome" style="color:var(--gold);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>KRA Tax (16% on System Income):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Net System Revenue Retained:</span> <strong id="previewNetRevenue" style="color:var(--cyan);">0.00</strong></div>
+                <hr style="border:0; border-top:1px solid #374151; margin:5px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span>Gross Escrow Total:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
             </div>
         </div>
 
         <div class="checkout-panel">
-            <h3>4. Secure Dispatch Checkout</h3>
+            <h3>4. Pay Gross Total into System Escrow</h3>
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:3px;">M-Pesa Phone</label>
             <input type="text" id="custPhone" value="254721862397">
-            <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Engage Escrow & Dispatch</button>
+            <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Pay Full Escrow & Initiate Flow</button>
         </div>
 
         <div class="checkout-panel">
-            <h3>5. Active Dispatches</h3>
+            <h3>5. Active Escrow Dispatches</h3>
             <div id="liveOrderListContainer">
                 <em style="color:var(--text-dim); font-size:0.75rem;">No active dispatch found.</em>
             </div>
@@ -417,7 +425,7 @@
 
     <input type="hidden" id="storeBusinessId" value="MERCH_DEF_172">
     <input type="hidden" id="storeCurrency" value="KES">
-    <input type="hidden" id="activeRideType" value="">
+    <input type="hidden" id="activeRideType" value="BODA">
 
     <div class="bottom-nav" id="bottomNav" style="display: none;">
         <a class="nav-item active" onclick="switchTab('viewHome', this)"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Storefront</a>
@@ -426,11 +434,7 @@
     </div>
 
     <script>
-        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-        const LOCAL_API = "http://localhost:3000";
-        const CLOUD_API = "https://rds-lab.onrender.com";
-        let API_BASE = isLocal ? LOCAL_API : (window.location.origin.includes("rds-lab") ? window.location.origin : CLOUD_API);
-        if (window.location.protocol === "file:") { API_BASE = LOCAL_API; }
+        const API_BASE = ""; 
 
         let currentUser = null;
         let allTenantsCache = [];
@@ -439,6 +443,7 @@
         let map = null;
         let pickupMarker = null;
         let destinationMarker = null;
+        let liveRiderMarker = null;
         let routePolyline = null;
         let socket = io();
 
@@ -511,8 +516,7 @@
         function renderFallbackTenants() {
             allTenantsCache = [
                 { merchantId: 'MERCH_DEF_172', shopName: 'Sovereign Supermarket', businessType: 'SUPERMARKET', gpsLat: -1.2863, gpsLon: 36.8172, banner: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=500' },
-                { merchantId: 'MERCH_JAVA_88', shopName: 'Java House Restaurant', businessType: 'RESTAURANT', gpsLat: -1.2789, gpsLon: 36.8123, banner: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500' },
-                { merchantId: 'MERCH_SANK_99', shopName: 'Sankara Luxury Hotel', businessType: 'HOTEL', gpsLat: -1.2650, gpsLon: 36.8020, banner: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500' }
+                { merchantId: 'MERCH_JAVA_88', shopName: 'Java House Restaurant', businessType: 'RESTAURANT', gpsLat: -1.2789, gpsLon: 36.8123, banner: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500' }
             ];
             renderMerchantFeed(allTenantsCache);
         }
@@ -531,41 +535,109 @@
             }
         }
 
-        function requestRide(rideType, el) {
+        async function requestRide(rideType, el) {
             document.querySelectorAll('.bubble-btn').forEach(b => b.classList.remove('active'));
             if(el) el.classList.add('active');
             document.getElementById('activeRideType').value = rideType;
+
+            cart = {};
+            recalculateCartSummary();
 
             document.getElementById('merchantFeedContainer').style.display = 'none';
             document.getElementById('catalogViewSection').style.display = 'none';
             document.getElementById('rideBookingSection').style.display = 'block';
 
-            const name = rideType === 'MOTORBIKE' ? 'Boda Boda Ride' : 'Cab Ride (Car)';
-            document.getElementById('rideBookingHeading').innerHTML = `<i class="fa-solid ${rideType === 'MOTORBIKE' ? 'fa-motorcycle' : 'fa-taxi'}"></i> Request ${name}`;
-            document.getElementById('rideFareDisplay').innerText = rideType === 'MOTORBIKE' ? 'KES 200.00' : 'KES 550.00';
+            const name = rideType === 'BODA' ? 'Boda Boda Ride' : 'Cab Ride (Car)';
+            document.getElementById('rideBookingHeading').innerHTML = `<i class="fa-solid ${rideType === 'BODA' ? 'fa-motorcycle' : 'fa-taxi'}"></i> Request ${name}`;
             document.getElementById('currentSelectedShopTitle').innerHTML = `<i class="fa-solid fa-route" style="color:var(--cyan)"></i> Standalone ${name}`;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/user/calculate-total`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        itemPriceTotal: 0,
+                        pickupCoords: { lat: -1.286389, lng: 36.817223 },
+                        destinationCoords: { lat: -1.215000, lng: 36.890000 },
+                        vehicleType: rideType
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const s = data.split;
+                    document.getElementById('rideDistDisplay').innerText = `${data.distanceKm} km`;
+                    document.getElementById('rideFareDisplay').innerText = `KES ${s.userPays.toLocaleString()}`;
+                    
+                    document.getElementById('calculatedDistanceDisplay').innerText = `${data.distanceKm} km`;
+                    document.getElementById('previewProduct').innerText = `KES 0.00`;
+                    document.getElementById('previewMerchantPayout').innerText = `KES 0.00`;
+                    document.getElementById('previewSystemFee').innerText = `KES 0.00`;
+                    document.getElementById('previewDelivery').innerText = `KES ${s.deliveryFee.toLocaleString()}`;
+                    document.getElementById('previewDriverPayout').innerText = `KES ${s.riderShare.toLocaleString()}`;
+                    document.getElementById('previewAppCommission').innerText = `KES ${s.appDeliveryCommission.toLocaleString()}`;
+                    document.getElementById('previewTotalSystemIncome').innerText = `KES ${s.systemFee.toLocaleString()}`;
+                    document.getElementById('previewKraTax').innerText = `KES ${s.tax.toLocaleString()}`;
+                    document.getElementById('previewNetRevenue').innerText = `KES ${s.netSystemRevenue.toLocaleString()}`;
+                    document.getElementById('previewTotal').innerText = `KES ${s.userPays.toLocaleString()}`;
+                }
+            } catch (e) {}
         }
 
         async function confirmRideBooking() {
-            const rideType = document.getElementById('activeRideType').value || 'MOTORBIKE';
-            const fare = rideType === 'MOTORBIKE' ? 200 : 550;
+            const rideType = document.getElementById('activeRideType').value || 'BODA';
             const pickup = document.getElementById('ridePickupInput').value.trim();
             const destination = document.getElementById('rideDestInput').value.trim();
+            const phone = currentUser ? currentUser.phone : document.getElementById('custPhone').value.trim();
 
-            cart = {
-                'RIDE_FARE': { name: `${rideType === 'MOTORBIKE' ? 'Boda Boda' : 'Cab'} Ride (${pickup} to ${destination})`, price: fare, qty: 1 }
-            };
-            document.getElementById('pickupInput').value = pickup;
-            document.getElementById('destinationInput').value = destination;
+            try {
+                const resCalc = await fetch(`${API_BASE}/api/user/calculate-total`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        itemPriceTotal: 0,
+                        pickupCoords: { lat: -1.286389, lng: 36.817223 },
+                        destinationCoords: { lat: -1.215000, lng: 36.890000 },
+                        vehicleType: rideType
+                    })
+                });
+                const calcData = await resCalc.json();
+                const deliveryFee = calcData.success ? calcData.split.deliveryFee : (rideType === 'BODA' ? 450 : 850);
 
-            await recalculateCartSummary();
-            switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
+                const res = await fetch(`${API_BASE}/api/user/checkout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': 'MERCH_DEF_172' },
+                    body: JSON.stringify({
+                        phone,
+                        itemPriceTotal: 0,
+                        pickupCoords: { lat: -1.286389, lng: 36.817223 },
+                        destinationCoords: { lat: -1.215000, lng: 36.890000 },
+                        vehicleType: rideType,
+                        pickup,
+                        destination,
+                        businessId: 'MERCH_DEF_172',
+                        userId: currentUser ? currentUser.id : 'ANONYMOUS',
+                        items: [{ name: `${rideType === 'BODA' ? 'Boda Boda' : 'Cab'} Ride`, qty: 1, price: deliveryFee }]
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`✅ ${rideType === 'BODA' ? 'Boda' : 'Cab'} Ride Dispatched Successfully! Order ID: ${data.orderId}`);
+                    document.getElementById('pickupInput').value = pickup;
+                    document.getElementById('destinationInput').value = destination;
+                    switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
+                    fetchLiveOrders();
+                } else {
+                    alert(data.error || "Failed to book ride.");
+                }
+            } catch (e) {
+                alert("Network error while booking ride.");
+            }
         }
 
         function renderMerchantFeed(tenants) {
             const feed = document.getElementById('merchantFeedList');
             if (!tenants || tenants.length === 0) {
-                feed.innerHTML = '<em style="color:var(--text-dim); text-align:center; padding:20px; font-size:0.75rem;">No merchant shops found in this category.</em>';
+                feed.innerHTML = '<em style="color:var(--text-dim); text-align:center; padding:20px; font-size:0.75rem;">No merchant shops found.</em>';
                 return;
             }
             let html = '';
@@ -580,7 +652,7 @@
                         <div class="store-info-box">
                             <div>
                                 <h4>${t.shopName}</h4>
-                                <p>Free Delivery over KES 1,000</p>
+                                <p>Commodity 100% to Shop on Dispatch • 95% Rider Payout</p>
                             </div>
                             <span class="store-tag">${t.businessType || 'RETAIL'}</span>
                         </div>
@@ -686,8 +758,8 @@
             for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
             const pLat = Number(document.getElementById('pickupLat').value) || -1.286389;
             const pLng = Number(document.getElementById('pickupLng').value) || 36.817223;
-            const dLat = Number(document.getElementById('destLat').value) || -1.265556;
-            const dLng = Number(document.getElementById('destLng').value) || 36.802778;
+            const dLat = Number(document.getElementById('destLat').value) || -1.215000;
+            const dLng = Number(document.getElementById('destLng').value) || 36.890000;
             const merchantId = document.getElementById('storeBusinessId').value;
             const curr = document.getElementById('storeCurrency').value;
 
@@ -699,7 +771,7 @@
                         itemPriceTotal: totalPrice,
                         pickupCoords: { lat: pLat, lng: pLng },
                         destinationCoords: { lat: dLat, lng: dLng },
-                        vehicleType: "MOTORBIKE", businessId: merchantId
+                        vehicleType: document.getElementById('activeRideType').value || "BODA", businessId: merchantId
                     })
                 });
                 const data = await res.json();
@@ -707,9 +779,14 @@
                     const s = data.split;
                     document.getElementById('calculatedDistanceDisplay').innerText = `${data.distanceKm} km`;
                     document.getElementById('previewProduct').innerText = `${curr} ${s.productAmount.toLocaleString()}`;
-                    document.getElementById('previewSystemFee').innerText = `${curr} ${s.systemFee.toLocaleString()}`;
+                    document.getElementById('previewMerchantPayout').innerText = `${curr} ${s.shopOwnerPayout.toLocaleString()}`;
+                    document.getElementById('previewSystemFee').innerText = `${curr} ${s.systemCommodityFee.toLocaleString()}`;
                     document.getElementById('previewDelivery').innerText = `${curr} ${s.deliveryFee.toLocaleString()}`;
+                    document.getElementById('previewDriverPayout').innerText = `${curr} ${s.riderShare.toLocaleString()}`;
+                    document.getElementById('previewAppCommission').innerText = `${curr} ${s.appDeliveryCommission.toLocaleString()}`;
+                    document.getElementById('previewTotalSystemIncome').innerText = `${curr} ${s.systemFee.toLocaleString()}`;
                     document.getElementById('previewKraTax').innerText = `${curr} ${s.tax.toLocaleString()}`;
+                    document.getElementById('previewNetRevenue').innerText = `${curr} ${s.netSystemRevenue.toLocaleString()}`;
                     document.getElementById('previewTotal').innerText = `${curr} ${s.userPays.toLocaleString()}`;
                 }
             } catch (e) {}
@@ -722,7 +799,11 @@
                 totalPrice += (cart[id].price || 0) * cart[id].qty;
                 cartItemsArray.push({ name: cart[id].name, qty: cart[id].qty, price: cart[id].price });
             }
-            if (totalPrice <= 0) { alert("Please select items or a ride first!"); return; }
+            
+            if (totalPrice <= 0) {
+                const rideType = document.getElementById('activeRideType').value || 'BODA';
+                cartItemsArray = [{ name: `${rideType === 'BODA' ? 'Boda Boda' : 'Cab'} Ride`, qty: 1, price: 0 }];
+            }
 
             const merchantId = document.getElementById('storeBusinessId').value;
             const phone = currentUser ? currentUser.phone : document.getElementById('custPhone').value.trim();
@@ -730,8 +811,9 @@
             const destination = document.getElementById('destinationInput').value.trim();
             const pLat = Number(document.getElementById('pickupLat').value) || -1.286389;
             const pLng = Number(document.getElementById('pickupLng').value) || 36.817223;
-            const dLat = Number(document.getElementById('destLat').value) || -1.265556;
-            const dLng = Number(document.getElementById('destLng').value) || 36.802778;
+            const dLat = Number(document.getElementById('destLat').value) || -1.215000;
+            const dLng = Number(document.getElementById('destLng').value) || 36.890000;
+            const vehicleType = document.getElementById('activeRideType').value || 'BODA';
 
             try {
                 const res = await fetch(`${API_BASE}/api/user/checkout`, {
@@ -741,14 +823,14 @@
                         phone, itemPriceTotal: totalPrice,
                         pickupCoords: { lat: pLat, lng: pLng },
                         destinationCoords: { lat: dLat, lng: dLng },
-                        vehicleType: "MOTORBIKE", pickup, destination, businessId: merchantId,
+                        vehicleType, pickup, destination, businessId: merchantId,
                         userId: currentUser ? currentUser.id : 'ANONYMOUS',
                         items: cartItemsArray
                     })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ Order & Rider Dispatch ${data.orderId} Confirmed!`);
+                    alert(`✅ Full Escrow Secured! Order ${data.orderId} sent to merchant for packaging.`);
                     switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
                     fetchLiveOrders();
                 } else { alert(data.error); }
@@ -769,7 +851,7 @@
         function renderLiveOrderList(orders) {
             const container = document.getElementById('liveOrderListContainer');
             if (!orders || orders.length === 0) {
-                container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No active dispatch.</em>';
+                container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No active escrow dispatch.</em>';
                 return;
             }
             let html = '';
@@ -784,9 +866,10 @@
                         </div>
                         <div style="font-size: 0.75rem; color: #fff; margin-bottom: 4px;">
                             <div>📍 ${o.pickup} ➔ ${o.destination}</div>
-                            <div>💰 Total: <strong>${o.currency} ${o.total.toLocaleString()}</strong></div>
+                            <div>💰 Gross Escrow Held: <strong>${o.currency} ${o.total.toLocaleString()}</strong></div>
+                            <div style="color: var(--glovo-yellow);">Shop Payout (100% on Dispatch): KES ${o.breakdown.shopOwnerPayout.toLocaleString()}</div>
                         </div>
-                        ${!isDismissed ? `<button onclick="dismissOrder('${o.id}')" style="background:var(--alert-red); color:#fff; padding:5px; font-size:0.6rem;">🛑 Cancel & Rollback</button>` : '<em style="color:var(--text-dim); font-size:0.6rem;">Rolled back & refunded.</em>'}
+                        ${!isDismissed ? `<button onclick="dismissOrder('${o.id}')" style="background:var(--alert-red); color:#fff; padding:5px; font-size:0.6rem;">🛑 Cancel & Refund Escrow</button>` : '<em style="color:var(--text-dim); font-size:0.6rem;">Escrow refunded.</em>'}
                     </div>
                 `;
             });
@@ -794,7 +877,7 @@
         }
 
         async function dismissOrder(orderId) {
-            if (!confirm("Dismiss dispatch and release escrow?")) return;
+            if (!confirm("Dismiss dispatch and refund escrow?")) return;
             const merchantId = document.getElementById('storeBusinessId').value;
             try {
                 const res = await fetch(`${API_BASE}/api/user/orders/dismiss`, {
@@ -807,20 +890,74 @@
             } catch (e) {}
         }
 
-        function updateMapMarkersAndPolyline() {
+        async function updateMapMarkersAndPolyline() {
             const pLat = Number(document.getElementById('pickupLat').value) || -1.286389;
-            const pLng = Number(document.getElementById('pickupLng').value) || 36.817223;
-            const dLat = Number(document.getElementById('destLat').value) || -1.265556;
-            const dLng = Number(document.getElementById('destLng').value) || 36.802778;
+            const pLng = Number(document.getElementById('pickupLng').value) === 0 ? 36.817223 : Number(document.getElementById('pickupLng').value) || 36.817223;
+            const dLat = Number(document.getElementById('destLat').value) || -1.215000;
+            const dLng = Number(document.getElementById('destLng').value) || 36.890000;
 
             if (pickupMarker) map.removeLayer(pickupMarker);
             if (destinationMarker) map.removeLayer(destinationMarker);
             if (routePolyline) map.removeLayer(routePolyline);
+            if (liveRiderMarker) map.removeLayer(liveRiderMarker);
 
-            pickupMarker = L.marker([pLat, pLng]).addTo(map).bindPopup("Pickup / Shop");
-            destinationMarker = L.marker([dLat, dLng]).addTo(map).bindPopup("Destination");
-            routePolyline = L.polyline([[pLat, pLng], [dLat, dLng]], {color: '#38bdf8', weight: 3}).addTo(map);
-            map.fitBounds(routePolyline.getBounds(), {padding: [30, 30]});
+            const pickupIcon = L.divIcon({
+                className: 'custom-pin',
+                html: '<div style="background:var(--glovo-yellow);width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 10px var(--glovo-yellow);"></div>',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const destIcon = L.divIcon({
+                className: 'custom-pin',
+                html: '<div style="background:var(--alert-red);width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 10px var(--alert-red);"></div>',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const riderIcon = L.divIcon({
+                className: 'rider-live-icon',
+                html: '<i class="fa-solid fa-motorcycle"></i>',
+                iconSize: [36, 36],
+                iconAnchor: [18, 18]
+            });
+
+            pickupMarker = L.marker([pLat, pLng], {icon: pickupIcon}).addTo(map).bindPopup("Pickup / Shop Location");
+            destinationMarker = L.marker([dLat, dLng], {icon: destIcon}).addTo(map).bindPopup("Customer Drop-off");
+
+            const riderLat = pLat + (dLat - pLat) * 0.15;
+            const riderLng = pLng + (dLng - pLng) * 0.15;
+            liveRiderMarker = L.marker([riderLat, riderLng], {icon: riderIcon}).addTo(map).bindPopup("Assigned Rider (En Route)");
+
+            try {
+                const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${pLng},${pLat};${dLng},${dLat}?overview=full&geometries=geojson`);
+                const data = await response.json();
+                
+                if (data.routes && data.routes.length > 0) {
+                    const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                    routePolyline = L.polyline(coords, {
+                        color: '#38bdf8',
+                        weight: 5,
+                        opacity: 0.85,
+                        smoothFactor: 1
+                    }).addTo(map);
+
+                    map.fitBounds(routePolyline.getBounds(), {padding: [40, 40]});
+                } else {
+                    fallbackStraightLine(pLat, pLng, dLat, dLng);
+                }
+            } catch (err) {
+                fallbackStraightLine(pLat, pLng, dLat, dLng);
+            }
+        }
+
+        function fallbackStraightLine(pLat, pLng, dLat, dLng) {
+            routePolyline = L.polyline([[pLat, pLng], [dLat, dLng]], {
+                color: '#38bdf8',
+                weight: 4,
+                dashArray: '8, 8'
+            }).addTo(map);
+            map.fitBounds(routePolyline.getBounds(), {padding: [40, 40]});
         }
 
         function updateCoordsFromInputs() {
