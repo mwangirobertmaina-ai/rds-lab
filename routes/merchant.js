@@ -246,6 +246,7 @@ router.post('/orders/accept', (req, res) => {
     global.driverQueue.push(dispatchPayload);
     merchantOrders[targetId].splice(orderIndex, 1);
 
+    // Multi-tenant isolated socket event broadcast to the specific merchant room
     if (global.io) {
         global.io.to(targetId).emit('order_dispatched', { orderId });
         global.io.emit('new_driver_dispatch', dispatchPayload);

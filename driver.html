@@ -4,11 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b0f19">
-  <title>RDS | Sovereign Fleet & Rider Terminal</title>
+  <title>RDS Sovereign | Professional Fleet Terminal</title>
 
   <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
     :root {
@@ -93,14 +94,6 @@
       color: #fff;
     }
 
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .section-header h3 { font-size: 1rem; color: #fff; font-weight: 700; }
-
     .checkout-panel {
       background: var(--panel-bg);
       border: 1px solid #222c3d;
@@ -110,15 +103,16 @@
     }
     .checkout-panel h3 { font-size: 0.9rem; margin-bottom: 12px; color: var(--cyan); text-transform: uppercase; }
 
+    label { font-size: 0.7rem; color: var(--text-dim); display: block; margin-bottom: 3px; font-weight: 600; }
     input, select {
       width: 100%;
       background: var(--dark-bg);
       border: 1px solid #374151;
       color: #fff;
-      padding: 10px;
+      padding: 9px;
       margin-bottom: 10px;
       border-radius: 6px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       outline: none;
     }
     input:focus, select:focus { border-color: var(--stage-purple); }
@@ -127,7 +121,7 @@
       background: var(--stage-purple);
       color: #fff;
       border: none;
-      padding: 9px;
+      padding: 10px;
       font-weight: 700;
       width: 100%;
       cursor: pointer;
@@ -140,6 +134,31 @@
     .btn-cyan { background: var(--cyan); color: #000; }
     .btn-cyan:hover { background: var(--neon-green); }
     .btn-gold { background: var(--gold); color: #000; }
+    .btn-snaps { background: #374151; color: var(--cyan); border: 1px solid var(--cyan); margin-bottom: 8px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-snaps:hover { background: var(--cyan); color: #000; }
+
+    /* Camera Modal Overlay */
+    #cameraModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .camera-box {
+      background: var(--panel-bg);
+      border: 1px solid var(--stage-purple);
+      border-radius: 12px;
+      padding: 15px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    video { width: 100%; height: 260px; object-fit: cover; border-radius: 8px; background: #000; margin-bottom: 10px; }
+    canvas { display: none; }
 
     .bottom-nav {
       position: fixed;
@@ -170,7 +189,7 @@
       background: rgba(0,0,0,0.4);
       border: 1px solid #374151;
       border-radius: 8px;
-      padding: 10px;
+      padding: 12px;
       margin-bottom: 10px;
     }
     .live-order-header {
@@ -185,30 +204,82 @@
 </head>
 <body>
 
-    <!-- AUTHENTICATION VIEW -->
+    <!-- LIVE CAMERA MODAL -->
+    <div id="cameraModal">
+        <div class="camera-box">
+            <h3 id="cameraModalTitle" style="color: var(--cyan); margin-bottom: 8px;">Capture Photo</h3>
+            <video id="cameraStream" autoplay playsinline></video>
+            <canvas id="cameraCanvas"></canvas>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="captureSnapshot()" class="btn-cyan">📸 Take Snap</button>
+                <button onclick="closeCameraModal()" style="background: var(--alert-red); color: #fff;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTHENTICATION & REGISTRATION VIEW -->
     <div id="viewAuth" class="app-view active-view">
-        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 20px;">
-            <span>🚀 RIDER & FLEET TERMINAL LOGIN</span>
+        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 15px;">
+            <span>🚀 INTERNATIONAL FLEET COMPLIANCE & CAMERA ONBOARDING</span>
         </div>
 
-        <div class="checkout-panel" style="padding: 20px;">
-            <h2 style="color: var(--cyan); margin-bottom: 6px; font-size: 1.2rem; text-align: center;">Driver Portal</h2>
-            <p style="color: var(--text-dim); font-size: 0.75rem; margin-bottom: 15px; text-align: center;">Sign in to sync real-time GPS telemetry, claim dispatches, and trigger instant B2C payouts.</p>
+        <div class="checkout-panel">
+            <h3 style="color: var(--cyan); text-align: center; margin-bottom: 4px;">Driver & Fleet Registration</h3>
+            <p style="color: var(--text-dim); font-size: 0.7rem; text-align: center; margin-bottom: 12px;">Register your Boda or Cab with live camera snaps & compliance credentials.</p>
 
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Driver Email</label>
-            <input type="email" id="authEmail" value="driver@rds.com">
+            <label>Full Legal Name</label>
+            <input type="text" id="regName" value="Robert Maina">
 
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Mobile Phone (M-Pesa Corridor)</label>
+            <label>Mobile Phone (M-Pesa Payout Number)</label>
             <input type="text" id="authPhone" value="254708374149">
 
+            <label>Email Address</label>
+            <input type="email" id="authEmail" value="driver@rds.com">
+
+            <label>Select Fleet Category</label>
+            <select id="regVehicleType">
+                <option value="BODA">Boda (Motorbike - Quick Delivery & Rides)</option>
+                <option value="CAB">Cab (Car - Comfort Ride & Heavy Logistics)</option>
+            </select>
+
+            <label>Vehicle Number Plate</label>
+            <input type="text" id="regPlate" value="KMC 112A">
+
+            <!-- Compliance Documentation & Live Camera Capture Section -->
+            <div style="border-top: 1px dashed #374151; margin: 12px 0; padding-top: 10px;">
+                <label style="color: var(--stage-purple); font-weight: bold; margin-bottom: 6px;">📸 Live Camera Snaps & Compliance</label>
+                
+                <button type="button" onclick="openCamera('passport', 'Passport Photo / Self-Portrait')" class="btn-snaps"><i class="fa-solid fa-camera"></i> Snap Passport Photo (<span id="status_passport">Pending</span>)</button>
+                
+                <label style="margin-top: 6px;">Certificate of Good Conduct</label>
+                <input type="file" id="docGoodConduct" accept="image/*,.pdf">
+
+                <label>PSV Badge Number & Document</label>
+                <input type="text" id="docPsvBadge" placeholder="PSV Badge No." value="PSV-88219">
+
+                <label>National ID No. or Passport No.</label>
+                <input type="text" id="docNationalId" placeholder="ID / Passport Number" value="34892011">
+
+                <label>Driving Licence Copy</label>
+                <input type="file" id="docDrivingLicence" accept="image/*,.pdf">
+
+                <button type="button" onclick="openCamera('vehicle', 'Vehicle Front & Back Snap')" class="btn-snaps" style="margin-top:6px;"><i class="fa-solid fa-camera"></i> Snap Vehicle Front & Back (<span id="status_vehicle">Pending</span>)</button>
+
+                <label style="margin-top: 6px;">Car Insurance Copy</label>
+                <input type="file" id="docInsurance" accept="image/*,.pdf">
+
+                <label>Inspection Report</label>
+                <input type="file" id="docInspection" accept="image/*,.pdf">
+            </div>
+
             <div id="phoneStep">
-                <button onclick="requestDriverOtp()" class="btn-cyan" style="padding: 12px; font-weight: bold; margin-top: 5px;">Send Verification OTP</button>
+                <button onclick="submitDriverRegistration()" class="btn-cyan" style="margin-top: 5px;">Submit Verification & Send OTP</button>
             </div>
 
             <div id="otpStep" style="display: none; margin-top: 15px;">
-                <label style="font-size: 0.75rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP Code (Use 1234)</label>
+                <label style="color: var(--neon-green);">Enter 4-Digit Verification OTP (Use 1234)</label>
                 <input type="text" id="authOtp" value="1234" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" maxlength="4">
-                <button onclick="verifyDriverOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch Fleet Terminal</button>
+                <button onclick="verifyDriverOtpAndEnter()" style="background: var(--neon-green); color: #000; font-weight: bold;">Verify & Launch Terminal</button>
             </div>
         </div>
     </div>
@@ -216,7 +287,7 @@
     <!-- MAP & GPS TELEMETRY VIEW -->
     <div id="viewMap" class="app-view">
         <div class="telemetry-ribbon">
-            <span>🛰️ 100% AUTOMATIC ZERO-ERROR GPS TRACKING</span>
+            <span>🛰️ REAL-TIME GPS & RADAR DISPATCH</span>
             <span id="nodeLatency">Secure • Active</span>
         </div>
 
@@ -231,9 +302,9 @@
             <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
         </div>
 
-        <div class="corridor-selector" id="dynamicCorridorSelector">
-            <div class="corridor-btn active" onclick="switchCorridor('BIZ-KE', 'Nairobi, Kenya', 'KES', this)">🇰🇪 KE Hub</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London, UK', 'GBP', this)">🇬🇧 UK Hub</div>
+        <div class="corridor-selector">
+            <div class="corridor-btn active" onclick="switchCorridor('MERCH_DEF_172', 'Nairobi Hub', 'KES', this)">🇰🇪 Nairobi Hub</div>
+            <div class="corridor-btn" onclick="switchCorridor('MERCH_JAVA_88', 'Java Corridor', 'KES', this)">☕ Java Corridor</div>
         </div>
 
         <div class="checkout-panel">
@@ -247,13 +318,13 @@
     <!-- DISPATCH & FULFILLMENT VIEW -->
     <div id="viewDispatches" class="app-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>📦 ASSIGNED DISPATCHES & ESCROW SETTLEMENT</span>
+            <span>📦 INCOMING RIDE & DELIVERY DISPATCHES</span>
         </div>
 
         <div class="checkout-panel">
-            <h3>Active Tenant Dispatches</h3>
-            <div id="driverOrdersContainer">
-                <em style="color:var(--text-dim); font-size: 0.75rem;">Scanning multi-tenant matrix for dispatches...</em>
+            <h3>Direct Customer & Merchant Requests</h3>
+            <div id="driverDispatchesContainer">
+                <em style="color:var(--text-dim); font-size: 0.75rem;">Scanning radar for incoming rides and deliveries...</em>
             </div>
         </div>
     </div>
@@ -261,37 +332,38 @@
     <!-- WALLET & B2C PAYOUT VIEW -->
     <div id="viewWallet" class="app-view">
         <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>💰 MULTI-WALLET & INSTANT B2C LIQUIDITY</span>
+            <span>💰 ESCROW WALLET & M-PESA B2C</span>
         </div>
 
         <div class="checkout-panel">
             <h3>Available Earnings</h3>
             <div style="font-size: 1.6rem; font-weight: bold; color: var(--gold); margin-bottom: 10px;" id="walletBalanceDisplay">KES 0.00</div>
             
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Driver ID / Owner ID</label>
+            <label>Driver ID / Owner ID</label>
             <input type="text" id="payoutOwnerId" value="DRV_001">
 
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Withdrawal Amount (<span id="walletCurrencyLabel">KES</span>)</label>
+            <label>Withdrawal Amount (<span id="walletCurrencyLabel">KES</span>)</label>
             <input type="number" id="payoutAmount" value="500">
 
-            <button onclick="triggerB2CPayout()" class="btn-gold">Execute Bank-Grade M-Pesa B2C</button>
+            <button onclick="triggerB2CPayout()" class="btn-gold">Execute M-Pesa B2C Payout</button>
         </div>
     </div>
 
     <!-- PROFILE VIEW -->
     <div id="viewProfile" class="app-view">
-        <div class="section-header" style="margin-bottom: 20px;">
-            <h3>Rider Fleet Profile</h3>
-        </div>
         <div class="checkout-panel">
-            <p><strong>Name:</strong> Sovereign Driver</p>
-            <p style="margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">254708374149</span></p>
-            <p style="margin-top: 6px;"><strong>Node Status:</strong> <span style="color: var(--neon-green);">Active Fleet Operator</span></p>
+            <h3>Verified Fleet Profile</h3>
+            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Name:</strong> <span id="profileName">Robert Maina</span></p>
+            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">254708374149</span></p>
+            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Vehicle Category:</strong> <span id="profileVehicle">Boda (Motorbike)</span></p>
+            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Compliance Status:</strong> <span style="color: var(--neon-green);">Fully Verified ✓</span></p>
         </div>
     </div>
 
-    <input type="hidden" id="storeBusinessId" value="BIZ-KE">
+    <input type="hidden" id="storeBusinessId" value="MERCH_DEF_172">
     <input type="hidden" id="storeCurrency" value="KES">
+    <input type="hidden" id="capturedPassport" value="">
+    <input type="hidden" id="capturedVehicle" value="">
 
     <div class="bottom-nav" id="bottomNav" style="display: none;">
         <a class="nav-item active" onclick="switchTab('viewMap', this)"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>GPS Map</a>
@@ -312,11 +384,57 @@
         let lastLat = -1.286389;
         let lastLng = 36.817223;
         let socket = io();
+        let activeCameraTarget = null;
+        let mediaStream = null;
 
         window.addEventListener('DOMContentLoaded', () => {
             initMapSafely();
-            socket.on('orderListUpdated', () => { fetchDriverOrders(); });
+            socket.on('orderListUpdated', () => { fetchDriverDispatches(); });
         });
+
+        // --- LIVE CAMERA SNAP FUNCTIONS ---
+        async function openCamera(targetType, titleText) {
+            activeCameraTarget = targetType;
+            document.getElementById('cameraModalTitle').innerText = titleText;
+            document.getElementById('cameraModal').style.display = 'flex';
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+                document.getElementById('cameraStream').srcObject = mediaStream;
+            } catch (err) {
+                alert("Camera access denied or unavailable. Ensure HTTPS or localhost permissions.");
+                closeCameraModal();
+            }
+        }
+
+        function closeCameraModal() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            document.getElementById('cameraModal').style.display = 'none';
+        }
+
+        function captureSnapshot() {
+            const video = document.getElementById('cameraStream');
+            const canvas = document.getElementById('cameraCanvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+            if (activeCameraTarget === 'passport') {
+                document.getElementById('capturedPassport').value = dataUrl;
+                document.getElementById('status_passport').innerText = "Captured ✓";
+                document.getElementById('status_passport').style.color = "var(--neon-green)";
+            } else if (activeCameraTarget === 'vehicle') {
+                document.getElementById('capturedVehicle').value = dataUrl;
+                document.getElementById('status_vehicle').innerText = "Captured ✓";
+                document.getElementById('status_vehicle').style.color = "var(--neon-green)";
+            }
+            closeCameraModal();
+        }
+        // ---------------------------------
 
         function initMapSafely() {
             if (map) return;
@@ -336,40 +454,62 @@
             }
         }
 
-        async function requestDriverOtp() {
+        async function submitDriverRegistration() {
             const phone = document.getElementById('authPhone').value.trim();
             const email = document.getElementById('authEmail').value.trim();
-            const res = await fetch(`${API_BASE}/api/auth/send-otp`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, email })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(data.message);
-                document.getElementById('phoneStep').style.display = 'none';
-                document.getElementById('otpStep').style.display = 'block';
+            const name = document.getElementById('regName').value.trim();
+            const vehicleType = document.getElementById('regVehicleType').value;
+            const plate = document.getElementById('regPlate').value.trim();
+            const psvBadge = document.getElementById('docPsvBadge').value.trim();
+            const nationalId = document.getElementById('docNationalId').value.trim();
+            const passportSnap = document.getElementById('capturedPassport').value;
+            const vehicleSnap = document.getElementById('capturedVehicle').value;
+
+            if (!phone || !name || !plate) {
+                alert("Please fill in all mandatory registration fields.");
+                return;
             }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/driver/register-and-send-otp`, {
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, email, name, vehicleType, plate, psvBadge, nationalId, passportSnap, vehicleSnap })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('phoneStep').style.display = 'none';
+                    document.getElementById('otpStep').style.display = 'block';
+                } else {
+                    alert(data.error || "Registration failed.");
+                }
+            } catch (e) { alert("Network connection error."); }
         }
 
         async function verifyDriverOtpAndEnter() {
             const phone = document.getElementById('authPhone').value.trim();
-            const email = document.getElementById('authEmail').value.trim();
             const otp = document.getElementById('authOtp').value.trim();
-            const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, otp, role: 'RIDER', email })
-            });
-            const data = await res.json();
-            if (data.success) {
-                currentDriver = data.user;
-                document.getElementById('payoutOwnerId').value = currentDriver.id || 'DRV_001';
-                document.getElementById('profilePhone').innerText = phone;
-                document.getElementById('bottomNav').style.display = 'flex';
-                switchTab('viewMap', document.querySelectorAll('.bottom-nav .nav-item')[0]);
-                startAutomaticGpsTracking();
-                fetchDriverOrders();
-                setTimeout(() => { if(map) map.invalidateSize(); }, 300);
-            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/driver/verify-otp`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, otp })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentDriver = data.user;
+                    document.getElementById('payoutOwnerId').value = currentDriver.id || 'DRV_001';
+                    document.getElementById('profilePhone').innerText = phone;
+                    document.getElementById('profileName').innerText = currentDriver.name || 'Robert Maina';
+                    document.getElementById('profileVehicle').innerText = currentDriver.vehicleType === 'CAB' ? 'Cab (Car)' : 'Boda (Motorbike)';
+                    document.getElementById('bottomNav').style.display = 'flex';
+                    switchTab('viewMap', document.querySelectorAll('.bottom-nav .nav-item')[0]);
+                    startAutomaticGpsTracking();
+                    fetchDriverDispatches();
+                    setTimeout(() => { if(map) map.invalidateSize(); }, 300);
+                } else { alert(data.error || "Invalid OTP code."); }
+            } catch (e) { alert("Verification error."); }
         }
 
         function switchCorridor(tenantId, locationName, currencyCode, el) {
@@ -380,7 +520,7 @@
             document.getElementById('walletCurrencyLabel').innerText = currencyCode;
             document.getElementById('tenantBadge').innerText = tenantId;
             document.getElementById('corridorLabel').innerText = locationName;
-            fetchDriverOrders();
+            fetchDriverDispatches();
         }
 
         function startAutomaticGpsTracking() {
@@ -413,77 +553,84 @@
             );
         }
 
-        async function fetchDriverOrders() {
+        async function fetchDriverDispatches() {
             const bizId = document.getElementById('storeBusinessId').value;
             const driverId = document.getElementById('payoutOwnerId').value.trim() || 'DRV_001';
             
             try {
-                const res = await fetch(`${API_BASE}/api/orders/live`, { headers: { "x-business-id": bizId } });
+                const res = await fetch(`${API_BASE}/api/driver/dispatches`, { headers: { "x-business-id": bizId } });
                 const data = await res.json();
-                if (data.success && data.orders) {
-                    renderDriverOrders(data.orders, driverId);
+                if (data.success && data.dispatches) {
+                    renderDriverDispatches(data.dispatches);
                 }
 
-                // Fetch wallet balance
-                const walletRes = await fetch(`${API_BASE}/wallets`, { headers: { "x-business-id": bizId } });
+                const walletRes = await fetch(`${API_BASE}/api/driver/wallet?ownerId=${driverId}`, { headers: { "x-business-id": bizId } });
                 const walletData = await walletRes.json();
-                if (walletData && walletData.wallets) {
-                    const w = walletData.wallets.find(item => item.ownerId === driverId);
+                if (walletData.success) {
                     const curr = document.getElementById('storeCurrency').value;
-                    document.getElementById('walletBalanceDisplay').innerText = `${curr} ${w ? Number(w.balance).toFixed(2) : '0.00'}`;
+                    document.getElementById('walletBalanceDisplay').innerText = `${curr} ${Number(walletData.balance).toFixed(2)}`;
                 }
             } catch (e) {}
         }
 
-        function renderDriverOrders(orders, driverId) {
-            const container = document.getElementById('driverOrdersContainer');
-            if (!orders || orders.length === 0) {
-                container.innerHTML = '<em style="color:var(--text-dim); font-size: 0.75rem;">No active tenant dispatches found.</em>';
+        function renderDriverDispatches(dispatches) {
+            const container = document.getElementById('driverDispatchesContainer');
+            if (!dispatches || dispatches.length === 0) {
+                container.innerHTML = '<em style="color:var(--text-dim); font-size: 0.75rem;">No incoming rides or deliveries on radar.</em>';
                 return;
             }
             let html = '';
-            orders.slice(-4).reverse().forEach(o => {
-                const isReleased = o.merchantReleased;
-                const isDelivered = o.status.includes("DELIVERED");
-
-                let actionBtn = `<span style="color:var(--cyan); font-size: 0.75rem;">Waiting Merchant Handoff</span>`;
-                if (isReleased && !isDelivered) {
-                    actionBtn = `<button onclick="completeDelivery('${o.id}', '${driverId}')" style="background:var(--gold); color:#000; padding:8px; font-size:0.7rem;">Complete Delivery & Earn</button>`;
-                } else if (isDelivered) {
-                    actionBtn = `<span style="color:var(--neon-green); font-size: 0.75rem; font-weight:bold;">Escrow Settled ✓</span>`;
-                }
-
+            dispatches.slice(-5).reverse().forEach(d => {
+                const isAccepted = d.status === 'ACCEPTED_BY_DRIVER' || d.status === 'COMPLETED';
                 html += `
                     <div class="live-order-card">
                         <div class="live-order-header">
-                            <span>🆔 ${o.id}</span>
-                            <span style="color: var(--neon-green);">${o.status}</span>
+                            <span>🆔 ${d.id}</span>
+                            <span style="color: var(--neon-green);">${d.status}</span>
                         </div>
                         <div style="font-size: 0.75rem; color: #fff; margin-bottom: 8px;">
-                            <div>📍 Pickup: ${o.pickup}</div>
-                            <div>🏁 Dropoff: ${o.destination}</div>
-                            <div>💰 Total: <strong>${o.currency} ${o.total}</strong></div>
+                            <div>📍 Pickup: ${d.pickup}</div>
+                            <div>🏁 Dropoff: ${d.destination}</div>
+                            <div>💰 Fare / Total: <strong>${d.currency} ${Number(d.total).toLocaleString()}</strong></div>
                         </div>
-                        ${actionBtn}
+                        ${!isAccepted ? `<button onclick="acceptDispatch('${d.id}')" class="btn-cyan" style="padding:8px; font-size:0.7rem;">Accept Dispatch & Route</button>` : `<button onclick="completeDispatch('${d.id}')" style="background:var(--gold); color:#000; padding:8px; font-size:0.7rem;">Complete & Release Escrow</button>`}
                     </div>
                 `;
             });
             container.innerHTML = html;
         }
 
-        async function completeDelivery(orderId, driverId) {
-            if (!confirm("Confirm successful drop-off and release escrow funds to your wallet?")) return;
+        async function acceptDispatch(dispatchId) {
             const bizId = document.getElementById('storeBusinessId').value;
+            const driverId = document.getElementById('payoutOwnerId').value.trim() || 'DRV_001';
             try {
-                const res = await fetch(`${API_BASE}/complete-delivery`, {
+                const res = await fetch(`${API_BASE}/api/driver/accept-dispatch`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ orderId, driverId })
+                    body: JSON.stringify({ dispatchId, driverId })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert("Delivery completed successfully! Driver wallet credited.");
-                    fetchDriverOrders();
+                    alert("Dispatch accepted! Navigate to pickup location.");
+                    fetchDriverDispatches();
+                } else { alert(data.error); }
+            } catch (e) { alert("Acceptance error."); }
+        }
+
+        async function completeDispatch(dispatchId) {
+            if (!confirm("Confirm successful drop-off and release escrow to wallet?")) return;
+            const bizId = document.getElementById('storeBusinessId').value;
+            const driverId = document.getElementById('payoutOwnerId').value.trim() || 'DRV_001';
+            try {
+                const res = await fetch(`${API_BASE}/api/driver/complete-dispatch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    body: JSON.stringify({ dispatchId, driverId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("Delivery completed! Earnings credited to wallet.");
+                    fetchDriverDispatches();
                 } else { alert(data.error); }
             } catch (e) { alert("Completion error."); }
         }
@@ -496,15 +643,15 @@
             if (!ownerId || !amount) { alert("Provide valid Owner ID and payout amount."); return; }
 
             try {
-                const res = await fetch(`${API_BASE}/api/payouts/b2c`, {
+                const res = await fetch(`${API_BASE}/api/driver/payout`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
                     body: JSON.stringify({ ownerId, amount: Number(amount) })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`M-Pesa B2C Payout Successful! Ref ID: ${data.payoutRecord.id}`);
-                    fetchDriverOrders();
+                    alert(`M-Pesa B2C Payout Successful! Ref: ${data.payoutId}`);
+                    fetchDriverDispatches();
                 } else { alert(data.error || "Insufficient wallet balance."); }
             } catch (e) { alert("Payout error."); }
         }
@@ -518,5 +665,5 @@
             if (viewId === 'viewMap' && map) setTimeout(() => { map.invalidateSize(); }, 200);
         }
     </script>
-</body>
+</body>     
 </html>

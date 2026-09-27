@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS Sovereign Merchant Onboarding & Vendor Console</title>
+    <title>RDS Sovereign Multi-Merchant Vendor Console</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="/socket.io/socket.io.js"></script>
@@ -57,7 +57,6 @@
                 </div>
                 <div>
                     <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Business Vertical / Category</label>
-                    <!-- Open text field allowing any custom business vertical -->
                     <input type="text" id="regBusinessType" required placeholder="e.g. Electronics, Pharmacy, Agrovet..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm">
                 </div>
             </div>
@@ -95,7 +94,7 @@
                 </div>
             </div>
 
-            <!-- Owner ID / Passport Photo (Live Camera Snap or File Upload) -->
+            <!-- Owner ID / Passport Photo -->
             <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
                 <div class="flex justify-between items-center flex-wrap gap-2">
                     <label class="text-xs uppercase tracking-wider text-slate-400">Owner ID / Passport Photo</label>
@@ -113,7 +112,7 @@
                 <div id="ownerIdPreview" class="text-xs text-emerald-400">Default image selected (or snap photo / upload file).</div>
             </div>
 
-            <!-- Storefront / Shop Photo (Live Camera Snap or File Upload) -->
+            <!-- Storefront / Shop Photo -->
             <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
                 <div class="flex justify-between items-center flex-wrap gap-2">
                     <label class="text-xs uppercase tracking-wider text-slate-400">Storefront / Shop Photo</label>
@@ -157,7 +156,7 @@
         </div>
     </div>
 
-    <!-- VIEW 3: LIVE VENDOR CONSOLE (HIDDEN UNTIL LOGIN) -->
+    <!-- VIEW 3: LIVE VENDOR CONSOLE -->
     <div id="viewDashboard" class="hidden min-h-screen flex flex-col">
         <!-- Top Navigation Header -->
         <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-lg">
@@ -241,8 +240,8 @@
                 <!-- Incoming Customer Orders -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-semibold text-sky-400 flex items-center"><i class="fa-solid fa-receipt mr-2"></i> Incoming Customer Orders</h2>
-                        <span class="text-xs bg-sky-500/10 text-sky-400 px-2.5 py-1 rounded-full border border-sky-500/20 animate-pulse">● Live Feed Active</span>
+                        <h2 class="text-lg font-semibold text-sky-400 flex items-center"><i class="fa-solid fa-receipt mr-2"></i> Incoming Customer Orders (Targeted)</h2>
+                        <span class="text-xs bg-sky-500/10 text-sky-400 px-2.5 py-1 rounded-full border border-sky-500/20 animate-pulse">● Live Socket Feed Active</span>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
@@ -252,7 +251,7 @@
                                     <th class="py-3 px-4">Items</th>
                                     <th class="py-3 px-4">Total Amount</th>
                                     <th class="py-3 px-4">Status</th>
-                                    <th class="py-3 px-4 text-right">Fulfill Action</th>
+                                    <th class="py-3 px-4 text-right">Fulfill & Dispatch Action</th>
                                 </tr>
                             </thead>
                             <tbody id="ordersTableBody" class="divide-y divide-slate-800 text-sm">
@@ -449,11 +448,16 @@
             document.getElementById('viewRegister').classList.add('hidden');
             document.getElementById('viewDashboard').classList.remove('hidden');
             
+            // Join targeted socket room mapped strictly to this specific merchant ID
             socket.emit('join_merchant_room', currentMerchantId);
             loadDashboardData();
         }
 
-        socket.on('new_customer_order', () => { loadOrders(); alert("🚨 New Customer Order Received!"); });
+        // Real-time targeted socket listeners
+        socket.on('new_customer_order', (order) => { 
+            loadOrders(); 
+            alert(`🚨 New Customer Order Received for ${currentShopName}! (ID: ${order.orderId})`); 
+        });
         socket.on('new_driver_dispatch', () => { loadDriverQueue(); });
 
         async function loadDashboardData() {
@@ -509,7 +513,7 @@
                         <td class="py-3 px-4 font-semibold text-emerald-400">KES ${Number(order.totalAmount || 0).toLocaleString()}</td>
                         <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs bg-sky-500/10 text-sky-400">${order.status}</span></td>
                         <td class="py-3 px-4 text-right">
-                            <button onclick="acceptOrder('${order.orderId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs font-semibold">Accept & Fulfill</button>
+                            <button onclick="acceptOrder('${order.orderId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs font-semibold">Accept & Dispatch to Rider</button>
                         </td>
                     </tr>
                 `).join('');
@@ -525,7 +529,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ Order ${orderId} packed & dispatched to driver queue!`);
+                    alert(`✅ Order ${orderId} packed & successfully pushed to driver queue!`);
                     loadOrders();
                     loadDriverQueue();
                 }
@@ -564,7 +568,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`🛵 Order ${orderId} successfully claimed!`);
+                    alert(`🛵 Order ${orderId} successfully claimed by rider!`);
                     loadDriverQueue();
                 }
             } catch (err) {}
