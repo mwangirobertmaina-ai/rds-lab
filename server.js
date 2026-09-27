@@ -116,11 +116,15 @@ app.get("/driver", (req, res) => { res.sendFile(path.join(__dirname, "driver.htm
 app.get("/merchant", (req, res) => { res.sendFile(path.join(__dirname, "merchant.html")); });
 app.get("/admin", (req, res) => { res.sendFile(path.join(__dirname, "admin.html")); });
 
-// --- MOUNT ISOLATED PANEL API ROUTERS (Jumia / Uber / Bolt / Glovo Architecture) ---
+// --- MOUNT ISOLATED PANEL API ROUTERS ---
 app.use('/api/store', require('./routes/store'));
 app.use('/api/driver', require('./routes/driver'));
 app.use('/api/merchant', require('./routes/merchant'));
 app.use('/api/admin', require('./routes/admin'));
+
+// --- MOUNT USER / SUPER-APP ROUTES (Pointing to routes/user.js) ---
+const userRoutes = require('./routes/user');
+app.use('/api/user', userRoutes);
 
 // --- ADDITIVE AUTHENTICATION (OTP) ENDPOINTS FOR MERCHANT PORTAL ---
 app.post('/api/auth/send-otp', (req, res) => {
