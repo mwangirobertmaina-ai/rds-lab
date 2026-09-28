@@ -13,7 +13,7 @@ const fsPromises = require("fs").promises;
 const cors = require("cors");
 const path = require("path");
 const crypto = require("crypto");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const multer = require("multer");
 
 const app = express();
@@ -772,7 +772,7 @@ app.post('/api/ai/intent-eval', enforceTenantIsolation, async (req, res) => {
 app.post('/api/admin/toggle-tenant-status', enforceTenantIsolation, async (req, res) => {
     ensureState();
     const { tenantId, status } = req.body;
-    const tenant = data.businesses.find(b => b.id === tenantId);
+    const tenant = data.businesses.businesses.find(b => b.id === tenantId); // Handled safely via ensureState
     if (!tenant) return res.status(404).json({ success: false, error: "Tenant not found." });
     tenant.status = status;
     await saveDB();
