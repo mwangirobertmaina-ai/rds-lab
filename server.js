@@ -32,7 +32,6 @@ global.io = io;
 
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, "db.json");
-const SALT_ROUNDS = 12;
 const DYNAMIC_JWT_SECRET = crypto.randomBytes(64).toString('hex');
 const SOVEREIGN_OWNER_EMAIL = "mwangirobertmaina@gmail.com";
 
@@ -56,6 +55,7 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 app.use('/uploads', express.static(uploadDir));
+app.use('/public', express.static(path.join(__dirname, "public")));
 
 // Configure Multer Storage for Local Video & Image Uploads
 const storage = multer.diskStorage({
@@ -142,8 +142,21 @@ app.use((req, res, next) => {
     next();
 });
 
+// --- HEALTH CHECK ENDPOINT REQUIRED BY CI WORKFLOW ---
+app.get('/health', (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'OK', timestamp: Date.now() }));
+});
+
+// --- MOUNT ROUTERS (ADS & P2P SIGNALING) ---
+const adsRouter = require('./routes/ads');
+if (typeof adsRouter.setSocketIo === 'function') {
+    adsRouter.setSocketIo(io);
+}
+app.use('/api/ads', adsRouter);
+
 // --- MULTI-PANEL FRONTEND ROUTES ---
-app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "store.html")); });
+app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "ads.html")); });
 app.get("/store", (req, res) => { res.sendFile(path.join(__dirname, "store.html")); });
 app.get("/driver", (req, res) => { res.sendFile(path.join(__dirname, "driver.html")); });
 app.get("/merchant", (req, res) => { res.sendFile(path.join(__dirname, "merchant.html")); });
@@ -229,7 +242,7 @@ app.post('/api/auth/dispatch-otp', (req, res) => {
 
     res.json({
         success: true,
-        otpCode: otpCode, // <--- CRITICAL: Ensures your alert pops up with the code!
+        otpCode: otpCode,
         message: `OTP securely dispatched to registered device (${user.email}).`
     });
 });
@@ -264,198 +277,6 @@ app.post('/api/auth/verify-otp-legacy', (req, res) => {
     } else {
         res.status(400).json({ success: false, error: "Invalid OTP code. Please use 1234." });
     }
-});
-// ============================================================================
-
-// ============================================================================
-// 🚀 INLINE ADDITIVE ADVERTISEMENT, ESCROW & CAMPAIGN ROUTER
-// ============================================================================
-let advertisements = [
-    {
-        id: 'AD_001',
-        title: 'RDS Sovereign Supermarket Mega Sale',
-        subtitle: 'Get 20% Off All Verified Electronics & Groceries',
-        mediaType: 'Image Banner',
-        targetVertical: 'Supermarket',
-        mediaUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
-        cdnStreamUrl: 'https://edge-cdn.rds-sovereign.net/hls/ad_001/master.m3u8',
-        status: 'APPROVED',
-        impressions: 1240,
-        clicks: 85,
-        timestamp: Date.now()
-    },
-    {
-        id: 'AD_002',
-        title: 'Nairobi Boda & Logistics Dispatch Hub',
-        subtitle: 'Secure, Tracked Fleet Management across East Africa',
-        mediaType: 'Image Banner',
-        targetVertical: 'Logistics & Boda',
-        mediaUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80',
-        cdnStreamUrl: 'https://edge-cdn.rds-sovereign.net/hls/ad_002/master.m3u8',
-        status: 'APPROVED',
-        impressions: 980,
-        clicks: 62,
-        timestamp: Date.now()
-    }
-];
-
-let escrowContracts = [];
-
-app.get('/api/ads/list', (req, res) => {
-    res.json({ success: true, advertisements });
-});
-
-// --- SAFE ADDITIVE ADs OTP DISPATCH ROUTE (Fixes frontend dispatch-otp calls) ---
-app.post('/api/ads/auth/dispatch-otp', (req, res) => {
-    const { contactId } = req.body;
-    const targetId = contactId || SOVEREIGN_OWNER_EMAIL;
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    activeOTPs[targetId] = { code: otpCode, expiresAt: Date.now() + 300000 };
-
-    console.log(`🛡️ [ADS SECURE DISPATCH] Sent verification code ${otpCode} to ${targetId}`);
-    res.json({ success: true, otpCode: otpCode, message: "Automated security code dispatched successfully to your registered device." });
-});
-
-app.post('/api/ads/auth/verify-security-challenge', (req, res) => {
-    const { contactId, otpCode, livenessScore } = req.body;
-    const record = activeOTPs[contactId || SOVEREIGN_OWNER_EMAIL];
-
-    if (!record || record.code !== otpCode) {
-        return res.status(403).json({ success: false, error: "Invalid security code entered. Access denied." });
-    }
-
-    delete activeOTPs[contactId];
-    res.json({ success: true, message: "Identity fully verified. Anti-scam security check passed.", sessionToken: `SOV_TOKEN_${Date.now()}` });
-});
-
-// --- DIRECT FILE UPLOAD ENDPOINT FOR VIDEOS & PICTURES ---
-app.post('/api/ads/media/upload-file', upload.single('mediaFile'), (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ success: false, error: "No video or image file uploaded." });
-        }
-
-        const fileUrl = `/uploads/${req.file.filename}`;
-        res.json({ 
-            success: true, 
-            message: "File uploaded successfully to server storage.", 
-            fileUrl: fileUrl,
-            mimeType: req.file.mimetype 
-        });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-app.post('/api/ads/auth/verify-liveness', (req, res) => {
-    const { email, livenessScore, challengePassed } = req.body;
-    if (!challengePassed || (livenessScore && livenessScore < 0.85)) {
-        return res.status(401).json({ success: false, error: "AI Liveness verification failed." });
-    }
-    res.json({
-        success: true,
-        message: "Biometric liveness verified successfully with edge AI.",
-        sessionToken: `SOV_TOKEN_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-        user: email || 'mwangirobertmaina@gmail.com'
-    });
-});
-
-app.post('/api/ads/escrow/create', (req, res) => {
-    try {
-        const { adId, buyerId, amountUSD, currency, network } = req.body;
-        const escrowTx = {
-            escrowId: `ESCROW_${Date.now()}`,
-            adId: adId || 'AD_001',
-            buyerId: buyerId || 'mwangirobertmaina@gmail.com',
-            amount: amountUSD || 50.00,
-            currency: currency || 'USD',
-            network: network || 'Polygon / Solana Testnet',
-            contractHash: `0x${crypto.randomBytes(16).toString('hex')}`,
-            status: 'LOCKED_IN_ESCROW',
-            timestamp: Date.now()
-        };
-
-        escrowContracts.push(escrowTx);
-        if (global.io) {
-            global.io.emit('escrow_created', escrowTx);
-        }
-
-        return res.status(200).json({
-            success: true,
-            message: "Multi-signature smart contract escrow locked successfully.",
-            escrowTx
-        });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-app.post('/api/ads/media/ingest', (req, res) => {
-    const { title, subtitle, targetVertical, geoTarget, rawMediaUrl, mediaType } = req.body;
-    const uniqueId = `AD_${Date.now()}`;
-    const transmanagedAd = {
-        id: uniqueId,
-        title: title || 'Sovereign Edge Campaign',
-        subtitle: subtitle || 'Cloudflare Multi-Region Edge Stream',
-        mediaType: mediaType || 'Video Ad',
-        targetVertical: targetVertical || 'Supermarket',
-        geoTarget: geoTarget || 'Worldwide',
-        mediaUrl: rawMediaUrl || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1200&q=80',
-        cdnStreamUrl: `https://edge-cdn.rds-sovereign.net/hls/${uniqueId.toLowerCase()}/master.m3u8`,
-        status: 'PENDING_MODERATION',
-        impressions: 0,
-        clicks: 0,
-        timestamp: Date.now()
-    };
-
-    advertisements.push(transmanagedAd);
-    res.json({ success: true, message: "Media successfully ingested.", ad: transmanagedAd });
-});
-
-app.post('/api/ads/submit', (req, res) => {
-    const { title, subtitle, mediaType, targetVertical, mediaUrl } = req.body;
-    const newAd = {
-        id: `AD_${Date.now()}`,
-        title: title || 'Sovereign Campaign',
-        subtitle: subtitle || 'Verified Commercial Offer',
-        mediaType: mediaType || 'Image Banner',
-        targetVertical: targetVertical || 'Supermarket',
-        mediaUrl: mediaUrl || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1200&q=80',
-        status: 'PENDING_MODERATION',
-        impressions: 0,
-        clicks: 0,
-        timestamp: Date.now()
-    };
-    advertisements.push(newAd);
-    res.json({ success: true, message: "Advertisement submitted successfully.", ad: newAd });
-});
-
-app.post('/api/ads/moderate', (req, res) => {
-    const { adId, status } = req.body;
-    const ad = advertisements.find(a => a.id === adId);
-    if (!ad) {
-        return res.status(404).json({ success: false, error: "Advertisement not found." });
-    }
-    ad.status = status;
-    res.json({ success: true, message: `Status updated to ${status}.`, ad });
-});
-
-app.post('/api/ads/telemetry', (req, res) => {
-    const { adId, action, commentText, userEmail } = req.body;
-    const ad = advertisements.find(a => a.id === adId);
-    if (!ad) {
-        return res.status(404).json({ success: false, error: "Advertisement not found." });
-    }
-    if (action === 'impression') {
-        ad.impressions = (ad.impressions || 0) + 1;
-    } else if (action === 'click') {
-        ad.clicks = (ad.clicks || 0) + 1;
-    } else if (action === 'like') {
-        ad.likes = (ad.likes || 0) + 1;
-    } else if (action === 'share') {
-        ad.shares = (ad.shares || 0) + 1;
-    }
-    res.json({ success: true, message: "Telemetry recorded.", ad });
 });
 // ============================================================================
 
@@ -511,10 +332,10 @@ function ensureState() {
     if (data.immutable_audit_vault.length === 0) {
       const ts = Date.now();
       const prev = "GENESIS_ROOT_HASH_000000000000000000000000";
-      const hash = crypto.createHash("sha256").update(`${ts}:GENESIS_ROOT_INIT:${prev}:STAGE_173`).digest("hex");
+      const hash = crypto.createHash("sha256").update(`${ts}:GENESIS_ROOT_INIT:${prev}:STAGE_174`).digest("hex");
       data.immutable_audit_vault.push({
         auditId: "AUD_GENESIS", tenantId: "SYSTEM", timestamp: ts, actionType: "GENESIS_ROOT_INIT",
-        actor: { system: "RDS_CORE" }, details: { message: "Secure genesis block initialized for Stage 173." }, previousHash: prev, currentHash: hash, proofState: "GLOBAL_MATHEMATICALLY_VERIFIED"
+        actor: { system: "RDS_CORE" }, details: { message: "Secure genesis block initialized for Stage 174." }, previousHash: prev, currentHash: hash, proofState: "GLOBAL_MATHEMATICALLY_VERIFIED"
       });
     }
   } catch (e) { data = defaultDB(); }
@@ -583,7 +404,7 @@ app.post('/api/register', enforceTenantIsolation, async (req, res) => {
     const { email, password, fullName, role } = req.body;
     const tenantId = req.tenantId;
     if (!email || !password) return res.status(400).json({ success: false, error: 'Email and password required.' });
-    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    const hashedPassword = await bcrypt.hash(password, 12);
     const assignedRole = role && ROLES[role] ? role : ROLES.REGULAR_USER;
     const newUser = { id: id("USR"), tenantId, email, password: hashedPassword, fullName: fullName || "User", role: assignedRole, status: "ACTIVE", registeredAt: Date.now() };
     data.users.push(newUser);
@@ -754,7 +575,7 @@ app.get('/api/hardware/peripherals', enforceTenantIsolation, (req, res) => {
 app.get('/api/ai/openapi.json', (req, res) => {
     return res.json({
         openapi: "3.0.2",
-        info: { title: "RDS Sovereign Financial OS API", version: "173.0" },
+        info: { title: "RDS Sovereign Financial OS API", version: "174.0" },
         paths: {
             "/api/login": { post: { summary: "Authenticate tenant user" } },
             "/api/kyc/verify-biometric-face": { post: { summary: "Verify ID and biometric capture" } },
@@ -851,5 +672,5 @@ app.use((err, req, res, next) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 RDS Stage 173 Financial OS Kernel & Multi-Panel Backend Fully Active on port ${PORT}`);
+    console.log(`🚀 RDS Stage 174 Financial OS Kernel & Multi-Panel Backend Fully Active on port ${PORT}`);
 });
