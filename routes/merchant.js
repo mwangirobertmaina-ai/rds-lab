@@ -4,7 +4,6 @@ const router = express.Router();
 let pendingMerchants = [];
 let approvedMerchants = [];
 
-// Isolated catalogs and orders mapped strictly by merchantId
 let merchantCatalogs = {
     'MERCH_DEF_172': [
         { 
@@ -41,9 +40,11 @@ let merchantOrders = {
     ]
 }; 
 
-// Global Driver / Rider Dispatch Queue
 if (!global.driverQueue) {
     global.driverQueue = [];
+}
+if (!global.activeDispatches) {
+    global.activeDispatches = {};
 }
 
 global.merchantOrders = merchantOrders;
@@ -68,11 +69,9 @@ router.get('/all-tenants', (req, res) => {
 router.post('/register', (req, res) => {
     const { shopName, businessType, regNumber, ownerName, phone, mpesaPhone, email, gpsLat, gpsLon, passportImage, storePhoto } = req.body;
     
-    // Generate clean vertical identifier prefix from open text input
     const verticalKey = (businessType || 'GENERAL').toUpperCase().replace(/[^A-Z0-9]/g, '_').substring(0, 10);
     const merchantId = `MERCH_${verticalKey}_${Date.now()}`;
     
-    // Process and validate incoming live camera captures (Base64 data URLs) or file uploads / fallbacks
     const passportUrl = passportImage && (passportImage.startsWith('data:image') || passportImage.startsWith('http'))
         ? passportImage 
         : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300';
@@ -89,20 +88,17 @@ router.post('/register', (req, res) => {
         ownerName, 
         phone, 
         mpesaPhone: mpesaPhone || phone,
-        email: 'mwangirobertmaina@gmail.com',
+        email: email || 'mwangirobertmaina@gmail.com',
         gpsLat: gpsLat || -1.2863, 
         gpsLon: gpsLon || 36.8172,
-        passportUrl,       // Owner passport / ID photo successfully stored
-        storePhotoUrl,     // Storefront photo successfully stored
+        passportUrl,       
+        storePhotoUrl,       
         status: 'PENDING_ADMIN_APPROVAL', 
         createdAt: Date.now()
     };
     
     pendingMerchants.push(application);
-
-    console.log(`[ADMIN NOTIFICATION] New shop registration for ${shopName} [Vertical: ${application.businessType}] (Owner: ${ownerName}, M-Pesa: ${application.mpesaPhone}). Owner passport & storefront proofs securely attached. Review via admin endpoint sent to mwangirobertmaina@gmail.com.`);
-
-    res.json({ success: true, message: `Registration submitted for ${shopName}! Awaiting admin review at mwangirobertmaina@gmail.com.` });
+    res.json({ success: true, message: `Registration submitted for ${shopName}! Awaiting admin review.` });
 });
 
 router.get('/approve/:merchantId', (req, res) => {
@@ -125,7 +121,7 @@ router.get('/approve/:merchantId', (req, res) => {
 
     res.send(`
         <div style="font-family: Arial; padding: 40px; background: #0b0f19; color: #fff; text-align: center;">
-            <h1 style="color: #00ff88;">✅ Independent Shop Approved by mwangirobertmaina@gmail.com!</h1>
+            <h1 style="color: #00ff88;">✅ Independent Shop Approved!</h1>
             <p>Shop Name: <strong>${merchant.shopName}</strong> (${merchant.businessType})</p>
             <p>Owner: <strong>${merchant.ownerName}</strong> | Phone: <strong>${merchant.phone}</strong></p>
             <p>Generated SMS Login Token: <strong style="color: #38bdf8; font-size: 28px;">${merchant.loginToken}</strong></p>
@@ -137,7 +133,6 @@ router.post('/login', (req, res) => {
     const { phone, token } = req.body;
     let merchant = approvedMerchants.find(m => m.phone === phone);
     
-    // Fallback for default test merchant
     if (!merchant && phone === '+254712345678') {
         merchant = merchantProfiles['MERCH_DEF_172'];
     }
@@ -203,8 +198,32 @@ router.post('/catalog/delete', (req, res) => {
 
 router.get('/orders/:merchantId', (req, res) => {
     const { merchantId } = req.params;
-    const orders = (merchantOrders[merchantId] || []).filter(o => o.status === 'PENDING_VENDOR_ACCEPTANCE' || o.status === 'PENDING');
+    const orders = merchantOrders[merchantId] || [];
     res.json({ success: true, orders });
+});
+
+router.post('/orders/new', (req, res) => {
+    const { merchantId, items, totalAmount } = req.body;
+    const targetId = merchantId || 'MERCH_DEF_172';
+    if (!merchantOrders[targetId]) merchantOrders[targetId] = [];
+
+    const newOrder = {
+        orderId: 'ORD_' + Math.floor(100000 + Math.random() * 900000),
+        items: items || [{ name: "General Commodity", qty: 1, price: totalAmount || 500 }],
+        totalAmount: totalAmount || 500,
+        status: 'PENDING_VENDOR_ACCEPTANCE',
+        createdAt: Date.now()
+    };
+
+    merchantOrders[targetId].push(newOrder);
+
+    // INSTANT SOCKET RINGER EMIT TO MERCHANT ROOM
+    if (global.io) {
+        global.io.to(targetId).emit('new_customer_order', newOrder);
+        global.io.emit('orderListUpdated', newOrder);
+    }
+
+    res.json({ success: true, message: "New customer order placed and merchant alerted!", order: newOrder });
 });
 
 router.post('/orders/accept', (req, res) => {
@@ -221,7 +240,7 @@ router.post('/orders/accept', (req, res) => {
     }
 
     const order = merchantOrders[targetId][orderIndex];
-    order.status = 'PACKED & DISPATCHED TO RIDER';
+    order.status = 'AWAITING_DRIVER_PICKUP';
     order.acceptedAt = Date.now();
 
     if (order.items && merchantCatalogs[targetId]) {
@@ -234,25 +253,57 @@ router.post('/orders/accept', (req, res) => {
     }
 
     const dispatchPayload = {
+        id: order.orderId,
         orderId: order.orderId,
+        isDirectRide: false,
         merchantId: targetId,
-        shopName: (merchantProfiles[targetId] && merchantProfiles[targetId].shopName) || 'Independent Shop',
+        pickup: (merchantProfiles[targetId] && merchantProfiles[targetId].shopName) || 'Merchant Store',
+        destination: 'Customer Dropoff Point',
+        currency: 'KES',
         items: order.items,
+        total: order.totalAmount,
         totalAmount: order.totalAmount,
-        status: 'READY_FOR_DRIVER_PICKUP',
+        status: 'PENDING_DRIVER_ACCEPTANCE',
         dispatchedAt: Date.now()
     };
 
     global.driverQueue.push(dispatchPayload);
-    merchantOrders[targetId].splice(orderIndex, 1);
 
-    // Multi-tenant isolated socket event broadcast to the specific merchant room
+    if (!global.activeDispatches[targetId]) global.activeDispatches[targetId] = [];
+    global.activeDispatches[targetId].push(dispatchPayload);
+
     if (global.io) {
-        global.io.to(targetId).emit('order_dispatched', { orderId });
+        global.io.to(targetId).emit('merchant_order_update', order);
         global.io.emit('new_driver_dispatch', dispatchPayload);
+        global.io.emit('orderListUpdated', dispatchPayload);
     }
 
-    res.json({ success: true, message: `Order ${orderId} packed and dispatched to driver queue!`, order });
+    res.json({ success: true, message: `Order ${orderId} packed and dispatched to driver radar!`, order });
+});
+
+router.post('/orders/complete-handover', (req, res) => {
+    const { merchantId, orderId } = req.body;
+    const targetId = merchantId || 'MERCH_DEF_172';
+
+    if (!merchantOrders[targetId]) {
+        return res.status(404).json({ success: false, error: "Merchant orders pool not found." });
+    }
+
+    const orderIndex = merchantOrders[targetId].findIndex(o => o.orderId === orderId);
+    if (orderIndex === -1) {
+        return res.status(404).json({ success: false, error: "Order ID not found." });
+    }
+
+    const order = merchantOrders[targetId][orderIndex];
+    order.status = 'COMPLETED & PAID OUT';
+    order.completedAt = Date.now();
+
+    if (global.io) {
+        global.io.to(targetId).emit('merchant_order_update', order);
+        global.io.emit('orderListUpdated', order);
+    }
+
+    res.json({ success: true, message: `Order ${orderId} successfully handed over, dispatched, and paid out immediately!`, order });
 });
 
 router.get('/driver/queue', (req, res) => {
@@ -264,13 +315,22 @@ router.post('/driver/accept', (req, res) => {
     const index = global.driverQueue.findIndex(o => o.orderId === orderId);
     if (index !== -1) {
         const order = global.driverQueue.splice(index, 1)[0];
-        order.status = 'ASSIGNED_TO_DRIVER';
+        order.status = 'DRIVER_EN_ROUTE_TO_MERCHANT';
         order.driverId = driverId || 'DRIVER_RIDER_01';
+
+        for (let mId in merchantOrders) {
+            let found = merchantOrders[mId].find(o => o.orderId === orderId);
+            if (found) {
+                found.status = 'DRIVER_EN_ROUTE_TO_MERCHANT';
+                if (global.io) global.io.to(mId).emit('merchant_order_update', found);
+            }
+        }
         
         if (global.io) {
             global.io.emit('order_assigned_to_driver', order);
+            global.io.emit('orderListUpdated', order);
         }
-        return res.json({ success: true, message: "Order claimed by driver successfully!", order });
+        return res.json({ success: true, message: "Order claimed by driver successfully! Driver is heading to your store.", order });
     }
     res.status(404).json({ success: false, error: "Order no longer available in queue." });
 });

@@ -44,6 +44,30 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        @keyframes ringPulse {
+            0% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+            70% { transform: scale(1.02); box-shadow: 0 0 0 20px rgba(0, 255, 136, 0); }
+            100% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+        }
+
+        .instant-calling-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(11, 15, 25, 0.92);
+            backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .calling-card {
+            background: var(--panel-bg);
+            border: 2px solid var(--neon-green);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            width: 100%; max-width: 340px;
+            box-shadow: 0 0 40px rgba(0,255,136,0.3);
+            animation: ringPulse 1.2s infinite;
+        }
+
         .uber-header {
             background: linear-gradient(135deg, #1f2937, #111827);
             border: 1px solid #2d3748;
@@ -137,7 +161,7 @@
             border-radius: 6px;
             overflow: hidden;
         }
-        .quantity-stepper button { background: #222e3c; color: #fff; border: none; padding: 5px 10px; font-weight: bold; cursor: pointer; font-size: 0.75rem; }
+        .quantity-stepper button { background: #222e3c; color: #fff; border: none; padding: 5px 10px; font-weight: bold; cursor: pointer; font-size: 0.75rem; width: auto; }
         .quantity-display { font-size: 0.75rem; font-weight: bold; color: var(--neon-green); padding: 0 6px; }
 
         button {
@@ -234,6 +258,21 @@
 </head>
 <body>
 
+    <!-- INSTANT CALLING / MERCHANT RINGER OVERLAY -->
+    <div id="instantCallOverlay" class="instant-calling-overlay" style="display: none;">
+        <div class="calling-card">
+            <div style="background: var(--neon-green); color: #000; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; font-size: 1.5rem;">
+                <i class="fa-solid fa-phone-volume"></i>
+            </div>
+            <h3 style="font-size: 1rem; color: var(--neon-green); margin-bottom: 4px;" id="callStatusTitle">Ringing Store Terminal...</h3>
+            <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 15px;" id="callStatusSub">Merchant alarm ringing loud for incoming order!</p>
+            <div style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; font-size: 0.7rem; color: var(--cyan); margin-bottom: 15px;" id="callOrderIdDisplay">
+                Order ID: --
+            </div>
+            <button onclick="closeCallOverlay()" class="btn-cyan" style="padding: 10px;">Proceed to Live Tracking</button>
+        </div>
+    </div>
+
     <!-- VIEW 1: AUTHENTICATION / LOGIN WITH SMS OTP -->
     <div id="viewAuth" class="app-view active-view">
         <div style="text-align: center; margin: 30px 0 20px 0;">
@@ -241,7 +280,7 @@
                 <i class="fa-solid fa-store"></i>
             </div>
             <h1 style="font-size: 1.2rem; color: #fff;">RDS Sovereign Super-App</h1>
-            <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">Request Cabs, Bodas, and Supermarket deliveries instantly.</p>
+            <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">Direct Cab/Boda Dispatch & Merchant Supermarket Orders</p>
         </div>
 
         <div class="checkout-panel">
@@ -293,15 +332,18 @@
         </div>
 
         <div id="merchantFeedContainer">
-            <div class="section-title">Select Shop to Buy Commodity</div>
+            <div class="section-title">Select Shop (Rice, Milk, Spare Parts...)</div>
             <div class="merchant-vertical-feed" id="merchantFeedList">
                 <em style="color:var(--text-dim); text-align:center; padding:15px; font-size:0.75rem;">Loading nearby merchant shops...</em>
             </div>
         </div>
 
+        <!-- RIDE BOOKING SECTION (DIRECT TO DRIVER) -->
         <div id="rideBookingSection" style="display: none;">
-            <div class="checkout-panel">
-                <h3 id="rideBookingHeading"><i class="fa-solid fa-taxi"></i> Request Standalone Ride</h3>
+            <div class="checkout-panel" style="border-color: var(--neon-green);">
+                <h3 id="rideBookingHeading" style="color: var(--neon-green);"><i class="fa-solid fa-taxi"></i> Direct Cab / Boda Dispatch</h3>
+                <p style="font-size:0.7rem; color:var(--text-dim); margin-bottom:8px;">🚀 Goes straight to driver radar instantly with zero compromise.</p>
+                
                 <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-top:4px;">Pickup Location</label>
                 <input type="text" id="ridePickupInput" value="Nairobi CBD">
                 
@@ -313,8 +355,8 @@
                     <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Fare Amount:</span> <strong id="rideFareDisplay" style="color:var(--neon-green);">KES 712.50</strong></div>
                 </div>
 
-                <button onclick="confirmRideBooking()" class="btn-cyan">Dispatch Driver Now ➔</button>
-                <button onclick="backToMerchantFeed()" style="background:#374151; margin-top:6px; font-size:0.7rem;">← Back to Shops & Feed</button>
+                <button onclick="confirmDirectRideBooking()" class="btn-cyan" style="background: var(--neon-green); color: #000;">Dispatch Straight to Driver ➔</button>
+                <button onclick="backToMerchantFeed()" style="background:#374151; margin-top:6px; font-size:0.7rem;">← Back to Merchant Shops</button>
             </div>
         </div>
 
@@ -376,10 +418,6 @@
                 <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Rider Payout (95% of Delivery):</span> <strong id="previewDriverPayout">0.00</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>App Delivery Commission (5%):</span> <strong id="previewAppCommission">0.00</strong></div>
                 <hr style="border:0; border-top:1px solid #374151; margin:5px 0;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Total System Income:</span> <strong id="previewTotalSystemIncome" style="color:var(--gold);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>KRA Tax (16% on System Income):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Net System Revenue Retained:</span> <strong id="previewNetRevenue" style="color:var(--cyan);">0.00</strong></div>
-                <hr style="border:0; border-top:1px solid #374151; margin:5px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span>Gross Escrow Total:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
             </div>
         </div>
@@ -388,7 +426,7 @@
             <h3>4. Pay Gross Total into System Escrow</h3>
             <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:3px;">M-Pesa Phone</label>
             <input type="text" id="custPhone" value="254721862397">
-            <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Pay Full Escrow & Initiate Flow</button>
+            <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Pay Full Escrow & Alert Merchant Fast</button>
         </div>
 
         <div class="checkout-panel">
@@ -463,6 +501,53 @@
             socket.on('orderListUpdated', () => { fetchLiveOrders(); });
         });
 
+        // Instant Merchant Ringing & Calling Function
+        function triggerFastMerchantCall(orderId, merchantName) {
+            const overlay = document.getElementById('instantCallOverlay');
+            const titleEl = document.getElementById('callStatusTitle');
+            const subEl = document.getElementById('callStatusSub');
+            const orderEl = document.getElementById('callOrderIdDisplay');
+
+            if(titleEl) titleEl.innerText = `🚨 Ringing ${merchantName} Terminal Fast!`;
+            if(subEl) subEl.innerText = `Store alarm ringing loud for incoming order!`;
+            if(orderEl) orderEl.innerText = `Order ID: ${orderId}`;
+            if(overlay) overlay.style.display = 'flex';
+
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+
+                let ringCount = 0;
+                const ringTimer = setInterval(() => {
+                    if (ringCount >= 6) {
+                        clearInterval(ringTimer);
+                        if(subEl) subEl.innerText = `✅ Order transmitted successfully!`;
+                        return;
+                    }
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5 note
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15); // A5 note
+                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                    ringCount++;
+                }, 350);
+            } catch (err) {
+                console.log("Audio ringer active");
+            }
+        }
+
+        function closeCallOverlay() {
+            document.getElementById('instantCallOverlay').style.display = 'none';
+            switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
+        }
+
         async function requestOtp() {
             const phone = document.getElementById('authPhone').value.trim();
             const email = document.getElementById('authEmail').value.trim();
@@ -516,7 +601,7 @@
         function renderFallbackTenants() {
             allTenantsCache = [
                 { merchantId: 'MERCH_DEF_172', shopName: 'Sovereign Supermarket', businessType: 'SUPERMARKET', gpsLat: -1.2863, gpsLon: 36.8172, banner: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=500' },
-                { merchantId: 'MERCH_JAVA_88', shopName: 'Java House Restaurant', businessType: 'RESTAURANT', gpsLat: -1.2789, gpsLon: 36.8123, banner: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500' }
+                { merchantId: 'MERCH_SPARE_10', shopName: 'Sovereign Auto Spare Parts', businessType: 'SPARES', gpsLat: -1.2789, gpsLon: 36.8123, banner: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=500' }
             ];
             renderMerchantFeed(allTenantsCache);
         }
@@ -535,6 +620,7 @@
             }
         }
 
+        // PROTOCOL: CAB OR BODA GOES STRAIGHT TO DRIVER NO COMPROMISE
         async function requestRide(rideType, el) {
             document.querySelectorAll('.bubble-btn').forEach(b => b.classList.remove('active'));
             if(el) el.classList.add('active');
@@ -548,8 +634,8 @@
             document.getElementById('rideBookingSection').style.display = 'block';
 
             const name = rideType === 'BODA' ? 'Boda Boda Ride' : 'Cab Ride (Car)';
-            document.getElementById('rideBookingHeading').innerHTML = `<i class="fa-solid ${rideType === 'BODA' ? 'fa-motorcycle' : 'fa-taxi'}"></i> Request ${name}`;
-            document.getElementById('currentSelectedShopTitle').innerHTML = `<i class="fa-solid fa-route" style="color:var(--cyan)"></i> Standalone ${name}`;
+            document.getElementById('rideBookingHeading').innerHTML = `<i class="fa-solid ${rideType === 'BODA' ? 'fa-motorcycle' : 'fa-taxi'}"></i> Direct ${name}`;
+            document.getElementById('currentSelectedShopTitle').innerHTML = `<i class="fa-solid fa-route" style="color:var(--neon-green)"></i> Direct Standalone ${name}`;
 
             try {
                 const res = await fetch(`${API_BASE}/api/user/calculate-total`, {
@@ -575,15 +661,12 @@
                     document.getElementById('previewDelivery').innerText = `KES ${s.deliveryFee.toLocaleString()}`;
                     document.getElementById('previewDriverPayout').innerText = `KES ${s.riderShare.toLocaleString()}`;
                     document.getElementById('previewAppCommission').innerText = `KES ${s.appDeliveryCommission.toLocaleString()}`;
-                    document.getElementById('previewTotalSystemIncome').innerText = `KES ${s.systemFee.toLocaleString()}`;
-                    document.getElementById('previewKraTax').innerText = `KES ${s.tax.toLocaleString()}`;
-                    document.getElementById('previewNetRevenue').innerText = `KES ${s.netSystemRevenue.toLocaleString()}`;
                     document.getElementById('previewTotal').innerText = `KES ${s.userPays.toLocaleString()}`;
                 }
             } catch (e) {}
         }
 
-        async function confirmRideBooking() {
+        async function confirmDirectRideBooking() {
             const rideType = document.getElementById('activeRideType').value || 'BODA';
             const pickup = document.getElementById('ridePickupInput').value.trim();
             const destination = document.getElementById('rideDestInput').value.trim();
@@ -605,7 +688,7 @@
 
                 const res = await fetch(`${API_BASE}/api/user/checkout`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': 'MERCH_DEF_172' },
+                    headers: { 'Content-Type': 'application/json', 'x-business-id': 'DIRECT_RIDE' },
                     body: JSON.stringify({
                         phone,
                         itemPriceTotal: 0,
@@ -614,23 +697,23 @@
                         vehicleType: rideType,
                         pickup,
                         destination,
-                        businessId: 'MERCH_DEF_172',
+                        businessId: 'DIRECT_RIDE',
                         userId: currentUser ? currentUser.id : 'ANONYMOUS',
-                        items: [{ name: `${rideType === 'BODA' ? 'Boda Boda' : 'Cab'} Ride`, qty: 1, price: deliveryFee }]
+                        items: [{ name: `${rideType === 'BODA' ? 'Boda Boda' : 'Cab'} Direct Ride`, qty: 1, price: deliveryFee }]
                     })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ ${rideType === 'BODA' ? 'Boda' : 'Cab'} Ride Dispatched Successfully! Order ID: ${data.orderId}`);
+                    alert(`🚀 ${rideType} requested straight to driver radar with zero compromise!`);
                     document.getElementById('pickupInput').value = pickup;
                     document.getElementById('destinationInput').value = destination;
                     switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
                     fetchLiveOrders();
                 } else {
-                    alert(data.error || "Failed to book ride.");
+                    alert(data.error || "Failed to dispatch ride.");
                 }
             } catch (e) {
-                alert("Network error while booking ride.");
+                alert("Network error while dispatching ride.");
             }
         }
 
@@ -647,12 +730,12 @@
                     <div class="merchant-store-card" onclick="openStoreCatalog('${t.merchantId}', '${t.shopName}', ${t.gpsLat || -1.2863}, ${t.gpsLon || 36.8172})">
                         <div class="store-banner">
                             <img src="${banner}" style="width:100%; height:100%; object-fit:cover;">
-                            <div class="store-meta-badge"><i class="fa-solid fa-star"></i> 4.9 • 15-25 min</div>
+                            <div class="store-meta-badge"><i class="fa-solid fa-bell"></i> Instant Store Ringer Active</div>
                         </div>
                         <div class="store-info-box">
                             <div>
                                 <h4>${t.shopName}</h4>
-                                <p>Commodity 100% to Shop on Dispatch • 95% Rider Payout</p>
+                                <p>Order Rice, Milk, Spare Parts • Triggers Store Alarm Fast</p>
                             </div>
                             <span class="store-tag">${t.businessType || 'RETAIL'}</span>
                         </div>
@@ -771,7 +854,7 @@
                         itemPriceTotal: totalPrice,
                         pickupCoords: { lat: pLat, lng: pLng },
                         destinationCoords: { lat: dLat, lng: dLng },
-                        vehicleType: document.getElementById('activeRideType').value || "BODA", businessId: merchantId
+                        vehicleType: "BODA", businessId: merchantId
                     })
                 });
                 const data = await res.json();
@@ -784,14 +867,12 @@
                     document.getElementById('previewDelivery').innerText = `${curr} ${s.deliveryFee.toLocaleString()}`;
                     document.getElementById('previewDriverPayout').innerText = `${curr} ${s.riderShare.toLocaleString()}`;
                     document.getElementById('previewAppCommission').innerText = `${curr} ${s.appDeliveryCommission.toLocaleString()}`;
-                    document.getElementById('previewTotalSystemIncome').innerText = `${curr} ${s.systemFee.toLocaleString()}`;
-                    document.getElementById('previewKraTax').innerText = `${curr} ${s.tax.toLocaleString()}`;
-                    document.getElementById('previewNetRevenue').innerText = `${curr} ${s.netSystemRevenue.toLocaleString()}`;
                     document.getElementById('previewTotal').innerText = `${curr} ${s.userPays.toLocaleString()}`;
                 }
             } catch (e) {}
         }
 
+        // PROTOCOL: COMMODITY ORDER (RICE, MILK, SPARE PARTS) GOES TO MERCHANT WITH ALARM RINGER
         async function triggerUnifiedCheckout() {
             let totalPrice = 0;
             let cartItemsArray = [];
@@ -801,8 +882,8 @@
             }
             
             if (totalPrice <= 0) {
-                const rideType = document.getElementById('activeRideType').value || 'BODA';
-                cartItemsArray = [{ name: `${rideType === 'BODA' ? 'Boda Boda' : 'Cab'} Ride`, qty: 1, price: 0 }];
+                alert("Please select items (rice, milk, spare parts) from a merchant store.");
+                return;
             }
 
             const merchantId = document.getElementById('storeBusinessId').value;
@@ -813,7 +894,6 @@
             const pLng = Number(document.getElementById('pickupLng').value) || 36.817223;
             const dLat = Number(document.getElementById('destLat').value) || -1.215000;
             const dLng = Number(document.getElementById('destLng').value) || 36.890000;
-            const vehicleType = document.getElementById('activeRideType').value || 'BODA';
 
             try {
                 const res = await fetch(`${API_BASE}/api/user/checkout`, {
@@ -823,15 +903,14 @@
                         phone, itemPriceTotal: totalPrice,
                         pickupCoords: { lat: pLat, lng: pLng },
                         destinationCoords: { lat: dLat, lng: dLng },
-                        vehicleType, pickup, destination, businessId: merchantId,
+                        vehicleType: 'BODA', pickup, destination, businessId: merchantId,
                         userId: currentUser ? currentUser.id : 'ANONYMOUS',
                         items: cartItemsArray
                     })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ Full Escrow Secured! Order ${data.orderId} sent to merchant for packaging.`);
-                    switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
+                    triggerFastMerchantCall(data.orderId, pickup);
                     fetchLiveOrders();
                 } else { alert(data.error); }
             } catch (e) { alert("Checkout error."); }

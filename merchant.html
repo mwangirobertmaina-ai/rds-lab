@@ -26,7 +26,7 @@
                 <i class="fa-solid fa-bell"></i>
             </div>
             <div>
-                <h4 class="font-black text-sm tracking-wide">🚨 NEW INCOMING ORDER!</h4>
+                <h4 class="font-black text-sm tracking-wide" id="alertTitle">🚨 NEW INCOMING ORDER!</h4>
                 <p class="text-xs font-semibold" id="alertOrderDetails">A customer just placed an order. Check your live feed!</p>
             </div>
         </div>
@@ -327,11 +327,14 @@
             showDashboard();
         }
 
-        // --- WEB AUDIO API INCOMING ORDER RINGER ---
-        function triggerMerchantRinger(orderId) {
+        // Dedicated Merchant Ringer Function with Audio Beeps & Banner
+        function triggerMerchantRinger(orderId, customTitle = "🚨 NEW INCOMING ORDER!") {
             const banner = document.getElementById('incomingOrderAlert');
+            const titleEl = document.getElementById('alertTitle');
             const details = document.getElementById('alertOrderDetails');
-            if (details) details.innerText = `New order ${orderId} received for ${currentShopName}!`;
+            
+            if (titleEl) titleEl.innerText = customTitle;
+            if (details) details.innerText = `Order ID ${orderId} received for ${currentShopName}!`;
             if (banner) banner.classList.remove('hidden');
 
             try {
@@ -342,7 +345,7 @@
 
                 let count = 0;
                 const ringInterval = setInterval(() => {
-                    if (count >= 5) {
+                    if (count >= 6) {
                         clearInterval(ringInterval);
                         return;
                     }
@@ -350,7 +353,8 @@
                     const gain = audioCtx.createGain();
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5 note
-                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15); // A5 note
+                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
 
                     osc.connect(gain);
@@ -359,16 +363,15 @@
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.3);
                     count++;
-                }, 400);
+                }, 350);
             } catch (e) {
-                console.log("Audio alert suppressed.");
+                console.log("Audio ringer suppressed.");
             }
         }
 
         function dismissOrderAlert() {
             document.getElementById('incomingOrderAlert').classList.add('hidden');
         }
-        // ------------------------------------------
 
         function switchAuthMode(mode) {
             if (mode === 'REGISTER') {
@@ -517,12 +520,18 @@
             loadDashboardData();
         }
 
-        // Real-time targeted socket listeners with audio ringer
+        // Real-time socket listeners for incoming order ringer
         socket.on('new_customer_order', (order) => { 
             loadOrders(); 
-            triggerMerchantRinger(order.orderId || 'NEW_ORDER');
+            triggerMerchantRinger(order.orderId || 'NEW_ORDER', "🚨 NEW CUSTOMER ORDER!");
         });
-        socket.on('orderListUpdated', () => { loadOrders(); });
+        socket.on('merchant_order_update', (order) => {
+            loadOrders();
+            if (order.status === 'DRIVER_EN_ROUTE_TO_MERCHANT') {
+                triggerMerchantRinger(order.orderId, "🛵 DRIVER ARRIVING!");
+            }
+        });
+        socket.on('orderListUpdated', () => { loadOrders(); loadDriverQueue(); });
         socket.on('new_driver_dispatch', () => { loadDriverQueue(); });
 
         async function loadDashboardData() {
@@ -571,17 +580,24 @@
                     tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-500">No incoming customer orders.</td></tr>`;
                     return;
                 }
-                tbody.innerHTML = data.orders.map(order => `
-                    <tr class="hover:bg-slate-800/50 transition">
-                        <td class="py-3 px-4 font-mono text-xs text-sky-400">${order.orderId}</td>
-                        <td class="py-3 px-4 text-slate-300">${order.items ? order.items.map(i => `${i.name} (x${i.qty || 1})`).join(', ') : 'Standard'}</td>
-                        <td class="py-3 px-4 font-semibold text-emerald-400">KES ${Number(order.totalAmount || 0).toLocaleString()}</td>
-                        <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs bg-sky-500/10 text-sky-400">${order.status}</span></td>
-                        <td class="py-3 px-4 text-right">
-                            <button onclick="acceptOrder('${order.orderId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs font-semibold">Accept & Dispatch to Rider</button>
-                        </td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = data.orders.map(order => {
+                    let actionBtn = `<button onclick="acceptOrder('${order.orderId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs font-semibold">Accept & Call Driver</button>`;
+                    if (order.status === 'DRIVER_EN_ROUTE_TO_MERCHANT') {
+                        actionBtn = `<button onclick="completeHandover('${order.orderId}')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-3 py-1 rounded-lg text-xs animate-bounce">📦 Handover & Get Paid</button>`;
+                    } else if (order.status === 'COMPLETED & PAID OUT') {
+                        actionBtn = `<span class="text-xs text-emerald-400 font-bold">✅ Paid Out Successfully</span>`;
+                    }
+
+                    return `
+                        <tr class="hover:bg-slate-800/50 transition">
+                            <td class="py-3 px-4 font-mono text-xs text-sky-400">${order.orderId}</td>
+                            <td class="py-3 px-4 text-slate-300">${order.items ? order.items.map(i => `${i.name} (x${i.qty || 1})`).join(', ') : 'Standard'}</td>
+                            <td class="py-3 px-4 font-semibold text-emerald-400">KES ${Number(order.totalAmount || 0).toLocaleString()}</td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs bg-sky-500/10 text-sky-400">${order.status}</span></td>
+                            <td class="py-3 px-4 text-right">${actionBtn}</td>
+                        </tr>
+                    `;
+                }).join('');
             } catch (err) {}
         }
 
@@ -594,9 +610,24 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ Order ${orderId} packed & successfully pushed to driver queue!`);
+                    alert(`✅ Order ${orderId} packed & driver called successfully!`);
                     loadOrders();
                     loadDriverQueue();
+                }
+            } catch (err) {}
+        }
+
+        async function completeHandover(orderId) {
+            try {
+                const res = await fetch(`${API_BASE}/api/merchant/orders/complete-handover`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ merchantId: currentMerchantId, orderId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`💰 Order ${orderId} handed over and payment credited immediately!`);
+                    loadOrders();
                 }
             } catch (err) {}
         }
@@ -613,9 +644,9 @@
                 tbody.innerHTML = data.queue.map(order => `
                     <tr class="hover:bg-slate-800/50 transition">
                         <td class="py-3 px-4 font-mono text-xs text-amber-400">${order.orderId}</td>
-                        <td class="py-3 px-4 font-medium">${order.shopName}</td>
+                        <td class="py-3 px-4 font-medium">${order.shopName || order.pickup}</td>
                         <td class="py-3 px-4 text-slate-300">${order.items ? order.items.map(i => `${i.name} (x${i.qty || 1})`).join(', ') : 'Items'}</td>
-                        <td class="py-3 px-4 font-semibold text-emerald-400">KES ${Number(order.totalAmount || 0).toLocaleString()}</td>
+                        <td class="py-3 px-4 font-semibold text-emerald-400">KES ${Number(order.totalAmount || order.total || 0).toLocaleString()}</td>
                         <td class="py-3 px-4 text-right">
                             <button onclick="driverAcceptOrder('${order.orderId}')" class="bg-amber-600 text-slate-950 font-bold px-3 py-1 rounded-lg text-xs">Claim & Deliver</button>
                         </td>
@@ -633,7 +664,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`🛵 Order ${orderId} successfully claimed by rider!`);
+                    alert(`🛵 Order ${orderId} claimed! You are en route to the merchant.`);
                     loadDriverQueue();
                 }
             } catch (err) {}

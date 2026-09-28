@@ -55,20 +55,24 @@ router.get('/tenants', (req, res) => {
                 gpsLon: 36.8172,
                 banner: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=500'
             },
-            'MERCH_JAVA_88': {
-                merchantId: 'MERCH_JAVA_88',
-                shopName: "Java House Restaurant",
-                businessType: "RESTAURANT",
+            'MERCH_SPARE_10': {
+                merchantId: 'MERCH_SPARE_10',
+                shopName: "Sovereign Auto Spare Parts",
+                businessType: "SPARES",
                 phone: "+254722334455",
                 gpsLat: -1.2789,
                 gpsLon: 36.8123,
-                banner: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500'
+                banner: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=500'
             }
         };
         const merchantProfiles = (global.merchantProfiles && Object.keys(global.merchantProfiles).length > 0) ? global.merchantProfiles : defaultProfiles;
         const defaultCatalogs = {
             'MERCH_DEF_172': [
-                { id: 'K_1', name: 'Sovereign Organic Milk (1L)', category: 'SUPERMARKET', price: 180, merchant: 'Sovereign Supermarket', image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300' }
+                { id: 'K_1', name: 'Sovereign Organic Milk (1L)', category: 'SUPERMARKET', price: 180, merchant: 'Sovereign Supermarket', image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300' },
+                { id: 'K_2', name: 'Premium Grade Rice (2kg)', category: 'SUPERMARKET', price: 320, merchant: 'Sovereign Supermarket', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300' }
+            ],
+            'MERCH_SPARE_10': [
+                { id: 'S_1', name: 'Heavy Duty Boda Brake Pads', category: 'SPARES', price: 650, merchant: 'Sovereign Auto Spare Parts', image: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=300' }
             ]
         };
         const merchantCatalogs = (global.merchantCatalogs && Object.keys(global.merchantCatalogs).length > 0) ? global.merchantCatalogs : defaultCatalogs;
@@ -93,7 +97,10 @@ router.get('/products', (req, res) => {
     const defaultCatalogs = {
         'MERCH_DEF_172': [
             { id: 'K_1', name: 'Sovereign Organic Milk (1L)', category: 'SUPERMARKET', price: 180, merchant: 'Sovereign Supermarket', image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300' },
-            { id: 'K_2', name: 'Prime Beef Steak (1kg)', category: 'SUPERMARKET', price: 950, merchant: 'Sovereign Supermarket', image: 'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=300' }
+            { id: 'K_2', name: 'Premium Grade Rice (2kg)', category: 'SUPERMARKET', price: 320, merchant: 'Sovereign Supermarket', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300' }
+        ],
+        'MERCH_SPARE_10': [
+            { id: 'S_1', name: 'Heavy Duty Boda Brake Pads', category: 'SPARES', price: 650, merchant: 'Sovereign Auto Spare Parts', image: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=300' }
         ]
     };
     const sourceCatalogs = (global.merchantCatalogs && Object.keys(global.merchantCatalogs).length > 0) ? global.merchantCatalogs : defaultCatalogs;
@@ -119,9 +126,9 @@ router.post('/calculate-total', (req, res) => {
     const perKmRate = isCar ? 65 : 40;
     const deliveryFee = Number((baseDeliveryFee + (distanceKm * perKmRate)).toFixed(2));
 
-    const shopOwnerPayout = Number((commodityCost * 1.00).toFixed(2)); // 100% commodity payout released upon dispatch
+    const shopOwnerPayout = Number((commodityCost * 1.00).toFixed(2)); 
     const systemCommodityFee = Number((commodityCost * 0.02).toFixed(2)); 
-    const riderShare = Number((deliveryFee * 0.95).toFixed(2));             
+    const riderShare = Number((deliveryFee * 0.95).toFixed(2));               
     const appDeliveryCommission = Number((deliveryFee * 0.05).toFixed(2));  
 
     const totalSystemIncome = Number((systemCommodityFee + appDeliveryCommission).toFixed(2));
@@ -180,6 +187,8 @@ router.post('/checkout', (req, res) => {
 
     const resolvedItems = (items && items.length > 0) ? items : [{ name: `${isCar ? 'Cab' : 'Boda'} Ride`, qty: 1, price: total }];
 
+    const isDirectRide = (businessId === 'DIRECT_RIDE' || commodityCost <= 0);
+
     const newOrder = {
         id: orderId,
         userId: userId || 'ANONYMOUS',
@@ -197,10 +206,40 @@ router.post('/checkout', (req, res) => {
             tax: kraTax
         },
         assignedDriver,
-        status: 'HELD_IN_ESCROW_PENDING_PACKAGING',
+        status: isDirectRide ? 'DISPATCHED_STRAIGHT_TO_DRIVER' : 'HELD_IN_ESCROW_PENDING_PACKAGING',
         createdAt: Date.now()
     };
 
+    if (isDirectRide) {
+        // PROTOCOL 1: CAB / BODA GOES STRAIGHT TO DRIVER RADAR WITH ZERO COMPROMISE
+        if (!global.driverQueue) global.driverQueue = [];
+        const directDispatch = {
+            id: orderId,
+            orderId: orderId,
+            isDirectRide: true,
+            pickup: pickup || 'Nairobi CBD',
+            destination: destination || 'Kasarani',
+            currency,
+            total,
+            totalAmount: total,
+            assignedDriver,
+            status: 'PENDING_DRIVER_ACCEPTANCE',
+            dispatchedAt: Date.now()
+        };
+        global.driverQueue.push(directDispatch);
+
+        if (!activeOrders['DIRECT_RIDES']) activeOrders['DIRECT_RIDES'] = [];
+        activeOrders['DIRECT_RIDES'].push(newOrder);
+
+        if (global.io) {
+            global.io.emit('new_driver_dispatch', directDispatch);
+            global.io.emit('orderListUpdated', directDispatch);
+        }
+
+        return res.json({ success: true, message: "Ride dispatched straight to driver radar with zero compromise.", orderId, total, assignedDriver });
+    }
+
+    // PROTOCOL 2: COMMODITY ORDERS (RICE, MILK, SPARE PARTS) GO TO MERCHANT FAST WITH ALARM RINGER
     const targetMerchant = businessId || 'MERCH_DEF_172';
     if (!activeOrders[targetMerchant]) activeOrders[targetMerchant] = [];
     activeOrders[targetMerchant].push(newOrder);
@@ -217,27 +256,43 @@ router.post('/checkout', (req, res) => {
         createdAt: Date.now()
     });
 
+    // INSTANT SOCKET EMIT TO RING MERCHANT TERMINAL LOUD & FAST
     if (global.io) {
-        global.io.to(targetMerchant).emit('new_customer_order', { orderId, totalAmount: total, shopOwnerPayout, assignedDriver });
+        global.io.to(targetMerchant).emit('new_customer_order', { orderId, items: resolvedItems, totalAmount: total, shopOwnerPayout, assignedDriver });
         global.io.emit('orderListUpdated', { orderId });
     }
 
-    res.json({ success: true, message: "Full gross amount secured in escrow. Awaiting merchant packaging and dispatch.", orderId, total, assignedDriver });
+    res.json({ success: true, message: "Order sent to merchant store with instant ringer alarm.", orderId, total, assignedDriver });
 });
 
 router.get('/orders/live', (req, res) => {
     const merchantId = req.headers['x-business-id'] || 'MERCH_DEF_172';
-    const orders = activeOrders[merchantId] || [];
+    const orders = (activeOrders[merchantId] || []).concat(activeOrders['DIRECT_RIDES'] || []);
     res.json({ success: true, orders });
 });
 
 router.post('/orders/dismiss', (req, res) => {
     const { orderId, businessId } = req.body;
     const bizKey = businessId || 'MERCH_DEF_172';
-    if (!activeOrders[bizKey]) return res.status(404).json({ success: false, error: "Order pool not found." });
-    const order = activeOrders[bizKey].find(o => o.id === orderId);
-    if (!order) return res.status(404).json({ success: false, error: "Order ID not found." });
-    order.status = 'ORDERLY_DISMISSED';
+    
+    let found = false;
+    for (let key in activeOrders) {
+        const order = activeOrders[key].find(o => o.id === orderId);
+        if (order) {
+            order.status = 'ORDERLY_DISMISSED';
+            found = true;
+        }
+    }
+    if (!found && activeOrders[bizKey]) {
+        const order = activeOrders[bizKey].find(o => o.id === orderId);
+        if (order) {
+            order.status = 'ORDERLY_DISMISSED';
+            found = true;
+        }
+    }
+
+    if (!found) return res.status(404).json({ success: false, error: "Order ID not found." });
+
     if (global.io) global.io.emit('orderListUpdated', { orderId });
     res.json({ success: true, message: `Order ${orderId} dismissed and escrow rolled back.` });
 });
