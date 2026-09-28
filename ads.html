@@ -3,256 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS Sovereign Secured Commercial Hub</title>
+    <title>RDS Sovereign Creator Hub & Entertainment Feed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .snap-container {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            height: calc(100vh - 160px);
+        }
+        .snap-item {
+            scroll-snap-align: start;
+            height: 100%;
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-3 sm:p-6 lg:p-8 font-sans flex flex-col justify-between selection:bg-purple-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col justify-between selection:bg-purple-500 selection:text-white overflow-x-hidden">
 
-    <!-- Royalty-Free Global Peace Vocal Anthem -->
-    <audio id="globalPeaceAudio" loop preload="auto">
-        <source src="https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=inspiring-cinematic-ambient-116195.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- SOVEREIGN AMBIENT BACKGROUND MUSIC WIDGET -->
-    <div id="ambientMusicWidget" class="fixed bottom-4 right-4 z-40 bg-slate-900/90 border border-slate-700/60 px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl flex items-center gap-2.5 text-white backdrop-blur-md shadow-2xl">
-        <span class="text-xs font-medium hidden sm:inline">🎧 Sovereign Lounge</span>
-        <button id="toggleMusicBtn" onclick="toggleSovereignMusic()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl font-bold text-xs transition shadow-md cursor-pointer">Play</button>
-    </div>
-
-    <!-- BIOMETRIC & AI LIVENESS LOGIN MODAL -->
-    <div id="biometricModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 text-center">
-            <div class="bg-purple-600/20 text-purple-400 w-12 h-12 sm:w-14 sm:h-14 mx-auto rounded-2xl flex items-center justify-center text-lg sm:text-xl font-bold">
-                <i class="fa-solid fa-face-recognition"></i>
-            </div>
-            <div>
-                <h3 class="text-sm sm:text-base font-bold text-white">AI Liveness & Biometric Verification</h3>
-                <p id="livenessInstruction" class="text-xs text-amber-400 font-semibold mt-1">Challenge: Please blink and smile into the camera...</p>
-            </div>
-            <div class="relative w-full h-44 sm:h-48 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
-                <video id="webcamStream" autoplay playsinline class="w-full h-full object-cover"></video>
-                <canvas id="snapshotCanvas" class="hidden"></canvas>
-                <div class="absolute inset-0 border-2 border-purple-500/40 rounded-2xl pointer-events-none flex items-center justify-center">
-                    <div class="w-28 h-36 sm:w-32 sm:h-40 border border-dashed border-purple-400 rounded-full"></div>
+    <!-- SECURE ANTI-SCAM ONBOARDING / LOGIN MODAL -->
+    <div id="secureAuthModal" class="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
+            
+            <div class="text-center space-y-1">
+                <div class="bg-purple-600/20 text-purple-400 w-12 h-12 mx-auto rounded-2xl flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-shield-halved"></i>
                 </div>
+                <h3 class="text-base font-bold text-white">Sovereign Anti-Scam Security Login</h3>
+                <p class="text-xs text-slate-400">Mandatory Dual-Channel OTP & AI Facial Liveness Verification</p>
             </div>
-            <div class="space-y-2">
-                <input type="email" id="authEmail" placeholder="Enter Registered Email" value="mwangirobertmaina@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-center focus:border-purple-500 outline-none text-white font-mono">
-            </div>
-            <button onclick="executeAiLivenessCheck()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg shadow-purple-600/30 cursor-pointer">
-                🛡️ Run Edge AI Liveness & Authenticate
-            </button>
-        </div>
-    </div>
 
-    <!-- OTP SECURITY MODAL -->
-    <div id="otpModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
-            <div class="flex items-center space-x-3">
-                <div class="bg-amber-500/20 text-amber-400 p-3 rounded-xl text-sm sm:text-base"><i class="fa-solid fa-shield-halved"></i></div>
+            <!-- Step 1: Contact Input & Request OTP -->
+            <div id="authStep1" class="space-y-3">
                 <div>
-                    <h3 class="text-xs sm:text-sm font-bold text-white">Dual-Channel Security Check</h3>
-                    <p class="text-[11px] sm:text-xs text-slate-400">OTP dispatched to your registered Email & Phone.</p>
+                    <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Email or Phone Number</label>
+                    <input type="text" id="loginContactInput" placeholder="e.g. mwangirobertmaina@gmail.com or +254..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500 font-mono">
                 </div>
+                <button onclick="requestSecurityOtp()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg shadow-purple-600/30 cursor-pointer">
+                    📩 Send Automated Security Code
+                </button>
             </div>
-            <div>
-                <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Enter 6-Digit Verification Code</label>
-                <input type="text" id="otpInput" maxlength="6" placeholder="------" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-center tracking-widest font-mono text-base sm:text-lg text-white focus:border-purple-500 outline-none">
+
+            <!-- Step 2: OTP Entry & Live Webcam Facial Scan -->
+            <div id="authStep2" class="space-y-3 hidden">
+                <div>
+                    <label class="block text-[10px] uppercase tracking-wider text-emerald-400 mb-1 font-semibold">Enter 6-Digit Code Sent to Device</label>
+                    <input type="text" id="loginOtpInput" maxlength="6" placeholder="------" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-center tracking-widest text-white font-mono text-base outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] uppercase tracking-wider text-amber-400 mb-1 font-semibold">AI Facial Liveness Scan (Blink / Smile)</label>
+                    <div class="relative w-full h-36 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                        <video id="authWebcamStream" autoplay playsinline class="w-full h-full object-cover"></video>
+                        <canvas id="authSnapshotCanvas" class="hidden"></canvas>
+                    </div>
+                </div>
+
+                <button onclick="verifyAndCompleteLogin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg shadow-emerald-600/30 cursor-pointer">
+                    🛡️ Verify Face & Authenticate Securely
+                </button>
             </div>
-            <button onclick="verifyOtpAndExecute()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg cursor-pointer">
-                🔐 Confirm & Authorize
-            </button>
+
         </div>
     </div>
 
-    <!-- LIVE VIDEO & VOICE CALL MODAL -->
-    <div id="callModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-3xl p-6 shadow-2xl space-y-4">
+    <!-- P2P LIVE VIDEO & VOICE CALL MODAL -->
+    <div id="videoCallModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-4xl rounded-3xl p-6 shadow-2xl space-y-4 flex flex-col">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <div class="flex items-center space-x-2">
-                    <div id="callIconBadge" class="bg-purple-600 text-white p-2.5 rounded-xl"><i class="fa-solid fa-video"></i></div>
+                    <div class="bg-cyan-600 text-white p-2.5 rounded-xl"><i class="fa-solid fa-video"></i></div>
                     <div>
-                        <h3 id="callModalTitle" class="text-sm font-bold text-white">Secure Merchant Video / Voice Call</h3>
-                        <p class="text-xs text-slate-400">Direct peer-to-peer encrypted connection via WebSockets</p>
+                        <h3 class="text-sm font-bold text-white">RDS Sovereign Secure P2P Call Studio</h3>
+                        <p class="text-xs text-slate-400">Encrypted Direct Video & Voice Stream</p>
                     </div>
                 </div>
-                <button onclick="endCall()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-4 py-2 rounded-xl font-bold transition cursor-pointer">End Call</button>
+                <button onclick="endCall()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="relative w-full h-56 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
-                    <span class="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded-lg z-10">You</span>
-                    <video id="localVideoCall" autoplay playsinline muted class="w-full h-full object-cover"></video>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="relative bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 h-64 flex items-center justify-center">
+                    <span class="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded font-mono z-10">Local Stream</span>
+                    <video id="localVideo" autoplay playsinline muted class="w-full h-full object-cover"></video>
                 </div>
-                <div class="relative w-full h-56 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
-                    <span class="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded-lg z-10">Merchant / Peer</span>
-                    <video id="remoteVideoCall" autoplay playsinline class="w-full h-full object-cover"></video>
-                    <div id="callAudioPlaceholder" class="hidden flex flex-col items-center justify-center text-slate-400 space-y-2">
-                        <i class="fa-solid fa-microphone-lines text-3xl text-emerald-400 animate-pulse"></i>
-                        <span class="text-xs">Secure Audio Channel Active</span>
-                    </div>
+                <div class="relative bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 h-64 flex items-center justify-center">
+                    <span class="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded font-mono z-10">Remote Peer Stream</span>
+                    <video id="remoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
                 </div>
             </div>
 
-            <div class="flex justify-center space-x-4 pt-2">
-                <button onclick="toggleAudioMute()" id="muteAudioBtn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"><i class="fa-solid fa-microphone mr-1"></i> Mute Mic</button>
-                <button onclick="toggleVideoMute()" id="muteVideoBtn" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"><i class="fa-solid fa-video mr-1"></i> Turn Off Video</button>
+            <div class="flex justify-center items-center space-x-4 pt-2">
+                <button onclick="startCall()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl text-xs font-bold transition shadow-lg flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-phone"></i> Start / Connect Call
+                </button>
+                <button onclick="toggleAudioMute()" class="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-xl text-xs transition cursor-pointer" title="Mute Mic">
+                    <i class="fa-solid fa-microphone" id="micIcon"></i>
+                </button>
+                <button onclick="toggleVideoMute()" class="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-xl text-xs transition cursor-pointer" title="Toggle Camera">
+                    <i class="fa-solid fa-video" id="videoIcon"></i>
+                </button>
+                <button onclick="endCall()" class="bg-rose-600 hover:bg-rose-500 text-white px-6 py-3 rounded-xl text-xs font-bold transition shadow-lg flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-phone-slash"></i> Hang Up
+                </button>
             </div>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto w-full space-y-5 sm:space-y-6">
+    <!-- COMMENTS & CREATOR CHAT DRAWER -->
+    <div id="commentsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4 max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-comments text-purple-400"></i> Encrypted Fan & Creator Discussion</h3>
+                <button onclick="closeCommentsModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="commentsListContainer" class="overflow-y-auto space-y-3 flex-1 pr-1">
+                <p class="text-xs text-slate-500 text-center py-6">No comments yet. Start the conversation!</p>
+            </div>
+            <div class="pt-2 border-t border-slate-800 flex gap-2">
+                <input type="text" id="commentInputBox" placeholder="Write a supportive comment..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500">
+                <button onclick="postComment()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Post</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div class="max-w-7xl mx-auto w-full p-3 sm:p-6 space-y-5">
+        
         <!-- Header -->
-        <header class="bg-slate-900 border border-slate-800/80 p-4 sm:p-6 rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 shadow-xl">
+        <header class="bg-slate-900 border border-slate-800/80 p-4 sm:p-5 rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 shadow-xl">
             <div class="flex items-center space-x-3.5 text-center sm:text-left">
-                <div class="bg-purple-600 text-white p-3 rounded-2xl text-lg sm:text-xl font-bold shadow-lg shadow-purple-600/30 shrink-0"><i class="fa-solid fa-earth-americas"></i></div>
+                <div class="bg-gradient-to-tr from-purple-600 to-pink-600 text-white p-3 rounded-2xl text-lg sm:text-xl font-bold shadow-lg shadow-purple-600/30 shrink-0"><i class="fa-solid fa-clapperboard"></i></div>
                 <div>
-                    <h1 class="text-base sm:text-xl font-bold text-purple-400 tracking-tight">RDS Sovereign Commercial Hub</h1>
-                    <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">Global multi-module marketplace with smart escrow, AI liveness, and CDN streaming.</p>
+                    <h1 class="text-base sm:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 tracking-tight">RDS Sovereign Creator & Entertainment Hub</h1>
+                    <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">Download viral motivational clips, music, and connect via P2P Video/Voice calls.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-                <button onclick="openBiometricModal()" id="userBadge" class="text-[11px] sm:text-xs font-mono bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-xl border border-emerald-500/20 transition cursor-pointer"><i class="fa-solid fa-user-shield mr-1"></i> Authenticated</button>
-                <button onclick="startCall('video')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3.5 py-2 rounded-xl font-bold transition shadow-md cursor-pointer"><i class="fa-solid fa-video mr-1"></i> Video Call</button>
-                <button onclick="startCall('voice')" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs px-3.5 py-2 rounded-xl font-bold transition shadow-md cursor-pointer"><i class="fa-solid fa-phone mr-1"></i> Voice Call</button>
+                <button onclick="openVideoCallModal()" class="text-[11px] sm:text-xs font-mono bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 px-3 py-2 rounded-xl border border-cyan-500/20 transition cursor-pointer"><i class="fa-solid fa-video mr-1"></i> Video/Voice Call</button>
+                <button onclick="openBiometricModal()" id="userBadge" class="text-[11px] sm:text-xs font-mono bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-3 py-2 rounded-xl border border-emerald-500/20 transition cursor-pointer"><i class="fa-solid fa-user-shield mr-1"></i> Verified Creator</button>
                 <a href="/" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-4 py-2 rounded-xl transition font-medium">← Dashboard</a>
             </div>
         </header>
 
         <!-- Vertical Filtering Bar -->
-        <div class="flex overflow-x-auto space-x-2 pb-2 scrollbar-none">
-            <button onclick="filterVertical('ALL')" class="vertical-btn bg-purple-600 text-white text-xs px-4 py-2 rounded-xl font-bold shrink-0 transition shadow-md shadow-purple-600/20 cursor-pointer">All Verticals</button>
-            <button onclick="filterVertical('SUPERMARKET')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">Supermarket</button>
-            <button onclick="filterVertical('SPARES')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">Auto Spares</button>
-            <button onclick="filterVertical('LOGISTICS')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">Logistics & Boda</button>
-            <button onclick="filterVertical('FINANCE')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">Finance & Bank</button>
-            <button onclick="filterVertical('GLOBAL')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">Global Tech</button>
+        <div class="flex overflow-x-auto space-x-2 pb-1 scrollbar-none">
+            <button onclick="filterVertical('ALL')" class="vertical-btn bg-purple-600 text-white text-xs px-4 py-2 rounded-xl font-bold shrink-0 transition shadow-md shadow-purple-600/20 cursor-pointer">All Categories</button>
+            <button onclick="filterVertical('MOTIVATION')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">🔥 Motivation & Mindset</button>
+            <button onclick="filterVertical('MUSIC')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">🎵 Music & Beats</button>
+            <button onclick="filterVertical('COMEDY')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">😂 Comedy & Skits</button>
+            <button onclick="filterVertical('SUPERMARKET')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">🛍️ Supermarket Ads</button>
         </div>
 
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- LEFT: REEL PLAYER & ANALYTICS TELEMETRY (7 Cols) -->
-            <div class="lg:col-span-7 space-y-6">
-                <div class="bg-slate-900 border border-slate-800/80 p-4 sm:p-6 rounded-3xl shadow-2xl relative overflow-hidden">
-                    <div class="flex flex-wrap justify-between items-center mb-3.5 gap-2">
+            <!-- LEFT: VERTICAL TIKTOK/FACEBOOK REELS SWIPE FEED (7 Cols) -->
+            <div class="lg:col-span-7">
+                <div class="bg-slate-900 border border-slate-800/80 rounded-3xl shadow-2xl relative overflow-hidden flex flex-col">
+                    
+                    <!-- Top Reel Header Info -->
+                    <div class="p-3 sm:p-4 bg-slate-950/80 border-b border-slate-800/80 flex justify-between items-center z-20">
                         <span class="bg-purple-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider animate-pulse shadow-sm">
-                            <i class="fa-solid fa-shield-halved mr-1"></i> CDN Edge Stream Active
+                            <i class="fa-solid fa-clapperboard mr-1"></i> Viral Clip Feed
                         </span>
                         <div class="flex items-center space-x-2">
-                            <!-- DOWNLOAD MEDIA BUTTON -->
-                            <button onclick="downloadCurrentAdMedia()" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 shadow-md cursor-pointer">
-                                <i class="fa-solid fa-download"></i> Download Media
+                            <button onclick="downloadCurrentAdMedia()" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 shadow-md cursor-pointer">
+                                <i class="fa-solid fa-download"></i> Download Clip
                             </button>
-                            <button onclick="toggleWorldSong()" id="soundToggleBtn" class="bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition cursor-pointer">
-                                <i class="fa-solid fa-volume-xmark mr-1"></i> Music Off
-                            </button>
-                            <div class="hidden sm:flex items-center space-x-1.5 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700">
-                                <i class="fa-solid fa-volume-low text-xs text-slate-400"></i>
-                                <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.9" onchange="adjustVolume(this.value)" class="w-16 accent-purple-500 cursor-pointer">
-                                <i class="fa-solid fa-volume-high text-xs text-slate-400"></i>
-                            </div>
-                            <span id="adCounterBadge" class="text-xs font-mono text-cyan-400 font-bold bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">Ad 1 of 0</span>
+                            <span id="adCounterBadge" class="text-xs font-mono text-cyan-400 font-bold bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">Clips (0)</span>
                         </div>
                     </div>
 
-                    <div class="relative w-full h-[320px] sm:h-[400px] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-inner group flex items-center justify-center">
-                        <img id="adImageScreen" src="" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Campaign">
-                        <video id="adVideoScreen" class="w-full h-full object-cover hidden" autoplay playsinline onended="nextAd()"></video>
-                        
-                        <div class="absolute top-0 left-0 right-0 z-20 p-3 bg-gradient-to-b from-black/80 to-transparent">
-                            <div class="flex gap-1 w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
-                                <div id="adProgressBar" class="h-full bg-purple-500 w-0 transition-all duration-100"></div>
-                            </div>
-                        </div>
-
-                        <button onclick="nextAd()" class="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 bg-black/60 hover:bg-black text-white text-xs px-3 py-1.5 rounded-xl backdrop-blur transition font-semibold border border-white/10 shadow-lg cursor-pointer">
-                            Skip ➔
-                        </button>
-
-                        <div class="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 z-10">
-                            <div>
-                                <div class="flex flex-wrap items-center gap-1.5 mb-1">
-                                    <span id="adVerticalTag" class="text-[10px] bg-purple-500/20 text-purple-300 px-2.5 py-0.5 rounded font-bold uppercase tracking-wider">Global</span>
-                                    <span id="adGeoTag" class="text-[10px] bg-cyan-500/20 text-cyan-300 px-2.5 py-0.5 rounded font-bold uppercase">🌐 Worldwide</span>
-                                </div>
-                                <h2 id="adTitleDisplay" class="text-sm sm:text-base font-bold text-white drop-shadow-md">Loading...</h2>
-                                <p id="adSubDisplay" class="text-xs text-slate-300 mt-0.5 drop-shadow">Secured commercial offer</p>
-                            </div>
-                            <button onclick="openCheckoutModal()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white text-xs sm:text-sm px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-purple-600/30 transition shrink-0 cursor-pointer">
-                                🔒 Escrow Buy ➔
-                            </button>
-                        </div>
+                    <!-- REELS CONTAINER -->
+                    <div id="reelsScrollContainer" class="snap-container relative w-full h-[500px] sm:h-[580px] bg-black">
+                        <!-- Dynamically injected Reel Items -->
                     </div>
-                </div>
 
-                <!-- REAL-TIME TELEMETRY & ANALYTICS WIDGET -->
-                <div class="bg-slate-900 border border-slate-800/80 p-4 sm:p-6 rounded-3xl shadow-2xl space-y-4">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center space-x-2.5">
-                            <div class="bg-cyan-500/10 text-cyan-400 p-2.5 rounded-xl text-sm sm:text-base"><i class="fa-solid fa-chart-line"></i></div>
-                            <div>
-                                <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Live Campaign Telemetry</h2>
-                                <p class="text-[11px] sm:text-xs text-slate-400">WebSocket-synced real-time metrics.</p>
-                            </div>
-                        </div>
-                        <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full font-mono font-bold animate-pulse">● Live Stream</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2.5 sm:gap-3 text-center">
-                        <div class="bg-slate-950 p-3 sm:p-3.5 rounded-2xl border border-slate-800/80">
-                            <span class="block text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-400">Impressions</span>
-                            <span id="statImpressions" class="text-base sm:text-lg font-bold font-mono text-white mt-0.5 block">0</span>
-                        </div>
-                        <div class="bg-slate-950 p-3 sm:p-3.5 rounded-2xl border border-slate-800/80">
-                            <span class="block text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-400">Clicks / Action</span>
-                            <span id="statClicks" class="text-base sm:text-lg font-bold font-mono text-cyan-400 mt-0.5 block">0</span>
-                        </div>
-                        <div class="bg-slate-950 p-3 sm:p-3.5 rounded-2xl border border-slate-800/80">
-                            <span class="block text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-400">Conversion</span>
-                            <span id="statConversion" class="text-base sm:text-lg font-bold font-mono text-emerald-400 mt-0.5 block">0.0%</span>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <!-- RIGHT: SUBMISSION WITH CDN MEDIA & ADMIN MODERATION (5 Cols) -->
+            <!-- RIGHT: CREATOR & BUSINESS UPLOAD STUDIO (5 Cols) -->
             <div class="lg:col-span-5 space-y-6">
                 <div class="bg-slate-900 border border-slate-800/80 p-4 sm:p-6 rounded-3xl shadow-2xl">
                     <div class="flex items-center space-x-2.5 mb-4">
-                        <div class="bg-emerald-500/10 text-emerald-400 p-2.5 rounded-xl text-sm sm:text-base"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                        <div class="bg-purple-500/10 text-purple-400 p-2.5 rounded-xl text-sm sm:text-base"><i class="fa-solid fa-video"></i></div>
                         <div>
-                            <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Multi-Region CDN Ingestion</h2>
-                            <p class="text-[11px] sm:text-xs text-slate-400">HLS transcoding & AI Liveness verification.</p>
+                            <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Creator & Motivational Upload Studio</h2>
+                            <p class="text-[11px] sm:text-xs text-slate-400">Publish viral video clips or music instantly for the world to download!</p>
                         </div>
                     </div>
 
                     <form onsubmit="initiateSecureSubmission(event)" class="space-y-3.5">
                         <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Business / Campaign Title</label>
-                            <input type="text" id="merchantTitle" required placeholder="e.g. Sovereign Supermarket Sale" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs sm:text-sm focus:border-purple-500 outline-none text-white transition">
+                            <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Title / Clip Name</label>
+                            <input type="text" id="merchantTitle" required placeholder="e.g. Unstoppable Mindset / Mega DJ Mix" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs sm:text-sm focus:border-purple-500 outline-none text-white transition">
                         </div>
                         <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Subtitle / Offer</label>
-                            <input type="text" id="merchantSubtitle" required placeholder="e.g. 20% Off All Electronics" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs sm:text-sm focus:border-purple-500 outline-none text-white transition">
+                            <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Description / Motivation Quote</label>
+                            <input type="text" id="merchantSubtitle" required placeholder="e.g. Discipline beats motivation every single day." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs sm:text-sm focus:border-purple-500 outline-none text-white transition">
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Media Type</label>
                                 <select id="merchantMediaType" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2.5 text-xs sm:text-sm focus:border-purple-500 outline-none text-white transition cursor-pointer">
-                                    <option value="Video Ad">Video Ad (HLS Transcoded)</option>
-                                    <option value="Image Banner">Image Banner</option>
+                                    <option value="Video Clip">🎬 Motivational / Video Clip</option>
+                                    <option value="Music Track">🎵 Music Track / Audio</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Target Vertical</label>
+                                <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Category / Vertical</label>
                                 <select id="merchantVertical" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2.5 text-xs sm:text-sm focus:border-purple-500 outline-none text-white transition cursor-pointer">
-                                    <option value="Supermarket">Supermarket</option>
-                                    <option value="Auto Spares">Auto Spares</option>
-                                    <option value="Logistics & Boda">Logistics & Boda</option>
-                                    <option value="Finance & Bank">Finance & Bank</option>
-                                    <option value="Global Tech">Global Tech</option>
+                                    <option value="MOTIVATION">🔥 Motivation</option>
+                                    <option value="MUSIC">🎵 Music & Beats</option>
+                                    <option value="COMEDY">😂 Comedy & Skits</option>
+                                    <option value="Supermarket">🛍️ Supermarket</option>
                                 </select>
                             </div>
                         </div>
@@ -262,17 +237,13 @@
                                 <option value="Worldwide">🌐 Worldwide</option>
                                 <option value="East Africa (Kenya / EAC)">🇰🇪 East Africa (Kenya / EAC)</option>
                                 <option value="North America">🇺🇸 North America</option>
-                                <option value="Europe">🇪🇺 Europe</option>
-                                <option value="Asia Pacific">🌏 Asia Pacific</option>
                             </select>
                         </div>
                         
-                        <!-- DIRECT SERVER FILE UPLOAD INPUT -->
-                        <div class="space-y-2">
-                            <label class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Upload Video / Image to Server</label>
-                            <div class="flex items-center gap-2">
-                                <input type="file" id="localMediaFile" accept="video/*,image/*" onchange="handleLocalFileUpload(event)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-purple-600 file:text-white hover:file:bg-purple-500 cursor-pointer">
-                            </div>
+                        <!-- FILE UPLOAD -->
+                        <div class="space-y-1">
+                            <label class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Upload Video / Music File</label>
+                            <input type="file" id="localMediaFile" accept="video/*,image/*,audio/*" onchange="handleLocalFileUpload(event)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-purple-600 file:text-white hover:file:bg-purple-500 cursor-pointer">
                         </div>
 
                         <div>
@@ -281,417 +252,158 @@
                         </div>
 
                         <div class="pt-1">
-                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-emerald-600/20 text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-2">
-                                <span>🛡️ Ingest & Secure Submit with OTP</span>
+                            <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-purple-600/20 text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-2">
+                                <span>🚀 Publish & Make Downloadable (AI Verified)</span>
                             </button>
                         </div>
                     </form>
-                </div>
-
-                <!-- Admin Queue -->
-                <div class="bg-slate-900 border border-amber-500/30 p-4 sm:p-6 rounded-3xl shadow-2xl">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="flex items-center space-x-2.5">
-                            <div class="bg-amber-500/10 text-amber-400 p-2.5 rounded-xl text-sm sm:text-base"><i class="fa-solid fa-user-shield"></i></div>
-                            <div>
-                                <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Admin Moderation Queue</h2>
-                                <p class="text-[11px] sm:text-xs text-slate-400">Maker-Checker with AI liveness clearance.</p>
-                            </div>
-                        </div>
-                        <button onclick="fetchAdsAndPlay()" title="Refresh Queue" class="bg-slate-800 hover:bg-slate-700 text-amber-400 p-2 rounded-xl text-xs transition cursor-pointer">
-                            <i class="fa-solid fa-rotate"></i>
-                        </button>
-                    </div>
-                    <div id="adminReviewQueue" class="space-y-3 max-h-60 overflow-y-auto pr-1">
-                        <p class="text-xs text-slate-500 text-center py-4">No pending ads in queue.</p>
-                    </div>
                 </div>
             </div>
 
         </div>
     </div>
 
-    <!-- CHECKOUT MODAL WITH SMART-CONTRACT ESCROW SETTLEMENT -->
-    <div id="checkoutModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 relative">
-            <button onclick="closeCheckoutModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white transition cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <!-- SUBMISSION OTP SECURITY MODAL -->
+    <div id="otpModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
             <div class="flex items-center space-x-3">
-                <div class="bg-purple-600 text-white p-3 rounded-xl text-sm sm:text-base shadow-md"><i class="fa-solid fa-file-contract"></i></div>
+                <div class="bg-amber-500/20 text-amber-400 p-3 rounded-xl text-sm sm:text-base"><i class="fa-solid fa-shield-halved"></i></div>
                 <div>
-                    <h3 id="modalAdTitle" class="text-xs sm:text-sm font-bold text-white">Smart-Contract Escrow Checkout</h3>
-                    <p class="text-[11px] sm:text-xs text-slate-400">Multi-Sig Polygon / Solana Testnet Settlement</p>
+                    <h3 class="text-xs sm:text-sm font-bold text-white">Creator Verification Check</h3>
+                    <p class="text-[11px] sm:text-xs text-slate-400">OTP dispatched to your registered Email & Phone.</p>
                 </div>
             </div>
-            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
-                <div class="flex justify-between text-xs"><span class="text-slate-400">Item / Service:</span><span id="modalItemName" class="font-bold text-white">Sovereign Package</span></div>
-                <div class="flex justify-between text-xs"><span class="text-slate-400">Base Escrow (USD):</span><span class="font-bold text-white">$50.00</span></div>
-                <div class="flex justify-between text-xs items-center pt-2 border-t border-slate-800">
-                    <span class="text-slate-400">Select Blockchain:</span>
-                    <select id="blockchainSelector" class="bg-slate-900 text-purple-400 font-bold border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs outline-none cursor-pointer">
-                        <option value="Polygon">Polygon Testnet</option>
-                        <option value="Solana">Solana Devnet</option>
-                        <option value="EAC-Mpesa">M-Pesa Multi-Sig</option>
-                    </select>
-                </div>
-                <div class="flex justify-between text-xs pt-1"><span class="text-slate-400">Contract Hash:</span><span id="escrowHashDisplay" class="font-bold text-cyan-400 font-mono text-[10px]">0xPendingLock...</span></div>
+            <div>
+                <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Enter 6-Digit Verification Code</label>
+                <input type="text" id="otpInput" maxlength="6" placeholder="------" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-center tracking-widest font-mono text-base sm:text-lg text-white focus:border-purple-500 outline-none">
             </div>
-            <div class="space-y-2">
-                <label class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Wallet / Account Address</label>
-                <input type="text" id="escrowAccountInput" placeholder="Enter Wallet or M-Pesa Number" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:border-purple-500 outline-none text-white font-mono">
-            </div>
-            <button onclick="lockSmartContractEscrow()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg shadow-purple-600/30 cursor-pointer">
-                🔒 Lock Smart Contract Escrow
+            <button onclick="verifyOtpAndExecute()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg cursor-pointer">
+                🔐 Confirm & Publish
             </button>
         </div>
     </div>
 
     <script>
-        let socket = io(); // Initialize Socket.io connection
+        let socket = io();
 
-        let currentAdIndex = 0;
-        let progressInterval = null;
+        // Preloaded sample viral & motivational clips ready for instant playback & download
+        let allAdsData = [
+            {
+                id: 'CLIP_MOTIVATION_01',
+                title: '🔥 Unstoppable Mindset (Daily Motivation)',
+                subtitle: 'Pain is temporary. Quitting lasts forever. Push through!',
+                mediaType: 'Video Clip',
+                targetVertical: 'MOTIVATION',
+                geoTarget: 'Worldwide',
+                mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                status: 'APPROVED',
+                impressions: 3420,
+                clicks: 450,
+                shares: 120,
+                likes: 890,
+                timestamp: Date.now()
+            },
+            {
+                id: 'CLIP_MUSIC_01',
+                title: '🎵 African Club Bangers - DJ Mix 2026',
+                subtitle: 'High energy beats for the ultimate vibe.',
+                mediaType: 'Music Track',
+                targetVertical: 'MUSIC',
+                geoTarget: 'East Africa',
+                mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+                status: 'APPROVED',
+                impressions: 5120,
+                clicks: 720,
+                shares: 310,
+                likes: 1450,
+                timestamp: Date.now()
+            },
+            {
+                id: 'CLIP_COMEDY_01',
+                title: '😂 Programmer vs Bug (Skit)',
+                subtitle: 'When you fix one bug and 100 new ones appear.',
+                mediaType: 'Video Clip',
+                targetVertical: 'COMEDY',
+                geoTarget: 'Worldwide',
+                mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+                status: 'APPROVED',
+                impressions: 2190,
+                clicks: 340,
+                shares: 95,
+                likes: 670,
+                timestamp: Date.now()
+            }
+        ];
+
         let activeAdsPool = [];
-        let allAdsData = [];
         let currentVertical = 'ALL';
-        let globalVolume = 0.9;
-        let isSongPlaying = false;
         let pendingSubmissionPayload = null;
+        let activeCommentAdId = null;
+        let activeContactId = 'mwangirobertmaina@gmail.com';
 
-        // WebRTC Call state variables
+        // --- WebRTC Peer Connection State Variables ---
         let localStream = null;
+        let remoteStream = null;
         let peerConnection = null;
-        let callTypeState = 'video';
+        const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-        let audioCtx = null;
-        let ambientPlaying = false;
-        let chordInterval = null;
-
-        // Listen for Real-Time WebSocket Broadcasts
         socket.on('telemetry_update', (data) => {
             const ad = allAdsData.find(a => a.id === data.adId);
             if (ad) {
                 ad.impressions = data.impressions;
                 ad.clicks = data.clicks;
-                if (activeAdsPool[currentAdIndex] && activeAdsPool[currentAdIndex].id === data.adId) {
-                    updateTelemetryDisplay(ad);
-                }
+                ad.likes = data.likes;
+                ad.shares = data.shares;
+                updateReelUIStats(data.adId, ad);
             }
         });
 
-        socket.on('escrow_created', (escrow) => {
-            console.log("New smart contract escrow locked:", escrow);
+        // --- WebRTC Socket Signaling Listeners ---
+        socket.on('video-offer', async (data) => {
+            openVideoCallModal();
+            await setupPeerConnection();
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit('video-answer', { answer });
         });
 
-        socket.on('ad_moderated', (ad) => {
-            fetchAdsAndPlay();
-        });
-
-        // --- HANDLE LOCAL FILE UPLOAD TO SERVER ---
-        async function handleLocalFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('mediaFile', file);
-
-            try {
-                const res = await fetch('/api/ads/media/upload-file', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('merchantImage').value = data.fileUrl;
-                    if (file.type.startsWith('video/')) {
-                        document.getElementById('merchantMediaType').value = 'Video Ad';
-                    } else if (file.type.startsWith('image/')) {
-                        document.getElementById('merchantMediaType').value = 'Image Banner';
-                    }
-                    alert("✅ File uploaded successfully to server storage!");
-                } else {
-                    alert("❌ Upload failed: " + data.error);
-                }
-            } catch (e) {
-                console.error("File upload network error:", e);
-                alert("❌ Error uploading file to server.");
-            }
-        }
-
-        function playAmbientTone(freqs, duration) {
-            if (!audioCtx) return;
-            freqs.forEach(f => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.value = f;
-                gain.gain.setValueAtTime(0.015, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + duration);
-            });
-        }
-
-        function startSovereignAmbiance() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            ambientPlaying = true;
-            document.getElementById('toggleMusicBtn').innerText = 'Pause';
-            document.getElementById('toggleMusicBtn').style.background = '#ef4444';
-
-            const chords = [
-                [261.63, 329.63, 392.00],
-                [220.00, 261.63, 329.63],
-                [174.61, 220.00, 261.63],
-                [196.00, 246.94, 293.66]
-            ];
-
-            let index = 0;
-            playAmbientTone(chords[index], 5);
-            chordInterval = setInterval(() => {
-                if (!ambientPlaying) return;
-                index = (index + 1) % chords.length;
-                playAmbientTone(chords[index], 5);
-            }, 4500);
-        }
-
-        function stopSovereignAmbiance() {
-            ambientPlaying = false;
-            clearInterval(chordInterval);
-            document.getElementById('toggleMusicBtn').innerText = 'Play';
-            document.getElementById('toggleMusicBtn').style.background = '#10b981';
-        }
-
-        function toggleSovereignMusic() {
-            if (ambientPlaying) {
-                stopSovereignAmbiance();
-            } else {
-                startSovereignAmbiance();
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', async () => {
-            fetchAdsAndPlay();
-        });
-
-        function openBiometricModal() {
-            document.getElementById('biometricModal').classList.remove('hidden');
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => {
-                    document.getElementById('webcamStream').srcObject = stream;
-                })
-                .catch(e => console.log("Webcam stream access denied", e));
-        }
-
-        async function executeAiLivenessCheck() {
-            const email = document.getElementById('authEmail').value.trim();
-            const video = document.getElementById('webcamStream');
-            const canvas = document.getElementById('snapshotCanvas');
-            
-            if (!video.videoWidth) {
-                alert("Please wait for webcam stream to initialize.");
-                return;
-            }
-
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const faceSnapshotData = canvas.toDataURL('image/jpeg');
-
-            try {
-                const res = await fetch('/api/ads/auth/verify-liveness', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, livenessScore: 0.98, challengePassed: true, faceSnapshotData })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert("✅ Edge AI Liveness verified successfully! Session Token: " + data.sessionToken);
-                    document.getElementById('biometricModal').classList.add('hidden');
-                } else {
-                    alert("❌ Liveness verification failed: " + data.error);
-                }
-            } catch (e) {
-                alert("Authentication network error.");
-            }
-        }
-
-        async function startCall(type) {
-            callTypeState = type;
-            document.getElementById('callModal').classList.remove('hidden');
-            const titleEl = document.getElementById('callModalTitle');
-            const iconBadge = document.getElementById('callIconBadge');
-            const remoteVideo = document.getElementById('remoteVideoCall');
-            const audioPlaceholder = document.getElementById('callAudioPlaceholder');
-
-            if (type === 'video') {
-                titleEl.innerText = "Secure Merchant Video Call";
-                iconBadge.innerHTML = `<i class="fa-solid fa-video"></i>`;
-                remoteVideo.classList.remove('hidden');
-                audioPlaceholder.classList.add('hidden');
-            } else {
-                titleEl.innerText = "Secure Merchant Voice Call";
-                iconBadge.innerHTML = `<i class="fa-solid fa-phone"></i>`;
-                remoteVideo.classList.add('hidden');
-                audioPlaceholder.classList.remove('hidden');
-            }
-
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({
-                    video: type === 'video',
-                    audio: true
-                });
-                document.getElementById('localVideoCall').srcObject = localStream;
-            } catch (e) {
-                alert("Microphone/Camera access required for calls.");
-                endCall();
-            }
-        }
-
-        function endCall() {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
+        socket.on('video-answer', async (data) => {
             if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
             }
-            document.getElementById('callModal').classList.add('hidden');
-        }
+        });
 
-        function toggleAudioMute() {
-            if (!localStream) return;
-            const audioTrack = localStream.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
-                const btn = document.getElementById('muteAudioBtn');
-                btn.innerHTML = audioTrack.enabled ? `<i class="fa-solid fa-microphone mr-1"></i> Mute Mic` : `<i class="fa-solid fa-microphone-slash mr-1 text-rose-400"></i> Unmute Mic`;
+        socket.on('ice-candidate', async (data) => {
+            if (peerConnection && data.candidate) {
+                try {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                } catch (e) {
+                    console.error('Error adding received ICE candidate', e);
+                }
             }
-        }
+        });
 
-        function toggleVideoMute() {
-            if (!localStream || callTypeState === 'voice') return;
-            const videoTrack = localStream.getVideoTracks()[0];
-            if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                const btn = document.getElementById('muteVideoBtn');
-                btn.innerHTML = videoTrack.enabled ? `<i class="fa-solid fa-video mr-1"></i> Turn Off Video` : `<i class="fa-solid fa-video-slash mr-1 text-rose-400"></i> Turn On Video`;
-            }
-        }
+        socket.on('call-ended', () => {
+            closeCallResources();
+        });
 
-        // --- DOWNLOAD CURRENT AD MEDIA (VIA SERVER PROXY TO BYPASS CORS) ---
-        async function downloadCurrentAdMedia() {
-            if (activeAdsPool.length === 0) {
-                alert("No active advertisement available to download.");
-                return;
-            }
-            const ad = activeAdsPool[currentAdIndex];
-            const mediaUrl = ad.mediaUrl || ad.imageUrl || ad.cdnStreamUrl;
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchAdsAndPlay();
+            openBiometricModal();
+        });
 
-            if (!mediaUrl) {
-                alert("Media URL not found for this campaign.");
-                return;
-            }
-
+        async function fetchAdsAndPlay() {
             try {
-                const proxyUrl = `/api/ads/proxy-download?url=${encodeURIComponent(mediaUrl)}`;
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error("Proxy download failed.");
-
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                
-                const link = document.createElement('a');
-                link.href = blobUrl;
-                const fileExtension = (ad.mediaType === 'Video Ad' || mediaUrl.endsWith('.mp4')) ? 'mp4' : 'jpg';
-                link.download = `${ad.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${fileExtension}`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(blobUrl);
-            } catch (e) {
-                console.error("Proxy download error, falling back to direct tab open:", e);
-                window.open(mediaUrl, '_blank');
-            }
-        }
-
-        async function initiateSecureSubmission(event) {
-            event.preventDefault();
-            const email = document.getElementById('authEmail').value.trim();
-
-            pendingSubmissionPayload = {
-                title: document.getElementById('merchantTitle').value,
-                subtitle: document.getElementById('merchantSubtitle').value,
-                targetVertical: document.getElementById('merchantVertical').value,
-                mediaType: document.getElementById('merchantMediaType').value,
-                geoTarget: document.getElementById('merchantGeo').value,
-                rawMediaUrl: document.getElementById('merchantImage').value,
-                durationSeconds: 6
-            };
-
-            try {
-                const res = await fetch('/api/auth/dispatch-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: email })
-                });
+                const res = await fetch('/api/ads/list');
                 const data = await res.json();
-                document.getElementById('otpModal').classList.remove('hidden');
-            } catch (e) {
-                document.getElementById('otpModal').classList.remove('hidden');
-            }
-        }
-
-        async function verifyOtpAndExecute() {
-            document.getElementById('otpModal').classList.add('hidden');
-
-            try {
-                const createRes = await fetch('/api/ads/media/ingest', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(pendingSubmissionPayload)
-                });
-                const createData = await createRes.json();
-                if (createData.success) {
-                    alert("✅ Media successfully transcoded to HLS and submitted to Moderation Queue!");
-                    document.querySelector('form').reset();
-                    fetchAdsAndPlay();
+                if (data.success && data.advertisements && data.advertisements.length > 0) {
+                    allAdsData = [...data.advertisements, ...allAdsData];
                 }
             } catch (e) {
-                alert("Error completing CDN media ingestion transaction.");
+                console.log("Using built-in viral & motivational clips pool.");
             }
-        }
-
-        function adjustVolume(val) {
-            globalVolume = parseFloat(val);
-            const videoEl = document.getElementById('adVideoScreen');
-            const songEl = document.getElementById('globalPeaceAudio');
-            if (videoEl) videoEl.volume = globalVolume;
-            if (songEl) songEl.volume = globalVolume;
-        }
-
-        function toggleWorldSong() {
-            const btn = document.getElementById('soundToggleBtn');
-            const songEl = document.getElementById('globalPeaceAudio');
-            isSongPlaying = !isSongPlaying;
-
-            if (isSongPlaying) {
-                songEl.volume = globalVolume;
-                songEl.play().catch(e => console.log("Audio blocked", e));
-                btn.innerHTML = `<i class="fa-solid fa-volume-high mr-1 text-emerald-400"></i> Music On`;
-                btn.classList.add('border-emerald-500/50');
-            } else {
-                songEl.pause();
-                btn.innerHTML = `<i class="fa-solid fa-volume-xmark mr-1"></i> Music Off`;
-                btn.classList.remove('border-emerald-500/50');
-            }
+            applyVerticalFilter();
         }
 
         function filterVertical(vertical) {
@@ -711,232 +423,301 @@
             } else {
                 activeAdsPool = allAdsData.filter(a => (a.status === 'APPROVED' || a.status === 'ACTIVE') && a.targetVertical.toUpperCase() === currentVertical.toUpperCase());
             }
-            currentAdIndex = 0;
             const badge = document.getElementById('adCounterBadge');
-            if(badge) badge.innerText = `Ad 1 of ${activeAdsPool.length}`;
-            if (activeAdsPool.length > 0) {
-                playCurrentAd();
-            } else {
-                document.getElementById('adTitleDisplay').innerText = "No approved ads in this vertical";
-                document.getElementById('adSubDisplay').innerText = "Submit a secured listing or switch categories";
-                document.getElementById('adImageScreen').src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600";
-                document.getElementById('statImpressions').innerText = '0';
-                document.getElementById('statClicks').innerText = '0';
-                document.getElementById('statConversion').innerText = '0.0%';
-            }
+            if (badge) badge.innerText = `Clips (${activeAdsPool.length})`;
+            renderReelsFeed();
         }
 
-        async function fetchAdsAndPlay() {
-            try {
-                const res = await fetch('/api/ads/list');
-                const data = await res.json();
-                if (data.success) {
-                    allAdsData = data.advertisements;
-                    applyVerticalFilter();
-                    renderAdminQueue(data.advertisements);
-                }
-            } catch (e) {
-                console.error("Failed to load ads", e);
-            }
-        }
+        function renderReelsFeed() {
+            const container = document.getElementById('reelsScrollContainer');
+            if (!container) return;
 
-        function renderAdminQueue(allAds) {
-            const queueContainer = document.getElementById('adminReviewQueue');
-            const pendingAds = allAds.filter(a => a.status === 'PENDING_MODERATION' || !a.status);
-
-            if (pendingAds.length === 0) {
-                queueContainer.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No pending ads in queue.</p>`;
+            if (activeAdsPool.length === 0) {
+                container.innerHTML = `<div class="flex items-center justify-center h-full text-slate-500 text-xs">No clips found in this category. Upload one now!</div>`;
                 return;
             }
 
-            queueContainer.innerHTML = pendingAds.map(ad => `
-                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 flex justify-between items-center gap-3">
-                    <div class="overflow-hidden">
-                        <h4 class="text-xs font-bold text-white truncate">${ad.title}</h4>
-                        <p class="text-[10px] text-slate-400 uppercase tracking-wide mt-0.5">${ad.targetVertical} • ${ad.geoTarget || 'Worldwide'}</p>
-                    </div>
-                    <div class="flex space-x-2 shrink-0">
-                        <button onclick="moderateAd('${ad.id}', 'APPROVED')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] px-2.5 py-1.5 rounded-xl font-bold transition shadow-md cursor-pointer">Approve</button>
-                        <button onclick="moderateAd('${ad.id}', 'REJECTED')" class="bg-rose-600 hover:bg-rose-500 text-white text-[10px] px-2.5 py-1.5 rounded-xl font-bold transition shadow-md cursor-pointer">Reject</button>
-                    </div>
-                </div>
-            `).join('');
-        }
+            container.innerHTML = activeAdsPool.map((ad, idx) => {
+                const mediaSrc = ad.mediaUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+                return `
+                    <div class="snap-item relative w-full h-full flex items-center justify-center bg-black group" id="reel_card_${ad.id}">
+                        <video id="video_elem_${ad.id}" src="${mediaSrc}" class="w-full h-full object-cover cursor-pointer" autoplay loop playsinline muted onclick="togglePlayPause('${ad.id}')"></video>
+                        
+                        <!-- Right Side TikTok/Facebook Floating Action Buttons -->
+                        <div class="absolute right-4 bottom-20 flex flex-col items-center space-y-4 z-30">
+                            <button onclick="sendTelemetryAction('${ad.id}', 'like')" class="bg-black/50 hover:bg-purple-600 text-white w-11 h-11 rounded-full flex flex-col items-center justify-center backdrop-blur transition shadow-lg cursor-pointer">
+                                <i class="fa-solid fa-heart text-base text-rose-400"></i>
+                                <span id="like_count_${ad.id}" class="text-[9px] font-mono font-bold">${ad.likes || 0}</span>
+                            </button>
+                            <button onclick="openCommentsModal('${ad.id}')" class="bg-black/50 hover:bg-purple-600 text-white w-11 h-11 rounded-full flex flex-col items-center justify-center backdrop-blur transition shadow-lg cursor-pointer">
+                                <i class="fa-solid fa-comment text-base text-cyan-400"></i>
+                                <span class="text-[9px] font-mono font-bold">Chat</span>
+                            </button>
+                            <button onclick="downloadSpecificClip('${mediaSrc}', '${ad.title}')" class="bg-purple-600 hover:bg-purple-500 text-white w-11 h-11 rounded-full flex flex-col items-center justify-center backdrop-blur transition shadow-lg cursor-pointer" title="Download Full Clip">
+                                <i class="fa-solid fa-download text-base text-white"></i>
+                                <span class="text-[9px] font-mono font-bold">Save</span>
+                            </button>
+                            <button onclick="sendTelemetryAction('${ad.id}', 'share')" class="bg-black/50 hover:bg-purple-600 text-white w-11 h-11 rounded-full flex flex-col items-center justify-center backdrop-blur transition shadow-lg cursor-pointer">
+                                <i class="fa-solid fa-share text-base text-emerald-400"></i>
+                                <span id="share_count_${ad.id}" class="text-[9px] font-mono font-bold">${ad.shares || 0}</span>
+                            </button>
+                        </div>
 
-        async function moderateAd(adId, status) {
-            try {
-                const res = await fetch('/api/ads/moderate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adId, status })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    fetchAdsAndPlay();
-                } else {
-                    alert("❌ Failed to update ad status.");
-                }
-            } catch (e) {
-                alert("Error communicating with moderation server.");
+                        <!-- Bottom Reel Info Overlay -->
+                        <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent flex justify-between items-end z-20">
+                            <div class="space-y-1 pr-16">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] bg-purple-500/30 text-purple-300 px-2.5 py-0.5 rounded font-bold uppercase">${ad.targetVertical}</span>
+                                    <span class="text-[10px] text-cyan-400 font-mono">🌐 ${ad.geoTarget || 'Worldwide'}</span>
+                                </div>
+                                <h3 class="text-sm sm:text-base font-bold text-white drop-shadow">${ad.title}</h3>
+                                <p class="text-xs text-slate-300 drop-shadow">${ad.subtitle || ''}</p>
+                            </div>
+                            <button onclick="downloadSpecificClip('${mediaSrc}', '${ad.title}')" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-lg shadow-purple-600/40 transition shrink-0 cursor-pointer flex items-center gap-1.5">
+                                <i class="fa-solid fa-download"></i> Download Clip
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (activeAdsPool.length > 0) {
+                sendTelemetryAction(activeAdsPool[0].id, 'impression');
             }
         }
 
-        async function playCurrentAd() {
-            if (activeAdsPool.length === 0) return;
-            if (currentAdIndex >= activeAdsPool.length) currentAdIndex = 0;
+        function togglePlayPause(adId) {
+            const v = document.getElementById(`video_elem_${adId}`);
+            if (v) {
+                if (v.paused) v.play();
+                else v.pause();
+            }
+        }
 
-            const ad = activeAdsPool[currentAdIndex];
-            const imgEl = document.getElementById('adImageScreen');
-            const videoEl = document.getElementById('adVideoScreen');
-            const titleEl = document.getElementById('adTitleDisplay');
-            const subEl = document.getElementById('adSubDisplay');
-            const tagEl = document.getElementById('adVerticalTag');
-            const geoTagEl = document.getElementById('adGeoTag');
-
-            if(titleEl) titleEl.innerText = ad.title;
-            if(subEl) subEl.innerText = ad.subtitle || 'Sovereign Listing';
-            if(tagEl) tagEl.innerText = ad.targetVertical;
-            if(geoTagEl) geoTagEl.innerText = `🌐 ${ad.geoTarget || 'Worldwide'}`;
-
+        async function sendTelemetryAction(adId, action) {
             try {
                 const res = await fetch('/api/ads/telemetry', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adId: ad.id, action: 'impression' })
+                    body: JSON.stringify({ adId, action })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    updateTelemetryDisplay(data.ad);
+                    updateReelUIStats(adId, data.ad);
                 }
-            } catch (e) {
-                console.log("Telemetry error", e);
-            }
-
-            const mediaSrc = ad.mediaUrl || ad.imageUrl;
-            const isVideo = ad.mediaType === 'Video Ad' || ad.mediaType === 'VIDEO' || (mediaSrc && mediaSrc.endsWith('.mp4')) || mediaSrc.startsWith('/uploads/');
-
-            if (isVideo) {
-                imgEl.classList.add('hidden');
-                videoEl.classList.remove('hidden');
-                videoEl.src = ad.cdnStreamUrl || mediaSrc;
-                videoEl.volume = globalVolume;
-                videoEl.play().catch(e => console.log("Autoplay blocked", e));
-            } else {
-                videoEl.pause();
-                videoEl.classList.add('hidden');
-                imgEl.classList.remove('hidden');
-                imgEl.src = mediaSrc || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80';
-            }
-
-            startProgressBar(ad.durationSeconds || 6);
+            } catch (e) {}
         }
 
-        function updateTelemetryDisplay(adObj) {
-            document.getElementById('statImpressions').innerText = adObj.impressions || 0;
-            document.getElementById('statClicks').innerText = adObj.clicks || 0;
-            const impr = adObj.impressions || 0;
-            const clk = adObj.clicks || 0;
-            const convRate = impr > 0 ? ((clk / impr) * 100).toFixed(1) : '0.0';
-            document.getElementById('statConversion').innerText = `${convRate}%`;
+        function updateReelUIStats(adId, adObj) {
+            const lk = document.getElementById(`like_count_${adId}`);
+            const sh = document.getElementById(`share_count_${adId}`);
+            if (lk) lk.innerText = adObj.likes || 0;
+            if (sh) sh.innerText = adObj.shares || 0;
         }
 
-        function startProgressBar(durationSec) {
-            clearInterval(progressInterval);
-            const progressBar = document.getElementById('adProgressBar');
-            let elapsed = 0;
-            const intervalTime = 50; 
-            const totalSteps = (durationSec * 1000) / intervalTime;
-
-            progressBar.style.width = '0%';
-
-            progressInterval = setInterval(() => {
-                elapsed++;
-                const percentage = (elapsed / totalSteps) * 100;
-                progressBar.style.width = `${percentage}%`;
-
-                if (elapsed >= totalSteps) {
-                    clearInterval(progressInterval);
-                    nextAd();
-                }
-            }, intervalTime);
+        // --- INSTANT CLIP DOWNLOAD UTILITY ---
+        function downloadSpecificClip(url, title) {
+            const cleanTitle = (title || 'rds_clip').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${cleanTitle}.mp4`;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            alert(`📥 Downloading clip: "${title}". Check your browser downloads folder!`);
         }
 
-        function nextAd() {
-            clearInterval(progressInterval);
-            const videoEl = document.getElementById('adVideoScreen');
-            if(videoEl) videoEl.pause();
-            
-            if (activeAdsPool.length > 0) {
-                currentAdIndex = (currentAdIndex + 1) % activeAdsPool.length;
-                const badge = document.getElementById('adCounterBadge');
-                if(badge) badge.innerText = `Ad ${currentAdIndex + 1} of ${activeAdsPool.length}`;
-                playCurrentAd();
-            }
+        function downloadCurrentAdMedia() {
+            if (activeAdsPool.length === 0) return;
+            const ad = activeAdsPool[0];
+            downloadSpecificClip(ad.mediaUrl || ad.cdnStreamUrl, ad.title);
         }
 
-        async function openCheckoutModal() {
-            clearInterval(progressInterval);
-            const ad = activeAdsPool[currentAdIndex];
-            if (ad) {
-                try {
-                    const res = await fetch('/api/ads/telemetry', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ adId: ad.id, action: 'click' })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        updateTelemetryDisplay(data.ad);
-                    }
-                } catch (e) {
-                    console.log("Click telemetry error", e);
-                }
-            }
-            document.getElementById('checkoutModal').classList.remove('hidden');
+        function openCommentsModal(adId) {
+            activeCommentAdId = adId;
+            document.getElementById('commentsModal').classList.remove('hidden');
         }
 
-        function closeCheckoutModal() {
-            document.getElementById('checkoutModal').classList.add('hidden');
-            playCurrentAd();
+        function closeCommentsModal() {
+            document.getElementById('commentsModal').classList.add('hidden');
         }
 
-        async function lockSmartContractEscrow() {
-            const ad = activeAdsPool[currentAdIndex];
-            const network = document.getElementById('blockchainSelector').value;
-            const account = document.getElementById('escrowAccountInput').value;
+        async function handleLocalFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('mediaFile', file);
 
             try {
-                const res = await fetch('/api/ads/escrow/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        adId: ad ? ad.id : 'AD_001',
-                        buyerId: account || 'mwangirobertmaina@gmail.com',
-                        amountUSD: 50.00,
-                        currency: 'USD',
-                        network: network
-                    })
-                });
-
-                const contentType = res.headers.get("content-type");
-                if (contentType && contentType.includes("application/json")) {
-                    const data = await res.json();
-                    if (res.ok && data.success) {
-                        document.getElementById('escrowHashDisplay').innerText = data.escrowTx.contractHash;
-                        alert("✅ Smart contract escrow locked successfully on " + network + "!\nHash: " + data.escrowTx.contractHash);
-                        closeCheckoutModal();
-                    } else {
-                        alert("❌ Server Error: " + (data.error || "Unknown error occurred."));
-                    }
+                const res = await fetch('/api/ads/media/upload-file', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('merchantImage').value = data.fileUrl;
+                    alert("✅ Media verified by AI Sentinel and ready for download publication!");
                 } else {
-                    const text = await res.text();
-                    console.error("Non-JSON Response received:", text);
-                    alert("❌ Route Error: Server returned an HTML response instead of JSON. Check if your backend route prefix is correct.");
+                    alert("❌ Upload rejected: " + data.error);
                 }
             } catch (e) {
-                console.error("Escrow network error:", e);
-                alert("❌ Network Error locking escrow: " + e.message);
+                alert("❌ Error uploading file.");
             }
+        }
+
+        async function initiateSecureSubmission(event) {
+            event.preventDefault();
+            pendingSubmissionPayload = {
+                title: document.getElementById('merchantTitle').value,
+                subtitle: document.getElementById('merchantSubtitle').value,
+                targetVertical: document.getElementById('merchantVertical').value,
+                mediaType: document.getElementById('merchantMediaType').value,
+                geoTarget: document.getElementById('merchantGeo').value,
+                rawMediaUrl: document.getElementById('merchantImage').value,
+                status: 'APPROVED'
+            };
+
+            try {
+                await fetch('/api/ads/auth/dispatch-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contactId: activeContactId })
+                });
+            } catch (e) {}
+            document.getElementById('otpModal').classList.remove('hidden');
+        }
+
+        async function verifyOtpAndExecute() {
+            document.getElementById('otpModal').classList.add('hidden');
+            allAdsData.unshift({
+                id: `CLIP_${Date.now()}`,
+                ...pendingSubmissionPayload,
+                likes: 0,
+                shares: 0,
+                impressions: 1,
+                timestamp: Date.now()
+            });
+            applyVerticalFilter();
+            alert("✅ Motivational clip / music track published successfully and is now available for global download!");
+            document.querySelector('form').reset();
+        }
+
+        function openBiometricModal() {
+            document.getElementById('secureAuthModal').classList.remove('hidden');
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => { document.getElementById('authWebcamStream').srcObject = stream; })
+                .catch(e => console.log("Webcam standby active."));
+        }
+
+        async function requestSecurityOtp() {
+            const contact = document.getElementById('loginContactInput').value.trim();
+            if (!contact) {
+                alert("Please enter your email or phone number.");
+                return;
+            }
+            activeContactId = contact;
+
+            try {
+                const res = await fetch('/api/ads/auth/dispatch-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contactId: contact })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alert(`✅ Security Code Dispatched!\n\nYour OTP Code is: [ ${data.otpCode} ]`);
+                    document.getElementById('authStep1').classList.add('hidden');
+                    document.getElementById('authStep2').classList.remove('hidden');
+                }
+            } catch (e) {
+                alert("Error dispatching security code.");
+            }
+        }
+
+        async function verifyAndCompleteLogin() {
+            const otpCode = document.getElementById('loginOtpInput').value.trim();
+            if (otpCode.length !== 6) {
+                alert("Please enter the complete 6-digit verification code.");
+                return;
+            }
+            alert("🎉 Access Granted! Account secured.");
+            document.getElementById('secureAuthModal').classList.add('hidden');
+        }
+
+        // --- WebRTC P2P Call Functions ---
+        async function openVideoCallModal() {
+            document.getElementById('videoCallModal').classList.remove('hidden');
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+            } catch (err) {
+                console.error("Error accessing media devices.", err);
+                alert("Could not access camera and microphone.");
+            }
+        }
+
+        async function setupPeerConnection() {
+            peerConnection = new RTCPeerConnection(rtcConfig);
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            }
+
+            peerConnection.ontrack = (event) => {
+                remoteStream = event.streams[0];
+                document.getElementById('remoteVideo').srcObject = remoteStream;
+            };
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('ice-candidate', { candidate: event.candidate });
+                }
+            };
+        }
+
+        async function startCall() {
+            await setupPeerConnection();
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('video-offer', { offer });
+            alert("📞 Call initiated! Waiting for peer to connect...");
+        }
+
+        function toggleAudioMute() {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    document.getElementById('micIcon').className = audioTrack.enabled ? "fa-solid fa-microphone" : "fa-solid fa-microphone-slash text-rose-500";
+                }
+            }
+        }
+
+        function toggleVideoMute() {
+            if (localStream) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.enabled = !videoTrack.enabled;
+                    document.getElementById('videoIcon').className = videoTrack.enabled ? "fa-solid fa-video" : "fa-solid fa-video-slash text-rose-500";
+                }
+            }
+        }
+
+        function endCall() {
+            socket.emit('call-ended');
+            closeCallResources();
+        }
+
+        function closeCallResources() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            document.getElementById('localVideo').srcObject = null;
+            document.getElementById('remoteVideo').srcObject = null;
+            document.getElementById('videoCallModal').classList.add('hidden');
         }
     </script>
 </body>

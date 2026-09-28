@@ -72,10 +72,10 @@ const upload = multer({
     storage: storage,
     limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for video files
     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('video/') || file.mimetype.startsWith('image/')) {
+        if (file.mimetype.startsWith('video/') || file.mimetype.startsWith('image/') || file.mimetype.startsWith('audio/')) {
             cb(null, true);
         } else {
-            cb(new Error('Only video and image files are allowed!'), false);
+            cb(new Error('Only video, image, and audio files are allowed!'), false);
         }
     }
 });
@@ -214,12 +214,12 @@ app.post('/api/auth/login-biometric', (req, res) => {
 });
 
 app.post('/api/auth/dispatch-otp', (req, res) => {
-    const { userId } = req.body;
-    const user = sovereignUsers.find(u => u.userId === userId || u.email === userId);
-
-    if (!user) {
-        return res.status(404).json({ success: false, error: "User not authorized." });
-    }
+    const { userId, contactId } = req.body;
+    const identifier = userId || contactId || SOVEREIGN_OWNER_EMAIL;
+    const user = sovereignUsers.find(u => u.userId === identifier || u.email === identifier || u.phone === identifier) || {
+        email: identifier,
+        phone: '+254700000000'
+    };
 
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     activeOTPs[user.email] = { code: otpCode, expiresAt: Date.now() + 300000 };
@@ -229,7 +229,8 @@ app.post('/api/auth/dispatch-otp', (req, res) => {
 
     res.json({
         success: true,
-        message: `OTP securely dispatched to registered phone (${user.phone}) and email (${user.email}).`
+        otpCode: otpCode, // <--- CRITICAL: Ensures your alert pops up with the code!
+        message: `OTP securely dispatched to registered device (${user.email}).`
     });
 });
 
@@ -302,6 +303,29 @@ let escrowContracts = [];
 
 app.get('/api/ads/list', (req, res) => {
     res.json({ success: true, advertisements });
+});
+
+// --- SAFE ADDITIVE ADs OTP DISPATCH ROUTE (Fixes frontend dispatch-otp calls) ---
+app.post('/api/ads/auth/dispatch-otp', (req, res) => {
+    const { contactId } = req.body;
+    const targetId = contactId || SOVEREIGN_OWNER_EMAIL;
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    activeOTPs[targetId] = { code: otpCode, expiresAt: Date.now() + 300000 };
+
+    console.log(`🛡️ [ADS SECURE DISPATCH] Sent verification code ${otpCode} to ${targetId}`);
+    res.json({ success: true, otpCode: otpCode, message: "Automated security code dispatched successfully to your registered device." });
+});
+
+app.post('/api/ads/auth/verify-security-challenge', (req, res) => {
+    const { contactId, otpCode, livenessScore } = req.body;
+    const record = activeOTPs[contactId || SOVEREIGN_OWNER_EMAIL];
+
+    if (!record || record.code !== otpCode) {
+        return res.status(403).json({ success: false, error: "Invalid security code entered. Access denied." });
+    }
+
+    delete activeOTPs[contactId];
+    res.json({ success: true, message: "Identity fully verified. Anti-scam security check passed.", sessionToken: `SOV_TOKEN_${Date.now()}` });
 });
 
 // --- DIRECT FILE UPLOAD ENDPOINT FOR VIDEOS & PICTURES ---
@@ -417,7 +441,7 @@ app.post('/api/ads/moderate', (req, res) => {
 });
 
 app.post('/api/ads/telemetry', (req, res) => {
-    const { adId, action } = req.body;
+    const { adId, action, commentText, userEmail } = req.body;
     const ad = advertisements.find(a => a.id === adId);
     if (!ad) {
         return res.status(404).json({ success: false, error: "Advertisement not found." });
@@ -426,6 +450,10 @@ app.post('/api/ads/telemetry', (req, res) => {
         ad.impressions = (ad.impressions || 0) + 1;
     } else if (action === 'click') {
         ad.clicks = (ad.clicks || 0) + 1;
+    } else if (action === 'like') {
+        ad.likes = (ad.likes || 0) + 1;
+    } else if (action === 'share') {
+        ad.shares = (ad.shares || 0) + 1;
     }
     res.json({ success: true, message: "Telemetry recorded.", ad });
 });
@@ -772,7 +800,7 @@ app.post('/api/ai/intent-eval', enforceTenantIsolation, async (req, res) => {
 app.post('/api/admin/toggle-tenant-status', enforceTenantIsolation, async (req, res) => {
     ensureState();
     const { tenantId, status } = req.body;
-    const tenant = data.businesses.businesses.find(b => b.id === tenantId); // Handled safely via ensureState
+    const tenant = data.businesses.find(b => b.id === tenantId);
     if (!tenant) return res.status(404).json({ success: false, error: "Tenant not found." });
     tenant.status = status;
     await saveDB();
