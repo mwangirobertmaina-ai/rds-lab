@@ -1,5 +1,37 @@
 const express = require('express');
 const router = express.Router();
+const https = require('https');
+const http = require('http');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configure Multer Storage for Local Video & Image Uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, '../../public/uploads');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for video files
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('video/') || file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only video and image files are allowed!'), false);
+        }
+    }
+});
 
 let advertisements = [
     {
@@ -43,6 +75,27 @@ router.setSocketIo = (io) => {
 // --- GET ALL APPROVED ADS ---
 router.get('/list', (req, res) => {
     res.json({ success: true, advertisements });
+});
+
+// --- PROXY DOWNLOAD ROUTE FOR AD PICTURES & VIDEOS ---
+router.get('/proxy-download', async (req, res) => {
+    const targetUrl = req.query.url;
+    if (!targetUrl) {
+        return res.status(400).json({ success: false, error: "Target URL required." });
+    }
+
+    if (targetUrl.startsWith('blob:') || targetUrl.startsWith('data:')) {
+        return res.status(400).json({ success: false, error: "Cannot proxy local blob/data streams directly." });
+    }
+
+    const client = targetUrl.startsWith('https') ? https : http;
+    client.get(targetUrl, (externalRes) => {
+        res.setHeader('Content-Type', externalRes.headers['content-type'] || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename=rds_media_${Date.now()}`);
+        externalRes.pipe(res);
+    }).on('error', (err) => {
+        res.status(500).json({ success: false, error: err.message });
+    });
 });
 
 // --- AI LIVENESS & BIOMETRIC VERIFICATION ENDPOINT ---
@@ -113,16 +166,35 @@ router.post('/escrow/release', (req, res) => {
     res.json({ success: true, message: "Escrow funds successfully released to merchant.", contract });
 });
 
-// --- CDN MEDIA INGESTION ---
+// --- DIRECT FILE UPLOAD ENDPOINT FOR VIDEOS & PICTURES ---
+router.post('/media/upload-file', upload.single('mediaFile'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: "No video or image file uploaded." });
+        }
+
+        const fileUrl = `/uploads/${req.file.filename}`;
+        res.json({ 
+            success: true, 
+            message: "File uploaded successfully to server storage.", 
+            fileUrl: fileUrl,
+            mimeType: req.file.mimetype 
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- CDN MEDIA INGESTION (SUPPORTS VIDEOS & PICTURES) ---
 router.post('/media/ingest', (req, res) => {
-    const { title, subtitle, targetVertical, geoTarget, rawMediaUrl } = req.body;
+    const { title, subtitle, targetVertical, geoTarget, rawMediaUrl, mediaType } = req.body;
     
     const uniqueId = `AD_${Date.now()}`;
     const transmanagedAd = {
         id: uniqueId,
         title: title || 'Sovereign Edge Campaign',
         subtitle: subtitle || 'Cloudflare Multi-Region Edge Stream',
-        mediaType: 'Video Ad',
+        mediaType: mediaType || 'Video Ad',
         targetVertical: targetVertical || 'Global Tech',
         geoTarget: geoTarget || 'Worldwide',
         mediaUrl: rawMediaUrl,
@@ -134,27 +206,12 @@ router.post('/media/ingest', (req, res) => {
     };
 
     advertisements.push(transmanagedAd);
-    res.json({ success: true, message: "Media successfully ingested.", ad: transmanagedAd });
-});
 
-// --- SUBMIT AD CAMPAIGN ---
-router.post('/submit', (req, res) => {
-    const { title, subtitle, mediaType, targetVertical, geoTarget, mediaUrl } = req.body;
-    const newAd = {
-        id: `AD_${Date.now()}`,
-        title: title || 'Sovereign Campaign',
-        subtitle: subtitle || 'Verified Commercial Offer',
-        mediaType: mediaType || 'Image Banner',
-        targetVertical: targetVertical || 'Supermarket',
-        geoTarget: geoTarget || 'Worldwide',
-        mediaUrl: mediaUrl || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1200&q=80',
-        status: 'PENDING_MODERATION',
-        impressions: 0,
-        clicks: 0,
-        timestamp: Date.now()
-    };
-    advertisements.push(newAd);
-    res.json({ success: true, message: "Advertisement submitted successfully.", ad: newAd });
+    if (ioInstance) {
+        ioInstance.emit('ad_moderated', transmanagedAd);
+    }
+
+    res.json({ success: true, message: "Media successfully ingested and routed to moderation queue.", ad: transmanagedAd });
 });
 
 // --- ADMIN MODERATION WORKFLOW ---
@@ -167,6 +224,11 @@ router.post('/moderate', (req, res) => {
     }
 
     ad.status = status;
+
+    if (ioInstance) {
+        ioInstance.emit('ad_moderated', ad);
+    }
+
     res.json({ success: true, message: `Status updated to ${status}.`, ad });
 });
 
@@ -183,6 +245,10 @@ router.post('/telemetry', (req, res) => {
         ad.impressions = (ad.impressions || 0) + 1;
     } else if (action === 'click') {
         ad.clicks = (ad.clicks || 0) + 1;
+    }
+
+    if (ioInstance) {
+        ioInstance.emit('telemetry_update', { adId: ad.id, impressions: ad.impressions, clicks: ad.clicks });
     }
 
     res.json({ success: true, message: "Telemetry recorded.", ad });
