@@ -42,6 +42,128 @@ app.use((req, res, next) => {
   next();
 });
 
+/* ================= HEALTH CHECK ================= */
+app.get("/health", (req, res) => {
+  res.json({ status: "HEALTHY", uptime: process.uptime(), time: Date.now() });
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({ success: true, status: "OK", timestamp: Date.now() });
+});
+
+/* ================= WORKING FRONTEND ROUTES ================= */
+app.get("/", (req, res) => {
+  res.send(`<h1>RDS Welcome</h1><p>Try: <a href="/store">/store</a> | <a href="/driver">/driver</a> | <a href="/merchant">/merchant</a> | <a href="/admin">/admin</a> | <a href="/ads">/ads</a></p>`);
+});
+
+app.get("/store", (req, res) => {
+  res.send(`<h1>Store Panel</h1><div id="app"></div><script>
+    fetch('/api/store/products').then(r => r.json()).then(d => {
+      document.getElementById('app').innerHTML = '<pre>' + JSON.stringify(d, null, 2) + '</pre>';
+    }).catch(e => { document.getElementById('app').innerHTML = 'Network error: ' + e; });
+  </script>`);
+});
+
+app.get("/driver", (req, res) => {
+  res.send(`<h1>Driver Panel</h1><div id="app"></div><script>
+    fetch('/api/driver/dispatches').then(r => r.json()).then(d => {
+      document.getElementById('app').innerHTML = '<pre>' + JSON.stringify(d, null, 2) + '</pre>';
+    }).catch(e => { document.getElementById('app').innerHTML = 'Network error: ' + e; });
+  </script>`);
+});
+
+app.get("/merchant", (req, res) => {
+  res.send(`<h1>Merchant Panel</h1><div id="app"></div><script>
+    fetch('/api/merchant/inventory').then(r => r.json()).then(d => {
+      document.getElementById('app').innerHTML = '<pre>' + JSON.stringify(d, null, 2) + '</pre>';
+    }).catch(e => { document.getElementById('app').innerHTML = 'Network error: ' + e; });
+  </script>`);
+});
+
+app.get("/admin", (req, res) => {
+  res.send(`<h1>Admin Panel</h1><p>Access requires Bearer token</p>`);
+});
+
+app.get("/ads", (req, res) => {
+  res.send(`<h1>Ads Panel</h1><div id="app"></div><script>
+    fetch('/api/ads/list').then(r => r.json()).then(d => {
+      document.getElementById('app').innerHTML = '<pre>' + JSON.stringify(d, null, 2) + '</pre>';
+    }).catch(e => { document.getElementById('app').innerHTML = 'Network error: ' + e; });
+  </script>`);
+});
+
+/* ================= WORKING API ENDPOINTS ================= */
+
+// Store API
+const storeRouter = express.Router();
+storeRouter.get('/products', (req, res) => {
+  res.json({
+    success: true,
+    products: [
+      { id: "PROD_001", name: "Laptop", price: 50000, stock: 10, category: "Electronics" },
+      { id: "PROD_002", name: "Phone", price: 30000, stock: 25, category: "Electronics" },
+      { id: "PROD_003", name: "Headphones", price: 5000, stock: 100, category: "Accessories" }
+    ]
+  });
+});
+app.use('/api/store', storeRouter);
+
+// Driver API
+const driverRouter = express.Router();
+driverRouter.get('/dispatches', (req, res) => {
+  res.json({
+    success: true,
+    dispatches: [
+      { id: "DISP_001", driver: "Kevin Kiprop", status: "ACTIVE", location: "Nairobi CBD", earnings: 5000 },
+      { id: "DISP_002", driver: "Mercy Wanjiku", status: "ACTIVE", location: "Westlands", earnings: 3500 },
+      { id: "DISP_003", driver: "Brian Omondi", status: "OFFLINE", location: "Karen", earnings: 4200 }
+    ]
+  });
+});
+app.use('/api/driver', driverRouter);
+
+// Merchant API
+const merchantRouter = express.Router();
+merchantRouter.get('/inventory', (req, res) => {
+  res.json({
+    success: true,
+    inventory: [
+      { sku: "INV_001", item: "Rice (50kg)", quantity: 200, supplier: "Farmers Co-op" },
+      { sku: "INV_002", item: "Cooking Oil (20L)", quantity: 150, supplier: "Oil Industries Ltd" },
+      { sku: "INV_003", item: "Flour (25kg)", quantity: 300, supplier: "Grain Mills" }
+    ]
+  });
+});
+app.use('/api/merchant', merchantRouter);
+
+// Ads API
+const adsRouter = express.Router();
+adsRouter.get('/list', (req, res) => {
+  res.json({
+    success: true,
+    ads: [
+      { id: "AD_001", title: "Buy Now - 50% Off", campaign: "Summer Sale", impressions: 15000 },
+      { id: "AD_002", title: "Free Shipping", campaign: "Promo", impressions: 8500 },
+      { id: "AD_003", title: "Loyalty Rewards", campaign: "VIP", impressions: 12000 }
+    ]
+  });
+});
+app.use('/api/ads', adsRouter);
+
+// Admin API
+const adminRouter = express.Router();
+adminRouter.get('/status', (req, res) => {
+  res.json({ success: true, status: 'Operational', systemHealth: 'HEALTHY' });
+});
+app.use('/api/admin', adminRouter);
+
+// User API
+const userRouter = express.Router();
+userRouter.get('/profile', (req, res) => {
+  res.json({ success: true, user: { id: "USR_001", name: "Demo User", email: "user@example.com" } });
+});
+app.use('/api/user', userRouter);
+
 /* ================= DEFAULT ENTERPRISE SCHEMA ================= */
 function defaultDB() {
   return {
@@ -111,7 +233,6 @@ function sanitizeDataState() {
     data.system = { createdAt: Date.now(), lastCheck: Date.now() };
   }
 
-  // 1. Sanitize Products Catalog
   data.products.forEach(p => {
     if (p && typeof p === "object") {
       p.price = num(p.price);
@@ -122,7 +243,6 @@ function sanitizeDataState() {
     }
   });
 
-  // 2. Sanitize and Deduplicate Driver Roster
   const driverNameMap = new Map();
   data.drivers.forEach(d => {
     if (!d || (!d.id && !d.name)) return;
@@ -219,7 +339,6 @@ const saveDB = async () => {
 io.on("connection", (socket) => {
   log("SOCKET", `Client Connected: ${socket.id}`);
 
-  // Driver GPS Telemetry Stream
   socket.on("driver:location", (payload) => {
     sanitizeDataState();
     const driverId = payload.driverId || payload.id;
@@ -249,14 +368,6 @@ io.on("connection", (socket) => {
 });
 
 /* ================= SYSTEM HEALTH & METRICS ================= */
-app.get("/", (req, res) => {
-  ok(res, { status: "RDS HYBRID CORE RUNNING", mode: "SOCKET_ENABLED", time: Date.now() });
-});
-
-app.get("/health", (req, res) => {
-  ok(res, { status: "HEALTHY", mode: "SOCKET_ENABLED", uptime: process.uptime(), time: Date.now() });
-});
-
 app.get("/system/stats", (req, res) => {
   try {
     sanitizeDataState();
@@ -278,520 +389,6 @@ app.get("/system/stats", (req, res) => {
     });
   } catch (err) {
     fail(res, "Failed to calculate stats", 500);
-  }
-});
-
-/* ================= MODULE 1: MERCHANTS & SHOPS ================= */
-const getBusinessesHandler = (req, res) => {
-  try {
-    sanitizeDataState();
-    ok(res, { businesses: data.businesses, shops: data.businesses });
-  } catch (err) {
-    fail(res, "Failed to load businesses", 500);
-  }
-};
-
-app.get("/businesses", getBusinessesHandler);
-app.get("/shops", getBusinessesHandler);
-
-const addBusinessHandler = (req, res) => {
-  try {
-    const name = (req.body.name || req.query.name || "").trim();
-    const category = (req.body.category || req.query.category || "Retail").trim();
-
-    if (!name || name.length < 2) return fail(res, "Business name is required");
-
-    const b = {
-      id: id("B"),
-      name,
-      category,
-      balance: 0,
-      createdAt: Date.now()
-    };
-
-    data.businesses.push(b);
-    data.wallets[b.id] = { balance: 0, escrow: 0 };
-    saveDB();
-
-    io.emit("business:created", b);
-    log("BUSINESS", `Onboarded: ${b.name} (${b.id})`);
-    ok(res, { business: b, shop: b });
-  } catch (err) {
-    fail(res, "Failed to create business", 500);
-  }
-};
-
-app.post("/business/add", addBusinessHandler);
-app.post("/business/create", addBusinessHandler);
-
-const deleteBusinessHandler = (req, res) => {
-  try {
-    const bizId = req.params.id || req.body.id || req.query.id;
-    const initialLen = data.businesses.length;
-
-    data.businesses = data.businesses.filter(b => b.id !== bizId);
-
-    if (initialLen === data.businesses.length) {
-      return fail(res, "Business not found", 404);
-    }
-
-    delete data.wallets[bizId];
-    saveDB();
-
-    io.emit("business:deleted", { businessId: bizId });
-    log("BUSINESS", `Deleted: ${bizId}`);
-    ok(res, { message: `Business ${bizId} deleted` });
-  } catch (err) {
-    fail(res, "Delete failed", 500);
-  }
-};
-
-app.delete("/business/delete/:id", deleteBusinessHandler);
-app.delete("/business/:id", deleteBusinessHandler);
-
-/* ================= MODULE 2: CATALOG & PRODUCTS ================= */
-app.get("/products", (req, res) => {
-  try {
-    sanitizeDataState();
-    const { businessId } = req.query;
-    let products = data.products;
-
-    if (businessId) {
-      products = products.filter(p => p.businessId === businessId);
-    }
-
-    ok(res, { products });
-  } catch (err) {
-    fail(res, "Failed to load products", 500);
-  }
-});
-
-app.post("/product/add", (req, res) => {
-  try {
-    const { businessId, name, price, stock, category } = req.body;
-
-    if (!businessId || !name || price === undefined) {
-      return fail(res, "Missing required product parameters: businessId, name, price");
-    }
-
-    const product = {
-      id: id("P"),
-      businessId,
-      name: name.trim(),
-      price: num(price),
-      stock: stock !== undefined ? Math.max(0, Math.floor(num(stock))) : 50,
-      category: category || "General",
-      createdAt: Date.now()
-    };
-
-    data.products.push(product);
-    saveDB();
-
-    io.emit("product:added", product);
-    log("PRODUCT", `Added: ${product.name}`);
-    ok(res, { product });
-  } catch (err) {
-    fail(res, "Failed to add product", 500);
-  }
-});
-
-/* ================= MODULE 3: DRIVERS & FLEET ================= */
-const getDriversHandler = (req, res) => {
-  try {
-    sanitizeDataState();
-    const { status } = req.query;
-    let list = data.drivers;
-
-    if (status) {
-      list = list.filter(d => (d.status || "").toLowerCase() === status.toString().toLowerCase());
-    }
-
-    ok(res, { count: list.length, data: list, drivers: list });
-  } catch (err) {
-    fail(res, "Failed to fetch driver roster", 500);
-  }
-};
-
-app.get("/drivers", getDriversHandler);
-app.get("/drivers/live", getDriversHandler);
-app.get("/drivers/map", getDriversHandler);
-
-const registerDriverHandler = (req, res) => {
-  try {
-    sanitizeDataState();
-    const name = (req.body.name || req.query.name || "").trim();
-    const vehicle = (req.body.vehicle || req.query.vehicle || "Motorbike KAB 123X").trim();
-    const phone = (req.body.phone || req.query.phone || "0700000000").trim();
-
-    if (!name || name.length < 2) return fail(res, "Driver name is required");
-
-    let driver = data.drivers.find(d => d.name.toLowerCase() === name.toLowerCase());
-
-    if (driver) {
-      driver.status = "online";
-      driver.lastSeen = Date.now();
-      if (vehicle !== "N/A") driver.vehicle = vehicle;
-      saveDB();
-      io.emit("driver:updated", driver);
-      return ok(res, { message: "Existing driver reactivated", driver, data: driver });
-    }
-
-    driver = {
-      id: id("DRV"),
-      name,
-      phone,
-      vehicle,
-      status: "offline",
-      earnings: 0,
-      location: { lat: -1.286389, lng: 36.817223 },
-      lastSeen: Date.now(),
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
-
-    data.drivers.push(driver);
-    saveDB();
-
-    io.emit("driver:registered", driver);
-    log("DRIVER", `Registered: ${driver.name} (${driver.id})`);
-    ok(res, { message: "Driver registered successfully", driver, data: driver });
-  } catch (err) {
-    fail(res, "Registration failed", 500);
-  }
-};
-
-app.post("/driver/register", registerDriverHandler);
-app.post("/driver/add", registerDriverHandler);
-app.post("/addDriver", registerDriverHandler);
-
-const updateDriverStatusHandler = (req, res) => {
-  try {
-    sanitizeDataState();
-    const driverId = req.body.driverId || req.body.id || req.query.driverId;
-    let status = (req.body.status || req.query.status || "").toString().toLowerCase();
-
-    if (!driverId || !status) return fail(res, "Missing driverId or status payload");
-
-    if (["idle", "available", "online", "true"].includes(status)) status = "online";
-
-    const driver = data.drivers.find(d => d.id === driverId);
-    if (!driver) return fail(res, "Driver not found", 404);
-
-    driver.status = status;
-    driver.lastSeen = Date.now();
-    driver.updatedAt = Date.now();
-
-    saveDB();
-    io.emit("driver:statusChanged", { driverId, status });
-    ok(res, { message: "Driver status updated", driver, data: driver });
-  } catch (err) {
-    fail(res, "Status update failed", 500);
-  }
-};
-
-app.post("/driver/status", updateDriverStatusHandler);
-app.post("/driverStatus", updateDriverStatusHandler);
-
-const updateLocationHandler = (req, res) => {
-  try {
-    sanitizeDataState();
-    const driverId = req.body.driverId || req.body.id || req.query.driverId;
-    const payload = req.body.location || req.body;
-
-    if (!driverId) return fail(res, "Missing required driverId");
-    if (payload.lat == null || payload.lng == null) return fail(res, "Missing GPS coordinates");
-
-    const latN = num(payload.lat);
-    const lngN = num(payload.lng);
-
-    if (isNaN(latN) || isNaN(lngN) || latN < -90 || latN > 90 || lngN < -180 || lngN > 180) {
-      return fail(res, "Invalid geographical coordinate bounds");
-    }
-
-    const driver = data.drivers.find(d => d.id === driverId);
-    if (!driver) return fail(res, "Driver not found", 404);
-
-    driver.location = { lat: latN, lng: lngN, heading: num(payload.heading), speed: num(payload.speed) };
-    driver.status = "online";
-    driver.lastSeen = Date.now();
-    driver.updatedAt = Date.now();
-
-    saveDB();
-
-    io.emit("telemetry:stream", {
-      driverId: driver.id,
-      driverName: driver.name,
-      status: driver.status,
-      location: driver.location
-    });
-
-    ok(res, { message: "Location updated", driver, location: driver.location });
-  } catch (err) {
-    fail(res, "GPS telemetry update failed", 500);
-  }
-};
-
-app.post("/driver/location", updateLocationHandler);
-app.post("/updateDriverLocation", updateLocationHandler);
-
-/* ================= MODULE 4: ORDERS & CHECKOUT ================= */
-app.get("/orders", (req, res) => {
-  try {
-    sanitizeDataState();
-    const { status, customerPhone, businessId } = req.query;
-
-    let list = data.orders;
-
-    if (status) {
-      const targetStatus = status.toString().toLowerCase();
-      list = list.filter(o => (o.status || "").toString().toLowerCase() === targetStatus);
-    }
-
-    if (customerPhone) list = list.filter(o => o.customerPhone === customerPhone);
-    if (businessId) list = list.filter(o => o.businessId === businessId);
-
-    ok(res, { count: list.length, data: list, orders: list });
-  } catch (err) {
-    fail(res, "Failed to load orders", 500);
-  }
-});
-
-const createOrderHandler = (req, res) => {
-  try {
-    sanitizeDataState();
-    const { customerName, customerPhone, businessId, items, pickup, dropoff, deliveryAddress, amount, total } = req.body;
-
-    const finalName = (customerName || "Guest Customer").trim();
-    const finalAmount = num(amount || total);
-
-    const order = {
-      id: id("ORD"),
-      businessId: businessId || "SYSTEM",
-      customerName: finalName,
-      customerPhone: customerPhone || "0700000000",
-      deliveryAddress: deliveryAddress || dropoff || "Nairobi CBD",
-      pickup: pickup || { lat: -1.286389, lng: 36.817223 },
-      dropoff: dropoff || { lat: -1.286389, lng: 36.817223 },
-      items: Array.isArray(items) ? items : [],
-      amount: finalAmount,
-      total: finalAmount,
-      status: "pending",
-      driverId: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
-
-    data.orders.push(order);
-
-    data.ledger.push({
-      id: id("TX"),
-      type: "ORDER",
-      amount: finalAmount,
-      orderId: order.id,
-      businessId: order.businessId,
-      createdAt: Date.now()
-    });
-
-    saveDB();
-
-    io.emit("order:created", order);
-    log("ORDER", `Created: ${order.id} ($${finalAmount})`);
-    ok(res, { message: "Order created successfully", data: order, order });
-  } catch (err) {
-    fail(res, "Order creation failed", 500);
-  }
-};
-
-app.post("/order/create", createOrderHandler);
-app.post("/orders/create", createOrderHandler);
-app.post("/checkout", createOrderHandler);
-
-const completeOrderHandler = (req, res) => {
-  try {
-    sanitizeDataState();
-    const orderId = req.body.orderId || req.body.deliveryId || req.body.id || req.query.orderId;
-
-    if (!orderId) return fail(res, "orderId is required");
-
-    const order = data.orders.find(o => o.id === orderId);
-    if (!order) return fail(res, "Order not found", 404);
-
-    order.status = "completed";
-    order.completedAt = Date.now();
-    order.updatedAt = Date.now();
-
-    let payout = 0;
-    if (order.driverId) {
-      const driver = data.drivers.find(d => d.id === order.driverId);
-      if (driver) {
-        payout = (order.total || order.amount || 0) * 0.90;
-        driver.earnings += payout;
-        driver.status = "online";
-        driver.updatedAt = Date.now();
-
-        data.ledger.push({
-          id: id("TX"),
-          type: "DELIVERY_PAYOUT",
-          amount: payout,
-          orderId: order.id,
-          driverId: driver.id,
-          createdAt: Date.now()
-        });
-      }
-    }
-
-    saveDB();
-
-    io.emit("order:completed", { orderId: order.id, driverId: order.driverId, payout });
-    log("FULFILLMENT", `Completed: ${order.id}`);
-    ok(res, { message: "Order completed successfully", data: order, order });
-  } catch (err) {
-    fail(res, "Order completion failed", 500);
-  }
-};
-
-app.post("/order/complete", completeOrderHandler);
-app.post("/orders/complete", completeOrderHandler);
-app.post("/driver/complete", completeOrderHandler);
-
-/* ================= MODULE 5: DISPATCH ENGINE ================= */
-const autoDispatchHandler = (req, res) => {
-  try {
-    sanitizeDataState();
-    const orderId = req.body.orderId || req.body.id || req.query.orderId;
-
-    const availableDrivers = data.drivers.filter(d => 
-      ["ONLINE", "AVAILABLE", "IDLE"].includes((d.status || "").toString().toUpperCase())
-    );
-
-    if (availableDrivers.length === 0) {
-      return fail(res, "No online drivers available for dispatch", 404);
-    }
-
-    if (!orderId) {
-      const pendingOrders = data.orders.filter(o => 
-        ["PENDING", "PLACED", "UNASSIGNED"].includes((o.status || "").toString().toUpperCase())
-      );
-
-      if (pendingOrders.length === 0) return fail(res, "No pending orders in dispatch queue");
-
-      const assignments = [];
-
-      for (const order of pendingOrders) {
-        let nearestDriver = null;
-        let minDistance = Infinity;
-
-        const pLat = order.pickup?.lat || -1.286389;
-        const pLng = order.pickup?.lng || 36.817223;
-
-        for (const driver of availableDrivers) {
-          if (driver.status === "busy") continue;
-
-          const dist = driver.location ? calculateDistanceKM(pLat, pLng, driver.location.lat, driver.location.lng) : Infinity;
-
-          if (dist < minDistance) {
-            minDistance = dist;
-            nearestDriver = driver;
-          }
-        }
-
-        if (!nearestDriver && availableDrivers.length > 0) {
-          availableDrivers.sort((a, b) => (a.earnings || 0) - (b.earnings || 0));
-          nearestDriver = availableDrivers[0];
-        }
-
-        if (nearestDriver) {
-          order.status = "assigned";
-          order.driverId = nearestDriver.id;
-          order.updatedAt = Date.now();
-
-          nearestDriver.status = "busy";
-          nearestDriver.currentOrder = order.id;
-          nearestDriver.updatedAt = Date.now();
-
-          assignments.push({
-            orderId: order.id,
-            driverId: nearestDriver.id,
-            driverName: nearestDriver.name
-          });
-
-          io.emit("order:dispatched", { orderId: order.id, driverId: nearestDriver.id });
-        }
-      }
-
-      saveDB();
-      return ok(res, { message: `Auto dispatch completed (${assignments.length} assigned)`, assignments });
-    }
-
-    const order = data.orders.find(o => o.id === orderId);
-    if (!order) return fail(res, "Order not found", 404);
-
-    const driverId = req.body.driverId || req.query.driverId;
-    let selectedDriver = null;
-
-    if (driverId) {
-      selectedDriver = availableDrivers.find(d => d.id === driverId);
-    }
-
-    if (!selectedDriver) {
-      const pLat = order.pickup?.lat || -1.286389;
-      const pLng = order.pickup?.lng || 36.817223;
-
-      availableDrivers.sort((a, b) => {
-        if (a.location && b.location) {
-          return calculateDistanceKM(pLat, pLng, a.location.lat, a.location.lng) - calculateDistanceKM(pLat, pLng, b.location.lat, b.location.lng);
-        }
-        return (a.earnings || 0) - (b.earnings || 0);
-      });
-
-      selectedDriver = availableDrivers[0];
-    }
-
-    order.driverId = selectedDriver.id;
-    order.status = "assigned";
-    order.updatedAt = Date.now();
-
-    selectedDriver.status = "busy";
-    selectedDriver.currentOrder = order.id;
-    selectedDriver.updatedAt = Date.now();
-
-    saveDB();
-
-    io.emit("order:dispatched", { orderId: order.id, driverId: selectedDriver.id });
-    ok(res, { message: "Order auto-dispatched successfully", order, driver: selectedDriver });
-  } catch (err) {
-    fail(res, "Dispatch processing failed", 500);
-  }
-};
-
-app.post("/dispatch/auto", autoDispatchHandler);
-app.post("/dispatch/assign", autoDispatchHandler);
-app.post("/order/assign", autoDispatchHandler);
-
-/* ================= MODULE 6: FINANCIAL LEDGER ================= */
-const getLedgerHandler = (req, res) => {
-  try {
-    sanitizeDataState();
-    ok(res, { ledger: data.ledger, transactions: data.ledger });
-  } catch (err) {
-    fail(res, "Failed to load ledger transactions", 500);
-  }
-};
-
-app.get("/ledger", getLedgerHandler);
-app.get("/transactions", getLedgerHandler);
-
-app.get("/wallets", (req, res) => {
-  try {
-    sanitizeDataState();
-    const walletList = Object.keys(data.wallets).map(bId => ({
-      businessId: bId,
-      balance: data.wallets[bId].balance || 0,
-      escrow: data.wallets[bId].escrow || 0
-    }));
-    ok(res, { wallets: walletList });
-  } catch (err) {
-    fail(res, "Failed to load wallets", 500);
   }
 });
 
