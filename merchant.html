@@ -315,8 +315,8 @@
         const CLOUD_API = "https://rds-lab.onrender.com";
         let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
 
-        let currentMerchantId = localStorage.getItem('rds_merchantId') || '';
-        let currentShopName = localStorage.getItem('rds_shopName') || '';
+        let currentMerchantId = localStorage.getItem('rds_merchantId') || 'MERCH_DEF_172';
+        let currentShopName = localStorage.getItem('rds_shopName') || 'Sovereign Supermarket';
         const socket = io();
 
         let activeTargetInput = null;
@@ -582,7 +582,7 @@
                 }
                 tbody.innerHTML = data.orders.map(order => {
                     let actionBtn = `<button onclick="acceptOrder('${order.orderId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs font-semibold">Accept & Call Driver</button>`;
-                    if (order.status === 'DRIVER_EN_ROUTE_TO_MERCHANT') {
+                    if (order.status === 'DRIVER_EN_ROUTE_TO_MERCHANT' || order.status === 'AWAITING_DRIVER_PICKUP') {
                         actionBtn = `<button onclick="completeHandover('${order.orderId}')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-3 py-1 rounded-lg text-xs animate-bounce">📦 Handover & Get Paid</button>`;
                     } else if (order.status === 'COMPLETED & PAID OUT') {
                         actionBtn = `<span class="text-xs text-emerald-400 font-bold">✅ Paid Out Successfully</span>`;
@@ -613,8 +613,10 @@
                     alert(`✅ Order ${orderId} packed & driver called successfully!`);
                     loadOrders();
                     loadDriverQueue();
+                } else {
+                    alert(data.error || "Failed to accept order.");
                 }
-            } catch (err) {}
+            } catch (err) { alert("Network error connecting to server."); }
         }
 
         async function completeHandover(orderId) {
@@ -628,13 +630,15 @@
                 if (data.success) {
                     alert(`💰 Order ${orderId} handed over and payment credited immediately!`);
                     loadOrders();
+                } else {
+                    alert(data.error || "Failed to complete handover.");
                 }
-            } catch (err) {}
+            } catch (err) { alert("Network error connecting to server."); }
         }
 
         async function loadDriverQueue() {
             try {
-                const res = await fetch(`${API_BASE}/api/merchant/driver/queue`);
+                const res = await fetch(`${API_BASE}/api/driver/queue`);
                 const data = await res.json();
                 const tbody = document.getElementById('driverQueueTableBody');
                 if (!data.success || !data.queue || data.queue.length === 0) {
@@ -643,12 +647,12 @@
                 }
                 tbody.innerHTML = data.queue.map(order => `
                     <tr class="hover:bg-slate-800/50 transition">
-                        <td class="py-3 px-4 font-mono text-xs text-amber-400">${order.orderId}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-amber-400">${order.orderId || order.id}</td>
                         <td class="py-3 px-4 font-medium">${order.shopName || order.pickup}</td>
                         <td class="py-3 px-4 text-slate-300">${order.items ? order.items.map(i => `${i.name} (x${i.qty || 1})`).join(', ') : 'Items'}</td>
                         <td class="py-3 px-4 font-semibold text-emerald-400">KES ${Number(order.totalAmount || order.total || 0).toLocaleString()}</td>
                         <td class="py-3 px-4 text-right">
-                            <button onclick="driverAcceptOrder('${order.orderId}')" class="bg-amber-600 text-slate-950 font-bold px-3 py-1 rounded-lg text-xs">Claim & Deliver</button>
+                            <button onclick="driverAcceptOrder('${order.orderId || order.id}')" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-3 py-1 rounded-lg text-xs transition">Claim & Deliver</button>
                         </td>
                     </tr>
                 `).join('');
@@ -657,17 +661,20 @@
 
         async function driverAcceptOrder(orderId) {
             try {
-                const res = await fetch(`${API_BASE}/api/merchant/driver/accept`, {
+                const res = await fetch(`${API_BASE}/api/driver/accept-dispatch`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderId, driverId: 'RIDER_UNIT_01' })
+                    body: JSON.stringify({ dispatchId: orderId, driverId: 'RIDER_UNIT_01' })
                 });
                 const data = await res.json();
                 if (data.success) {
                     alert(`🛵 Order ${orderId} claimed! You are en route to the merchant.`);
                     loadDriverQueue();
+                    loadOrders();
+                } else {
+                    alert(data.error || "Failed to claim dispatch.");
                 }
-            } catch (err) {}
+            } catch (err) { alert("Network error connecting to server."); }
         }
 
         async function handleCatalogUpdate(event) {
