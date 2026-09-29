@@ -58,13 +58,13 @@ jobs:
           
           HEALTH_CHECK_PASSED=false
           for i in {1..6}; do
-            if curl -f http://localhost:3000/health; then
+            if curl -f http://localhost:3000/api/health; then
               HEALTH_CHECK_PASSED=true
               break
             fi
             echo "Health check attempt $i failed, retrying in 2 seconds..."
             sleep 2
-          sane_check
+          done
           
           if [ "$HEALTH_CHECK_PASSED" = false ]; then
             echo "Error: Server health check endpoint did not respond successfully."
