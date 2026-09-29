@@ -54,8 +54,38 @@ router.get('/sovereign-vault', (req, res) => {
     res.json({ success: true, vaultBlocks: sovereignAuditStream });
 });
 
+// ============================================================================
+// --- FULLY ACTIVATED TENANT OWNER MANAGEMENT ENDPOINTS ---
+// ============================================================================
+router.get('/tenants', (req, res) => {
+    try {
+        const mProfiles = global.merchantProfiles || {};
+        const tenantsList = Object.keys(mProfiles).map(id => ({
+            merchantId: id,
+            shopName: mProfiles[id].shopName || "Independent Shop",
+            businessType: mProfiles[id].businessType || "GENERAL",
+            phone: mProfiles[id].phone || "+254712345678",
+            status: mProfiles[id].status || "APPROVED_ACTIVE"
+        }));
+        res.json({ success: true, tenants: tenantsList });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 router.post('/toggle-tenant-status', (req, res) => {
     const { tenantId, status } = req.body;
+    if (global.merchantProfiles && global.merchantProfiles[tenantId]) {
+        global.merchantProfiles[tenantId].status = status || 'SUSPENDED';
+    }
+    
+    sovereignAuditStream.push({
+        auditId: `AUD_${Date.now()}`,
+        timestamp: Date.now(),
+        actionType: 'TENANT_STATUS_TOGGLE',
+        currentHash: crypto.createHash('sha256').update(JSON.stringify({ tenantId, status })).digest('hex')
+    });
+
     res.json({ success: true, message: `Tenant ${tenantId} status successfully updated to ${status}.` });
 });
 
