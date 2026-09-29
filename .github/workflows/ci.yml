@@ -47,8 +47,9 @@ jobs:
           npm config set legacy-peer-deps true
           npm config set strict-ssl false
           npm cache clean --force
-          echo "Attempting robust installation with force fallback..."
-          npm install --force --no-audit --no-fund || npm install --legacy-peer-deps --allow-same-version || npm ci --legacy-peer-deps --no-audit
+          echo "Installing dependencies with ignore-scripts to prevent interactive prompts..."
+          npm install --ignore-scripts --force --no-audit --no-fund || npm install --ignore-scripts --legacy-peer-deps --allow-same-version --no-audit --no-fund || npm ci --ignore-scripts --legacy-peer-deps --no-audit
+          npm rebuild --ignore-scripts
 
       - name: Verify Stage 30 Server Syntax
         run: node -c server.js
@@ -57,20 +58,20 @@ jobs:
         run: |
           node server.js &
           SERVER_PID=$!
-          
+
           STARTED=0
           for i in {1..15}; do
-            if curl -s http://localhost:3000/api/ads/list > /dev/null || curl -s http://localhost:3000/health > /dev/null; then
+            if curl -s http://localhost:3000/api/ads/list > /dev/null 2>&1 || curl -s http://localhost:3000/health > /dev/null 2>&1; then
               echo "✅ Server is up and running on Node ${{ matrix.node-version }}!"
               STARTED=1
               break
             fi
             sleep 1
           done
-          
+
           kill $SERVER_PID 2>/dev/null || true
           wait $SERVER_PID 2>/dev/null || true
-          
+
           if [ $STARTED -eq 0 ]; then
             echo "❌ Server failed to start in time."
             exit 1
