@@ -13,7 +13,7 @@ const fsPromises = require("fs").promises;
 const cors = require("cors");
 const path = require("path");
 const crypto = require("crypto");
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcryptjs"); // ✅ Pure-JS bcryptjs configured for flawless CI/CD builds
 const multer = require("multer");
 
 const app = express();
@@ -332,10 +332,10 @@ function ensureState() {
     if (data.immutable_audit_vault.length === 0) {
       const ts = Date.now();
       const prev = "GENESIS_ROOT_HASH_000000000000000000000000";
-      const hash = crypto.createHash("sha256").update(`${ts}:GENESIS_ROOT_INIT:${prev}:STAGE_174`).digest("hex");
+      const hash = crypto.createHash("sha256").update(`${ts}:GENESIS_ROOT_INIT:${prev}:STAGE_175`).digest("hex");
       data.immutable_audit_vault.push({
         auditId: "AUD_GENESIS", tenantId: "SYSTEM", timestamp: ts, actionType: "GENESIS_ROOT_INIT",
-        actor: { system: "RDS_CORE" }, details: { message: "Secure genesis block initialized for Stage 174." }, previousHash: prev, currentHash: hash, proofState: "GLOBAL_MATHEMATICALLY_VERIFIED"
+        actor: { system: "RDS_CORE" }, details: { message: "Secure genesis block initialized for Stage 175." }, previousHash: prev, currentHash: hash, proofState: "GLOBAL_MATHEMATICALLY_VERIFIED"
       });
     }
   } catch (e) { data = defaultDB(); }
@@ -575,7 +575,7 @@ app.get('/api/hardware/peripherals', enforceTenantIsolation, (req, res) => {
 app.get('/api/ai/openapi.json', (req, res) => {
     return res.json({
         openapi: "3.0.2",
-        info: { title: "RDS Sovereign Financial OS API", version: "174.0" },
+        info: { title: "RDS Sovereign Financial OS API", version: "175.0" },
         paths: {
             "/api/login": { post: { summary: "Authenticate tenant user" } },
             "/api/kyc/verify-biometric-face": { post: { summary: "Verify ID and biometric capture" } },
@@ -672,5 +672,5 @@ app.use((err, req, res, next) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 RDS Stage 174 Financial OS Kernel & Multi-Panel Backend Fully Active on port ${PORT}`);
+    console.log(`🚀 RDS Stage 175 Financial OS Kernel & Multi-Panel Backend Fully Active on port ${PORT}`);
 });
