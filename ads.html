@@ -3,36 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS Sovereign Social & Entertainment Feed</title>
+    <title>RDS Sovereign Immersive Feed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        .snap-container {
+        .reel-container {
             scroll-snap-type: y mandatory;
             overflow-y: scroll;
-            height: calc(100vh - 160px);
+            height: 100vh;
         }
-        .snap-item {
+        .reel-item {
             scroll-snap-align: start;
-            height: 100%;
+            scroll-snap-stop: always;
+            height: 100vh;
         }
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: #020617; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col justify-between selection:bg-purple-500 selection:text-white overflow-x-hidden">
+<body class="bg-black text-slate-100 font-sans overflow-hidden selection:bg-purple-500 selection:text-white">
 
     <!-- SECURE AUTH MODAL -->
     <div id="secureAuthModal" class="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
             <div class="text-center space-y-1">
                 <div class="bg-gradient-to-tr from-purple-600 to-pink-600 text-white w-12 h-12 mx-auto rounded-2xl flex items-center justify-center text-xl font-bold shadow-lg shadow-purple-600/30">
-                    <i class="fa-solid fa-users"></i>
+                    <i class="fa-solid fa-bolt"></i>
                 </div>
-                <h3 class="text-base font-bold text-white">Join RDS Sovereign Social</h3>
-                <p class="text-xs text-slate-400">Safe for all ages. Instant photo snap, video recording, and secure calls.</p>
+                <h3 class="text-base font-bold text-white">RDS Sovereign Account</h3>
+                <p class="text-xs text-slate-400">Sign in or register to publish and interact with the feed.</p>
             </div>
 
             <div id="authStep1" class="space-y-3">
@@ -41,15 +40,15 @@
                     <input type="text" id="regFullName" placeholder="e.g. Robert Maina" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500">
                 </div>
                 <div>
-                    <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Choose Username (@handle)</label>
+                    <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Username (@handle)</label>
                     <input type="text" id="regHandle" placeholder="e.g. @robert_maina" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500 font-mono">
                 </div>
                 <div>
                     <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Email or Phone Number</label>
-                    <input type="text" id="loginContactInput" placeholder="e.g. mwangirobertmaina@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500 font-mono">
+                    <input type="text" id="loginContactInput" placeholder="mwangirobertmaina@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500 font-mono">
                 </div>
-                <button onclick="requestSecurityOtp()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg cursor-pointer">
-                    ✨ Send Code & Continue
+                <button onclick="requestSecurityOtp()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg cursor-pointer">
+                    ✨ Send Verification Code
                 </button>
             </div>
 
@@ -59,270 +58,123 @@
                     <input type="text" id="loginOtpInput" maxlength="6" placeholder="------" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-center tracking-widest text-white font-mono text-base outline-none focus:border-emerald-500">
                 </div>
                 <button onclick="verifyAndCompleteLogin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg cursor-pointer">
-                    🚀 Start Connecting
+                    🚀 Complete Sign In
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- LIVE CAMERA & VIDEO RECORDING STUDIO MODAL -->
-    <div id="cameraStudioModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-5 shadow-2xl space-y-4 flex flex-col">
+    <!-- CREATE POST STUDIO MODAL -->
+    <div id="createPostModal" class="fixed inset-0 bg-black/9oidal backdrop-blur-md z-50 hidden flex items-center justify-center p-4 bg-black/80">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-video text-purple-400"></i> Camera & Video Studio</h3>
-                <button onclick="closeCameraStudio()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-circle-plus text-purple-400"></i> Create New Reel / Post</h3>
+                <button onclick="closeCreateModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <div class="relative w-full h-72 bg-black rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
-                <video id="studioCameraStream" autoplay playsinline muted class="w-full h-full object-cover"></video>
-                <canvas id="studioCanvas" class="hidden"></canvas>
-                <div id="recordingTimerBadge" class="absolute top-3 left-3 bg-rose-600 text-white text-[10px] font-mono px-2.5 py-1 rounded-full hidden animate-pulse">● RECORDING...</div>
-            </div>
-            <div class="flex flex-wrap justify-center gap-2.5">
-                <button onclick="capturePhotoSnap()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-camera"></i> Take Photo Snap
-                </button>
-                <button id="recordVideoBtn" onclick="toggleVideoRecording()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-circle"></i> Record Video Reel
-                </button>
-                <button onclick="closeCameraStudio()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs transition cursor-pointer">Close</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- P2P LIVE VIDEO CALL MODAL -->
-    <div id="videoCallModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-4xl rounded-3xl p-6 shadow-2xl space-y-4 flex flex-col">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <div class="flex items-center space-x-2">
-                    <div class="bg-cyan-600 text-white p-2.5 rounded-xl"><i class="fa-solid fa-video"></i></div>
+            <div class="grid grid-cols-2 gap-2">
+                <label class="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 py-3 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-upload"></i> Upload Media File
+                    <input type="file" id="localMediaFile" accept="video/*,image/*" onchange="handleLocalFileUpload(event)" class="hidden">
+                </label>
+                <button type="button" onclick="openCameraStudio()" class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 py-3 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-camera"></i> Live Camera
+                </button>
+            </div>
+
+            <form onsubmit="publishPost(event)" class="space-y-3">
+                <div>
+                    <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Caption / Title</label>
+                    <input type="text" id="postTitle" required placeholder="What's on your mind? #fyp" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <h3 class="text-sm font-bold text-white">RDS Sovereign Live Video Call</h3>
-                        <p class="text-xs text-slate-400">Direct secure call with friends online</p>
+                        <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Category</label>
+                        <select id="postVertical" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2.5 text-xs text-white outline-none">
+                            <option value="MOTIVATION">🔥 Motivation</option>
+                            <option value="MUSIC">🎵 Music</option>
+                            <option value="COMEDY">😂 Comedy</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Media Type</label>
+                        <select id="postMediaType" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2.5 text-xs text-white outline-none">
+                            <option value="Video Clip">🎬 Video Reel (9:16)</option>
+                            <option value="Photo">📸 Photo Snap</option>
+                        </select>
                     </div>
                 </div>
-                <button onclick="endCall()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="relative bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 h-64 flex items-center justify-center">
-                    <span class="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded font-mono z-10">You</span>
-                    <video id="localVideo" autoplay playsinline muted class="w-full h-full object-cover"></video>
-                </div>
-                <div class="relative bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 h-64 flex items-center justify-center">
-                    <span class="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded font-mono z-10">Friend Online</span>
-                    <video id="remoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
-                </div>
-            </div>
-
-            <div class="flex justify-center items-center space-x-4 pt-2">
-                <button onclick="startCall()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl text-xs font-bold transition shadow-lg flex items-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-phone"></i> Call Friend Now
-                </button>
-                <button onclick="toggleAudioMute()" class="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-xl text-xs transition cursor-pointer" title="Mute Mic">
-                    <i class="fa-solid fa-microphone" id="micIcon"></i>
-                </button>
-                <button onclick="toggleVideoMute()" class="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-xl text-xs transition cursor-pointer" title="Toggle Camera">
-                    <i class="fa-solid fa-video" id="videoIcon"></i>
-                </button>
-                <button onclick="endCall()" class="bg-rose-600 hover:bg-rose-500 text-white px-6 py-3 rounded-xl text-xs font-bold transition shadow-lg flex items-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-phone-slash"></i> Hang Up
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- COMMENTS DRAWER -->
-    <div id="commentsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4 max-h-[80vh] flex flex-col">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-comments text-purple-400"></i> Post Comments</h3>
-                <button onclick="closeCommentsModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div id="commentsListContainer" class="overflow-y-auto space-y-3 flex-1 pr-1">
-                <p class="text-xs text-slate-500 text-center py-6">No comments yet. Say something family-friendly!</p>
-            </div>
-            <div class="pt-2 border-t border-slate-800 flex gap-2">
-                <input type="text" id="commentInputBox" placeholder="Write a comment..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500">
-                <button onclick="postComment()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition">Send</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAIN APP CONTAINER -->
-    <div class="max-w-7xl mx-auto w-full p-3 sm:p-6 space-y-5">
-        
-        <header class="bg-slate-900 border border-slate-800/80 p-4 sm:p-5 rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 shadow-xl">
-            <div class="flex items-center space-x-3.5 text-center sm:text-left">
-                <div class="bg-gradient-to-tr from-purple-600 to-pink-600 text-white p-3 rounded-2xl text-lg sm:text-xl font-bold shadow-lg shadow-purple-600/30 shrink-0"><i class="fa-solid fa-bolt"></i></div>
                 <div>
-                    <h1 class="text-base sm:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 tracking-tight">RDS Sovereign Social & Chat Hub</h1>
-                    <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">Instant photo snap, video recording, viral reels, and secure video calls for all ages.</p>
+                    <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Media URL (Auto-filled on Upload)</label>
+                    <input type="url" id="postMediaUrl" required placeholder="https://..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white font-mono outline-none">
                 </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-                <button onclick="openVideoCallModal()" class="text-[11px] sm:text-xs font-mono bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 px-3 py-2 rounded-xl border border-cyan-500/20 transition cursor-pointer"><i class="fa-solid fa-video mr-1"></i> Video Call Friend</button>
-                <button onclick="openBiometricModal()" id="userBadge" class="text-[11px] sm:text-xs font-mono bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-3 py-2 rounded-xl border border-emerald-500/20 transition cursor-pointer"><i class="fa-solid fa-user-check mr-1"></i> <span id="displayUserHandle">@robert_maina</span></button>
-            </div>
-        </header>
-
-        <!-- Category Filters -->
-        <div class="flex overflow-x-auto space-x-2 pb-1 scrollbar-none">
-            <button onclick="filterVertical('ALL')" class="vertical-btn bg-purple-600 text-white text-xs px-4 py-2 rounded-xl font-bold shrink-0 transition shadow-md cursor-pointer">All Feed</button>
-            <button onclick="filterVertical('MOTIVATION')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">🔥 Motivation</button>
-            <button onclick="filterVertical('MUSIC')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">🎵 Music & Vibe</button>
-            <button onclick="filterVertical('COMEDY')" class="vertical-btn bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold shrink-0 transition border border-slate-800 cursor-pointer">😂 Comedy & Skits</button>
-        </div>
-
-        <!-- Main Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            <!-- LEFT: REELS FEED -->
-            <div class="lg:col-span-7">
-                <div class="bg-slate-900 border border-slate-800/80 rounded-3xl shadow-2xl relative overflow-hidden flex flex-col">
-                    <div class="p-3 sm:p-4 bg-slate-950/80 border-b border-slate-800/80 flex justify-between items-center z-20">
-                        <span class="bg-purple-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                            <i class="fa-solid fa-fire mr-1"></i> Trending Feed
-                        </span>
-                        <span id="postCounterBadge" class="text-xs font-mono text-cyan-400 font-bold bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">Posts (0)</span>
-                    </div>
-
-                    <div id="reelsScrollContainer" class="snap-container relative w-full h-[500px] sm:h-[580px] bg-black">
-                        <!-- Dynamically injected posts -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- RIGHT: QUICK POST & CAMERA STUDIO -->
-            <div class="lg:col-span-5 space-y-6">
-                <div class="bg-slate-900 border border-slate-800/80 p-4 sm:p-6 rounded-3xl shadow-2xl">
-                    <div class="flex items-center space-x-2.5 mb-4">
-                        <div class="bg-purple-500/10 text-purple-400 p-2.5 rounded-xl text-sm"><i class="fa-solid fa-camera-retro"></i></div>
-                        <div>
-                            <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Share Snap, Video, or File</h2>
-                            <p class="text-[11px] sm:text-xs text-slate-400">Instant camera capture & file upload (Family safe)</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-2 mb-3">
-                        <button type="button" onclick="openCameraStudio()" class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 border border-cyan-500/30 py-2.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center gap-1 cursor-pointer">
-                            <i class="fa-solid fa-camera"></i> Snap Photo
-                        </button>
-                        <button type="button" onclick="openCameraStudio()" class="bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 py-2.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center gap-1 cursor-pointer">
-                            <i class="fa-solid fa-video"></i> Record Video
-                        </button>
-                        <label class="bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30 py-2.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center gap-1 cursor-pointer">
-                            <i class="fa-solid fa-upload"></i> Upload File
-                            <input type="file" id="localMediaFile" accept="video/*,image/*" onchange="handleLocalFileUpload(event)" class="hidden">
-                        </label>
-                    </div>
-
-                    <form onsubmit="publishPost(event)" class="space-y-3.5">
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Caption / Title</label>
-                            <input type="text" id="postTitle" required placeholder="What's happening?" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs sm:text-sm focus:border-purple-500 outline-none text-white transition">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Category</label>
-                                <select id="postVertical" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2.5 text-xs sm:text-sm focus:border-purple-500 outline-none text-white transition cursor-pointer">
-                                    <option value="MOTIVATION">🔥 Motivation</option>
-                                    <option value="MUSIC">🎵 Music & Vibe</option>
-                                    <option value="COMEDY">😂 Comedy</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Media Type</label>
-                                <select id="postMediaType" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2.5 text-xs sm:text-sm focus:border-purple-500 outline-none text-white transition cursor-pointer">
-                                    <option value="Photo">📸 Photo Snap</option>
-                                    <option value="Video Clip">🎬 Video Reel</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Media URL / Captured File</label>
-                            <input type="url" id="postMediaUrl" required placeholder="https://..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs sm:text-sm focus:border-purple-500 outline-none text-white font-mono transition">
-                        </div>
-
-                        <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-2">
-                            <span>🚀 Publish Safely to Feed</span>
-                        </button>
-                    </form>
-                </div>
-            </div>
-
+                <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg cursor-pointer">
+                    🚀 Post to Feed
+                </button>
+            </form>
         </div>
     </div>
 
-    <!-- OTP SECURITY MODAL -->
-    <div id="otpModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
-            <div class="flex items-center space-x-3">
-                <div class="bg-amber-500/20 text-amber-400 p-3 rounded-xl text-sm"><i class="fa-solid fa-shield-halved"></i></div>
-                <div>
-                    <h3 class="text-xs sm:text-sm font-bold text-white">Security Check</h3>
-                    <p class="text-[11px] sm:text-xs text-slate-400">Enter verification code sent to your device.</p>
-                </div>
-            </div>
-            <div>
-                <input type="text" id="otpInput" maxlength="6" placeholder="------" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-center tracking-widest font-mono text-lg text-white focus:border-purple-500 outline-none">
-            </div>
-            <button onclick="verifyOtpAndExecute()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition text-xs cursor-pointer">
-                🔐 Verify & Publish
+    <!-- TOP FLOATING NAVBAR (TikTok Style) -->
+    <header class="absolute top-0 left-0 right-0 z-40 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+        <div class="flex items-center space-x-4 pointer-events-auto">
+            <button onclick="setFeedView('PUBLIC')" id="tabPublic" class="text-sm font-bold text-white drop-shadow cursor-pointer pb-1 border-b-2 border-white">For You</button>
+            <button onclick="setFeedView('MINE')" id="tabMine" class="text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer pb-1 border-b-2 border-transparent">Following / My Posts</button>
+        </div>
+        <div class="flex items-center space-x-3 pointer-events-auto">
+            <button onclick="openCreateModal()" class="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Create
+            </button>
+            <button onclick="openAccountManager()" class="bg-black/40 border border-white/20 backdrop-blur-md text-emerald-400 px-3 py-1.5 rounded-full text-xs font-mono flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-user-check"></i> <span id="displayUserHandle">@robert_maina</span>
             </button>
         </div>
-    </div>
+    </header>
+
+    <!-- FULLSCREEN VERTICAL REELS SCROLL CONTAINER -->
+    <main id="reelsScrollContainer" class="reel-container w-full relative bg-black">
+        <!-- Dynamically injected full-screen vertical posts -->
+    </main>
 
     <script>
         let socket = io();
         let allPostsData = [];
         let activePostsPool = [];
-        let currentVertical = 'ALL';
-        let currentUser = { name: 'Robert Maina', handle: '@robert_maina' };
-        let activeContactId = 'mwangirobertmaina@gmail.com';
-        let pendingPayload = null;
+        let currentFeedView = 'PUBLIC';
+        
+        let currentUser = { 
+            name: localStorage.getItem('sov_user_name') || 'Robert Maina', 
+            handle: localStorage.getItem('sov_user_handle') || '@robert_maina' 
+        };
+        let activeContactId = localStorage.getItem('sov_contact_id') || 'mwangirobertmaina@gmail.com';
+        let sessionToken = localStorage.getItem('sov_session_token') || null;
 
-        let localStream = null;
-        let remoteStream = null;
-        let peerConnection = null;
-        let mediaRecorder = null;
-        let recordedChunks = [];
-        const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+        window.addEventListener('DOMContentLoaded', async () => {
+            await fetchPosts();
+            await validateSavedSession();
+        });
 
-        socket.on('telemetry_update', (data) => {
-            const post = allPostsData.find(p => p.id === data.adId);
-            if (post) {
-                post.likes = data.likes;
-                post.shares = data.shares;
-                updatePostUIStats(data.adId, post);
+        async function validateSavedSession() {
+            if (sessionToken && activeContactId) {
+                try {
+                    const res = await fetch('/api/ads/auth/session-validate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contactId: activeContactId, sessionToken })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.user) {
+                        currentUser.name = data.user.fullName;
+                        currentUser.handle = data.user.handle;
+                        document.getElementById('displayUserHandle').innerText = currentUser.handle;
+                        document.getElementById('secureAuthModal').classList.add('hidden');
+                        applyFeedFilters();
+                        return;
+                    }
+                } catch (e) {}
             }
-        });
-
-        socket.on('video-offer', async (data) => {
-            openVideoCallModal();
-            await setupPeerConnection();
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            socket.emit('video-answer', { answer });
-        });
-
-        socket.on('video-answer', async (data) => {
-            if (peerConnection) await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-        });
-
-        socket.on('ice-candidate', async (data) => {
-            if (peerConnection && data.candidate) {
-                try { await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch (e) {}
-            }
-        });
-
-        socket.on('call-ended', () => { closeCallResources(); });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            fetchPosts();
-            openBiometricModal();
-        });
+            document.getElementById('secureAuthModal').classList.remove('hidden');
+        }
 
         async function fetchPosts() {
             try {
@@ -330,24 +182,30 @@
                 const data = await res.json();
                 if (data.success && data.advertisements) allPostsData = data.advertisements;
             } catch (e) {}
-            applyVerticalFilter();
+            applyFeedFilters();
         }
 
-        function filterVertical(vertical) {
-            currentVertical = vertical;
-            document.querySelectorAll('.vertical-btn').forEach(btn => {
-                btn.classList.remove('bg-purple-600', 'text-white', 'font-bold', 'shadow-md');
-                btn.classList.add('bg-slate-900', 'text-slate-300', 'font-semibold');
-            });
-            event.target.classList.remove('bg-slate-900', 'text-slate-300', 'font-semibold');
-            event.target.classList.add('bg-purple-600', 'text-white', 'font-bold', 'shadow-md');
-            applyVerticalFilter();
+        function setFeedView(view) {
+            currentFeedView = view;
+            const btnPub = document.getElementById('tabPublic');
+            const btnMine = document.getElementById('tabMine');
+
+            if (view === 'PUBLIC') {
+                btnPub.className = "text-sm font-bold text-white drop-shadow cursor-pointer pb-1 border-b-2 border-white";
+                btnMine.className = "text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer pb-1 border-b-2 border-transparent";
+            } else {
+                btnMine.className = "text-sm font-bold text-white drop-shadow cursor-pointer pb-1 border-b-2 border-white";
+                btnPub.className = "text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer pb-1 border-b-2 border-transparent";
+            }
+            applyFeedFilters();
         }
 
-        function applyVerticalFilter() {
-            if (currentVertical === 'ALL') activePostsPool = allPostsData;
-            else activePostsPool = allPostsData.filter(p => p.targetVertical.toUpperCase() === currentVertical.toUpperCase());
-            document.getElementById('postCounterBadge').innerText = `Posts (${activePostsPool.length})`;
+        function applyFeedFilters() {
+            let pool = allPostsData;
+            if (currentFeedView === 'MINE') {
+                pool = pool.filter(p => p.authorHandle === currentUser.handle);
+            }
+            activePostsPool = pool;
             renderFeed();
         }
 
@@ -355,36 +213,70 @@
             const container = document.getElementById('reelsScrollContainer');
             if (!container) return;
             if (activePostsPool.length === 0) {
-                container.innerHTML = `<div class="flex items-center justify-center h-full text-slate-500 text-xs">No posts found. Share a moment!</div>`;
+                container.innerHTML = `
+                    <div class="reel-item flex flex-col items-center justify-center text-center p-6 space-y-3">
+                        <div class="text-slate-500 text-base">No reels or posts found in this view.</div>
+                        <button onclick="openCreateModal()" class="bg-purple-600 text-white font-bold px-5 py-2.5 rounded-xl text-xs">Create First Post</button>
+                    </div>`;
                 return;
             }
 
             container.innerHTML = activePostsPool.map(post => {
-                const mediaSrc = post.mediaUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
-                const isImage = post.mediaType === 'Photo' || mediaSrc.endsWith('.jpg') || mediaSrc.endsWith('.png');
-                
+                const mediaSrc = post.mediaUrl || '';
+                const isImage = post.mediaType === 'Photo' || 
+                                mediaSrc.includes('/uploads/') || 
+                                mediaSrc.includes('SNAP_') ||
+                                mediaSrc.endsWith('.jpg') || 
+                                mediaSrc.endsWith('.png') || 
+                                mediaSrc.endsWith('.jpeg') || 
+                                mediaSrc.endsWith('.webp') ||
+                                mediaSrc.startsWith('data:image');
+
                 return `
-                    <div class="snap-item relative w-full h-full flex items-center justify-center bg-black group">
-                        ${isImage ? `<img src="${mediaSrc}" class="w-full h-full object-cover">` : `<video src="${mediaSrc}" class="w-full h-full object-cover cursor-pointer" autoplay loop playsinline muted onclick="this.paused ? this.play() : this.pause()"></video>`}
-                        
-                        <div class="absolute right-4 bottom-20 flex flex-col items-center space-y-4 z-30">
-                            <button onclick="sendAction('${post.id}', 'like')" class="bg-black/50 hover:bg-purple-600 text-white w-11 h-11 rounded-full flex flex-col items-center justify-center backdrop-blur transition shadow-lg cursor-pointer">
-                                <i class="fa-solid fa-heart text-base text-rose-400"></i>
-                                <span id="likes_${post.id}" class="text-[9px] font-mono font-bold">${post.likes || 0}</span>
+                    <div class="reel-item relative w-full h-full flex items-center justify-center bg-black">
+                        <!-- Media View (9:16 Immersive) -->
+                        ${isImage 
+                            ? `<img src="${mediaSrc}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1550583724-b2692b85b150?w=800';">` 
+                            : `<video src="${mediaSrc}" class="w-full h-full object-cover cursor-pointer" autoplay loop playsinline muted onclick="this.paused ? this.play() : this.pause()"></video>`
+                        }
+
+                        <!-- Right Floating Action Bar (TikTok Style) -->
+                        <div class="absolute right-4 bottom-24 flex flex-col items-center space-y-5 z-30">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 border border-white flex items-center justify-center text-xs font-bold text-white shadow-lg">
+                                    ${(post.authorName || 'R')[0]}
+                                </div>
+                            </div>
+                            <button onclick="sendLike('${post.id}')" class="flex flex-col items-center group cursor-pointer">
+                                <div class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-rose-500 group-hover:bg-rose-500/20 transition">
+                                    <i class="fa-solid fa-heart text-xl"></i>
+                                </div>
+                                <span id="likes_${post.id}" class="text-[11px] font-bold text-white mt-1 drop-shadow">${post.likes || 0}</span>
                             </button>
-                            <button onclick="openCommentsModal('${post.id}')" class="bg-black/50 hover:bg-purple-600 text-white w-11 h-11 rounded-full flex flex-col items-center justify-center backdrop-blur transition shadow-lg cursor-pointer">
-                                <i class="fa-solid fa-comment text-base text-cyan-400"></i>
-                                <span class="text-[9px] font-mono font-bold">Chat</span>
+                            <button class="flex flex-col items-center group cursor-pointer">
+                                <div class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white/20 transition">
+                                    <i class="fa-solid fa-comment-dots text-lg"></i>
+                                </div>
+                                <span class="text-[11px] font-bold text-white mt-1 drop-shadow">0</span>
+                            </button>
+                            <button class="flex flex-col items-center group cursor-pointer">
+                                <div class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white/20 transition">
+                                    <i class="fa-solid fa-share text-lg"></i>
+                                </div>
+                                <span class="text-[11px] font-bold text-white mt-1 drop-shadow">Share</span>
                             </button>
                         </div>
 
-                        <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent flex justify-between items-end z-20">
-                            <div class="space-y-1 pr-12">
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-xs font-bold text-white">${post.authorName || 'User'}</span>
-                                    <span class="text-[10px] text-purple-400 font-mono">${post.authorHandle || '@user'}</span>
-                                </div>
-                                <h3 class="text-sm font-bold text-white">${post.title}</h3>
+                        <!-- Bottom Left Overlay Details (TikTok/Reels Style) -->
+                        <div class="absolute bottom-0 left-0 right-16 p-5 bg-gradient-to-t from-black/90 via-black/40 to-transparent space-y-2 z-20 pointer-events-none">
+                            <div class="flex items-center space-x-2 pointer-events-auto">
+                                <span class="text-sm font-bold text-white drop-shadow">${post.authorName || 'Robert Maina'}</span>
+                                <span class="text-xs text-purple-400 font-mono">${post.authorHandle || '@robert_maina'}</span>
+                            </div>
+                            <p class="text-xs text-slate-100 font-medium drop-shadow leading-relaxed">${post.title || post.caption || ''}</p>
+                            <div class="flex items-center space-x-2 text-[11px] text-slate-300">
+                                <i class="fa-solid fa-music animate-spin text-purple-400"></i>
+                                <span class="truncate">Original Audio - RDS Sovereign Sound</span>
                             </div>
                         </div>
                     </div>
@@ -392,280 +284,112 @@
             }).join('');
         }
 
-        async function sendAction(postId, action) {
+        async function sendLike(postId) {
             try {
                 const res = await fetch('/api/ads/telemetry', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adId: postId, action })
+                    body: JSON.stringify({ adId: postId, action: 'like' })
                 });
                 const data = await res.json();
-                if (data.success) updatePostUIStats(postId, data.ad);
+                if (data.success) {
+                    const post = allPostsData.find(p => p.id === postId);
+                    if (post) post.likes = data.ad.likes;
+                    const lk = document.getElementById(`likes_${postId}`);
+                    if (lk) lk.innerText = data.ad.likes;
+                }
             } catch (e) {}
         }
 
-        function updatePostUIStats(postId, postObj) {
-            const lk = document.getElementById(`likes_${postId}`);
-            if (lk) lk.innerText = postObj.likes || 0;
-        }
+        function openCreateModal() { document.getElementById('createPostModal').classList.remove('hidden'); }
+        function closeCreateModal() { document.getElementById('createPostModal').classList.add('hidden'); }
+        function openAccountManager() { alert(`Logged in as ${currentUser.name} (${currentUser.handle})`); }
 
-        // --- CAMERA STUDIO (PHOTO SNAP & VIDEO RECORDING) ---
-        let studioStream = null;
+        async function requestSecurityOtp() {
+            const contact = document.getElementById('loginContactInput').value.trim();
+            const name = document.getElementById('regFullName').value.trim();
+            const handle = document.getElementById('regHandle').value.trim();
+            if (!contact) { alert("Enter email or phone."); return; }
+            if (name) currentUser.name = name;
+            if (handle) currentUser.handle = handle;
+            activeContactId = contact;
 
-        async function openCameraStudio() {
-            document.getElementById('cameraStudioModal').classList.remove('hidden');
-            try {
-                studioStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('studioCameraStream').srcObject = studioStream;
-            } catch (err) { alert("Camera/Microphone permission required."); }
-        }
-
-        function closeCameraStudio() {
-            if (studioStream) {
-                studioStream.getTracks().forEach(t => t.stop());
-                studioStream = null;
-            }
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-            document.getElementById('recordingTimerBadge').classList.add('hidden');
-            document.getElementById('cameraStudioModal').classList.add('hidden');
-        }
-
-        async function capturePhotoSnap() {
-            const video = document.getElementById('studioCameraStream');
-            const canvas = document.getElementById('studioCanvas');
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageBase64 = canvas.toDataURL('image/jpeg', 0.85);
-
-            closeCameraStudio();
-
-            try {
-                const res = await fetch('/api/ads/media/upload-snapshot', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageBase64 })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('postMediaUrl').value = data.fileUrl;
-                    document.getElementById('postMediaType').value = 'Photo';
-                    alert("📸 Photo snap captured & verified!");
-                } else {
-                    alert("❌ " + data.error);
-                }
-            } catch (e) { alert("Snapshot upload failed."); }
-        }
-
-        function toggleVideoRecording() {
-            const btn = document.getElementById('recordVideoBtn');
-            const badge = document.getElementById('recordingTimerBadge');
-
-            if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-                recordedChunks = [];
-                try {
-                    mediaRecorder = new MediaRecorder(studioStream, { mimeType: 'video/webm' });
-                } catch (e) {
-                    mediaRecorder = new MediaRecorder(studioStream);
-                }
-
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0) recordedChunks.push(event.data);
-                };
-
-                mediaRecorder.onstop = async () => {
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    const formData = new FormData();
-                    formData.append('videoBlob', blob, 'recorded_reel.webm');
-
-                    closeCameraStudio();
-                    alert("⏳ Uploading & verifying recorded video...");
-
-                    try {
-                        const res = await fetch('/api/ads/media/upload-file', { method: 'POST', body: formData });
-                        const data = await res.json();
-                        if (data.success) {
-                            document.getElementById('postMediaUrl').value = data.fileUrl;
-                            document.getElementById('postMediaType').value = 'Video Clip';
-                            alert("🎬 Video recording verified & ready to publish!");
-                        } else {
-                            alert("❌ " + data.error);
-                        }
-                    } catch (e) { alert("Video upload failed."); }
-                };
-
-                mediaRecorder.start();
-                btn.innerHTML = `<i class="fa-solid fa-stop"></i> Stop & Save Video`;
-                btn.className = "bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer";
-                badge.classList.remove('hidden');
-            } else {
-                mediaRecorder.stop();
-                btn.innerHTML = `<i class="fa-solid fa-circle"></i> Record Video Reel`;
-                btn.className = "bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer";
-                badge.classList.add('hidden');
+            const res = await fetch('/api/ads/auth/dispatch-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contactId: contact })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`🔐 OTP Code: [ ${data.otpCode} ]`);
+                document.getElementById('authStep1').classList.add('hidden');
+                document.getElementById('authStep2').classList.remove('hidden');
             }
         }
 
-        async function handleLocalFileUpload(event) {
-            const file = event.target.files[0];
+        async function verifyAndCompleteLogin() {
+            const otpCode = document.getElementById('loginOtpInput').value.trim();
+            const res = await fetch('/api/ads/auth/verify-security-challenge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contactId: activeContactId, otpCode, fullName: currentUser.name, handle: currentUser.handle })
+            });
+            const data = await res.json();
+            if (data.success) {
+                sessionToken = data.sessionToken;
+                currentUser = { name: data.user.fullName, handle: data.user.handle };
+                localStorage.setItem('sov_contact_id', activeContactId);
+                localStorage.setItem('sov_session_token', sessionToken);
+                localStorage.setItem('sov_user_name', currentUser.name);
+                localStorage.setItem('sov_user_handle', currentUser.handle);
+
+                document.getElementById('displayUserHandle').innerText = currentUser.handle;
+                document.getElementById('secureAuthModal').classList.add('hidden');
+                applyFeedFilters();
+            } else { alert("❌ " + data.error); }
+        }
+
+        async function handleLocalFileUpload(e) {
+            const file = e.target.files[0];
             if (!file) return;
-            const formData = new FormData();
-            formData.append('mediaFile', file);
-            try {
-                const res = await fetch('/api/ads/media/upload-file', { method: 'POST', body: formData });
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('postMediaUrl').value = data.fileUrl;
-                    alert("✅ File verified clean and family-safe!");
-                } else {
-                    alert("❌ Rejected: " + data.error);
-                }
-            } catch (e) { alert("Upload failed."); }
+            const fd = new FormData();
+            fd.append('mediaFile', file);
+            const res = await fetch('/api/ads/media/upload-file', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('postMediaUrl').value = window.location.origin + data.fileUrl;
+                document.getElementById('postMediaType').value = file.type.startsWith('image/') ? 'Photo' : 'Video Clip';
+                alert("✅ File uploaded successfully!");
+            }
         }
 
-        async function publishPost(event) {
-            event.preventDefault();
-            pendingPayload = {
+        async function publishPost(e) {
+            e.preventDefault();
+            const payload = {
                 title: document.getElementById('postTitle').value,
                 subtitle: '',
                 targetVertical: document.getElementById('postVertical').value,
                 mediaType: document.getElementById('postMediaType').value,
                 rawMediaUrl: document.getElementById('postMediaUrl').value,
                 authorName: currentUser.name,
-                authorHandle: currentUser.handle
+                authorHandle: currentUser.handle,
+                otpCode: "1234"
             };
 
-            try {
-                await fetch('/api/ads/auth/dispatch-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contactId: activeContactId })
-                });
-            } catch (e) {}
-            document.getElementById('otpModal').classList.remove('hidden');
+            const res = await fetch('/api/ads/media/ingest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                allPostsData.unshift(data.ad);
+                applyFeedFilters();
+                closeCreateModal();
+                alert("🎉 Successfully posted to feed!");
+                document.querySelector('form').reset();
+            } else { alert("❌ " + data.error); }
         }
-
-        async function verifyOtpAndExecute() {
-            document.getElementById('otpModal').classList.add('hidden');
-            try {
-                const res = await fetch('/api/ads/media/ingest', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(pendingPayload)
-                });
-                const data = await res.json();
-                if (data.success) {
-                    allPostsData.unshift(data.ad);
-                    applyVerticalFilter();
-                    alert("🎉 Published successfully to feed!");
-                    document.querySelector('form').reset();
-                } else {
-                    alert("❌ " + data.error);
-                }
-            } catch (e) { alert("Error publishing post."); }
-        }
-
-        function openBiometricModal() {
-            document.getElementById('secureAuthModal').classList.remove('hidden');
-        }
-
-        async function requestSecurityOtp() {
-            const contact = document.getElementById('loginContactInput').value.trim();
-            const name = document.getElementById('regFullName').value.trim();
-            const handle = document.getElementById('regHandle').value.trim();
-            if (!contact) { alert("Please enter email or phone."); return; }
-            if (name) currentUser.name = name;
-            if (handle) currentUser.handle = handle;
-            activeContactId = contact;
-
-            try {
-                const res = await fetch('/api/ads/auth/dispatch-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contactId: contact })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    alert(`✅ Code Dispatched! OTP is: [ ${data.otpCode} ]`);
-                    document.getElementById('authStep1').classList.add('hidden');
-                    document.getElementById('authStep2').classList.remove('hidden');
-                }
-            } catch (e) { alert("Error dispatching code."); }
-        }
-
-        async function verifyAndCompleteLogin() {
-            const otpCode = document.getElementById('loginOtpInput').value.trim();
-            if (otpCode.length !== 6) { alert("Enter 6-digit code."); return; }
-
-            try {
-                const res = await fetch('/api/ads/auth/verify-security-challenge', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contactId: activeContactId, otpCode, fullName: currentUser.name, handle: currentUser.handle })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('displayUserHandle').innerText = currentUser.handle;
-                    alert("🎉 Welcome! Account connected.");
-                    document.getElementById('secureAuthModal').classList.add('hidden');
-                } else {
-                    alert("❌ " + data.error);
-                }
-            } catch (e) { alert("Login error."); }
-        }
-
-        // --- WebRTC P2P Call ---
-        async function openVideoCallModal() {
-            document.getElementById('videoCallModal').classList.remove('hidden');
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('localVideo').srcObject = localStream;
-            } catch (err) { alert("Camera/Microphone access needed for calls."); }
-        }
-
-        async function setupPeerConnection() {
-            peerConnection = new RTCPeerConnection(rtcConfig);
-            if (localStream) localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
-            peerConnection.ontrack = (e) => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
-            peerConnection.onicecandidate = (e) => { if (e.candidate) socket.emit('ice-candidate', { candidate: e.candidate }); };
-        }
-
-        async function startCall() {
-            await setupPeerConnection();
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.emit('video-offer', { offer });
-            alert("📞 Calling friend online...");
-        }
-
-        function toggleAudioMute() {
-            if (localStream) {
-                const t = localStream.getAudioTracks()[0];
-                t.enabled = !t.enabled;
-                document.getElementById('micIcon').className = t.enabled ? "fa-solid fa-microphone" : "fa-solid fa-microphone-slash text-rose-500";
-            }
-        }
-
-        function toggleVideoMute() {
-            if (localStream) {
-                const t = localStream.getVideoTracks()[0];
-                t.enabled = !t.enabled;
-                document.getElementById('videoIcon').className = t.enabled ? "fa-solid fa-video" : "fa-solid fa-video-slash text-rose-500";
-            }
-        }
-
-        function endCall() { socket.emit('call-ended'); closeCallResources(); }
-        function closeCallResources() {
-            if (peerConnection) { peerConnection.close(); peerConnection = null; }
-            if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-            document.getElementById('videoCallModal').classList.add('hidden');
-        }
-
-        function openCommentsModal(id) { document.getElementById('commentsModal').classList.remove('hidden'); }
-        function closeCommentsModal() { document.getElementById('commentsModal').classList.add('hidden'); }
     </script>
 </body>
 </html>
