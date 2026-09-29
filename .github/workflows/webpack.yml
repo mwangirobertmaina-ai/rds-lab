@@ -43,9 +43,10 @@ jobs:
           npm config set legacy-peer-deps true
           npm config set strict-ssl false
           npm cache clean --force
-          
+          echo "Installing webpack-cli to prevent interactive prompts..."
+          npm install --save-dev webpack-cli --legacy-peer-deps --no-audit --no-fund || true
           echo "Attempting robust installation with force fallback..."
-          npm install --force --no-audit --no-fund || npm install --legacy-peer-deps --allow-same-version || npm ci --legacy-peer-deps --no-audit
+          npm install --force --legacy-peer-deps --no-audit --no-fund --ignore-scripts || npm install --legacy-peer-deps --allow-same-version --no-audit --no-fund --ignore-scripts || npm ci --legacy-peer-deps --no-audit --ignore-scripts
 
       - name: Verify Stage 30 Server Syntax
         run: node -c server.js
