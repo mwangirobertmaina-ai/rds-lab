@@ -120,105 +120,105 @@
     </div>
 
     <!-- Main Content Grid -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+    <main class="flex-1 max-w-[1920px] w-full mx-auto p-4 sm:p-6 space-y-6">
 
-        <!-- 12 Metrics Sovereign Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            <div onclick="inspectMetric('kyc')" class="bg-slate-900/90 border border-slate-800 hover:border-emerald-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+        <!-- Flexible Scaling 4-by-1 Responsive Grid Matrix -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 w-full">
+            <div onclick="inspectMetric('kyc')" class="bg-slate-900/90 border border-slate-800 hover:border-emerald-500/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">Tiered KYC</span>
-                    <i data-lucide="user-check" class="w-4 h-4 text-emerald-400"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">Tiered KYC</span>
+                    <i data-lucide="user-check" class="w-5 h-5 text-emerald-400"></i>
                 </div>
-                <div id="statKycCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Tenant Verified</p>
+                <div id="statKycCount" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">Tenant Verified Accounts</p>
             </div>
-            <div onclick="inspectMetric('cdd')" class="bg-slate-900/90 border border-slate-800 hover:border-teal-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+            <div onclick="inspectMetric('cdd')" class="bg-slate-900/90 border border-slate-800 hover:border-teal-500/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">CDD / EDD</span>
-                    <i data-lucide="credit-card" class="w-4 h-4 text-teal-400"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">CDD / EDD</span>
+                    <i data-lucide="credit-card" class="w-5 h-5 text-teal-400"></i>
                 </div>
-                <div id="statLocalIdCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">IPRS Linked</p>
+                <div id="statLocalIdCount" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">IPRS Registry Linked</p>
             </div>
-            <div onclick="inspectMetric('transactions')" class="bg-slate-900/90 border border-slate-800 hover:border-blue-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+            <div onclick="inspectMetric('transactions')" class="bg-slate-900/90 border border-slate-800 hover:border-blue-500/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">Transactions</span>
-                    <i data-lucide="send" class="w-4 h-4 text-blue-400"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">Transactions</span>
+                    <i data-lucide="send" class="w-5 h-5 text-blue-400"></i>
                 </div>
-                <div id="statTransactions" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Cashier Logged</p>
+                <div id="statTransactions" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">Cashier Teller Logged</p>
             </div>
-            <div onclick="openLanTrafficModal()" class="bg-slate-900/90 border border-slate-800 hover:border-indigo-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+            <div onclick="openLanTrafficModal()" class="bg-slate-900/90 border border-slate-800 hover:border-indigo-500/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">LAN Sniffer</span>
-                    <i data-lucide="wifi" class="w-4 h-4 text-indigo-400"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">LAN Sniffer</span>
+                    <i data-lucide="wifi" class="w-5 h-5 text-indigo-400"></i>
                 </div>
-                <div id="statLanCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Passive Taps</p>
+                <div id="statLanCount" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">Passive Network Taps</p>
             </div>
-            <div onclick="inspectMetric('ai')" class="bg-slate-900/90 border border-slate-800 hover:border-amber-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+            <div onclick="inspectMetric('ai')" class="bg-slate-900/90 border border-slate-800 hover:border-amber-500/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">AI Intents</span>
-                    <i data-lucide="bot" class="w-4 h-4 text-amber-400"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">AI Intents</span>
+                    <i data-lucide="bot" class="w-5 h-5 text-amber-400"></i>
                 </div>
-                <div id="statAiCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">AI-Approved</p>
+                <div id="statAiCount" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">AI-Approved Rules</p>
             </div>
-            <div onclick="inspectMetric('traps')" class="bg-slate-900/90 border border-slate-800 hover:border-red-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+            <div onclick="inspectMetric('traps')" class="bg-slate-900/90 border border-slate-800 hover:border-red-500/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">Shadow-Traps</span>
-                    <i data-lucide="shield-alert" class="w-4 h-4 text-red-500"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">Shadow-Traps</span>
+                    <i data-lucide="shield-alert" class="w-5 h-5 text-red-500"></i>
                 </div>
-                <div id="statTrapsCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Active traps</p>
+                <div id="statTrapsCount" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">Active Breach Traps</p>
             </div>
-            <div onclick="inspectMetric('makerChecker')" class="bg-slate-900/90 border border-slate-800 hover:border-amber-400/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+            <div onclick="inspectMetric('makerChecker')" class="bg-slate-900/90 border border-slate-800 hover:border-amber-400/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">Maker-Checker</span>
-                    <i data-lucide="check-circle" class="w-4 h-4 text-amber-400"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">Maker-Checker</span>
+                    <i data-lucide="check-circle" class="w-5 h-5 text-amber-400"></i>
                 </div>
-                <div id="statMakerCheckerCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Dual-Control</p>
+                <div id="statMakerCheckerCount" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">Dual-Control Signatures</p>
             </div>
-            <div onclick="inspectMetric('sar')" class="bg-slate-900/90 border border-slate-800 hover:border-amber-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+            <div onclick="inspectMetric('sar')" class="bg-slate-900/90 border border-slate-800 hover:border-amber-500/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">SAR / CTR</span>
-                    <i data-lucide="file-text" class="w-4 h-4 text-amber-500"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">SAR / CTR</span>
+                    <i data-lucide="file-text" class="w-5 h-5 text-amber-500"></i>
                 </div>
-                <div id="statSarCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">goAML reports</p>
+                <div id="statSarCount" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">goAML Reports</p>
             </div>
-            <div onclick="inspectMetric('pos')" class="bg-slate-900/90 border border-slate-800 hover:border-purple-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+            <div onclick="inspectMetric('pos')" class="bg-slate-900/90 border border-slate-800 hover:border-purple-500/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">POS Webhooks</span>
-                    <i data-lucide="terminal" class="w-4 h-4 text-purple-400"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">POS Webhooks</span>
+                    <i data-lucide="terminal" class="w-5 h-5 text-purple-400"></i>
                 </div>
-                <div id="statPosCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Sanitized</p>
+                <div id="statPosCount" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">Sanitized Payloads</p>
             </div>
-            <div onclick="inspectMetric('did')" class="bg-slate-900/90 border border-slate-800 hover:border-blue-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+            <div onclick="inspectMetric('did')" class="bg-slate-900/90 border border-slate-800 hover:border-blue-500/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">DID Passes</span>
-                    <i data-lucide="shield-check" class="w-4 h-4 text-blue-500"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">DID Passes</span>
+                    <i data-lucide="shield-check" class="w-5 h-5 text-blue-500"></i>
                 </div>
-                <div id="statDidCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">ZKP identities</p>
+                <div id="statDidCount" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">ZKP Identities</p>
             </div>
-            <div onclick="inspectMetric('pushes')" class="bg-slate-900/90 border border-slate-800 hover:border-cyan-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+            <div onclick="inspectMetric('pushes')" class="bg-slate-900/90 border border-slate-800 hover:border-cyan-500/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">CBK Pushes</span>
-                    <i data-lucide="send" class="w-4 h-4 text-cyan-400"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">CBK Pushes</span>
+                    <i data-lucide="send" class="w-5 h-5 text-cyan-400"></i>
                 </div>
-                <div id="statPushCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Automated syncs</p>
+                <div id="statPushCount" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">Automated Syncs</p>
             </div>
-            <div onclick="openVaultInspectorModal()" class="bg-slate-900/90 border border-slate-800 hover:border-indigo-500/60 p-3.5 rounded-2xl shadow-lg cursor-pointer transition transform active:scale-95">
+            <div onclick="openVaultInspectorModal()" class="bg-slate-900/90 border border-slate-800 hover:border-indigo-500/60 p-4 rounded-2xl shadow-xl cursor-pointer transition transform active:scale-95">
                 <div class="flex items-center justify-between text-slate-400 mb-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider">Proof Blocks</span>
-                    <i data-lucide="lock" class="w-4 h-4 text-indigo-500"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">Proof Blocks</span>
+                    <i data-lucide="lock" class="w-5 h-5 text-indigo-500"></i>
                 </div>
-                <div id="statVaultCount" class="text-xl font-extrabold text-white">0</div>
-                <p class="text-[9px] text-slate-500 mt-0.5">Tenant sealed</p>
+                <div id="statVaultCount" class="text-2xl font-extrabold text-white">0</div>
+                <p class="text-[10px] text-slate-500 mt-1">Tenant Sealed Vault</p>
             </div>
         </div>
 
@@ -548,7 +548,6 @@
                     <label class="block text-slate-400 mb-1">Intent Prompt / Rule Statement</label>
                     <textarea id="aiPromptInput" rows="3" class="w-full bg-slate-950 border border-slate-700 px-3.5 py-2 rounded-xl text-slate-200 focus:outline-none focus:border-amber-500">Verify regulatory compliance and cross-border settlement safety for current tenant.</textarea>
                 </div>
-                <!-- Corrected ID to match submitAiEval() expectation -->
                 <div id="aiResultBox" class="hidden bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-amber-300 space-y-1">
                     <div>Status: <span id="aiResStatus" class="text-emerald-400">APPROVED</span></div>
                     <div>Confidence: <span id="aiResConfidence" class="text-teal-400">99.8%</span></div>
@@ -672,7 +671,7 @@
                 </table>
             </div>
             <div class="flex items-center justify-end pt-3 border-t border-slate-800">
-                <button onclick="closeVaultInspectorModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer">Close</button>
+                <button onclick="closeVaultInspectorModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer">Close</button>
             </div>
         </div>
     </div>
@@ -690,7 +689,7 @@
                 <pre id="openApiContent" class="text-xs text-indigo-300 font-mono whitespace-pre-wrap">Loading specification...</pre>
             </div>
             <div class="flex items-center justify-end pt-3 border-t border-slate-800">
-                <button onclick="closeOpenApiModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer">Close</button>
+                <button onclick="closeOpenApiModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer">Close</button>
             </div>
         </div>
     </div>
