@@ -396,6 +396,13 @@ function publicProfile(p) {
     return safe;
 }
 
+// HARDENED: a tenant suspended/revoked via /api/admin/toggle-tenant-status is actually locked out
+function isTenantActive(id) {
+    const has = global.merchantProfiles && Object.prototype.hasOwnProperty.call(global.merchantProfiles, id);
+    const st = has ? global.merchantProfiles[id].status : undefined;
+    return st !== 'SUSPENDED' && st !== 'REVOKED';
+}
+
 let merchantOrders = {
     'MERCH_DEF_172': [
         {
@@ -436,6 +443,7 @@ storeRouter.get('/products', (req, res) => {
         const mProfiles = global.merchantProfiles || {};
 
         Object.keys(mCatalogs).forEach(merchantId => {
+            if (!isTenantActive(merchantId)) return; // HARDENED: hide suspended tenants
             const profile = mProfiles[merchantId] || { shopName: "Independent Shop", businessType: "General Retail" };
             const catalogList = mCatalogs[merchantId] || [];
 
@@ -478,6 +486,7 @@ storeRouter.post('/checkout', softAuth(ROLES.REGULAR_USER), (req, res) => {
     if (cartItems !== undefined && (!Array.isArray(cartItems) || cartItems.length > 100)) return bad(res, "cartItems must be an array (max 100).");
     if (merchantId !== undefined && !isSafeKey(merchantId)) return bad(res, "Invalid merchantId.");
     if (phone !== undefined && !isPhone(phone)) return bad(res, "Invalid phone number.");
+    if (!isTenantActive(pickKey(merchantId, 'MERCH_DEF_172'))) return bad(res, "This merchant is currently suspended and cannot take orders.", 403);
     
     const totalPrice = Number(itemsTotal) || 1500;
     const km = Number(distanceKm) || 6.5;
@@ -751,7 +760,7 @@ function approvalSig(merchantId) {
 
 merchantRouter.get('/all-tenants', (req, res) => {
     try {
-        const tenants = approvedMerchants.map(m => ({
+        const tenants = approvedMerchants.filter(m => isTenantActive(m.merchantId)).map(m => ({
             merchantId: m.merchantId,
             shopName: m.shopName,
             businessType: m.businessType || 'GENERAL_RETAIL',
@@ -842,6 +851,7 @@ merchantRouter.post('/login', authLimiter, (req, res) => {
     if (!merchant && phone === '+254712345678') merchant = merchantProfiles['MERCH_DEF_172'];
 
     if (!merchant) return res.status(404).json({ success: false, error: "Phone number not registered or approved." });
+    if (!isTenantActive(merchant.merchantId)) return bad(res, "This merchant account is suspended. Contact support.", 403);
     // HARDENED: constant-time compare; the "1234" backdoor exists only in test mode
     const tokenOk = (merchant.loginToken && safeEqual(merchant.loginToken, String(token))) || (ALLOW_TEST_CREDENTIALS && String(token) === "1234");
     if (!tokenOk) {
@@ -865,6 +875,7 @@ merchantRouter.post('/catalog/update', softAuth(ACTOR_ROLES.MERCHANT), (req, res
     const targetId = pickKey(merchantId, 'MERCH_DEF_172');
     if (!targetId) return bad(res, "Invalid merchantId.");
     if (!ownsMerchant(req, targetId)) return bad(res, "You can only edit your own catalog.", 403);
+    if (!isTenantActive(targetId)) return bad(res, "Merchant account suspended.", 403);
     if (price !== undefined && !isMoney(price)) return bad(res, "Invalid price.");
     if (stock !== undefined && !(Number.isFinite(Number(stock)) && Number(stock) >= 0 && Number(stock) <= 1000000)) return bad(res, "Invalid stock.");
     if (!merchantCatalogs[targetId]) merchantCatalogs[targetId] = [];
@@ -914,6 +925,7 @@ merchantRouter.post('/orders/accept', softAuth(ACTOR_ROLES.MERCHANT), (req, res)
     const targetId = pickKey(merchantId, 'MERCH_DEF_172');
     if (!targetId) return bad(res, "Invalid merchantId.");
     if (!ownsMerchant(req, targetId)) return bad(res, "Forbidden.", 403);
+    if (!isTenantActive(targetId)) return bad(res, "Merchant account suspended.", 403);
 
     if (!global.merchantOrders[targetId]) global.merchantOrders[targetId] = [];
     const orderIndex = global.merchantOrders[targetId].findIndex(o => o.orderId === orderId);
@@ -1029,7 +1041,7 @@ userRouter.post('/verify-otp', authLimiter, (req, res) => {
 
 userRouter.get('/tenants', (req, res) => {
     try {
-        const tenants = Object.keys(merchantProfiles).map(id => ({
+        const tenants = Object.keys(merchantProfiles).filter(isTenantActive).map(id => ({
             merchantId: id,
             shopName: merchantProfiles[id].shopName,
             businessType: merchantProfiles[id].businessType || 'GENERAL_RETAIL',
@@ -1049,6 +1061,7 @@ userRouter.get('/products', (req, res) => {
     if (!merchantId) return bad(res, "Invalid merchantId.");
     const currency = 'KES';
     let products = merchantCatalogs[merchantId] || merchantCatalogs['MERCH_DEF_172'] || [];
+    if (!isTenantActive(merchantId)) products = []; // HARDENED: suspended tenants sell nothing
     const { category } = req.query;
     if (typeof category === 'string' && category !== 'ALL') {
         products = products.filter(p => String(p.category).toUpperCase() === category.toUpperCase());
@@ -1188,6 +1201,7 @@ userRouter.post('/checkout', softAuth(ROLES.REGULAR_USER), (req, res) => {
     }
 
     const targetMerchant = pickKey(businessId, 'MERCH_DEF_172');
+    if (!isTenantActive(targetMerchant)) return bad(res, "This merchant is currently suspended and cannot take orders.", 403);
     if (!activeOrders[targetMerchant]) activeOrders[targetMerchant] = [];
     activeOrders[targetMerchant].push(newOrder);
 
@@ -1321,7 +1335,10 @@ function verifyAuditChain(stream = sovereignAuditStream) {
 })();
 
 const corridorStatus = {};       // tenantId -> status set by admins
-const corridorRequests = [];     // pending corridor requests
+const corridorRequests = [];     // legacy inline list (routes/admin.js keeps the live request registry)
+// HARDENED: per-tenant scoping + real enforcement of suspension
+function tenantOf(req) { return pickKey(req.headers['x-business-id'], 'INST-CBK-RTGS'); }
+function tenantBlocked(id) { return ['SUSPENDED', 'REVOKED'].includes(corridorStatus[id]); }
 
 // ============================================================================
 // --- ADMIN & COMPLIANCE API ROUTER ---
@@ -1392,6 +1409,24 @@ adminRouter.post('/request-tenant-corridor', verifySovereignTokenStrict, (req, r
     res.json({ success: true, message: `Tenant corridor request for "${reqRec.businessName}" submitted successfully for owner approval.` });
 });
 
+// HARDENED: external admin module shares the same auth + audit chain (mounted first, so it wins)
+const adminModule = require('./routes/admin');
+adminModule.init({
+    verifyToken: verifySovereignTokenStrict,
+    requireAdmin: requireAdminRoleStrict,
+    requireSuperAdmin: requireSovereignAdminOnly,
+    appendAudit,
+    verifyAuditChain,
+    corridorStatus,
+    corridorRequests,
+    state: () => ({
+        verifications: sovereignVerifications,
+        transactions: sovereignTransactions,
+        lanTrafficLogs,
+        auditStream: sovereignAuditStream
+    })
+});
+app.use('/api/admin', adminModule);
 app.use('/api/admin', adminRouter);
 
 // ============================================================================
@@ -1419,12 +1454,16 @@ app.get('/api/compliance/generate-regulatory-package', verifySovereignTokenStric
 });
 
 app.post('/api/kyc/verify-biometric-face', verifySovereignTokenStrict, requireRoles(ROLES.SOVEREIGN_ADMIN, ROLES.COMMERCIAL_CASHIER), (req, res) => {
-    const { fullName, nationalIdNumber, countryCode, initialDeposit } = req.body;
+    const { fullName, nationalIdNumber, countryCode, initialDeposit, selfieSha256 } = req.body;
+    const tenantId = tenantOf(req);
+    if (!tenantId) return bad(res, "Invalid business id.");
+    if (tenantBlocked(tenantId)) return bad(res, `Corridor ${tenantId} is ${corridorStatus[tenantId]}: operations frozen.`, 403);
     if (!fullName || !nationalIdNumber) return bad(res, "fullName and nationalIdNumber are required.");
+    if (selfieSha256 !== undefined && !/^[a-f0-9]{64}$/.test(selfieSha256)) return bad(res, "selfieSha256 must be a 64-char hex digest.");
     if (initialDeposit !== undefined && !isMoney(initialDeposit)) return bad(res, "Invalid initialDeposit.");
     const accountId = `ACC_${crypto.randomInt(100000, 1000000)}`;
     const newRecord = {
-        accountId, fullName: cleanText(fullName, 100), nationalIdNumber: cleanText(nationalIdNumber, 30),
+        accountId, tenantId, selfieSha256: selfieSha256 || null, fullName: cleanText(fullName, 100), nationalIdNumber: cleanText(nationalIdNumber, 30),
         registrySource: countryCode === 'KE' ? 'Kenya IPRS Bureau' : 'International Registry',
         initialDeposit: Number(initialDeposit) || 0,
         // HARDENED: no real IPRS/face-match is wired in; label the outcome honestly
@@ -1440,10 +1479,14 @@ app.post('/api/kyc/verify-biometric-face', verifySovereignTokenStrict, requireRo
 
 app.post('/api/cashier/process-transaction', verifySovereignTokenStrict, requireRoles(ROLES.SOVEREIGN_ADMIN, ROLES.COMMERCIAL_CASHIER), (req, res) => {
     const { customerName, amount, transactionType } = req.body;
+    const tenantId = tenantOf(req);
+    if (!tenantId) return bad(res, "Invalid business id.");
+    if (tenantBlocked(tenantId)) return bad(res, `Corridor ${tenantId} is ${corridorStatus[tenantId]}: operations frozen.`, 403);
     // HARDENED: amount must be a real positive number (was silently coerced to 0)
     if (amount === undefined || !isMoney(amount) || Number(amount) <= 0) return bad(res, "amount must be a positive number within limits.");
     const tx = {
         timestamp: Date.now(),
+        tenantId,
         customerName: cleanText(customerName, 100) || 'Anonymous',
         amount: money2(amount),
         transactionType: cleanText(transactionType, 40) || 'Cash Deposit',
@@ -1456,7 +1499,11 @@ app.post('/api/cashier/process-transaction', verifySovereignTokenStrict, require
 });
 
 app.get('/api/audit/search', verifySovereignTokenStrict, requireAdminRoleStrict, (req, res) => {
-    res.json({ success: true, auditStream: sovereignAuditStream });
+    const q = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase().substring(0, 80) : '';
+    const stream = q
+        ? sovereignAuditStream.filter(b => b.actionType.toLowerCase().includes(q) || b.currentHash.includes(q) || b.payloadHash.includes(q) || String(b.index) === q)
+        : sovereignAuditStream;
+    res.json({ success: true, total: sovereignAuditStream.length, auditStream: stream.slice(-500) });
 });
 
 app.get('/api/hardware/peripherals', verifySovereignTokenStrict, requireAdminRoleStrict, (req, res) => {
