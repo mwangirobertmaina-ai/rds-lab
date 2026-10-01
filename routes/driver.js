@@ -45,20 +45,22 @@ router.post('/register-and-send-otp', (req, res) => {
     res.json({ success: true, message: `Camera snaps & compliance docs verified! Verification OTP sent to ${cleanPhone} (Use 1234).` });
 });
 
-// 2. Verify Driver OTP & Issue Automatic JWT Session Token
+// 2. Verify Driver OTP & Issue Automatic JWT Session Token (Cloud-Proof)
 router.post('/verify-otp', (req, res) => {
     const { phone, otp } = req.body;
     if (!phone || !otp) {
         return res.status(400).json({ success: false, error: "Phone and OTP required." });
     }
 
-    const cleanPhone = phone.trim();
+    const cleanPhone = String(phone).trim();
     const cleanOtp = String(otp).trim();
 
-    // Accept "1234" universally or check against generated store
-    const storedOtpObj = otps[cleanPhone];
-    if (cleanOtp !== "1234" && (!storedOtpObj || storedOtpObj.otp !== cleanOtp)) {
-        return res.status(401).json({ success: false, error: "Invalid OTP code." });
+    // Universal master bypass for "1234" so it never fails on cloud memory wipes
+    if (cleanOtp !== "1234") {
+        const storedOtpObj = otps[cleanPhone];
+        if (!storedOtpObj || String(storedOtpObj.otp).trim() !== cleanOtp) {
+            return res.status(401).json({ success: false, error: "Invalid OTP code." });
+        }
     }
 
     const driverId = `DRV_${cleanPhone.replace(/[^0-9]/g, '')}`;
@@ -77,8 +79,10 @@ router.post('/verify-otp', (req, res) => {
         { expiresIn: '30d' }
     );
 
-    // Clean up used OTP
-    delete otps[cleanPhone];
+    // Clean up used OTP if it exists
+    if (otps[cleanPhone]) {
+        delete otps[cleanPhone];
+    }
 
     res.json({ 
         success: true, 
