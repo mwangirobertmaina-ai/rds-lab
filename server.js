@@ -4,18 +4,42 @@
 //    (verifySovereignToken, requireAdminRole), audit vaults, or ledger equations.
 // 2. ADDITIVE ONLY: All future modules must be appended strictly as new blocks.
 // ============================================================================
-// HARDENING NOTES (search "HARDENED:" for every change):
+// HARDENING NOTES (search "HARDENED:" for Stage 190 changes, "STAGE 191" for new):
 //  - Legacy verifySovereignToken/requireAdminRole are kept byte-for-byte but are
 //    no longer mounted: they grant SOVEREIGN_ADMIN to anonymous callers and never
 //    verify a signature. Strict HS256 versions are added and mounted instead.
 //  - Business math (fees, splits, KRA tax, payouts) is unchanged.
-//  - Env vars: NODE_ENV, JWT_SECRET, ALLOWED_ORIGINS, ALLOW_TEST_CREDENTIALS,
+//  - Env vars (190): NODE_ENV, JWT_SECRET, ALLOWED_ORIGINS, ALLOW_TEST_CREDENTIALS,
 //    STRICT_ACTOR_AUTH, SOVEREIGN_ADMIN_PASSWORD_HASH (bcrypt) or
 //    SOVEREIGN_ADMIN_PASSWORD, AUDIT_HMAC_KEY, DATA_DIR.
+//
+// STAGE 191 (additive) — new env vars, all optional:
+//  - PERSIST_STATE        "false" disables durable state snapshots (default on)
+//  - SMS_PROVIDER         "africastalking" (AT_USERNAME, AT_API_KEY, AT_SENDER_ID)
+//                         or "webhook" (SMS_WEBHOOK_URL, SMS_WEBHOOK_TOKEN)
+//  - METRICS_TOKEN        enables GET /metrics (Prometheus text) behind this bearer
+//  Requires Node 18+ (global fetch, crypto.randomUUID). No new npm packages.
+//
+// STAGE 191 delivers:
+//  1. Durable state: atomic snapshots of merchants, catalogs, orders, drivers,
+//     wallets, users and dispatches survive restarts (audit chain already did).
+//  2. Real-time that works: socket auth + room joins (merchant / order / admin /
+//     drivers), live driver location, order status events, admin broadcast.
+//  3. Order lifecycle: vendor reject, customer cancel / track / history / rate,
+//     driver release, delivery state synced across every order store.
+//  4. Money-path fixes: dispatches must be ACCEPTED before they can be completed
+//     and paid; queue dispatches can actually be accepted; no double acceptance.
+//  5. Auth lifecycle: /api/auth/me, /refresh (bounded session age), /logout
+//     (server-side revocation), per-account lockout, Idempotency-Key on checkout.
+//  6. Admin ops console API: overview, merchants, drivers, orders, ledger summary
+//     (with variance detection), CSV/NDJSON exports, system health, posture.
+//  7. SMS OTP delivery, media upload with magic-byte verification, request IDs,
+//     metrics, panel health, graceful degradation when optional modules missing.
 // ============================================================================
 
 const express = require("express");
 const http = require("http");
+const os = require("os");
 const { Server } = require("socket.io");
 const fs = require("fs");
 const fsPromises = require("fs").promises;
@@ -41,6 +65,37 @@ const ALLOW_TEST_CREDENTIALS = process.env.ALLOW_TEST_CREDENTIALS
 // Leave false until your front-ends send the token returned by login/verify-otp.
 const STRICT_ACTOR_AUTH = process.env.STRICT_ACTOR_AUTH === "true";
 const MAX_AMOUNT = 10000000; // KES sanity ceiling per transaction
+
+// ---------------------------------------------------------------------------
+// STAGE 191: additive configuration + boot helpers
+// ---------------------------------------------------------------------------
+const STAGE_191 = "STAGE_191";
+const VERSION_191 = "191.0";
+const BOOT_TIME_191 = Date.now();
+const DATA_DIR_191 = process.env.DATA_DIR || __dirname;
+try { fs.mkdirSync(DATA_DIR_191, { recursive: true }); } catch (e) { console.error("[BOOT] Cannot create DATA_DIR:", e.message); }
+const PERSIST_STATE_191 = process.env.PERSIST_STATE !== "false";
+const SNAPSHOT_FILE_191 = path.join(DATA_DIR_191, "state-191.snapshot");
+const METRICS_TOKEN_191 = process.env.METRICS_TOKEN || "";
+const SMS_PROVIDER_191 = (process.env.SMS_PROVIDER || "").toLowerCase();
+const SMS_CONFIGURED_191 =
+    (SMS_PROVIDER_191 === "africastalking" && !!process.env.AT_USERNAME && !!process.env.AT_API_KEY) ||
+    (SMS_PROVIDER_191 === "webhook" && !!process.env.SMS_WEBHOOK_URL);
+
+// Optional modules must never be able to crash the whole platform at boot.
+const MODULE_STATUS_191 = {};
+function safeRequire191(modPath, label) {
+    try {
+        const m = require(modPath);
+        MODULE_STATUS_191[label] = { loaded: true };
+        return m;
+    } catch (e) {
+        const missing = e && e.code === "MODULE_NOT_FOUND";
+        MODULE_STATUS_191[label] = { loaded: false, error: missing ? "module not found" : String(e && e.message).substring(0, 200) };
+        console.error(`🚨 [BOOT] Module "${label}" (${modPath}) ${missing ? "not found" : "failed to load"}: related routes are disabled.`, missing ? "" : (e && e.stack) || e);
+        return null;
+    }
+}
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -161,7 +216,9 @@ app.use((req, res, next) => {
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "SAMEORIGIN",
         "Referrer-Policy": "strict-origin-when-cross-origin",
-        "Permissions-Policy": "geolocation=(self), camera=(self), microphone=(self)"
+        "Permissions-Policy": "geolocation=(self), camera=(self), microphone=(self)",
+        "X-Permitted-Cross-Domain-Policies": "none", // STAGE 191
+        "X-DNS-Prefetch-Control": "off"              // STAGE 191
     });
     if (IS_PROD) res.set("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
     next();
@@ -190,6 +247,297 @@ app.use("/api", (req, res, next) => {
     next();
 });
 
+// ============================================================================
+// 🆕 STAGE 191 — EARLY ADDITIVE MIDDLEWARE BLOCK
+// Request IDs, cache policy, metrics, token revocation, per-account lockout,
+// idempotency, identity binding, dirty-state tracking and money-path guards.
+// Nothing in the immutable core is altered. All of it runs before the routers.
+// ============================================================================
+
+// --- Request ID (correlates logs, errors and client reports) ---
+app.use((req, res, next) => {
+    const inbound = req.headers['x-request-id'];
+    req.id = (typeof inbound === 'string' && /^[A-Za-z0-9_.-]{8,64}$/.test(inbound)) ? inbound : crypto.randomUUID();
+    res.set('X-Request-Id', req.id);
+    next();
+});
+
+// --- API responses carry private data: never cache them in browsers or proxies ---
+app.use('/api', (req, res, next) => {
+    res.set({ 'Cache-Control': 'no-store', 'Pragma': 'no-cache' });
+    next();
+});
+
+// --- In-process metrics (JSON in admin health, Prometheus text on /metrics) ---
+const METRICS_191 = { total: 0, inflight: 0, latencyMsSum: 0, byClass: { '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0 }, byRoute: {} };
+app.use((req, res, next) => {
+    const t0 = process.hrtime.bigint();
+    METRICS_191.inflight++;
+    res.on('close', () => { METRICS_191.inflight = Math.max(0, METRICS_191.inflight - 1); });
+    res.on('finish', () => {
+        const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+        METRICS_191.total++;
+        METRICS_191.latencyMsSum += ms;
+        const cls = `${Math.floor(res.statusCode / 100)}xx`;
+        if (METRICS_191.byClass[cls] !== undefined) METRICS_191.byClass[cls]++;
+        if (req.originalUrl.startsWith('/api')) {
+            const label = `${req.method} ${req.baseUrl || ''}${req.route ? req.route.path : '(unmatched)'}`.substring(0, 120);
+            if (METRICS_191.byRoute[label] || Object.keys(METRICS_191.byRoute).length < 300) {
+                const r = METRICS_191.byRoute[label] || (METRICS_191.byRoute[label] = { count: 0, errors: 0, ms: 0 });
+                r.count++; r.ms += ms; if (res.statusCode >= 500) r.errors++;
+            }
+        }
+    });
+    next();
+});
+
+let eventLoopLagMs191 = 0;
+(function monitorEventLoop191() {
+    let last = process.hrtime.bigint();
+    setInterval(() => {
+        const now = process.hrtime.bigint();
+        eventLoopLagMs191 = Math.max(0, Number(now - last) / 1e6 - 1000);
+        last = now;
+    }, 1000).unref();
+})();
+
+// --- Server-side session revocation (logout) without touching signJwt/verifyJwt ---
+const revokedTokens191 = new Map(); // sha256(token) -> exp (seconds)
+function tokenFingerprint191(t) { return crypto.createHash('sha256').update(String(t)).digest('hex'); }
+setInterval(() => {
+    const now = Math.floor(Date.now() / 1000);
+    for (const [k, exp] of revokedTokens191) if (exp < now) revokedTokens191.delete(k);
+}, 10 * 60 * 1000).unref();
+app.use('/api', (req, res, next) => {
+    const h = req.headers['authorization'];
+    if (h && h.startsWith('Bearer ') && revokedTokens191.has(tokenFingerprint191(h.slice(7).trim()))) {
+        return bad(res, "This session was signed out. Please log in again.", 401);
+    }
+    next();
+});
+
+// --- Per-account lockout (the IP limiter alone does not stop distributed guessing) ---
+function lockout191({ name, keyFn, max = 8, windowMs = 15 * 60 * 1000 }) {
+    const fails = new Map();
+    setInterval(() => { const now = Date.now(); for (const [k, v] of fails) if (v.reset < now && v.lockedUntil < now) fails.delete(k); }, windowMs).unref();
+    return (req, res, next) => {
+        let raw = null;
+        try { raw = keyFn(req); } catch (e) { raw = null; }
+        if (raw === null || raw === undefined || raw === '') return next();
+        const key = `${name}:${String(raw).toLowerCase().substring(0, 120)}`;
+        const now = Date.now();
+        const rec = fails.get(key);
+        if (rec && rec.lockedUntil > now) {
+            res.set('Retry-After', String(Math.ceil((rec.lockedUntil - now) / 1000)));
+            return res.status(429).json({ success: false, error: "Too many failed attempts for this account. Try again later." });
+        }
+        res.on('finish', () => {
+            if (res.statusCode === 401) {
+                let r = fails.get(key);
+                if (!r || r.reset < Date.now()) r = { count: 0, reset: Date.now() + windowMs, lockedUntil: 0 };
+                r.count++;
+                if (r.count >= max) {
+                    r.lockedUntil = Date.now() + windowMs;
+                    appendAudit('ACCOUNT_LOCKOUT', { scope: name, subject: crypto.createHash('sha256').update(key).digest('hex').substring(0, 16), ip: req.ip });
+                }
+                fails.set(key, r);
+            } else if (res.statusCode === 200) {
+                fails.delete(key);
+            }
+        });
+        next();
+    };
+}
+app.post('/api/merchant/login', lockout191({ name: 'merchant-login', keyFn: r => r.body && r.body.phone }));
+app.post('/api/auth/admin-login', lockout191({ name: 'admin-login', keyFn: r => r.body && r.body.email, max: 5 }));
+app.post('/api/user/verify-otp', lockout191({ name: 'user-otp', keyFn: r => r.body && r.body.phone }));
+app.post('/api/driver/verify-otp', lockout191({ name: 'driver-otp', keyFn: r => r.body && r.body.phone }));
+
+// --- Idempotency-Key for checkout (double-tap / flaky 3G retries must not double-order) ---
+const idemStore191 = new Map(); // fingerprint -> { state, status, body, at }
+setInterval(() => {
+    const cutoff = Date.now() - 24 * 3600 * 1000;
+    for (const [k, v] of idemStore191) if (v.at < cutoff) idemStore191.delete(k);
+}, 15 * 60 * 1000).unref();
+function idempotency191(req, res, next) {
+    const raw = req.headers['idempotency-key'];
+    if (!raw) return next();
+    if (typeof raw !== 'string' || !/^[A-Za-z0-9_.:-]{8,100}$/.test(raw)) return bad(res, "Invalid Idempotency-Key header.");
+    const k = crypto.createHash('sha256').update(`${req.headers.authorization || ''}|${req.ip}|${req.path}|${raw}`).digest('hex');
+    const hit = idemStore191.get(k);
+    if (hit) {
+        if (hit.state === 'pending') return bad(res, "A request with this Idempotency-Key is still processing.", 409);
+        res.set('Idempotent-Replay', 'true');
+        return res.status(hit.status).json(hit.body);
+    }
+    if (idemStore191.size >= 5000) idemStore191.delete(idemStore191.keys().next().value);
+    idemStore191.set(k, { state: 'pending', at: Date.now() });
+    const origJson = res.json.bind(res);
+    res.json = (body) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) idemStore191.set(k, { state: 'done', status: res.statusCode, body, at: Date.now() });
+        else idemStore191.delete(k);
+        return origJson(body);
+    };
+    res.on('close', () => { const cur = idemStore191.get(k); if (cur && cur.state === 'pending') idemStore191.delete(k); });
+    next();
+}
+
+// A signed-in customer's orders are always bound to their token identity, never to a client-supplied userId.
+function bindUserIdentity191(req, res, next) {
+    const h = req.headers['authorization'];
+    if (h && h.startsWith('Bearer ') && req.body && typeof req.body === 'object') {
+        const p = verifyJwt(h.slice(7).trim());
+        if (p && p.userId) req.body.userId = p.userId;
+    }
+    next();
+}
+app.post(['/api/store/checkout', '/api/user/checkout'], idempotency191, bindUserIdentity191);
+
+// --- DoseColor print spooler: validate input before it reaches the interceptor ---
+app.post('/api/middleware/intercept-print', (req, res, next) => {
+    const { rawText, targetPrinter } = req.body || {};
+    if (rawText !== undefined && typeof rawText !== 'string') return bad(res, "rawText must be a string.");
+    if (typeof rawText === 'string' && rawText.length > 500000) return bad(res, "rawText too large.", 413);
+    if (targetPrinter !== undefined && (typeof targetPrinter !== 'string' || !/^[A-Za-z0-9 _.()-]{1,80}$/.test(targetPrinter))) return bad(res, "Invalid targetPrinter.");
+    next();
+});
+
+// --- Dirty-state tracking: any successful write marks durable state for the next snapshot ---
+let stateDirty191 = false;
+app.use('/api', (req, res, next) => {
+    const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(req.method) || /^\/(merchant\/approve\/|driver\/dispatches)/.test(req.path);
+    if (mutating) res.on('finish', () => { if (res.statusCode < 400) stateDirty191 = true; });
+    next();
+});
+
+// --- Dispatch / driver money-path guards ---
+function allDispatchLists191() { return Object.values(global.activeDispatches || {}); }
+function findDispatchesById191(id) {
+    const out = [];
+    for (const list of allDispatchLists191()) for (const d of list) if (d.id === id) out.push(d);
+    for (const d of (global.driverQueue || [])) if (d.id === id) out.push(d);
+    return out;
+}
+function bizIdOf191(req) { return pickKey(req.headers['x-business-id'], 'MERCH_DEF_172'); }
+function resolveDriverId191(req) {
+    const h = req.headers['authorization'];
+    if (h && h.startsWith('Bearer ')) { const p = verifyJwt(h.slice(7).trim()); if (p && p.driverId) return p.driverId; }
+    const b = req.body || {};
+    return pickKey(b.driverId || b.ownerId, null);
+}
+function driverStandingGuard191(req, res, next) {
+    const id = resolveDriverId191(req);
+    const d = id && drivers[id];
+    if (d && (d.standing === 'SUSPENDED' || d.standing === 'REJECTED')) return bad(res, `Driver account is ${d.standing.toLowerCase()}. Contact support.`, 403);
+    next();
+}
+// Direct rides / merchant dispatches live in driverQueue; the original accept route only searched
+// activeDispatches[bizId], so queue items could never be accepted. Bridge them (same object reference).
+function bridgeQueueDispatch191(req, res, next) {
+    try {
+        const bizId = bizIdOf191(req);
+        const dispatchId = req.body && req.body.dispatchId;
+        if (bizId && isSafeKey(dispatchId)) {
+            if (!global.activeDispatches[bizId]) global.activeDispatches[bizId] = [];
+            const list = global.activeDispatches[bizId];
+            const q = (global.driverQueue || []).find(d => d.id === dispatchId);
+            const idx = list.findIndex(d => d.id === dispatchId);
+            if (q) {
+                if (idx === -1) list.push(q);
+                else if (list[idx] !== q && list[idx].status === 'PENDING_DRIVER_ACCEPTANCE') list[idx] = q;
+            }
+        }
+    } catch (e) { /* never block the request on bridging */ }
+    next();
+}
+function acceptGuard191(req, res, next) {
+    const id = req.body && req.body.dispatchId;
+    if (isSafeKey(id)) {
+        const taken = findDispatchesById191(id).find(d => d.status && d.status !== 'PENDING_DRIVER_ACCEPTANCE');
+        if (taken) return bad(res, `Dispatch is ${taken.status}, cannot accept.`, 409);
+    }
+    next();
+}
+// Without this a rider could "complete" an un-accepted dispatch and be paid for it.
+function completeGuard191(req, res, next) {
+    const bizId = bizIdOf191(req);
+    const id = req.body && req.body.dispatchId;
+    if (bizId && isSafeKey(id)) {
+        const d = (global.activeDispatches[bizId] || []).find(x => x.id === id);
+        if (d && d.status !== 'ACCEPTED_BY_DRIVER' && d.status !== 'COMPLETED') {
+            return bad(res, "Dispatch must be accepted before it can be completed.", 409);
+        }
+    }
+    next();
+}
+function afterAccept191(req, res, next) {
+    res.on('finish', () => {
+        if (res.statusCode !== 200) return;
+        try {
+            const id = req.body.dispatchId;
+            const bizId = bizIdOf191(req);
+            const src = (global.activeDispatches[bizId] || []).find(d => d.id === id);
+            if (!src) return;
+            findDispatchesById191(id).forEach(d => { d.status = 'ACCEPTED_BY_DRIVER'; d.driverId = src.driverId; d.acceptedAt = Date.now(); });
+            const q = global.driverQueue;
+            for (let i = q.length - 1; i >= 0; i--) if (q[i].id === id) q.splice(i, 1);
+            setDeliveryState191(id, { deliveryStatus: 'DRIVER_ASSIGNED', driverId: src.driverId });
+            emitSafe191('order:' + id, 'order_status_update', { orderId: id, deliveryStatus: 'DRIVER_ASSIGNED', driverId: src.driverId });
+        } catch (e) { console.error('[STAGE191] afterAccept:', e.message); }
+    });
+    next();
+}
+function afterComplete191(req, res, next) {
+    res.on('finish', () => {
+        if (res.statusCode !== 200) return;
+        try {
+            const id = req.body.dispatchId;
+            const bizId = bizIdOf191(req);
+            const src = (global.activeDispatches[bizId] || []).find(d => d.id === id);
+            if (!src || src.ledgerRecorded191) return;
+            findDispatchesById191(id).forEach(d => { d.status = 'COMPLETED'; d.completedAt = Date.now(); d.ledgerRecorded191 = true; });
+            const driverId = (req.user && req.user.driverId) || src.driverId || pickKey(req.body.driverId, 'DRV_001');
+            const gross = Number(src.total || src.totalAmount || 500);
+            driverLedger191.push({ entryId: `LED_${Date.now()}_${crypto.randomInt(0, 1000)}`, driverId, dispatchId: id, gross, credited: money2(gross * 0.85), at: Date.now() });
+            if (driverLedger191.length > 20000) driverLedger191.shift();
+            const q = global.driverQueue;
+            for (let i = q.length - 1; i >= 0; i--) if (q[i].id === id) q.splice(i, 1);
+            setDeliveryState191(id, { deliveryStatus: 'DELIVERED', deliveredAt: Date.now(), driverId });
+            emitSafe191('order:' + id, 'order_status_update', { orderId: id, deliveryStatus: 'DELIVERED' });
+            emitSafe191('admins', 'dispatch_completed', { dispatchId: id, driverId });
+        } catch (e) { console.error('[STAGE191] afterComplete:', e.message); }
+    });
+    next();
+}
+// Stale / taken dispatches should not sit on the radar forever.
+function purgeQueue191(req, res, next) {
+    const q = global.driverQueue || [];
+    const cutoff = Date.now() - 6 * 3600 * 1000;
+    for (let i = q.length - 1; i >= 0; i--) {
+        if (q[i].status !== 'PENDING_DRIVER_ACCEPTANCE' || (q[i].dispatchedAt && q[i].dispatchedAt < cutoff)) q.splice(i, 1);
+    }
+    next();
+}
+// Re-registering (which doubles as the driver login path) must not wipe an admin's review decision.
+function preserveDriverReview191(req, res, next) {
+    const phone = req.body && req.body.phone;
+    if (typeof phone === 'string' && isPhone(phone)) {
+        const id = `DRV_${phone.replace(/[^0-9]/g, '')}`;
+        const prev = drivers[id];
+        if (prev && (prev.reviewedAt || prev.standing)) {
+            const keep = { standing: prev.standing, reviewedAt: prev.reviewedAt, reviewedBy: prev.reviewedBy, reviewNote: prev.reviewNote, documentsReviewed: prev.documentsReviewed, verificationStatus: prev.verificationStatus };
+            res.on('finish', () => { if (drivers[id]) Object.assign(drivers[id], keep); });
+        }
+    }
+    next();
+}
+app.get('/api/driver/queue', purgeQueue191);
+app.post('/api/driver/register-and-send-otp', preserveDriverReview191);
+app.post('/api/driver/accept-dispatch', driverStandingGuard191, bridgeQueueDispatch191, acceptGuard191, afterAccept191);
+app.post('/api/driver/complete-dispatch', driverStandingGuard191, bridgeQueueDispatch191, completeGuard191, afterComplete191);
+app.post('/api/driver/payout', driverStandingGuard191);
+
+// --- STAGE 191 STATIC DIRECTORY CONFIGURATION (original block follows) ---
 // --- STAGE 190 STATIC DIRECTORY CONFIGURATION ---
 const uploadDir = path.join(__dirname, "public", "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -203,6 +551,15 @@ app.use((req, res, next) => {
     let p;
     try { p = decodeURIComponent(req.path); } catch (e) { return res.status(400).end(); }
     if (BLOCKED_STATIC.test(p) || p.includes("..")) return res.status(404).end();
+    next();
+});
+
+// STAGE 191 (additive): also block the middleware source folder and the new durable snapshot files
+const BLOCKED_STATIC_191 = /^\/middleware(\/|$)|\.(snapshot|tmp)$/i;
+app.use((req, res, next) => {
+    let p;
+    try { p = decodeURIComponent(req.path); } catch (e) { return res.status(400).end(); }
+    if (BLOCKED_STATIC_191.test(p)) return res.status(404).end();
     next();
 });
 
@@ -311,9 +668,50 @@ function softAuth(...roles) {
 function ownsMerchant(req, merchantId) { return !req.user || req.user.role === ROLES.SOVEREIGN_ADMIN || req.user.merchantId === merchantId; }
 function ownsDriver(req, driverId) { return !req.user || req.user.role === ROLES.SOVEREIGN_ADMIN || req.user.driverId === driverId; }
 
+// STAGE 191: real SMS delivery (Africa's Talking or a generic webhook). Never logs the OTP.
+function normalizeMsisdn191(p) {
+    const s = String(p).replace(/[^0-9+]/g, '');
+    if (s.startsWith('+')) return s;
+    if (s.startsWith('00')) return '+' + s.slice(2);
+    if (s.startsWith('254')) return '+' + s;
+    if (/^0[17]\d{8}$/.test(s)) return '+254' + s.slice(1);
+    if (/^[17]\d{8}$/.test(s)) return '+254' + s;
+    return '+' + s;
+}
+async function sendSms191(phone, text) {
+    if (!SMS_CONFIGURED_191 || typeof fetch !== 'function') return false;
+    const to = normalizeMsisdn191(phone);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    try {
+        let r;
+        if (SMS_PROVIDER_191 === 'africastalking') {
+            const sandbox = process.env.AT_USERNAME === 'sandbox';
+            const body = new URLSearchParams({ username: process.env.AT_USERNAME, to, message: text });
+            if (process.env.AT_SENDER_ID) body.set('from', process.env.AT_SENDER_ID);
+            r = await fetch(sandbox ? 'https://api.sandbox.africastalking.com/version1/messaging' : 'https://api.africastalking.com/version1/messaging', {
+                method: 'POST',
+                headers: { apiKey: process.env.AT_API_KEY, Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body, signal: ctrl.signal
+            });
+        } else {
+            const headers = { 'Content-Type': 'application/json' };
+            if (process.env.SMS_WEBHOOK_TOKEN) headers.Authorization = `Bearer ${process.env.SMS_WEBHOOK_TOKEN}`;
+            r = await fetch(process.env.SMS_WEBHOOK_URL, { method: 'POST', headers, body: JSON.stringify({ to, message: text }), signal: ctrl.signal });
+        }
+        if (!r.ok) { console.error(`[SMS] Gateway responded HTTP ${r.status}`); return false; }
+        return true;
+    } catch (e) {
+        console.error('[SMS] Delivery failed:', e.name === 'AbortError' ? 'timeout' : e.message);
+        return false;
+    } finally { clearTimeout(timer); }
+}
+
 // HARDENED: OTP handling (expiry, attempt cap, random codes outside test mode)
 function deliverOtp(phone, otp) {
-    if (!ALLOW_TEST_CREDENTIALS) console.warn(`[OTP] No SMS gateway wired: cannot deliver code to ${phone}. Integrate a provider in deliverOtp().`);
+    if (ALLOW_TEST_CREDENTIALS) return;
+    if (SMS_CONFIGURED_191) { sendSms191(phone, `Your RDS verification code is ${otp}. It expires in 5 minutes. Never share it.`); return; } // STAGE 191
+    console.warn(`[OTP] No SMS gateway wired: cannot deliver code to ${phone}. Set SMS_PROVIDER (see header) or integrate a provider in deliverOtp().`);
 }
 function issueOtp(store, phone, extra) {
     const otp = ALLOW_TEST_CREDENTIALS ? "1234" : String(crypto.randomInt(100000, 1000000));
@@ -334,10 +732,50 @@ function checkOtp(store, phone, otp) {
 // --- HEALTH CHECK ENDPOINT REQUIRED BY CI WORKFLOW ---
 app.get('/health', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'OK', stage: 'STAGE_190', timestamp: Date.now() }));
+    res.end(JSON.stringify({ status: 'OK', stage: STAGE_191, version: VERSION_191, timestamp: Date.now() }));
+});
+
+// STAGE 191: liveness / readiness probes for hosts and load balancers
+app.get('/healthz', (req, res) => res.status(200).type('text/plain').send('ok'));
+app.get('/readyz', (req, res) => {
+    const audit = verifyAuditChain();
+    const persistOk = !PERSIST_STATE_191 || lastSnapshot191.ok !== false;
+    const ready = audit.valid && persistOk;
+    res.status(ready ? 200 : 503).json({ ready, auditChainValid: audit.valid, persistenceOk: persistOk, modules: MODULE_STATUS_191, uptimeSeconds: Math.floor(process.uptime()) });
+});
+
+// STAGE 191: Prometheus-style metrics, only when METRICS_TOKEN is configured
+app.get('/metrics', (req, res) => {
+    if (!METRICS_TOKEN_191) return res.status(404).end();
+    const h = req.headers['authorization'] || '';
+    if (!h.startsWith('Bearer ') || !safeEqual(h.slice(7).trim(), METRICS_TOKEN_191)) return res.status(401).end();
+    const lines = [
+        '# TYPE rds_http_requests_total counter', `rds_http_requests_total ${METRICS_191.total}`,
+        '# TYPE rds_http_inflight gauge', `rds_http_inflight ${METRICS_191.inflight}`,
+        '# TYPE rds_http_responses_total counter',
+        ...Object.keys(METRICS_191.byClass).map(c => `rds_http_responses_total{class="${c}"} ${METRICS_191.byClass[c]}`),
+        '# TYPE rds_http_latency_ms_sum counter', `rds_http_latency_ms_sum ${METRICS_191.latencyMsSum.toFixed(2)}`,
+        '# TYPE rds_event_loop_lag_ms gauge', `rds_event_loop_lag_ms ${eventLoopLagMs191.toFixed(2)}`,
+        '# TYPE rds_process_uptime_seconds gauge', `rds_process_uptime_seconds ${Math.floor(process.uptime())}`,
+        '# TYPE rds_process_rss_bytes gauge', `rds_process_rss_bytes ${process.memoryUsage().rss}`,
+        '# TYPE rds_audit_blocks gauge', `rds_audit_blocks ${sovereignAuditStream.length}`,
+        '# TYPE rds_socket_clients gauge', `rds_socket_clients ${io.engine ? io.engine.clientsCount : 0}`
+    ];
+    res.type('text/plain; version=0.0.4').send(lines.join('\n') + '\n');
 });
 
 // --- MULTI-PANEL FRONTEND ROUTES ---
+// STAGE 191: a missing panel HTML file now returns a clear 404 page instead of a raw sendFile error
+const PANEL_MAP_191 = {
+    '/': 'ads.html', '/ads': 'ads.html', '/store': 'store.html', '/user': 'store.html',
+    '/driver': 'driver.html', '/merchant': 'merchant.html', '/admin': 'admin.html', '/print': 'public/print.html'
+};
+app.get(Object.keys(PANEL_MAP_191), (req, res, next) => {
+    const key = req.path.length > 1 ? req.path.replace(/\/+$/, '') : req.path;
+    const file = PANEL_MAP_191[key];
+    if (file && fs.existsSync(path.join(__dirname, file))) return next();
+    res.status(404).type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel unavailable</title><body style="font-family:system-ui;background:#0b0f19;color:#e2e8f0;display:grid;place-items:center;min-height:100vh;margin:0"><div style="text-align:center;padding:24px"><h1>Panel temporarily unavailable</h1><p>The page file <code>${escapeHtml(file || key)}</code> is not deployed on this server.</p><p><a style="color:#38bdf8" href="/health">Server status</a></p></div></body>`);
+});
 app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "ads.html")); });
 app.get("/store", (req, res) => { res.sendFile(path.join(__dirname, "store.html")); });
 app.get("/driver", (req, res) => { res.sendFile(path.join(__dirname, "driver.html")); });
@@ -349,8 +787,9 @@ app.get("/user", (req, res) => { res.sendFile(path.join(__dirname, "store.html")
 // ============================================================================
 // --- DOSECOLOR PRINT ROUTER & UI MOUNT (ADDITIVE BLOCK) ---
 // ============================================================================
-const printRouter = require('./routes/print');
-app.use('/api', printRouter);
+// STAGE 191: safe loader (a missing/broken optional module no longer crashes the whole server)
+const printRouter = safeRequire191('./routes/print', 'print');
+if (printRouter) app.use('/api', printRouter);
 
 app.get('/print', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/print.html'));
@@ -359,10 +798,14 @@ app.get('/print', (req, res) => {
 // ============================================================================
 // --- DOSECOLOR PRINT SPOOLER MIDDLEWARE INTERCEPTOR ENDPOINT (ADDITIVE BLOCK) ---
 // ============================================================================
-const { interceptAndProcessPrintJob } = require('./middleware/printInterceptor');
+const printInterceptorModule = safeRequire191('./middleware/printInterceptor', 'printInterceptor');
+const interceptAndProcessPrintJob = printInterceptorModule && printInterceptorModule.interceptAndProcessPrintJob;
 
 app.post('/api/middleware/intercept-print', (req, res) => {
     try {
+        if (typeof interceptAndProcessPrintJob !== 'function') {
+            return res.status(503).json({ success: false, error: "Print interceptor is not available on this server." });
+        }
         const { rawText, targetPrinter } = req.body;
         if (!rawText) {
             return res.status(400).json({ success: false, error: "No raw print text received." });
@@ -371,7 +814,7 @@ app.post('/api/middleware/intercept-print', (req, res) => {
         const result = interceptAndProcessPrintJob(rawText, targetPrinter || "Default_Thermal_Printer");
         res.json(result);
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, error: IS_PROD ? "Print job failed." : err.message });
     }
 });
 
@@ -382,7 +825,7 @@ let pendingMerchants = [];
 let approvedMerchants = [];
 
 const SEED_MERCHANT_TOKEN = ALLOW_TEST_CREDENTIALS ? "1234" : String(crypto.randomInt(100000, 1000000));
-if (!ALLOW_TEST_CREDENTIALS) console.warn(`[SEED] Default merchant login token for this boot: ${SEED_MERCHANT_TOKEN}`);
+if (!ALLOW_TEST_CREDENTIALS) console.warn(`[SEED] Default merchant login token for this boot: ${SEED_MERCHANT_TOKEN} (replaced by the saved token if a state snapshot is restored)`);
 
 let merchantCatalogs = {
     'MERCH_DEF_172': [
@@ -426,7 +869,9 @@ function publicProfile(p) {
 function isTenantActive(id) {
     const has = global.merchantProfiles && Object.prototype.hasOwnProperty.call(global.merchantProfiles, id);
     const st = has ? global.merchantProfiles[id].status : undefined;
-    return st !== 'SUSPENDED' && st !== 'REVOKED';
+    // STAGE 191: the admin "toggle-tenant-status" corridor switch is now honoured here too
+    const cs = (global.corridorStatus && Object.prototype.hasOwnProperty.call(global.corridorStatus, id)) ? global.corridorStatus[id] : undefined;
+    return st !== 'SUSPENDED' && st !== 'REVOKED' && cs !== 'SUSPENDED' && cs !== 'REVOKED';
 }
 
 let merchantOrders = {
@@ -814,6 +1259,7 @@ merchantRouter.post('/register', registerLimiter, (req, res) => {
     
     pendingMerchants.push(application);
     console.log(`[MERCHANT] Pending approval: ${application.shopName} -> /api/merchant/approve/${merchantId}?sig=${approvalSig(merchantId)}`);
+    emitSafe191('admins', 'merchant_registration_pending', { merchantId, shopName: application.shopName }); // STAGE 191
     res.json({ success: true, message: `Registration submitted for ${application.shopName}! Awaiting admin review.` });
 });
 
@@ -845,6 +1291,7 @@ merchantRouter.get('/approve/:merchantId', (req, res) => {
     }
     if (!global.merchantOrders[merchantId]) global.merchantOrders[merchantId] = [];
     appendAudit('MERCHANT_APPROVED', { merchantId, shopName: merchant.shopName });
+    if (!ALLOW_TEST_CREDENTIALS) sendSms191(merchant.phone, `RDS: ${merchant.shopName} is approved. Your merchant login token is ${merchant.loginToken}. Keep it private.`); // STAGE 191
 
     res.send(`
         <div style="font-family: Arial; padding: 40px; background: #0b0f19; color: #fff; text-align: center;">
@@ -861,6 +1308,8 @@ merchantRouter.post('/login', authLimiter, (req, res) => {
     if (!isPhone(phone) || token === undefined) return bad(res, "Phone and token are required.");
     let merchant = approvedMerchants.find(m => m.phone === phone);
     if (!merchant && phone === '+254712345678') merchant = merchantProfiles['MERCH_DEF_172'];
+    // STAGE 191: every seeded/approved profile can log in, not just the first seed
+    if (!merchant) merchant = Object.values(merchantProfiles).find(m => m && m.phone === phone && m.loginToken);
 
     if (!merchant) return res.status(404).json({ success: false, error: "Phone number not registered or approved." });
     if (!isTenantActive(merchant.merchantId)) return bad(res, "This merchant account is suspended. Contact support.", 403);
@@ -1274,9 +1723,7 @@ app.use('/api/user', userRouter);
 let sovereignVerifications = [];
 let sovereignTransactions = [];
 let sovereignAuditStream = [];
-let lanTrafficLogs = [
-    { timestamp: new Date().toLocaleTimeString(), clientIp: "127.0.0.1", method: "GET", endpoint: "/api/admin/dashboard", status: "200 OK" }
-];
+let lanTrafficLogs = []; // STAGE 191: the fake seeded "/api/admin/dashboard" row was removed; this is now real traffic only
 let connectedPeripheralsList = [
     { peripheralId: "PERIPH_CAM_01", deviceType: "Biometric Face Camera", connectionMode: "Wired USB 3.0", docHashSnippet: "e3b0c442...98fc1c14", timestamp: Date.now() },
     { peripheralId: "PERIPH_POS_02", deviceType: "NFC Terminal Reader", connectionMode: "Bluetooth BLE", docHashSnippet: "8f434346...1a2b3c4d", timestamp: Date.now() }
@@ -1337,6 +1784,7 @@ function verifyAuditChain(stream = sovereignAuditStream) {
 
 const corridorStatus = {};       
 const corridorRequests = [];     
+global.corridorStatus = corridorStatus; // STAGE 191: lets isTenantActive honour admin corridor switches
 function tenantOf(req) { return pickKey(req.headers['x-business-id'], 'INST-CBK-RTGS'); }
 function tenantBlocked(id) { return ['SUSPENDED', 'REVOKED'].includes(corridorStatus[id]); }
 
@@ -1394,6 +1842,7 @@ adminRouter.post('/toggle-tenant-status', verifySovereignTokenStrict, requireSov
     if (!isSafeKey(tenantId) || !ALLOWED.includes(status)) return bad(res, `tenantId required; status must be one of ${ALLOWED.join(", ")}.`);
     corridorStatus[tenantId] = status;
     appendAudit('TENANT_STATUS_CHANGE', { tenantId, status, by: req.user.email || req.user.sub });
+    emitSafe191(tenantId, 'tenant_status_changed', { merchantId: tenantId, status }); // STAGE 191
     res.json({ success: true, message: `Tenant ${tenantId} status successfully updated to ${status}.` });
 });
 
@@ -1406,23 +1855,28 @@ adminRouter.post('/request-tenant-corridor', verifySovereignTokenStrict, (req, r
     res.json({ success: true, message: `Tenant corridor request for "${reqRec.businessName}" submitted successfully for owner approval.` });
 });
 
-const adminModule = require('./routes/admin');
-adminModule.init({
-    verifyToken: verifySovereignTokenStrict,
-    requireAdmin: requireAdminRoleStrict,
-    requireSuperAdmin: requireSovereignAdminOnly,
-    appendAudit,
-    verifyAuditChain,
-    corridorStatus,
-    corridorRequests,
-    state: () => ({
-        verifications: sovereignVerifications,
-        transactions: sovereignTransactions,
-        lanTrafficLogs,
-        auditStream: sovereignAuditStream
-    })
-});
-app.use('/api/admin', adminModule);
+const adminModule = safeRequire191('./routes/admin', 'admin');
+if (adminModule) {
+    if (typeof adminModule.init === 'function') {
+        adminModule.init({
+            verifyToken: verifySovereignTokenStrict,
+            requireAdmin: requireAdminRoleStrict,
+            requireSuperAdmin: requireSovereignAdminOnly,
+            appendAudit,
+            verifyAuditChain,
+            corridorStatus,
+            corridorRequests,
+            state: () => ({
+                verifications: sovereignVerifications,
+                transactions: sovereignTransactions,
+                lanTrafficLogs,
+                auditStream: sovereignAuditStream
+            })
+        });
+    }
+    if (typeof adminModule === 'function') app.use('/api/admin', adminModule);
+    else console.warn("⚠️ [SERVER] routes/admin loaded but is not an express router; skipped mounting.");
+}
 app.use('/api/admin', adminRouter);
 
 // ============================================================================
@@ -1435,7 +1889,7 @@ app.get('/api/compliance/generate-regulatory-package', verifySovereignTokenStric
     const regulatoryPackage = {
         institution: tenantId,
         generatedAt: new Date().toISOString(),
-        framework: "RDS Sovereign Financial OS v190.0 ULTIMATE",
+        framework: "RDS Sovereign Financial OS v191.0 ULTIMATE",
         complianceStatus: integrity.valid ? "VERIFIED_COMPLIANT" : "AUDIT_INTEGRITY_FAILURE",
         metrics: {
             tierEcKYC: sovereignVerifications.length,
@@ -1506,7 +1960,7 @@ app.get('/api/hardware/peripherals', verifySovereignTokenStrict, requireAdminRol
 app.get('/api/ai/openapi.json', (req, res) => {
     res.json({
         openapi: "3.0.0",
-        info: { title: "RDS Sovereign Financial OS API", version: "190.0" },
+        info: { title: "RDS Sovereign Financial OS API", version: VERSION_191 },
         paths: { "/api/admin/compliance-dashboard": { get: { summary: "Compliance Dashboard metrics" } } }
     });
 });
@@ -1575,9 +2029,923 @@ adminExtras.get('/pending-merchants', requireAdminRoleStrict, (req, res) => {
 app.use('/api/admin', adminExtras);
 
 // ============================================================================
+// 🆕 STAGE 191 — ADDITIVE MODULES (appended block; nothing above is removed)
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 191-A. Shared state, helpers
+// ---------------------------------------------------------------------------
+const driverLedger191 = [];        // one entry per paid dispatch
+const orderRatings191 = [];        // customer ratings
+const driverPresence191 = {};      // driverId -> { online, at }
+const driverLocations191 = {};     // driverId -> { lat, lng, heading, speed, at }
+const CANCELLED_STATES_191 = new Set(['CANCELLED_BY_CUSTOMER', 'REJECTED_BY_VENDOR', 'ORDERLY_DISMISSED', 'CANCELLED']);
+
+function emitSafe191(room, event, payload) {
+    if (!global.io) return;
+    try { (room ? global.io.to(room) : global.io).emit(event, payload); } catch (e) { /* realtime must never break an API call */ }
+}
+function countBy191(arr, fn) { const o = {}; for (const x of arr) { const k = fn(x); o[k] = (o[k] || 0) + 1; } return o; }
+function paginate191(req, arr, defLimit = 50, maxLimit = 200) {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || defLimit, 1), maxLimit);
+    const start = (page - 1) * limit;
+    return { items: arr.slice(start, start + limit), page, limit, total: arr.length, pages: Math.ceil(arr.length / limit) };
+}
+function csvCell191(v) {
+    let s = (v === undefined || v === null) ? '' : String(v);
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s; // spreadsheet formula injection guard
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function haversineKm191(lat1, lon1, lat2, lon2) {
+    const R = 6371, rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+function eatDayStart191() { const eat = Date.now() + 3 * 3600 * 1000; return eat - (eat % 86400000) - 3 * 3600 * 1000; } // Nairobi midnight
+
+// One order can exist in up to three stores (merchantOrders, storeOrders, activeOrders). Keep them in step.
+function findOrderRefs191(orderId) {
+    const refs = { merchant: [], store: [], active: [] };
+    for (const m of Object.keys(global.merchantOrders || {})) for (const o of global.merchantOrders[m]) if (o.orderId === orderId) refs.merchant.push({ merchantId: m, order: o });
+    for (const o of storeOrders) if (o.orderId === orderId) refs.store.push(o);
+    for (const k of Object.keys(activeOrders)) for (const o of activeOrders[k]) if (o.id === orderId) refs.active.push({ key: k, order: o });
+    return refs;
+}
+function setDeliveryState191(orderId, patch) {
+    const refs = findOrderRefs191(orderId);
+    refs.merchant.forEach(x => Object.assign(x.order, patch));
+    refs.store.forEach(o => Object.assign(o, patch));
+    refs.active.forEach(x => Object.assign(x.order, patch));
+    return refs;
+}
+function cancelOrderEverywhere191(orderId, status, reason) {
+    const now = Date.now();
+    const refs = findOrderRefs191(orderId);
+    refs.merchant.forEach(x => Object.assign(x.order, { status, cancelledAt: now, cancelReason: reason || null }));
+    refs.store.forEach(o => { o.status = status; o.refundStatus = 'REFUND_DUE'; o.cancelledAt = now; if (o.delivery) o.delivery.status = 'CANCELLED'; });
+    refs.active.forEach(x => { x.order.status = status; x.order.refundStatus = 'REFUND_DUE'; x.order.cancelledAt = now; });
+    for (const list of allDispatchLists191()) for (const d of list) if (d.id === orderId) d.status = 'CANCELLED';
+    const q = global.driverQueue;
+    for (let i = q.length - 1; i >= 0; i--) if (q[i].id === orderId) q.splice(i, 1);
+    refs.merchant.forEach(x => emitSafe191(x.merchantId, 'merchant_order_update', x.order));
+    emitSafe191('order:' + orderId, 'order_status_update', { orderId, status });
+    emitSafe191(null, 'orderListUpdated', { orderId });
+    return refs;
+}
+function orderOwnerOk191(req, order, bodyPhone) {
+    if (req.user) {
+        if (req.user.role === ROLES.SOVEREIGN_ADMIN) return true;
+        if (req.user.userId && req.user.userId === order.userId) return true;
+    }
+    return !!bodyPhone && !!order.phone && String(bodyPhone) === String(order.phone);
+}
+function orderView191(orderId, full) {
+    const refs = findOrderRefs191(orderId);
+    const m = refs.merchant[0] && refs.merchant[0].order;
+    const s = refs.store[0];
+    const a = refs.active[0] && refs.active[0].order;
+    const base = s || a || m;
+    if (!base) return null;
+    const driverId = (m && m.driverId) || (s && s.driverId) || (a && a.driverId) || null;
+    const view = {
+        orderId,
+        status: base.status,
+        vendorStatus: m ? m.status : null,
+        deliveryStatus: (m && m.deliveryStatus) || (s && s.deliveryStatus) || (a && a.deliveryStatus) || null,
+        merchantId: refs.merchant[0] ? refs.merchant[0].merchantId : null,
+        total: base.totalAmount !== undefined ? base.totalAmount : base.total,
+        createdAt: base.createdAt || base.timestamp,
+        deliveredAt: (m && m.deliveredAt) || null
+    };
+    if (full) {
+        const drv = (a && a.assignedDriver) || (m && m.assignedDriver) || (s && s.delivery && s.delivery.assignedDriver) || null;
+        const loc = driverId && driverLocations191[driverId];
+        Object.assign(view, {
+            userId: base.userId,
+            items: (m && m.items) || base.items || [],
+            pickup: (a && a.pickup) || (s && s.delivery && s.delivery.pickupLocation) || null,
+            destination: (a && a.destination) || (s && s.delivery && s.delivery.dropoffLocation) || null,
+            assignedDriver: drv,
+            breakdown: (a && a.breakdown) || (s && s.splits) || null,
+            refundStatus: base.refundStatus || null,
+            driverLocation: loc && (Date.now() - loc.at < 120000) ? loc : null
+        });
+    }
+    return view;
+}
+function normalizedOrders191() {
+    const map = new Map();
+    for (const o of storeOrders) map.set(o.orderId, { orderId: o.orderId, source: 'STORE_CHECKOUT', merchantId: o.tenantId || null, userId: o.userId, status: o.status, vendorStatus: null, deliveryStatus: o.deliveryStatus || (o.delivery && o.delivery.status) || null, total: o.totalAmount, createdAt: o.timestamp });
+    for (const m of Object.keys(global.merchantOrders || {})) for (const o of global.merchantOrders[m]) {
+        const ex = map.get(o.orderId);
+        if (ex) { ex.merchantId = m; ex.vendorStatus = o.status; ex.deliveryStatus = o.deliveryStatus || ex.deliveryStatus; }
+        else map.set(o.orderId, { orderId: o.orderId, source: 'MERCHANT_ORDER', merchantId: m, userId: null, status: o.status, vendorStatus: o.status, deliveryStatus: o.deliveryStatus || null, total: o.totalAmount, createdAt: o.createdAt });
+    }
+    for (const k of Object.keys(activeOrders)) for (const o of activeOrders[k]) {
+        const ex = map.get(o.id);
+        if (ex) { ex.userId = ex.userId || o.userId; if (CANCELLED_STATES_191.has(o.status)) ex.status = o.status; }
+        else map.set(o.id, { orderId: o.id, source: k === 'DIRECT_RIDES' ? 'DIRECT_RIDE' : 'USER_CHECKOUT', merchantId: k === 'DIRECT_RIDES' ? null : k, userId: o.userId, status: o.status, vendorStatus: null, deliveryStatus: o.deliveryStatus || null, total: o.total, createdAt: o.createdAt });
+    }
+    return [...map.values()].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+function ledgerSummary191() {
+    const t = { orders: 0, gross: 0, merchantPayout: 0, driverPayout: 0, systemIncome: 0, kraTax: 0, netSystemRevenue: 0, ledgerVariance: 0, ordersWithVariance: 0 };
+    const seen = new Set();
+    const add = (gross, mp, dp, si, tax) => {
+        t.orders++; t.gross += gross; t.merchantPayout += mp; t.driverPayout += dp; t.systemIncome += si; t.kraTax += tax; t.netSystemRevenue += (si - tax);
+        const v = (mp + dp + si) - gross;
+        if (Math.abs(v) >= 0.01) { t.ordersWithVariance++; t.ledgerVariance += v; }
+    };
+    for (const o of storeOrders) {
+        if (CANCELLED_STATES_191.has(o.status)) continue;
+        seen.add(o.orderId);
+        const s = o.splits || {};
+        add(Number(o.totalAmount) || 0, s.merchantPayout || 0, s.driverPayout || 0, (s.sysFeeOnItems || 0) + (s.appDeliveryComm || 0), s.kraTaxOnSystemIncome || 0);
+    }
+    for (const k of Object.keys(activeOrders)) for (const o of activeOrders[k]) {
+        if (CANCELLED_STATES_191.has(o.status) || seen.has(o.id)) continue;
+        const b = o.breakdown || {};
+        add(Number(o.total) || 0, b.shopOwnerPayout || 0, b.riderShare || 0, b.systemFee || 0, b.tax || 0);
+    }
+    for (const k of Object.keys(t)) if (typeof t[k] === 'number' && k !== 'orders' && k !== 'ordersWithVariance') t[k] = money2(t[k]);
+    t.driverWalletLiability = money2(Object.values(driverWallets).reduce((s, v) => s + (Number(v) || 0), 0));
+    t.note = "ledgerVariance is payouts + system income minus what the customer paid. Non-zero on /api/user/checkout orders because that route does not charge the 2% commodity fee to the customer (equation preserved per mandate; flagged for review).";
+    return t;
+}
+
+// ---------------------------------------------------------------------------
+// 191-B. Durable state (atomic snapshots). The audit chain persists separately.
+// ---------------------------------------------------------------------------
+let snapshotInFlight191 = false;
+let lastSnapshot191 = { at: 0, ok: null, bytes: 0, error: null };
+
+function snapshotPayload191() {
+    return {
+        version: 191, savedAt: Date.now(),
+        pendingMerchants, approvedMerchants, merchantCatalogs, merchantProfiles, merchantOrders,
+        storeOrders, drivers, driverWallets, users, activeOrders, corridorStatus, corridorRequests,
+        activeDispatches: global.activeDispatches, driverQueue: global.driverQueue,
+        sovereignVerifications, sovereignTransactions,
+        driverLedger: driverLedger191, orderRatings: orderRatings191, driverPresence: driverPresence191,
+        revokedTokens: [...revokedTokens191]
+    };
+}
+async function saveSnapshot191(force = false) {
+    if (!PERSIST_STATE_191 || snapshotInFlight191) return false;
+    if (!stateDirty191 && !force) return true;
+    snapshotInFlight191 = true;
+    stateDirty191 = false;
+    try {
+        const json = JSON.stringify(snapshotPayload191());
+        const tmp = `${SNAPSHOT_FILE_191}.${process.pid}.tmp`;
+        await fsPromises.writeFile(tmp, json, { mode: 0o600 });
+        await fsPromises.copyFile(SNAPSHOT_FILE_191, SNAPSHOT_FILE_191 + '.bak').catch(() => {});
+        await fsPromises.rename(tmp, SNAPSHOT_FILE_191);
+        lastSnapshot191 = { at: Date.now(), ok: true, bytes: Buffer.byteLength(json), error: null };
+        return true;
+    } catch (e) {
+        stateDirty191 = true;
+        lastSnapshot191 = { at: Date.now(), ok: false, bytes: 0, error: e.message };
+        console.error('[SNAPSHOT] Save failed:', e.message);
+        return false;
+    } finally { snapshotInFlight191 = false; }
+}
+function saveSnapshotSync191() {
+    if (!PERSIST_STATE_191) return;
+    try {
+        const tmp = `${SNAPSHOT_FILE_191}.${process.pid}.tmp`;
+        fs.writeFileSync(tmp, JSON.stringify(snapshotPayload191()), { mode: 0o600 });
+        fs.renameSync(tmp, SNAPSHOT_FILE_191);
+        console.log('💾 Final state snapshot written.');
+    } catch (e) { console.error('[SNAPSHOT] Final save failed:', e.message); }
+}
+function replaceArray191(target, src) { if (!Array.isArray(src)) return; target.length = 0; for (const x of src) target.push(x); }
+function replaceObject191(target, src) {
+    if (!src || typeof src !== 'object' || Array.isArray(src)) return;
+    for (const k of Object.keys(target)) delete target[k];
+    for (const k of Object.keys(src)) if (isSafeKey(k)) target[k] = src[k];
+}
+function restoreSnapshot191() {
+    if (!PERSIST_STATE_191) { console.log('ℹ️  State persistence disabled (PERSIST_STATE=false).'); return; }
+    const tryRead = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return null; } };
+    let snap = fs.existsSync(SNAPSHOT_FILE_191) ? tryRead(SNAPSHOT_FILE_191) : null;
+    if (!snap && fs.existsSync(SNAPSHOT_FILE_191 + '.bak')) { snap = tryRead(SNAPSHOT_FILE_191 + '.bak'); if (snap) console.warn('⚠️  Main snapshot unreadable; restored from .bak'); }
+    if (!snap) { console.log('ℹ️  No state snapshot found: starting from seed data.'); return; }
+    try {
+        replaceArray191(pendingMerchants, snap.pendingMerchants);
+        replaceArray191(approvedMerchants, snap.approvedMerchants);
+        replaceObject191(merchantCatalogs, snap.merchantCatalogs);
+        replaceObject191(merchantProfiles, snap.merchantProfiles);
+        replaceObject191(merchantOrders, snap.merchantOrders);
+        replaceArray191(storeOrders, snap.storeOrders);
+        replaceObject191(drivers, snap.drivers);
+        replaceObject191(driverWallets, snap.driverWallets);
+        replaceObject191(users, snap.users);
+        replaceObject191(activeOrders, snap.activeOrders);
+        replaceObject191(corridorStatus, snap.corridorStatus);
+        replaceArray191(corridorRequests, snap.corridorRequests);
+        replaceObject191(global.activeDispatches, snap.activeDispatches);
+        replaceArray191(global.driverQueue, snap.driverQueue);
+        replaceArray191(sovereignVerifications, snap.sovereignVerifications);
+        replaceArray191(sovereignTransactions, snap.sovereignTransactions);
+        replaceArray191(driverLedger191, snap.driverLedger);
+        replaceArray191(orderRatings191, snap.orderRatings);
+        replaceObject191(driverPresence191, snap.driverPresence);
+        const nowS = Math.floor(Date.now() / 1000);
+        (snap.revokedTokens || []).forEach(([k, exp]) => { if (exp > nowS) revokedTokens191.set(k, exp); });
+        // re-link shared object references that JSON flattened
+        approvedMerchants.forEach((m, i) => { if (m && merchantProfiles[m.merchantId]) approvedMerchants[i] = merchantProfiles[m.merchantId]; });
+        const byId = new Map();
+        allDispatchLists191().forEach(list => list.forEach(d => byId.set(d.id, d)));
+        global.driverQueue.forEach((d, i) => { if (byId.has(d.id)) global.driverQueue[i] = byId.get(d.id); });
+        for (const p of Object.values(driverPresence191)) if (p) p.online = false; // nobody is online right after a restart
+        lastSnapshot191 = { at: snap.savedAt || Date.now(), ok: true, bytes: 0, error: null };
+        console.log(`💾 State restored from snapshot (${new Date(snap.savedAt).toISOString()}): ${approvedMerchants.length} merchants, ${Object.keys(drivers).length} drivers, ${storeOrders.length} store orders.`);
+    } catch (e) {
+        console.error('[SNAPSHOT] Restore failed; continuing with seed data:', e.message);
+    }
+}
+setInterval(() => { saveSnapshot191(false); }, 10000).unref();
+
+// ---------------------------------------------------------------------------
+// 191-C. Realtime: authenticated sockets, safe room joins, event-rate limiting
+// ---------------------------------------------------------------------------
+io.use((socket, next) => {
+    const hdr = socket.handshake.headers['authorization'] || '';
+    const raw = (socket.handshake.auth && socket.handshake.auth.token) || (hdr.startsWith('Bearer ') ? hdr.slice(7) : '');
+    if (!raw) { if (STRICT_ACTOR_AUTH) return next(new Error('unauthorized')); return next(); }
+    const p = verifyJwt(String(raw).trim());
+    if (!p || revokedTokens191.has(tokenFingerprint191(String(raw).trim()))) return next(new Error('unauthorized'));
+    socket.user = p;
+    next();
+});
+io.on('connection', (socket) => {
+    const u = socket.user || null;
+    const isAdmin = !!u && (u.role === ROLES.SOVEREIGN_ADMIN || u.role === ROLES.CENTRAL_BANK_AUDITOR);
+    if (u && u.merchantId) socket.join(u.merchantId);
+    if (u && u.driverId) socket.join('drivers');
+    if (u && u.userId) socket.join('user:' + u.userId);
+    if (isAdmin) socket.join('admins');
+
+    let budget = 0, windowStart = Date.now();
+    socket.use((packet, next) => {
+        const now = Date.now();
+        if (now - windowStart > 10000) { windowStart = now; budget = 0; }
+        if (++budget > 80) { socket.disconnect(true); return; }
+        next();
+    });
+
+    const roomFromPayload = (p) => typeof p === 'string' ? p : (p && (p.merchantId || p.room || p.id || p.businessId || p.orderId && ('order:' + p.orderId)));
+    const canJoin = (room) => {
+        if (typeof room !== 'string' || room.length > 90) return false;
+        if (room === 'drivers') return !!u && (!!u.driverId || isAdmin);
+        if (room === 'admins') return isAdmin;
+        if (room.startsWith('user:')) return !!u && (u.userId === room.slice(5) || isAdmin);
+        if (room.startsWith('order:')) {
+            if (!isSafeKey(room.slice(6))) return false;
+            if (!u) return !STRICT_ACTOR_AUTH;
+            if (isAdmin || u.driverId) return true;
+            const view = orderView191(room.slice(6), true);
+            return !!view && (view.userId === u.userId || view.merchantId === u.merchantId);
+        }
+        if (isSafeKey(room) && Object.prototype.hasOwnProperty.call(merchantProfiles, room)) {
+            if (!u) return !STRICT_ACTOR_AUTH;
+            return isAdmin || u.merchantId === room;
+        }
+        return false;
+    };
+    ['join', 'join_merchant', 'joinMerchant', 'join_room', 'joinRoom', 'register_merchant', 'join_order', 'track_order'].forEach(ev => {
+        socket.on(ev, (payload, ack) => {
+            let room = roomFromPayload(payload);
+            if ((ev === 'join_order' || ev === 'track_order') && typeof room === 'string' && !room.startsWith('order:')) room = 'order:' + room;
+            const ok = canJoin(room);
+            if (ok) socket.join(room);
+            if (typeof ack === 'function') ack({ success: ok, room: ok ? room : undefined });
+        });
+    });
+    socket.on('leave', (payload) => { const room = roomFromPayload(payload); if (typeof room === 'string') socket.leave(room); });
+    socket.on('ping_server', (_p, ack) => { if (typeof ack === 'function') ack({ success: true, serverTime: Date.now(), stage: STAGE_191 }); });
+});
+
+// ---------------------------------------------------------------------------
+// 191-D. Auth lifecycle: who am I, refresh (bounded), logout (revocation)
+// ---------------------------------------------------------------------------
+const authExtras191 = express.Router();
+
+authExtras191.get('/me', verifySovereignTokenStrict, (req, res) => {
+    const { sub, role, email, merchantId, driverId, userId, exp, iat } = req.user;
+    res.json({ success: true, identity: { sub, role, email, merchantId, driverId, userId, issuedAt: iat, expiresAt: exp, expiresInSeconds: exp - Math.floor(Date.now() / 1000) } });
+});
+
+authExtras191.post('/refresh', authLimiter, verifySovereignTokenStrict, (req, res) => {
+    const { iat, exp, ...claims } = req.user;
+    const isStaff = [ROLES.SOVEREIGN_ADMIN, ROLES.CENTRAL_BANK_AUDITOR, ROLES.COMMERCIAL_CASHIER].includes(claims.role);
+    const origIat = claims.origIat || iat;
+    const maxSessionSec = isStaff ? 24 * 3600 : 7 * 24 * 3600;
+    if (Math.floor(Date.now() / 1000) - origIat > maxSessionSec) return bad(res, "Session is too old to refresh. Please log in again.", 401);
+    if (claims.merchantId && !isTenantActive(claims.merchantId)) return bad(res, "Merchant account suspended.", 403);
+    if (claims.driverId && drivers[claims.driverId] && ['SUSPENDED', 'REJECTED'].includes(drivers[claims.driverId].standing)) return bad(res, "Driver account is not active.", 403);
+    const ttl = claims.role === ROLES.SOVEREIGN_ADMIN ? 8 * 3600 : 12 * 3600;
+    const oldToken = req.headers['authorization'].slice(7).trim();
+    revokedTokens191.set(tokenFingerprint191(oldToken), exp);
+    stateDirty191 = true;
+    res.json({ success: true, token: signJwt({ ...claims, origIat }, ttl), expiresInSeconds: ttl });
+});
+
+authExtras191.post('/logout', (req, res) => {
+    const h = req.headers['authorization'];
+    if (h && h.startsWith('Bearer ')) {
+        const raw = h.slice(7).trim();
+        const p = verifyJwt(raw);
+        if (p) {
+            revokedTokens191.set(tokenFingerprint191(raw), p.exp);
+            stateDirty191 = true;
+            if ([ROLES.SOVEREIGN_ADMIN, ROLES.CENTRAL_BANK_AUDITOR, ROLES.COMMERCIAL_CASHIER].includes(p.role)) appendAudit('STAFF_LOGOUT', { sub: p.sub, role: p.role, ip: req.ip });
+        }
+    }
+    res.json({ success: true, message: "Signed out." });
+});
+app.use('/api/auth', authExtras191);
+
+// ---------------------------------------------------------------------------
+// 191-E. Store + search additions
+// ---------------------------------------------------------------------------
+function allProducts191() {
+    const out = storeProducts.map(p => ({ ...p, merchantId: null, stock: null }));
+    for (const merchantId of Object.keys(merchantCatalogs)) {
+        if (!isTenantActive(merchantId)) continue;
+        const profile = merchantProfiles[merchantId] || { shopName: 'Independent Shop', businessType: 'General Retail' };
+        for (const item of (merchantCatalogs[merchantId] || [])) {
+            if (out.some(p => p.id === item.id)) continue;
+            out.push({ id: item.id, category: String(item.category || profile.businessType || 'General Retail').toUpperCase(), name: item.name, price: item.price, merchant: profile.shopName, merchantId, stock: item.stock !== undefined ? item.stock : null, image: item.image });
+        }
+    }
+    return out;
+}
+function searchProducts191(req) {
+    const q = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase().substring(0, 80) : '';
+    const cat = typeof req.query.category === 'string' && req.query.category !== 'ALL' ? req.query.category.toUpperCase() : '';
+    const min = Number(req.query.minPrice), max = Number(req.query.maxPrice);
+    let list = allProducts191().filter(p =>
+        (!q || [p.name, p.merchant, p.category].some(v => String(v).toLowerCase().includes(q))) &&
+        (!cat || String(p.category).toUpperCase() === cat) &&
+        (!Number.isFinite(min) || req.query.minPrice === undefined || p.price >= min) &&
+        (!Number.isFinite(max) || req.query.maxPrice === undefined || p.price <= max) &&
+        (req.query.inStock !== 'true' || p.stock === null || p.stock > 0));
+    if (req.query.sort === 'price_asc') list.sort((a, b) => a.price - b.price);
+    else if (req.query.sort === 'price_desc') list.sort((a, b) => b.price - a.price);
+    return paginate191(req, list, 50, 100);
+}
+const storeExtras191 = express.Router();
+storeExtras191.get('/search', (req, res) => { const r = searchProducts191(req); res.json({ success: true, currency: 'KES', ...r, products: r.items, items: undefined }); });
+storeExtras191.get('/categories', (req, res) => {
+    const counts = countBy191(allProducts191(), p => String(p.category).toUpperCase());
+    res.json({ success: true, categories: Object.keys(counts).sort().map(name => ({ name, count: counts[name] })) });
+});
+app.use('/api/store', storeExtras191);
+
+// ---------------------------------------------------------------------------
+// 191-F. Merchant additions
+// ---------------------------------------------------------------------------
+const merchantExtras191 = express.Router();
+merchantExtras191.param('merchantId', (req, res, next, val) => isSafeKey(val) ? next() : bad(res, "Invalid merchantId."));
+const merchantOrdersOf191 = (id) => (global.merchantOrders && global.merchantOrders[id]) || [];
+
+merchantExtras191.post('/orders/reject', softAuth(ACTOR_ROLES.MERCHANT), (req, res) => {
+    const { merchantId, orderId, reason } = req.body;
+    const targetId = pickKey(merchantId, 'MERCH_DEF_172');
+    if (!targetId) return bad(res, "Invalid merchantId.");
+    if (!ownsMerchant(req, targetId)) return bad(res, "Forbidden.", 403);
+    if (!isTenantActive(targetId)) return bad(res, "Merchant account suspended.", 403);
+    if (!isSafeKey(orderId)) return bad(res, "Invalid orderId.");
+    const order = merchantOrdersOf191(targetId).find(o => o.orderId === orderId);
+    if (!order) return res.status(404).json({ success: false, error: "Order ID not found." });
+    if (order.status !== 'PENDING_VENDOR_ACCEPTANCE') return bad(res, `Order is ${order.status}, cannot reject.`, 409);
+    cancelOrderEverywhere191(orderId, 'REJECTED_BY_VENDOR', cleanText(reason, 200));
+    appendAudit('ORDER_REJECTED_BY_VENDOR', { orderId, merchantId: targetId });
+    res.json({ success: true, message: `Order ${orderId} rejected. The customer will be notified and refunded.`, order });
+});
+
+merchantExtras191.get('/stats/:merchantId', softAuth(ACTOR_ROLES.MERCHANT), (req, res) => {
+    const { merchantId } = req.params;
+    if (!ownsMerchant(req, merchantId)) return bad(res, "Forbidden.", 403);
+    const orders = merchantOrdersOf191(merchantId);
+    const dayStart = eatDayStart191();
+    const completed = orders.filter(o => o.status === 'COMPLETED & PAID OUT');
+    const revenue = (list) => money2(list.reduce((s, o) => s + (Number(o.shopOwnerPayout) || Number(o.totalAmount) || 0), 0));
+    const catalog = merchantCatalogs[merchantId] || [];
+    const ratings = orderRatings191.filter(r => r.merchantId === merchantId);
+    res.json({
+        success: true, merchantId, currency: 'KES',
+        orders: { total: orders.length, today: orders.filter(o => (o.createdAt || 0) >= dayStart).length, byStatus: countBy191(orders, o => o.status) },
+        revenue: { allTime: revenue(completed), today: revenue(completed.filter(o => (o.completedAt || 0) >= dayStart)) },
+        catalog: { items: catalog.length, lowStock: catalog.filter(i => i.stock !== undefined && Number(i.stock) <= 5).map(i => ({ id: i.id, name: i.name, stock: i.stock })) },
+        rating: { average: ratings.length ? money2(ratings.reduce((s, r) => s + r.rating, 0) / ratings.length) : null, count: ratings.length }
+    });
+});
+
+merchantExtras191.post('/profile/update', softAuth(ACTOR_ROLES.MERCHANT), (req, res) => {
+    const { merchantId, shopName, banner, gpsLat, gpsLon, businessType } = req.body;
+    const targetId = pickKey(merchantId, 'MERCH_DEF_172');
+    if (!targetId) return bad(res, "Invalid merchantId.");
+    if (!ownsMerchant(req, targetId)) return bad(res, "Forbidden.", 403);
+    const profile = merchantProfiles[targetId];
+    if (!profile) return res.status(404).json({ success: false, error: "Merchant not found." });
+    if (shopName !== undefined) { const s = cleanText(shopName, 100); if (!s) return bad(res, "shopName cannot be empty."); profile.shopName = s; }
+    if (businessType !== undefined) profile.businessType = cleanText(businessType, 40) || profile.businessType;
+    if (banner !== undefined) profile.banner = cleanImage(banner, profile.banner);
+    if (gpsLat !== undefined || gpsLon !== undefined) {
+        const lat = Number(gpsLat), lon = Number(gpsLon);
+        if (!(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180)) return bad(res, "Valid gpsLat and gpsLon are both required.");
+        profile.gpsLat = lat; profile.gpsLon = lon;
+    }
+    res.json({ success: true, message: "Profile updated.", profile: publicProfile(profile) });
+});
+
+merchantExtras191.post('/catalog/bulk-stock', softAuth(ACTOR_ROLES.MERCHANT), (req, res) => {
+    const { merchantId, updates } = req.body;
+    const targetId = pickKey(merchantId, 'MERCH_DEF_172');
+    if (!targetId) return bad(res, "Invalid merchantId.");
+    if (!ownsMerchant(req, targetId)) return bad(res, "Forbidden.", 403);
+    if (!isTenantActive(targetId)) return bad(res, "Merchant account suspended.", 403);
+    if (!Array.isArray(updates) || updates.length === 0 || updates.length > 200) return bad(res, "updates must be an array of 1-200 entries.");
+    const catalog = merchantCatalogs[targetId] || [];
+    const updated = [], notFound = [];
+    for (const u of updates) {
+        if (!u || !isSafeKey(u.itemId) || !(Number.isFinite(Number(u.stock)) && Number(u.stock) >= 0 && Number(u.stock) <= 1000000)) return bad(res, "Each update needs a valid itemId and stock (0-1000000).");
+        const item = catalog.find(i => i.id === u.itemId);
+        if (!item) { notFound.push(u.itemId); continue; }
+        item.stock = Number(u.stock); updated.push(u.itemId);
+    }
+    res.json({ success: true, updated, notFound, catalog });
+});
+
+merchantExtras191.get('/orders/:merchantId/export.csv', softAuth(ACTOR_ROLES.MERCHANT), (req, res) => {
+    const { merchantId } = req.params;
+    if (!ownsMerchant(req, merchantId)) return bad(res, "Forbidden.", 403);
+    const rows = [['orderId', 'status', 'deliveryStatus', 'totalAmount', 'shopOwnerPayout', 'items', 'createdAt', 'completedAt'].join(',')];
+    for (const o of merchantOrdersOf191(merchantId)) {
+        rows.push([o.orderId, o.status, o.deliveryStatus, o.totalAmount, o.shopOwnerPayout, (o.items || []).map(i => `${i.qty || 1}x ${i.name}`).join('; '), o.createdAt ? new Date(o.createdAt).toISOString() : '', o.completedAt ? new Date(o.completedAt).toISOString() : ''].map(csvCell191).join(','));
+    }
+    res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="orders-${merchantId}.csv"` }).send(rows.join('\n') + '\n');
+});
+app.use('/api/merchant', merchantExtras191);
+
+// ---------------------------------------------------------------------------
+// 191-G. Customer additions: identity, history, tracking, cancel, rate, nearby, search
+// ---------------------------------------------------------------------------
+const userExtras191 = express.Router();
+
+userExtras191.get('/me', verifySovereignTokenStrict, requireRoles(ROLES.REGULAR_USER, ROLES.SOVEREIGN_ADMIN), (req, res) => {
+    const profile = users[req.user.userId];
+    if (!profile) return res.status(404).json({ success: false, error: "Profile not found." });
+    res.json({ success: true, user: profile });
+});
+
+userExtras191.get('/orders/history', verifySovereignTokenStrict, requireRoles(ROLES.REGULAR_USER, ROLES.SOVEREIGN_ADMIN), (req, res) => {
+    const uid = req.user.role === ROLES.SOVEREIGN_ADMIN && isSafeKey(req.query.userId) ? req.query.userId : req.user.userId;
+    if (!uid) return bad(res, "No user identity on this token.");
+    const mine = normalizedOrders191().filter(o => o.userId === uid);
+    const r = paginate191(req, mine, 20, 100);
+    res.json({ success: true, ...r, orders: r.items, items: undefined });
+});
+
+userExtras191.get('/orders/track/:orderId', softAuth(), (req, res) => {
+    const { orderId } = req.params;
+    if (!isSafeKey(orderId)) return bad(res, "Invalid orderId.");
+    const pub = orderView191(orderId, false);
+    if (!pub) return res.status(404).json({ success: false, error: "Order not found." });
+    const full = orderView191(orderId, true);
+    const isOwner = req.user && (req.user.role === ROLES.SOVEREIGN_ADMIN || (req.user.userId && req.user.userId === full.userId) || (req.user.merchantId && req.user.merchantId === full.merchantId));
+    res.json({ success: true, order: isOwner ? full : { orderId: pub.orderId, status: pub.status, deliveryStatus: pub.deliveryStatus, createdAt: pub.createdAt } });
+});
+
+userExtras191.post('/orders/cancel', softAuth(ROLES.REGULAR_USER), (req, res) => {
+    const { orderId, phone, reason } = req.body;
+    if (!isSafeKey(orderId)) return bad(res, "Invalid orderId.");
+    if (phone !== undefined && !isPhone(phone)) return bad(res, "Invalid phone number.");
+    const refs = findOrderRefs191(orderId);
+    const base = (refs.active[0] && refs.active[0].order) || refs.store[0] || null;
+    if (!base) return res.status(404).json({ success: false, error: "Order not found." });
+    if (!orderOwnerOk191(req, base, phone)) return bad(res, "Forbidden: this order does not belong to you.", 403);
+    if (CANCELLED_STATES_191.has(base.status)) return bad(res, `Order is already ${base.status}.`, 409);
+    const vendorPending = !refs.merchant.length || refs.merchant.every(x => x.order.status === 'PENDING_VENDOR_ACCEPTANCE');
+    const dispatches = findDispatchesById191(orderId);
+    const rideUntouched = !dispatches.length || dispatches.every(d => d.status === 'PENDING_DRIVER_ACCEPTANCE' || d.status === 'CANCELLED');
+    const isDirect = refs.active.some(x => x.key === 'DIRECT_RIDES');
+    const cancellable = isDirect ? rideUntouched : (vendorPending && rideUntouched);
+    if (!cancellable) return bad(res, "This order is already being prepared or delivered and can no longer be cancelled.", 409);
+    cancelOrderEverywhere191(orderId, 'CANCELLED_BY_CUSTOMER', cleanText(reason, 200));
+    appendAudit('ORDER_CANCELLED_BY_CUSTOMER', { orderId, by: (req.user && req.user.userId) || 'phone-verified' });
+    res.json({ success: true, message: `Order ${orderId} cancelled. Your payment will be refunded.` });
+});
+
+userExtras191.post('/orders/rate', softAuth(ROLES.REGULAR_USER), (req, res) => {
+    const { orderId, rating, comment, phone } = req.body;
+    if (!isSafeKey(orderId)) return bad(res, "Invalid orderId.");
+    const r = Number(rating);
+    if (!Number.isInteger(r) || r < 1 || r > 5) return bad(res, "rating must be a whole number from 1 to 5.");
+    const refs = findOrderRefs191(orderId);
+    const base = (refs.active[0] && refs.active[0].order) || refs.store[0] || null;
+    if (!base) return res.status(404).json({ success: false, error: "Order not found." });
+    if (!orderOwnerOk191(req, base, phone)) return bad(res, "Forbidden: this order does not belong to you.", 403);
+    const view = orderView191(orderId, true);
+    const done = view.vendorStatus === 'COMPLETED & PAID OUT' || view.deliveryStatus === 'DELIVERED' || base.status === 'COMPLETED_SETTLED';
+    if (!done) return bad(res, "Only completed orders can be rated.", 409);
+    if (orderRatings191.some(x => x.orderId === orderId)) return bad(res, "This order was already rated.", 409);
+    if (orderRatings191.length >= 50000) orderRatings191.shift();
+    orderRatings191.push({ ratingId: `RAT_${Date.now()}_${crypto.randomInt(0, 1000)}`, orderId, merchantId: view.merchantId, driverId: (view.assignedDriver && view.assignedDriver.name) ? null : null, userId: base.userId, rating: r, comment: cleanText(comment, 300) || '', at: Date.now() });
+    res.json({ success: true, message: "Thanks for your feedback!" });
+});
+
+userExtras191.get('/tenants/nearby', (req, res) => {
+    const lat = Number(req.query.lat), lng = Number(req.query.lng);
+    if (!(lat >= -90 && lat <= 90) || !(lng >= -180 && lng <= 180) || req.query.lat === undefined || req.query.lng === undefined) return bad(res, "Valid lat and lng query parameters are required.");
+    const radius = Math.min(Math.max(Number(req.query.radiusKm) || 10, 0.5), 100);
+    const list = Object.keys(merchantProfiles).filter(isTenantActive).map(id => {
+        const p = merchantProfiles[id];
+        const ratings = orderRatings191.filter(r => r.merchantId === id);
+        const distanceKm = haversineKm191(lat, lng, Number(p.gpsLat) || -1.2863, Number(p.gpsLon) || 36.8172);
+        return { merchantId: id, shopName: p.shopName, businessType: p.businessType || 'GENERAL_RETAIL', banner: p.banner, gpsLat: p.gpsLat, gpsLon: p.gpsLon, distanceKm: Number(distanceKm.toFixed(2)), rating: ratings.length ? money2(ratings.reduce((s, r) => s + r.rating, 0) / ratings.length) : null, ratingCount: ratings.length, catalogCount: (merchantCatalogs[id] || []).length };
+    }).filter(t => t.distanceKm <= radius).sort((a, b) => a.distanceKm - b.distanceKm);
+    res.json({ success: true, radiusKm: radius, tenants: list });
+});
+
+userExtras191.get('/search', (req, res) => { const r = searchProducts191(req); res.json({ success: true, currency: 'KES', ...r, products: r.items, items: undefined }); });
+app.use('/api/user', userExtras191);
+
+// ---------------------------------------------------------------------------
+// 191-H. Driver additions: profile, presence, live location, history, earnings, release
+// ---------------------------------------------------------------------------
+const driverExtras191 = express.Router();
+const actingDriver191 = (req, supplied) => (req.user && req.user.driverId) || pickKey(supplied, 'DRV_001');
+
+driverExtras191.get('/me', softAuth(ACTOR_ROLES.RIDER), (req, res) => {
+    const id = actingDriver191(req, req.query.ownerId);
+    if (!id) return bad(res, "Invalid driver id.");
+    if (!ownsDriver(req, id)) return bad(res, "Forbidden.", 403);
+    const d = drivers[id];
+    if (!d) return res.status(404).json({ success: false, error: "Driver profile not found." });
+    const { nationalId, ...safe } = d;
+    res.json({ success: true, driver: { ...safe, nationalIdMasked: nationalId ? String(nationalId).replace(/.(?=.{3})/g, '*') : null }, balance: money2(driverWallets[id] || 0), online: !!(driverPresence191[id] && driverPresence191[id].online) });
+});
+
+driverExtras191.post('/status', softAuth(ACTOR_ROLES.RIDER), driverStandingGuard191, (req, res) => {
+    const { online, driverId } = req.body;
+    const id = actingDriver191(req, driverId);
+    if (!id) return bad(res, "Invalid driver id.");
+    if (!ownsDriver(req, id)) return bad(res, "Forbidden.", 403);
+    if (typeof online !== 'boolean') return bad(res, "online must be true or false.");
+    driverPresence191[id] = { online, at: Date.now() };
+    stateDirty191 = true;
+    emitSafe191('admins', 'driver_presence', { driverId: id, online });
+    res.json({ success: true, driverId: id, online });
+});
+
+driverExtras191.post('/location', softAuth(ACTOR_ROLES.RIDER), driverStandingGuard191, (req, res) => {
+    const { lat, lng, heading, speed, dispatchId, driverId } = req.body;
+    const id = actingDriver191(req, driverId);
+    if (!id) return bad(res, "Invalid driver id.");
+    if (!ownsDriver(req, id)) return bad(res, "Forbidden.", 403);
+    const la = Number(lat), lo = Number(lng);
+    if (lat === undefined || lng === undefined || !(la >= -90 && la <= 90) || !(lo >= -180 && lo <= 180)) return bad(res, "Valid lat and lng are required.");
+    const prev = driverLocations191[id];
+    if (prev && Date.now() - prev.at < 1000) return res.json({ success: true, throttled: true });
+    const loc = { lat: la, lng: lo, heading: Number.isFinite(Number(heading)) ? Number(heading) : null, speed: Number.isFinite(Number(speed)) ? Number(speed) : null, at: Date.now() };
+    driverLocations191[id] = loc;
+    if (isSafeKey(dispatchId)) emitSafe191('order:' + dispatchId, 'driver_location', { dispatchId, ...loc });
+    emitSafe191('admins', 'driver_location', { driverId: id, ...loc });
+    res.json({ success: true });
+});
+
+driverExtras191.get('/history', softAuth(ACTOR_ROLES.RIDER), (req, res) => {
+    const id = actingDriver191(req, req.query.ownerId);
+    if (!id) return bad(res, "Invalid driver id.");
+    if (!ownsDriver(req, id)) return bad(res, "Forbidden.", 403);
+    const mine = driverLedger191.filter(e => e.driverId === id).sort((a, b) => b.at - a.at);
+    const r = paginate191(req, mine, 20, 100);
+    res.json({ success: true, ...r, trips: r.items, items: undefined });
+});
+
+driverExtras191.get('/earnings', softAuth(ACTOR_ROLES.RIDER), (req, res) => {
+    const id = actingDriver191(req, req.query.ownerId);
+    if (!id) return bad(res, "Invalid driver id.");
+    if (!ownsDriver(req, id)) return bad(res, "Forbidden.", 403);
+    const mine = driverLedger191.filter(e => e.driverId === id);
+    const sum = (since) => money2(mine.filter(e => e.at >= since).reduce((s, e) => s + e.credited, 0));
+    const trips = (since) => mine.filter(e => e.at >= since).length;
+    const today = eatDayStart191(), week = today - 6 * 86400000, month = today - 29 * 86400000;
+    res.json({ success: true, driverId: id, currency: 'KES', balance: money2(driverWallets[id] || 0),
+        today: { earned: sum(today), trips: trips(today) }, last7Days: { earned: sum(week), trips: trips(week) }, last30Days: { earned: sum(month), trips: trips(month) },
+        allTime: { earned: sum(0), trips: mine.length } });
+});
+
+driverExtras191.post('/dispatch/release', softAuth(ACTOR_ROLES.RIDER), driverStandingGuard191, (req, res) => {
+    const { dispatchId, driverId } = req.body;
+    const id = actingDriver191(req, driverId);
+    if (!id) return bad(res, "Invalid driver id.");
+    if (!ownsDriver(req, id)) return bad(res, "Forbidden.", 403);
+    if (!isSafeKey(dispatchId)) return bad(res, "Invalid dispatchId.");
+    const found = findDispatchesById191(dispatchId);
+    if (!found.length) return res.status(404).json({ success: false, error: "Dispatch not found." });
+    if (found.some(d => d.status !== 'ACCEPTED_BY_DRIVER')) return bad(res, "Only an accepted, unfinished dispatch can be released.", 409);
+    if (found.some(d => d.driverId && d.driverId !== id) && (!req.user || req.user.role !== ROLES.SOVEREIGN_ADMIN)) return bad(res, "This dispatch belongs to another driver.", 403);
+    found.forEach(d => { d.status = 'PENDING_DRIVER_ACCEPTANCE'; delete d.driverId; d.releasedAt = Date.now(); d.dispatchedAt = Date.now(); });
+    if (!global.driverQueue.some(d => d.id === dispatchId)) global.driverQueue.push(found[0]);
+    setDeliveryState191(dispatchId, { deliveryStatus: 'AWAITING_DRIVER', driverId: null });
+    emitSafe191(null, 'new_driver_dispatch', found[0]);
+    emitSafe191('order:' + dispatchId, 'order_status_update', { orderId: dispatchId, deliveryStatus: 'AWAITING_DRIVER' });
+    res.json({ success: true, message: "Dispatch released back to the driver radar." });
+});
+app.use('/api/driver', driverExtras191);
+
+// ---------------------------------------------------------------------------
+// 191-I. Media upload with magic-byte verification
+// ---------------------------------------------------------------------------
+async function sniffMedia191(filePath, ext) {
+    const fd = await fsPromises.open(filePath, 'r');
+    try {
+        const buf = Buffer.alloc(16);
+        await fd.read(buf, 0, 16, 0);
+        const hex = buf.toString('hex');
+        const a = (s, e) => buf.toString('ascii', s, e);
+        switch (ext) {
+            case '.jpg': case '.jpeg': return hex.startsWith('ffd8ff');
+            case '.png': return hex.startsWith('89504e470d0a1a0a');
+            case '.gif': return a(0, 3) === 'GIF';
+            case '.webp': return a(0, 4) === 'RIFF' && a(8, 12) === 'WEBP';
+            case '.mp4': case '.mov': case '.m4a': return a(4, 8) === 'ftyp';
+            case '.webm': return hex.startsWith('1a45dfa3');
+            case '.mp3': return a(0, 3) === 'ID3' || (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0);
+            case '.wav': return a(0, 4) === 'RIFF' && a(8, 12) === 'WAVE';
+            case '.ogg': return a(0, 4) === 'OggS';
+            default: return false;
+        }
+    } finally { await fd.close(); }
+}
+const mediaLimiter191 = rateLimit({ windowMs: 10 * 60 * 1000, max: 60 });
+const mediaRouter191 = express.Router();
+mediaRouter191.post('/upload', mediaLimiter191, verifySovereignTokenStrict, requireRoles(ROLES.SOVEREIGN_ADMIN, ACTOR_ROLES.MERCHANT, ACTOR_ROLES.RIDER), (req, res, next) => {
+    upload.single('file')(req, res, async (err) => {
+        if (err) return next(err);
+        if (!req.file) return bad(res, "No file received. Send multipart/form-data with a 'file' field.");
+        const ext = path.extname(req.file.filename).toLowerCase();
+        try {
+            if (!ext || !(await sniffMedia191(req.file.path, ext))) {
+                await fsPromises.unlink(req.file.path).catch(() => {});
+                return bad(res, "File content does not match its type.", 415);
+            }
+        } catch (e) {
+            await fsPromises.unlink(req.file.path).catch(() => {});
+            return bad(res, "Could not verify the uploaded file.", 500);
+        }
+        res.json({ success: true, url: `/uploads/${req.file.filename}`, size: req.file.size, mimetype: req.file.mimetype });
+    });
+});
+app.use('/api/media', mediaRouter191);
+
+// ---------------------------------------------------------------------------
+// 191-J. Admin operations console API  (/api/admin/ops/*)
+// ---------------------------------------------------------------------------
+function securityPosture191() {
+    const f = [];
+    const add = (id, severity, ok, message) => f.push({ id, severity, ok, message });
+    add('JWT_SECRET', 'critical', !!process.env.JWT_SECRET, 'JWT_SECRET must be set so sessions survive restarts and multiple instances.');
+    add('TEST_CREDENTIALS', 'critical', !ALLOW_TEST_CREDENTIALS, 'Demo OTP/merchant token 1234 must be disabled in production.');
+    add('STRICT_ACTOR_AUTH', 'high', STRICT_ACTOR_AUTH, 'Turn on STRICT_ACTOR_AUTH once all panels send their bearer token.');
+    add('CORS_ORIGINS', 'high', ALLOWED_ORIGINS.length > 0, 'Set ALLOWED_ORIGINS to your real domains instead of wildcard CORS.');
+    add('NODE_ENV', 'medium', IS_PROD, 'Set NODE_ENV=production (enables HSTS and generic error messages).');
+    add('ADMIN_LOGIN', 'high', !!(process.env.SOVEREIGN_ADMIN_PASSWORD_HASH || process.env.SOVEREIGN_ADMIN_PASSWORD), 'Admin login needs SOVEREIGN_ADMIN_PASSWORD_HASH (preferred) or SOVEREIGN_ADMIN_PASSWORD.');
+    add('ADMIN_PASSWORD_HASHED', 'medium', !!process.env.SOVEREIGN_ADMIN_PASSWORD_HASH, 'Store a bcrypt hash, not a plain password.');
+    add('AUDIT_HMAC_KEY', 'medium', !!process.env.AUDIT_HMAC_KEY, 'Use a dedicated AUDIT_HMAC_KEY separate from JWT_SECRET.');
+    add('SMS_GATEWAY', 'high', ALLOW_TEST_CREDENTIALS || SMS_CONFIGURED_191, 'Without an SMS gateway (SMS_PROVIDER) nobody can receive OTPs once test credentials are off.');
+    add('PERSISTENCE', 'medium', PERSIST_STATE_191 && lastSnapshot191.ok !== false, 'State snapshots are disabled or failing; a restart would lose merchants, orders and wallets.');
+    add('DATA_DIR', 'medium', !!process.env.DATA_DIR, 'Point DATA_DIR at a persistent volume so audit chain and snapshots survive redeploys.');
+    add('AUDIT_CHAIN', 'critical', verifyAuditChain().valid, 'Audit chain integrity check.');
+    return { ok: f.every(x => x.ok), failing: f.filter(x => !x.ok).length, findings: f };
+}
+
+const ROUTE_CATALOG_191 = [
+    ['GET', '/health', 'public', 'infra'], ['GET', '/healthz', 'public', 'infra'], ['GET', '/readyz', 'public', 'infra'], ['GET', '/metrics', 'bearer METRICS_TOKEN', 'infra'],
+    ['GET', '/api/meta/panels', 'public', 'all'], ['GET', '/api/ai/openapi.json', 'public', 'admin'],
+    ['POST', '/api/auth/admin-login', 'public', 'admin'], ['GET', '/api/auth/me', 'any token', 'all'], ['POST', '/api/auth/refresh', 'any token', 'all'], ['POST', '/api/auth/logout', 'any token', 'all'],
+    ['GET', '/api/store/products', 'public', 'store'], ['GET', '/api/store/search', 'public', 'store'], ['GET', '/api/store/categories', 'public', 'store'],
+    ['POST', '/api/store/checkout', 'user (soft)', 'store'], ['GET', '/api/store/orders/:tenantId', 'soft', 'store'],
+    ['POST', '/api/store/logistics/rider-action', 'rider (soft)', 'driver'], ['POST', '/api/store/logistics/complete-trip', 'rider (soft)', 'driver'],
+    ['POST', '/api/user/send-otp', 'public', 'store'], ['POST', '/api/user/verify-otp', 'public', 'store'], ['GET', '/api/user/me', 'user', 'store'],
+    ['GET', '/api/user/tenants', 'public', 'store'], ['GET', '/api/user/tenants/nearby', 'public', 'store'], ['GET', '/api/user/products', 'public', 'store'], ['GET', '/api/user/search', 'public', 'store'],
+    ['POST', '/api/user/calculate-total', 'public', 'store'], ['POST', '/api/user/checkout', 'user (soft)', 'store'],
+    ['GET', '/api/user/orders/live', 'soft', 'store'], ['GET', '/api/user/orders/history', 'user', 'store'], ['GET', '/api/user/orders/track/:orderId', 'soft', 'store'],
+    ['POST', '/api/user/orders/cancel', 'user (soft)', 'store'], ['POST', '/api/user/orders/rate', 'user (soft)', 'store'], ['POST', '/api/user/orders/dismiss', 'soft', 'store'],
+    ['POST', '/api/driver/register-and-send-otp', 'public', 'driver'], ['POST', '/api/driver/verify-otp', 'public', 'driver'],
+    ['GET', '/api/driver/dispatches', 'rider (soft)', 'driver'], ['GET', '/api/driver/queue', 'rider (soft)', 'driver'],
+    ['POST', '/api/driver/accept-dispatch', 'rider (soft)', 'driver'], ['POST', '/api/driver/complete-dispatch', 'rider (soft)', 'driver'], ['POST', '/api/driver/dispatch/release', 'rider (soft)', 'driver'],
+    ['GET', '/api/driver/wallet', 'rider (soft)', 'driver'], ['POST', '/api/driver/payout', 'rider (soft)', 'driver'],
+    ['GET', '/api/driver/me', 'rider (soft)', 'driver'], ['POST', '/api/driver/status', 'rider (soft)', 'driver'], ['POST', '/api/driver/location', 'rider (soft)', 'driver'],
+    ['GET', '/api/driver/history', 'rider (soft)', 'driver'], ['GET', '/api/driver/earnings', 'rider (soft)', 'driver'],
+    ['GET', '/api/merchant/all-tenants', 'public', 'store'], ['POST', '/api/merchant/register', 'public', 'merchant'], ['GET', '/api/merchant/approve/:merchantId', 'admin token or signed link', 'admin'],
+    ['POST', '/api/merchant/login', 'public', 'merchant'], ['GET', '/api/merchant/catalog/:merchantId', 'public', 'merchant'],
+    ['POST', '/api/merchant/catalog/update', 'merchant (soft)', 'merchant'], ['POST', '/api/merchant/catalog/delete', 'merchant (soft)', 'merchant'], ['POST', '/api/merchant/catalog/bulk-stock', 'merchant (soft)', 'merchant'],
+    ['GET', '/api/merchant/orders/:merchantId', 'merchant (soft)', 'merchant'], ['POST', '/api/merchant/orders/accept', 'merchant (soft)', 'merchant'], ['POST', '/api/merchant/orders/reject', 'merchant (soft)', 'merchant'],
+    ['POST', '/api/merchant/orders/complete-handover', 'merchant (soft)', 'merchant'], ['GET', '/api/merchant/orders/:merchantId/export.csv', 'merchant (soft)', 'merchant'],
+    ['GET', '/api/merchant/stats/:merchantId', 'merchant (soft)', 'merchant'], ['POST', '/api/merchant/profile/update', 'merchant (soft)', 'merchant'],
+    ['POST', '/api/media/upload', 'merchant | rider | admin', 'merchant'],
+    ['GET', '/api/admin/dashboard', 'admin', 'admin'], ['GET', '/api/admin/status', 'admin', 'admin'], ['GET', '/api/admin/compliance-dashboard', 'admin', 'admin'],
+    ['GET', '/api/admin/lan-traffic-logs', 'admin', 'admin'], ['GET', '/api/admin/sovereign-vault', 'admin', 'admin'], ['POST', '/api/admin/toggle-tenant-status', 'sovereign', 'admin'],
+    ['POST', '/api/admin/request-tenant-corridor', 'staff', 'admin'], ['POST', '/api/admin/issue-token', 'sovereign', 'admin'], ['GET', '/api/admin/audit-integrity', 'admin', 'admin'], ['GET', '/api/admin/pending-merchants', 'admin', 'admin'],
+    ['GET', '/api/admin/ops/overview', 'admin', 'admin'], ['GET', '/api/admin/ops/merchants', 'admin', 'admin'], ['POST', '/api/admin/ops/merchants/:merchantId/status', 'sovereign', 'admin'], ['POST', '/api/admin/ops/merchants/:merchantId/reject', 'sovereign', 'admin'],
+    ['GET', '/api/admin/ops/drivers', 'admin', 'admin'], ['POST', '/api/admin/ops/drivers/:driverId/review', 'sovereign', 'admin'],
+    ['GET', '/api/admin/ops/orders', 'admin', 'admin'], ['GET', '/api/admin/ops/orders/export.csv', 'admin', 'admin'], ['GET', '/api/admin/ops/ledger/summary', 'admin', 'admin'],
+    ['GET', '/api/admin/ops/audit/export', 'admin', 'admin'], ['POST', '/api/admin/ops/broadcast', 'sovereign', 'admin'],
+    ['GET', '/api/admin/ops/system/health', 'admin', 'admin'], ['GET', '/api/admin/ops/system/security-posture', 'admin', 'admin'], ['GET', '/api/admin/ops/system/routes', 'admin', 'admin'], ['POST', '/api/admin/ops/system/snapshot', 'sovereign', 'admin'],
+    ['GET', '/api/compliance/generate-regulatory-package', 'admin', 'admin'], ['POST', '/api/kyc/verify-biometric-face', 'sovereign | cashier', 'admin'], ['POST', '/api/cashier/process-transaction', 'sovereign | cashier', 'admin'],
+    ['GET', '/api/audit/search', 'admin', 'admin'], ['GET', '/api/hardware/peripherals', 'admin', 'admin'], ['POST', '/api/ai/intent-eval', 'staff', 'admin'],
+    ['POST', '/api/middleware/intercept-print', 'public (rate limited)', 'print'], ['*', '/api/ads/*', 'see routes/ads', 'ads']
+];
+const PANELS_191 = [
+    { panel: 'ads', pages: ['/', '/ads'], file: 'ads.html', apis: ['/api/ads'] },
+    { panel: 'store', pages: ['/store', '/user'], file: 'store.html', apis: ['/api/store', '/api/user', '/api/merchant/all-tenants'] },
+    { panel: 'driver', pages: ['/driver'], file: 'driver.html', apis: ['/api/driver', '/api/auth'] },
+    { panel: 'merchant', pages: ['/merchant'], file: 'merchant.html', apis: ['/api/merchant', '/api/media', '/api/auth'] },
+    { panel: 'admin', pages: ['/admin'], file: 'admin.html', apis: ['/api/admin', '/api/auth', '/api/compliance', '/api/kyc', '/api/cashier', '/api/audit', '/api/hardware'] },
+    { panel: 'print', pages: ['/print'], file: 'public/print.html', apis: ['/api/middleware/intercept-print'] }
+];
+app.get('/api/meta/panels', (req, res) => {
+    res.json({
+        success: true, stage: STAGE_191, version: VERSION_191,
+        auth: { strictActorAuth: STRICT_ACTOR_AUTH, header: 'Authorization: Bearer <token>', tokenSources: ['/api/user/verify-otp', '/api/driver/verify-otp', '/api/merchant/login', '/api/auth/admin-login'], refresh: '/api/auth/refresh', logout: '/api/auth/logout' },
+        realtime: { transport: 'socket.io', auth: 'io(url, { auth: { token } })', joinEvents: ['join', 'join_merchant', 'join_order'], events: ['new_customer_order', 'merchant_order_update', 'new_driver_dispatch', 'orderListUpdated', 'order_status_update', 'driver_location', 'tenant_status_changed', 'admin_notice'] },
+        panels: PANELS_191.map(p => ({ ...p, available: fs.existsSync(path.join(__dirname, p.file)) }))
+    });
+});
+
+const adminOps191 = express.Router();
+adminOps191.use(verifySovereignTokenStrict);
+adminOps191.param('merchantId', (req, res, next, val) => isSafeKey(val) ? next() : bad(res, "Invalid merchantId."));
+adminOps191.param('driverId', (req, res, next, val) => isSafeKey(val) ? next() : bad(res, "Invalid driverId."));
+
+adminOps191.get('/overview', requireAdminRoleStrict, (req, res) => {
+    const orders = normalizedOrders191();
+    const live = orders.filter(o => !CANCELLED_STATES_191.has(o.status) && !CANCELLED_STATES_191.has(o.vendorStatus));
+    const dayStart = eatDayStart191();
+    const ledger = ledgerSummary191();
+    res.json({
+        success: true, currency: 'KES', generatedAt: Date.now(),
+        merchants: { approved: Object.keys(merchantProfiles).length, pending: pendingMerchants.length, suspended: Object.keys(merchantProfiles).filter(id => !isTenantActive(id)).length },
+        drivers: { registered: Object.keys(drivers).length, online: Object.values(driverPresence191).filter(p => p && p.online).length, suspended: Object.values(drivers).filter(d => ['SUSPENDED', 'REJECTED'].includes(d.standing)).length, pendingReview: Object.values(drivers).filter(d => !d.documentsReviewed).length },
+        customers: Object.keys(users).length,
+        orders: { total: orders.length, today: orders.filter(o => (o.createdAt || 0) >= dayStart).length, cancelled: orders.length - live.length, gmvLive: money2(live.reduce((s, o) => s + (Number(o.total) || 0), 0)), byVendorStatus: countBy191(orders, o => o.vendorStatus || 'N/A') },
+        dispatch: { waitingInQueue: (global.driverQueue || []).length, openDispatches: allDispatchLists191().reduce((n, l) => n + l.filter(d => d.status === 'ACCEPTED_BY_DRIVER').length, 0) },
+        finance: { grossProcessed: ledger.gross, systemIncome: ledger.systemIncome, kraTax: ledger.kraTax, netSystemRevenue: ledger.netSystemRevenue, driverWalletLiability: ledger.driverWalletLiability, ledgerVariance: ledger.ledgerVariance },
+        compliance: { auditBlocks: sovereignAuditStream.length, auditChainValid: verifyAuditChain().valid, kycVerifications: sovereignVerifications.length }
+    });
+});
+
+adminOps191.get('/merchants', requireAdminRoleStrict, (req, res) => {
+    const approved = Object.keys(merchantProfiles).map(id => {
+        const p = merchantProfiles[id];
+        const orders = merchantOrdersOf191(id);
+        return { merchantId: id, shopName: p.shopName, businessType: p.businessType, phone: p.phone, active: isTenantActive(id), status: p.status || 'APPROVED', statusReason: p.statusReason || null, catalogCount: (merchantCatalogs[id] || []).length, orders: orders.length, pendingOrders: orders.filter(o => o.status === 'PENDING_VENDOR_ACCEPTANCE').length };
+    });
+    const base = `${req.protocol}://${req.get('host')}`;
+    res.json({ success: true, approved, pending: pendingMerchants.map(m => ({ merchantId: m.merchantId, shopName: m.shopName, businessType: m.businessType, ownerName: m.ownerName, phone: m.phone, createdAt: m.createdAt, approvalLink: `${base}/api/merchant/approve/${m.merchantId}?sig=${approvalSig(m.merchantId)}` })) });
+});
+
+adminOps191.post('/merchants/:merchantId/status', requireSovereignAdminOnly, (req, res) => {
+    const id = req.params.merchantId;
+    const { status, reason } = req.body;
+    const ALLOWED = ['APPROVED_ACTIVE', 'SUSPENDED', 'REVOKED'];
+    if (!ALLOWED.includes(status)) return bad(res, `status must be one of ${ALLOWED.join(', ')}.`);
+    const profile = merchantProfiles[id];
+    if (!profile) return res.status(404).json({ success: false, error: "Merchant not found." });
+    profile.status = status === 'APPROVED_ACTIVE' ? 'APPROVED' : status;
+    profile.statusReason = cleanText(reason, 200) || null;
+    profile.statusChangedAt = Date.now();
+    if (status === 'APPROVED_ACTIVE' && corridorStatus[id] && corridorStatus[id] !== 'APPROVED_ACTIVE') corridorStatus[id] = 'APPROVED_ACTIVE';
+    appendAudit('MERCHANT_STATUS_CHANGE', { merchantId: id, status, reason: profile.statusReason, by: req.user.email || req.user.sub });
+    emitSafe191(id, 'tenant_status_changed', { merchantId: id, status: profile.status });
+    res.json({ success: true, message: `Merchant ${id} is now ${status}.` });
+});
+
+adminOps191.post('/merchants/:merchantId/reject', requireSovereignAdminOnly, (req, res) => {
+    const id = req.params.merchantId;
+    const idx = pendingMerchants.findIndex(m => m.merchantId === id);
+    if (idx === -1) return res.status(404).json({ success: false, error: "Pending application not found." });
+    const [m] = pendingMerchants.splice(idx, 1);
+    appendAudit('MERCHANT_REJECTED', { merchantId: id, shopName: m.shopName, reason: cleanText(req.body && req.body.reason, 200) || null, by: req.user.email || req.user.sub });
+    res.json({ success: true, message: `Application for ${m.shopName} rejected.` });
+});
+
+adminOps191.get('/drivers', requireAdminRoleStrict, (req, res) => {
+    const list = Object.values(drivers).map(d => ({
+        id: d.id, name: d.name, phone: d.phone, vehicleType: d.vehicleType, plate: d.plate, psvBadge: d.psvBadge,
+        standing: d.standing || 'ACTIVE', verificationStatus: d.verificationStatus, documentsReviewed: !!d.documentsReviewed, reviewNote: d.reviewNote || null,
+        balance: money2(driverWallets[d.id] || 0), online: !!(driverPresence191[d.id] && driverPresence191[d.id].online),
+        lastSeen: (driverLocations191[d.id] && driverLocations191[d.id].at) || null, registeredAt: d.registeredAt
+    }));
+    const r = paginate191(req, list, 50, 200);
+    res.json({ success: true, ...r, drivers: r.items, items: undefined });
+});
+
+adminOps191.post('/drivers/:driverId/review', requireSovereignAdminOnly, (req, res) => {
+    const id = req.params.driverId;
+    const { decision, note } = req.body;
+    const DECISIONS = ['APPROVED', 'REJECTED', 'SUSPENDED', 'REINSTATE'];
+    if (!DECISIONS.includes(decision)) return bad(res, `decision must be one of ${DECISIONS.join(', ')}.`);
+    const d = drivers[id];
+    if (!d) return res.status(404).json({ success: false, error: "Driver not found." });
+    if (decision === 'APPROVED') { d.verificationStatus = 'APPROVED'; d.standing = 'ACTIVE'; d.documentsReviewed = true; }
+    else if (decision === 'REJECTED') { d.verificationStatus = 'REJECTED'; d.standing = 'REJECTED'; d.documentsReviewed = true; }
+    else if (decision === 'SUSPENDED') { d.standing = 'SUSPENDED'; }
+    else { d.standing = 'ACTIVE'; }
+    d.reviewedAt = Date.now(); d.reviewedBy = req.user.email || req.user.sub; d.reviewNote = cleanText(note, 200) || null;
+    appendAudit('DRIVER_REVIEW', { driverId: id, decision, by: d.reviewedBy });
+    res.json({ success: true, message: `Driver ${id}: ${decision}.`, standing: d.standing, verificationStatus: d.verificationStatus });
+});
+
+function filteredOrders191(req) {
+    let list = normalizedOrders191();
+    const { status, merchantId, source, q } = req.query;
+    if (typeof status === 'string' && status) list = list.filter(o => o.status === status || o.vendorStatus === status || o.deliveryStatus === status);
+    if (isSafeKey(merchantId)) list = list.filter(o => o.merchantId === merchantId);
+    if (typeof source === 'string' && source) list = list.filter(o => o.source === source);
+    if (typeof q === 'string' && q.trim()) { const s = q.trim().toLowerCase().substring(0, 60); list = list.filter(o => String(o.orderId).toLowerCase().includes(s) || String(o.userId || '').toLowerCase().includes(s)); }
+    const from = Number(req.query.from), to = Number(req.query.to);
+    if (Number.isFinite(from) && req.query.from !== undefined) list = list.filter(o => (o.createdAt || 0) >= from);
+    if (Number.isFinite(to) && req.query.to !== undefined) list = list.filter(o => (o.createdAt || 0) <= to);
+    return list;
+}
+adminOps191.get('/orders', requireAdminRoleStrict, (req, res) => {
+    const r = paginate191(req, filteredOrders191(req), 50, 200);
+    res.json({ success: true, ...r, orders: r.items, items: undefined });
+});
+adminOps191.get('/orders/export.csv', requireAdminRoleStrict, (req, res) => {
+    const rows = [['orderId', 'source', 'merchantId', 'userId', 'status', 'vendorStatus', 'deliveryStatus', 'total', 'createdAt'].join(',')];
+    for (const o of filteredOrders191(req).slice(0, 20000)) rows.push([o.orderId, o.source, o.merchantId, o.userId, o.status, o.vendorStatus, o.deliveryStatus, o.total, o.createdAt ? new Date(o.createdAt).toISOString() : ''].map(csvCell191).join(','));
+    res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="orders-${Date.now()}.csv"` }).send(rows.join('\n') + '\n');
+});
+adminOps191.get('/ledger/summary', requireAdminRoleStrict, (req, res) => { res.json({ success: true, currency: 'KES', ledger: ledgerSummary191() }); });
+
+adminOps191.get('/audit/export', requireAdminRoleStrict, (req, res) => {
+    const integrity = verifyAuditChain();
+    const body = sovereignAuditStream.map(e => JSON.stringify(e)).join('\n') + (sovereignAuditStream.length ? '\n' : '');
+    res.set({ 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Content-Disposition': `attachment; filename="audit-chain-${Date.now()}.ndjson"`, 'X-Audit-Chain-Valid': String(integrity.valid), 'X-Audit-Blocks': String(sovereignAuditStream.length) });
+    res.send(body);
+    appendAudit('AUDIT_EXPORTED', { by: req.user.email || req.user.sub, blocks: integrity.length, ip: req.ip });
+});
+
+adminOps191.post('/broadcast', requireSovereignAdminOnly, (req, res) => {
+    const { message, room, level } = req.body;
+    const text = cleanText(message, 300);
+    if (!text) return bad(res, "message is required.");
+    let target = null;
+    if (room !== undefined && room !== null && room !== '') {
+        if (room !== 'drivers' && !(isSafeKey(room) && Object.prototype.hasOwnProperty.call(merchantProfiles, room))) return bad(res, "room must be 'drivers' or a valid merchantId.");
+        target = room;
+    }
+    const payload = { message: text, level: ['info', 'warning', 'critical'].includes(level) ? level : 'info', from: 'RDS Control', at: Date.now() };
+    emitSafe191(target, 'admin_notice', payload);
+    appendAudit('ADMIN_BROADCAST', { room: target || 'ALL', message: text, by: req.user.email || req.user.sub });
+    res.json({ success: true, message: `Notice sent to ${target || 'everyone'}.` });
+});
+
+adminOps191.get('/system/health', requireAdminRoleStrict, (req, res) => {
+    const mem = process.memoryUsage();
+    const mb = (n) => Number((n / 1048576).toFixed(1));
+    res.json({
+        success: true, stage: STAGE_191, version: VERSION_191, node: process.version, pid: process.pid, startedAt: BOOT_TIME_191, uptimeSeconds: Math.floor(process.uptime()),
+        memoryMb: { rss: mb(mem.rss), heapUsed: mb(mem.heapUsed), heapTotal: mb(mem.heapTotal) }, loadAvg: os.loadavg(), eventLoopLagMs: Number(eventLoopLagMs191.toFixed(2)),
+        sockets: io.engine ? io.engine.clientsCount : 0,
+        http: { total: METRICS_191.total, inflight: METRICS_191.inflight, byClass: METRICS_191.byClass, avgLatencyMs: METRICS_191.total ? Number((METRICS_191.latencyMsSum / METRICS_191.total).toFixed(2)) : 0,
+            slowestRoutes: Object.entries(METRICS_191.byRoute).map(([route, v]) => ({ route, count: v.count, errors: v.errors, avgMs: Number((v.ms / v.count).toFixed(2)) })).sort((a, b) => b.avgMs - a.avgMs).slice(0, 8) },
+        persistence: { enabled: PERSIST_STATE_191, dirty: stateDirty191, file: path.basename(SNAPSHOT_FILE_191), last: lastSnapshot191 },
+        modules: MODULE_STATUS_191, sms: { configured: SMS_CONFIGURED_191, provider: SMS_PROVIDER_191 || null },
+        auditChain: verifyAuditChain(),
+        counts: { merchants: Object.keys(merchantProfiles).length, drivers: Object.keys(drivers).length, users: Object.keys(users).length, storeOrders: storeOrders.length, queue: (global.driverQueue || []).length, revokedSessions: revokedTokens191.size, idempotencyKeys: idemStore191.size }
+    });
+});
+adminOps191.get('/system/security-posture', requireAdminRoleStrict, (req, res) => { res.json({ success: true, posture: securityPosture191() }); });
+adminOps191.get('/system/routes', requireAdminRoleStrict, (req, res) => {
+    res.json({ success: true, count: ROUTE_CATALOG_191.length, routes: ROUTE_CATALOG_191.map(([method, p, access, panel]) => ({ method, path: p, access, panel })) });
+});
+adminOps191.post('/system/snapshot', requireSovereignAdminOnly, async (req, res) => {
+    const ok = await saveSnapshot191(true);
+    appendAudit('MANUAL_SNAPSHOT', { by: req.user.email || req.user.sub, ok });
+    res.status(ok ? 200 : 500).json({ success: ok, last: lastSnapshot191 });
+});
+app.use('/api/admin/ops', adminOps191);
+
+// ---------------------------------------------------------------------------
+// 191-K. Restore durable state (all stores now exist)
+// ---------------------------------------------------------------------------
+restoreSnapshot191();
+
+// ============================================================================
 // --- SAFE MOUNT FOR ADS & REELS ROUTER ---
 // ============================================================================
-const adsRouter = require('./routes/ads');
+const adsRouter = safeRequire191('./routes/ads', 'ads');
 if (adsRouter) {
     if (typeof adsRouter.setSocketIo === 'function') {
         adsRouter.setSocketIo(io);
@@ -1600,20 +2968,27 @@ app.use((err, req, res, next) => {
     if (err && err.type === 'entity.too.large') return res.status(413).json({ success: false, error: "Payload too large." });
     if (err && err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ success: false, error: "File too large." });
     if (err instanceof multer.MulterError) return res.status(400).json({ success: false, error: err.message });
-    console.error("[ERROR]", req.method, req.originalUrl, err && err.stack ? err.stack : err);
-    res.status(500).json({ success: false, error: IS_PROD ? "Internal server error." : err.message });
+    if (err && /^(SVG uploads are not allowed!|Only video, image, and audio files are allowed!)$/.test(err.message || '')) return res.status(415).json({ success: false, error: err.message }); // STAGE 191
+    console.error("[ERROR]", req.id || '-', req.method, req.originalUrl, err && err.stack ? err.stack : err);
+    res.status(500).json({ success: false, error: IS_PROD ? "Internal server error." : err.message, requestId: req.id });
 });
 
 process.on('unhandledRejection', (r) => console.error('[UNHANDLED REJECTION]', r));
-process.on('uncaughtException', (e) => console.error('[UNCAUGHT EXCEPTION]', e));
+process.on('uncaughtException', (e) => { console.error('[UNCAUGHT EXCEPTION]', e); saveSnapshotSync191(); });
 
 server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;       // STAGE 191: must exceed keepAliveTimeout
+server.requestTimeout = 5 * 60 * 1000; // STAGE 191: allows 100MB uploads on slow links, still bounded
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 RDS Sovereign Enterprise Server Stage 190 Fully Active on port ${PORT}`);
+    console.log(`🚀 RDS Sovereign Enterprise Server ${STAGE_191} (v${VERSION_191}) Fully Active on port ${PORT}`);
+    if (!MODULE_STATUS_191.print || !MODULE_STATUS_191.print.loaded) console.warn("⚠️  Print routes are not mounted (routes/print missing or broken).");
+    const posture = securityPosture191();
+    if (!posture.ok) console.warn(`⚠️  Security posture: ${posture.failing} item(s) need attention. Admin console: GET /api/admin/ops/system/security-posture`);
 });
 
 ['SIGTERM', 'SIGINT'].forEach(sig => process.on(sig, () => {
     console.log(`${sig} received: shutting down.`);
+    saveSnapshotSync191(); // STAGE 191: never lose in-memory state on a clean deploy
     io.close();
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(1), 10000).unref();
