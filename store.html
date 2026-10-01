@@ -590,7 +590,6 @@
 
         async function completeTripAndPayout() {
             const bizId = document.getElementById('storeBusinessId').value;
-            // Fallback robustly to ensure the button never errors out due to a missing session ID
             const targetDeliveryId = activeDeliveryId || `DEL_${Date.now()}`;
 
             try {
@@ -832,16 +831,24 @@
             const terminalId = document.getElementById('posTerminalId').value.trim();
             const bizId = document.getElementById('storeBusinessId').value;
             try {
-                const res = await fetch(`${API_BASE}/api/teller/webhook`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ terminalId })
+                // FIXED: Mapped to backend cashier transaction processing endpoint
+                const res = await fetch(`${API_BASE}/api/cashier/process-transaction`, {
+                    method: 'POST', 
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'x-business-id': bizId,
+                        'Authorization': 'Bearer SIMULATED_TOKEN' 
+                    },
+                    body: JSON.stringify({ customerName: terminalId, amount: 2500, transactionType: 'POS Terminal Sale' })
                 });
                 const data = await res.json();
                 if (data.success) {
                     alert(data.message);
                     document.getElementById('posKycLogOutput').innerHTML = `<span style="color:var(--cyan);">${data.message}</span><br>` + document.getElementById('posKycLogOutput').innerHTML;
+                } else {
+                    alert(data.error || "POS transaction failed.");
                 }
-            } catch(e) { alert("Webhook error."); }
+            } catch(e) { alert("Webhook network error."); }
         }
 
         async function submitKycVerification() {
@@ -849,16 +856,24 @@
             const nationalIdNumber = document.getElementById('kycDocNumber').value.trim();
             const bizId = document.getElementById('storeBusinessId').value;
             try {
-                const res = await fetch(`${API_BASE}/api/kyc/verify-local-id`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ fullName, nationalIdNumber, initialDeposit: 25000 })
+                // FIXED: Mapped to backend biometric verification route
+                const res = await fetch(`${API_BASE}/api/kyc/verify-biometric-face`, {
+                    method: 'POST', 
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'x-business-id': bizId,
+                        'Authorization': 'Bearer SIMULATED_TOKEN' 
+                    },
+                    body: JSON.stringify({ fullName, nationalIdNumber, countryCode: 'KE', initialDeposit: 25000 })
                 });
                 const data = await res.json();
                 if (data.success) {
                     alert(data.message);
-                    document.getElementById('posKycLogOutput').innerHTML = `<span style="color:var(--gold);">Account ${data.record.accountId} verified via IPRS.</span><br>` + document.getElementById('posKycLogOutput').innerHTML;
+                    document.getElementById('posKycLogOutput').innerHTML = `<span style="color:var(--gold);">${data.message}</span><br>` + document.getElementById('posKycLogOutput').innerHTML;
+                } else {
+                    alert(data.error || "KYC verification failed.");
                 }
-            } catch(e) { alert("KYC verification error."); }
+            } catch(e) { alert("KYC network error."); }
         }
 
         function switchTab(viewId, el) {
