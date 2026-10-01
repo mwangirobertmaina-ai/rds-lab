@@ -9,7 +9,23 @@
         @media print {
             body * { visibility: hidden; }
             #formattedOutput, #formattedOutput * { visibility: visible; }
-            #formattedOutput { position: absolute; left: 0; top: 0; width: 100%; border: none !important; }
+            #formattedOutput { 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%; 
+                /* Force solid black borders and text for thermal receipt printers */
+                border: 3px solid #000000 !important; 
+                background: #ffffff !important;
+                color: #000000 !important;
+                box-shadow: none !important;
+            }
+            /* Make all banner backgrounds solid or high contrast for thermal print heads */
+            #formattedOutput div {
+                background-color: transparent !important;
+                color: #000000 !important;
+                border-color: #000000 !important;
+            }
         }
     </style>
 </head>
@@ -61,11 +77,24 @@
     </div>
 
     <script>
+        // Load saved facility name on startup
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedFacility = localStorage.getItem('dosecolor_facility_name');
+            if (savedFacility) {
+                document.getElementById("facilityName").value = savedFacility;
+            }
+        });
+
         async function send() {
             const text = document.getElementById("text").value;
             const clinician = document.getElementById("clinician").value;
             const facilityName = document.getElementById("facilityName").value;
+            
             if (!text) { alert("Please enter prescription text."); return; }
+            if (!facilityName) { alert("Please enter the Clinic or Pharmacy name."); return; }
+
+            // Save facility name locally for this station so they don't re-type it
+            localStorage.setItem('dosecolor_facility_name', facilityName);
 
             const res = await fetch("/api/print", {
                 method: "POST",

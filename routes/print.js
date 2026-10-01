@@ -64,19 +64,43 @@ router.post("/print", (req, res) => {
         const timestamp = new Date().toISOString();
         const resolvedClinician = clinician && clinician.trim() ? clinician.trim() : "Attending Clinician";
         const resolvedFacility = facilityName && facilityName.trim() ? facilityName.trim() : "General Health Facility";
+        
+        // Automatically generates a unique reference code combined with the color hex code that changes on every print
+        const dynamicPrintCode = `REF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
         const formattedHtmlBlock = `
-            <div style="border: 3px solid ${standard.color}; padding: 15px; border-radius: 8px; font-family: Arial, sans-serif; margin-bottom: 10px; background: #fff; color: #000;">
-                <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #555; margin-bottom: 3px;">
-                    🏥 ${resolvedFacility}
+            <div style="border: 3px solid ${standard.color}; padding: 18px 16px; border-radius: 10px; font-family: Arial, sans-serif; margin-bottom: 12px; background: #ffffff; color: #111111; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+                <!-- Top Header: Facility, Reference/Hex Code & Color Badge (Expanded Vertical Height) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eaeaea; padding-bottom: 16px; margin-bottom: 14px;">
+                    <span style="font-size: 13px; font-weight: bold; text-transform: uppercase; color: ${standard.color}; letter-spacing: 0.5px;">
+                        🏥 ${resolvedFacility}
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 10px; font-family: monospace; color: #333; background: #f1f3f5; padding: 6px 10px; border-radius: 4px; font-weight: bold;">
+                            ${dynamicPrintCode} (${standard.color})
+                        </span>
+                        <span style="background-color: ${standard.color}; color: #ffffff; font-size: 10px; font-weight: bold; padding: 6px 12px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            ${standard.name}
+                        </span>
+                    </div>
                 </div>
-                <div style="font-size: 14px; font-weight: bold; color: ${standard.color}; margin-bottom: 5px;">
-                    ${standard.symbol} [${standard.name.toUpperCase()} – ${standard.label}]
+
+                <!-- Highlighted Frequency Standard Banner -->
+                <div style="background-color: ${standard.color}15; border-left: 4px solid ${standard.color}; padding: 14px 14px; margin-bottom: 14px; border-radius: 4px;">
+                    <div style="font-size: 13px; font-weight: bold; color: ${standard.color}; text-transform: uppercase;">
+                        ${standard.symbol} ${standard.name.toUpperCase()} – ${standard.label}
+                    </div>
                 </div>
-                <div style="font-size: 16px; font-weight: bold;">${text}</div>
-                <div style="font-size: 10px; color: #555; margin-top: 8px; border-top: 1px solid #ddd; padding-top: 5px; display: flex; justify-content: space-between;">
-                    <span>Clinician: ${resolvedClinician}</span>
-                    <span>${timestamp}</span>
+
+                <!-- Prescription Instruction Text -->
+                <div style="font-size: 15px; font-weight: bold; color: #1a1a1a; margin-bottom: 16px; line-height: 1.5;">
+                    ${text}
+                </div>
+
+                <!-- Footer: Clinician & Timestamp -->
+                <div style="font-size: 10px; color: #666666; border-top: 1px solid #eaeaea; padding-top: 8px; display: flex; justify-content: space-between;">
+                    <span><strong>Clinician:</strong> ${resolvedClinician}</span>
+                    <span>${new Date(timestamp).toLocaleString()}</span>
                 </div>
             </div>
         `;
@@ -90,6 +114,7 @@ router.post("/print", (req, res) => {
             colorName: standard.name,
             colorCode: standard.color,
             symbol: standard.symbol,
+            printCode: dynamicPrintCode,
             prescription: text,
             formattedBlock: formattedHtmlBlock
         });
