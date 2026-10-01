@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 
 let otps = {};
 let drivers = {};
@@ -8,6 +9,9 @@ let driverWallets = {};
 // Ensure global dispatch pools exist for cross-app synchronization
 if (!global.activeDispatches) global.activeDispatches = {};
 
+// Use a fallback secret if JWT_SECRET environment variable is not set
+const getJwtSecret = () => process.env.JWT_SECRET || 'rds_sovereign_fallback_secret_2026';
+
 // 1. Register Driver with Compliance Docs, Camera Snaps & Send OTP
 router.post('/register-and-send-otp', (req, res) => {
     const { phone, email, name, vehicleType, plate, psvBadge, nationalId, passportSnap, vehicleSnap } = req.body;
@@ -15,15 +19,16 @@ router.post('/register-and-send-otp', (req, res) => {
         return res.status(400).json({ success: false, error: "Phone, name, and vehicle plate are required." });
     }
 
-    const driverId = `DRV_${phone.replace(/[^0-9]/g, '')}`;
+    const cleanPhone = phone.trim();
+    const driverId = `DRV_${cleanPhone.replace(/[^0-9]/g, '')}`;
     
     drivers[driverId] = {
         id: driverId,
-        name,
-        phone,
-        email: email || 'driver@rds.com',
+        name: name.trim(),
+        phone: cleanPhone,
+        email: email ? email.trim() : 'driver@rds.com',
         vehicleType: vehicleType || 'BODA',
-        plate,
+        plate: plate.trim(),
         psvBadge: psvBadge || 'N/A',
         nationalId: nationalId || 'N/A',
         hasPassportSnap: !!passportSnap,
@@ -35,25 +40,52 @@ router.post('/register-and-send-otp', (req, res) => {
     if (!driverWallets[driverId]) driverWallets[driverId] = 0;
 
     const otp = "1234";
-    otps[phone] = { otp, email, createdAt: Date.now() };
+    otps[cleanPhone] = { otp, email: drivers[driverId].email, createdAt: Date.now() };
 
-    res.json({ success: true, message: `Camera snaps & compliance docs verified! Verification OTP sent to ${phone} (Use 1234).` });
+    res.json({ success: true, message: `Camera snaps & compliance docs verified! Verification OTP sent to ${cleanPhone} (Use 1234).` });
 });
 
-// 2. Verify Driver OTP
+// 2. Verify Driver OTP & Issue Automatic JWT Session Token
 router.post('/verify-otp', (req, res) => {
     const { phone, otp } = req.body;
     if (!phone || !otp) {
         return res.status(400).json({ success: false, error: "Phone and OTP required." });
     }
-    if (otp !== "1234" && (!otps[phone] || otps[phone].otp !== otp)) {
+
+    const cleanPhone = phone.trim();
+    const cleanOtp = String(otp).trim();
+
+    // Accept "1234" universally or check against generated store
+    const storedOtpObj = otps[cleanPhone];
+    if (cleanOtp !== "1234" && (!storedOtpObj || storedOtpObj.otp !== cleanOtp)) {
         return res.status(401).json({ success: false, error: "Invalid OTP code." });
     }
 
-    const driverId = `DRV_${phone.replace(/[^0-9]/g, '')}`;
-    const userProfile = drivers[driverId] || { id: driverId, phone, role: 'RIDER' };
+    const driverId = `DRV_${cleanPhone.replace(/[^0-9]/g, '')}`;
+    const userProfile = drivers[driverId] || { 
+        id: driverId, 
+        phone: cleanPhone, 
+        name: 'Robert Maina', 
+        vehicleType: 'BODA',
+        role: 'RIDER' 
+    };
 
-    res.json({ success: true, message: "Driver authenticated successfully!", user: userProfile });
+    // Generate an automatic secure JWT session token valid for 30 days
+    const token = jwt.sign(
+        { id: userProfile.id, phone: userProfile.phone, role: 'RIDER' },
+        getJwtSecret(),
+        { expiresIn: '30d' }
+    );
+
+    // Clean up used OTP
+    delete otps[cleanPhone];
+
+    res.json({ 
+        success: true, 
+        message: "Driver authenticated successfully!", 
+        token, 
+        user: userProfile 
+    });
 });
 
 // 3. Get Dispatches (Automatically synchronizes direct user rides and merchant dispatches)
@@ -66,7 +98,6 @@ router.get('/dispatches', (req, res) => {
         ];
     }
 
-    // Sync merchant orders that have been checked out or dispatched by merchant
     if (global.merchantOrders && global.merchantOrders[bizId]) {
         global.merchantOrders[bizId].forEach(mo => {
             const exists = global.activeDispatches[bizId].some(d => d.id === mo.orderId);
@@ -81,7 +112,6 @@ router.get('/dispatches', (req, res) => {
                     status: 'PENDING_DRIVER_ACCEPTANCE'
                 });
 
-                // Automatically trigger socket notification to ring drivers when new merchant order arrives
                 if (global.io) {
                     global.io.emit('new_customer_order', { orderId: mo.orderId });
                 }
@@ -128,7 +158,7 @@ router.post('/complete-dispatch', (req, res) => {
     
     const drvKey = driverId || 'DRV_001';
     if (!driverWallets[drvKey]) driverWallets[drvKey] = 0;
-    driverWallets[drvKey] += Number(dispatch.total) * 0.85; // 85% to driver
+    driverWallets[drvKey] += Number(dispatch.total) * 0.85;
 
     if (global.io) {
         global.io.emit('orderListUpdated', { dispatchId });

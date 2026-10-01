@@ -137,7 +137,6 @@
     .btn-snaps { background: #374151; color: var(--cyan); border: 1px solid var(--cyan); margin-bottom: 8px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-snaps:hover { background: var(--cyan); color: #000; }
 
-    /* Ringing Alert Overlay / Banner */
     #incomingAlertBanner {
       display: none;
       background: linear-gradient(135deg, rgba(255,51,102,0.9), rgba(255,215,0,0.9));
@@ -154,7 +153,6 @@
       to { transform: scale(1.02); opacity: 1; }
     }
 
-    /* Camera Modal Overlay */
     #cameraModal {
       display: none;
       position: fixed;
@@ -262,7 +260,6 @@
             <label>Vehicle Number Plate</label>
             <input type="text" id="regPlate" value="KMC 112A">
 
-            <!-- Compliance Documentation & Live Camera Capture Section -->
             <div style="border-top: 1px dashed #374151; margin: 12px 0; padding-top: 10px;">
                 <label style="color: var(--stage-purple); font-weight: bold; margin-bottom: 6px;">📸 Live Camera Snaps & Compliance</label>
                 
@@ -377,7 +374,8 @@
             <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Name:</strong> <span id="profileName">Robert Maina</span></p>
             <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">254708374149</span></p>
             <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Vehicle Category:</strong> <span id="profileVehicle">Boda (Motorbike)</span></p>
-            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Compliance Status:</strong> <span style="color: var(--neon-green);">Fully Verified ✓</span></p>
+            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Compliance Status:</strong> <span style="color: var(--neon-green);">Fully Verified ✓ (Token Active)</span></p>
+            <button onclick="logoutDriver()" style="background:var(--alert-red); color:#fff; margin-top:15px;">Log Out / Clear Session</button>
         </div>
     </div>
 
@@ -410,6 +408,27 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             initMapSafely();
+            
+            // Check if token already exists in localStorage for automatic login
+            const savedToken = localStorage.getItem('rds_driver_token');
+            const savedUser = localStorage.getItem('rds_driver_profile');
+            if (savedToken && savedUser) {
+                try {
+                    currentDriver = JSON.parse(savedUser);
+                    document.getElementById('payoutOwnerId').value = currentDriver.id || 'DRV_001';
+                    document.getElementById('profilePhone').innerText = currentDriver.phone || '254708374149';
+                    document.getElementById('profileName').innerText = currentDriver.name || 'Robert Maina';
+                    document.getElementById('profileVehicle').innerText = currentDriver.vehicleType === 'CAB' ? 'Cab (Car)' : 'Boda (Motorbike)';
+                    document.getElementById('bottomNav').style.display = 'flex';
+                    switchTab('viewMap', document.querySelectorAll('.bottom-nav .nav-item')[0]);
+                    startAutomaticGpsTracking();
+                    fetchDriverDispatches();
+                } catch (e) {
+                    localStorage.removeItem('rds_driver_token');
+                    localStorage.removeItem('rds_driver_profile');
+                }
+            }
+
             socket.on('orderListUpdated', () => {
                 triggerRingingAlert();
                 fetchDriverDispatches();
@@ -420,21 +439,24 @@
             });
         });
 
-        // --- WEB AUDIO API RINGING ALERT ---
+        function getAuthHeaders() {
+            const token = localStorage.getItem('rds_driver_token');
+            return {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            };
+        }
+
         function triggerRingingAlert() {
-            // Show visual banner
             const banner = document.getElementById('incomingAlertBanner');
             if (banner) {
                 banner.style.display = 'block';
                 setTimeout(() => { banner.style.display = 'none'; }, 6000);
             }
 
-            // Play synthesized ring tone using Web Audio API
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
+                if (audioCtx.state === 'suspended') { audioCtx.resume(); }
 
                 let beepCount = 0;
                 const interval = setInterval(() => {
@@ -445,7 +467,7 @@
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitch ring
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
                     gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
 
@@ -456,13 +478,9 @@
                     osc.stop(audioCtx.currentTime + 0.4);
                     beepCount++;
                 }, 500);
-            } catch (e) {
-                console.log("Audio alert suppressed by browser policy.");
-            }
+            } catch (e) {}
         }
-        // ----------------------------------
 
-        // --- LIVE CAMERA SNAP FUNCTIONS ---
         async function openCamera(targetType, titleText) {
             activeCameraTarget = targetType;
             document.getElementById('cameraModalTitle').innerText = titleText;
@@ -471,7 +489,7 @@
                 mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
                 document.getElementById('cameraStream').srcObject = mediaStream;
             } catch (err) {
-                alert("Camera access denied or unavailable. Ensure HTTPS or localhost permissions.");
+                alert("Camera access denied or unavailable.");
                 closeCameraModal();
             }
         }
@@ -504,7 +522,6 @@
             }
             closeCameraModal();
         }
-        // ---------------------------------
 
         function initMapSafely() {
             if (map) return;
@@ -563,12 +580,19 @@
             
             try {
                 const res = await fetch(`${API_BASE}/api/driver/verify-otp`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone, otp })
                 });
                 const data = await res.json();
                 if (data.success) {
                     currentDriver = data.user;
+                    // Automatically save token & profile for seamless re-logins
+                    if (data.token) {
+                        localStorage.setItem('rds_driver_token', data.token);
+                        localStorage.setItem('rds_driver_profile', JSON.stringify(data.user));
+                    }
+
                     document.getElementById('payoutOwnerId').value = currentDriver.id || 'DRV_001';
                     document.getElementById('profilePhone').innerText = phone;
                     document.getElementById('profileName').innerText = currentDriver.name || 'Robert Maina';
@@ -580,6 +604,12 @@
                     setTimeout(() => { if(map) map.invalidateSize(); }, 300);
                 } else { alert(data.error || "Invalid OTP code."); }
             } catch (e) { alert("Verification error."); }
+        }
+
+        function logoutDriver() {
+            localStorage.removeItem('rds_driver_token');
+            localStorage.removeItem('rds_driver_profile');
+            location.reload();
         }
 
         function switchCorridor(tenantId, locationName, currencyCode, el) {
@@ -628,13 +658,17 @@
             const driverId = document.getElementById('payoutOwnerId').value.trim() || 'DRV_001';
             
             try {
-                const res = await fetch(`${API_BASE}/api/driver/dispatches`, { headers: { "x-business-id": bizId } });
+                const res = await fetch(`${API_BASE}/api/driver/dispatches`, { 
+                    headers: { ...getAuthHeaders(), "x-business-id": bizId } 
+                });
                 const data = await res.json();
                 if (data.success && data.dispatches) {
                     renderDriverDispatches(data.dispatches);
                 }
 
-                const walletRes = await fetch(`${API_BASE}/api/driver/wallet?ownerId=${driverId}`, { headers: { "x-business-id": bizId } });
+                const walletRes = await fetch(`${API_BASE}/api/driver/wallet?ownerId=${driverId}`, { 
+                    headers: { ...getAuthHeaders(), "x-business-id": bizId } 
+                });
                 const walletData = await walletRes.json();
                 if (walletData.success) {
                     const curr = document.getElementById('storeCurrency').value;
@@ -681,7 +715,7 @@
             try {
                 const res = await fetch(`${API_BASE}/api/driver/accept-dispatch`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    headers: { ...getAuthHeaders(), 'x-business-id': bizId },
                     body: JSON.stringify({ dispatchId, driverId })
                 });
                 const data = await res.json();
@@ -699,7 +733,7 @@
             try {
                 const res = await fetch(`${API_BASE}/api/driver/complete-dispatch`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    headers: { ...getAuthHeaders(), 'x-business-id': bizId },
                     body: JSON.stringify({ dispatchId, driverId })
                 });
                 const data = await res.json();
@@ -720,7 +754,7 @@
             try {
                 const res = await fetch(`${API_BASE}/api/driver/payout`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
+                    headers: { ...getAuthHeaders(), 'x-business-id': bizId },
                     body: JSON.stringify({ ownerId, amount: Number(amount) })
                 });
                 const data = await res.json();
@@ -740,5 +774,5 @@
             if (viewId === 'viewMap' && map) setTimeout(() => { map.invalidateSize(); }, 200);
         }
     </script>
-</body>     
+</body>
 </html>
