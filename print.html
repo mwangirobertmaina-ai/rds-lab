@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoseColor™ – Multi-Facility Clinical Prescription Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #formattedOutput, #formattedOutput * { visibility: visible; }
+            #formattedOutput { position: absolute; left: 0; top: 0; width: 100%; border: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">💊 DoseColor™ Enterprise</h2>
+            <span class="text-xs font-mono bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">Multi-Clinic Ready</span>
+        </div>
+        
+        <div class="space-y-4">
+            <div class="space-y-1.5">
+                <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold">Hospital / Clinic / Pharmacy Name</label>
+                <input type="text" id="facilityName" placeholder="e.g., Nairobi Metropolitan Hospital" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500" />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="space-y-1.5">
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold">Attending Clinician</label>
+                    <input type="text" id="clinician" placeholder="e.g., Dr. Jane Doe" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500" />
+                </div>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold">Prescription Instructions</label>
+                <textarea id="text" placeholder="e.g., Amoxicillin 500mg 2 by 2 (2 tablets, 2 times daily)" class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm text-white outline-none focus:border-purple-500 h-28 resize-none shadow-inner"></textarea>
+            </div>
+        </div>
+
+        <button onclick="send()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-95 text-white font-bold py-3.5 rounded-xl transition text-xs shadow-lg cursor-pointer tracking-wider uppercase">
+            🖨️ Process & Print Color-Coded Label
+        </button>
+
+        <div id="statusBox" class="hidden p-5 rounded-2xl text-xs font-mono space-y-3 bg-slate-950 border border-slate-800 shadow-md">
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <span id="statusLabel" class="font-bold text-sm tracking-wide"></span>
+                <div id="colorPreview" class="px-3 py-1.5 rounded-lg text-white font-bold text-[11px] uppercase shadow" style="background-color: #000;"></div>
+            </div>
+            <div id="statusFreq" class="text-slate-400 text-xs"></div>
+            <div id="statusColorDetails" class="text-slate-300 text-xs font-semibold"></div>
+            
+            <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider">Dynamic Print Preview:</div>
+                <button onclick="window.print()" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[11px] font-bold cursor-pointer">Direct Print</button>
+            </div>
+            <div id="formattedOutput" class="p-3 bg-white rounded-xl text-slate-900 text-xs border border-slate-800 font-sans shadow-inner"></div>
+        </div>
+    </div>
+
+    <script>
+        async function send() {
+            const text = document.getElementById("text").value;
+            const clinician = document.getElementById("clinician").value;
+            const facilityName = document.getElementById("facilityName").value;
+            if (!text) { alert("Please enter prescription text."); return; }
+
+            const res = await fetch("/api/print", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text, clinician, facilityName })
+            });
+
+            const data = await res.json();
+            const box = document.getElementById("statusBox");
+            box.classList.remove("hidden");
+
+            if (data.success) {
+                if (data.failSafeTriggered) {
+                    document.getElementById("statusLabel").innerText = `⚠️ PASSED THROUGH (FAIL-SAFE)`;
+                    document.getElementById("statusLabel").style.color = "#6c757d";
+                    document.getElementById("statusFreq").innerText = data.warning;
+                    document.getElementById("statusColorDetails").innerText = "Standard Routing Enabled";
+                    document.getElementById("colorPreview").style.backgroundColor = "#6c757d";
+                    document.getElementById("colorPreview").innerText = "DEFAULT";
+                    document.getElementById("formattedOutput").innerHTML = `<div class="font-bold text-black">${data.prescription}</div>`;
+                    return;
+                }
+
+                document.getElementById("statusLabel").innerText = `${data.symbol} ${data.colorName.toUpperCase()} – ${data.label}`;
+                document.getElementById("statusLabel").style.color = data.colorCode;
+                document.getElementById("statusFreq").innerText = `Facility: ${data.facility} | Frequency: ${data.frequency}x`;
+                document.getElementById("statusColorDetails").innerText = `Assigned Color Standard: ${data.colorName} (${data.colorCode})`;
+                
+                const preview = document.getElementById("colorPreview");
+                preview.style.backgroundColor = data.colorCode;
+                preview.innerText = data.colorName;
+
+                document.getElementById("formattedOutput").innerHTML = data.formattedBlock;
+            } else {
+                document.getElementById("statusLabel").innerText = `Error: ${data.error}`;
+                document.getElementById("statusLabel").style.color = "#dc3545";
+                document.getElementById("statusFreq").innerText = "";
+                document.getElementById("statusColorDetails").innerText = "";
+                document.getElementById("formattedOutput").innerText = "";
+                document.getElementById("colorPreview").style.backgroundColor = "#000";
+                document.getElementById("colorPreview").innerText = "";
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 // ============================================================================
-// 🛡️ PERMANENT ARCHITECTURAL SAFEGUARD & ADDITIVE DEVELOPMENT MANDATE 🛡️
+// 🛡️ PERMANENT ARCHITECTURAL SAFEGUARD & ADDITIVE DEVELOPMENT MANDATE 🛡
 // 1. IMMUTABLE CORE: Never delete, alter, or remove existing security middlewares 
 //    (verifySovereignToken, requireAdminRole), audit vaults, or ledger equations.
 // 2. ADDITIVE ONLY: All future modules must be appended strictly as new blocks.
@@ -206,7 +206,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// 🛡️ CRITICAL STATIC SERVING FIX: Ensures browser can successfully load uploaded files and static assets
+// 🛡 CRITICAL STATIC SERVING FIX: Ensures browser can successfully load uploaded files and static assets
 app.use('/uploads', express.static(uploadDir, { dotfiles: "deny", setHeaders: (r) => r.set("Content-Disposition", "inline") }));
 app.use('/public', express.static(path.join(__dirname, "public"), { dotfiles: "deny" }));
 app.use(express.static(__dirname, { dotfiles: "deny" }));
@@ -347,12 +347,40 @@ app.get("/ads", (req, res) => { res.sendFile(path.join(__dirname, "ads.html")); 
 app.get("/user", (req, res) => { res.sendFile(path.join(__dirname, "store.html")); });
 
 // ============================================================================
+// --- DOSECOLOR PRINT ROUTER & UI MOUNT (ADDITIVE BLOCK) ---
+// ============================================================================
+const printRouter = require('./routes/print');
+app.use('/api', printRouter);
+
+app.get('/print', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/print.html'));
+});
+
+// ============================================================================
+// --- DOSECOLOR PRINT SPOOLER MIDDLEWARE INTERCEPTOR ENDPOINT (ADDITIVE BLOCK) ---
+// ============================================================================
+const { interceptAndProcessPrintJob } = require('./middleware/printInterceptor');
+
+app.post('/api/middleware/intercept-print', (req, res) => {
+    try {
+        const { rawText, targetPrinter } = req.body;
+        if (!rawText) {
+            return res.status(400).json({ success: false, error: "No raw print text received." });
+        }
+
+        const result = interceptAndProcessPrintJob(rawText, targetPrinter || "Default_Thermal_Printer");
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ============================================================================
 // --- GLOBAL STATE FOR MERCHANTS, DRIVERS & CATALOGS ---
 // ============================================================================
 let pendingMerchants = [];
 let approvedMerchants = [];
 
-// HARDENED: seeded merchant login token is "1234" only in test mode; random otherwise
 const SEED_MERCHANT_TOKEN = ALLOW_TEST_CREDENTIALS ? "1234" : String(crypto.randomInt(100000, 1000000));
 if (!ALLOW_TEST_CREDENTIALS) console.warn(`[SEED] Default merchant login token for this boot: ${SEED_MERCHANT_TOKEN}`);
 
@@ -389,14 +417,12 @@ let merchantProfiles = {
     }
 };
 
-// HARDENED: never expose loginToken / passport / registration PII in API responses
 function publicProfile(p) {
     if (!p) return p;
     const { loginToken, passportUrl, regNumber, ownerName, mpesaPhone, email, ...safe } = p;
     return safe;
 }
 
-// HARDENED: a tenant suspended/revoked via /api/admin/toggle-tenant-status is actually locked out
 function isTenantActive(id) {
     const has = global.merchantProfiles && Object.prototype.hasOwnProperty.call(global.merchantProfiles, id);
     const st = has ? global.merchantProfiles[id].status : undefined;
@@ -422,7 +448,7 @@ global.merchantProfiles = merchantProfiles;
 global.merchantOrders = merchantOrders;
 
 // ============================================================================
-// --- STORE API ROUTER (FULLY SYNCHRONIZED FOR store.html) ---
+// --- STORE API ROUTER ---
 // ============================================================================
 let storeProducts = [
     { id: "M_01", category: "SUPERMARKET", name: "Sovereign Organic Milk (1L)", price: 180, merchant: "Nakumatt Supermarket", image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300" },
@@ -443,7 +469,7 @@ storeRouter.get('/products', (req, res) => {
         const mProfiles = global.merchantProfiles || {};
 
         Object.keys(mCatalogs).forEach(merchantId => {
-            if (!isTenantActive(merchantId)) return; // HARDENED: hide suspended tenants
+            if (!isTenantActive(merchantId)) return;
             const profile = mProfiles[merchantId] || { shopName: "Independent Shop", businessType: "General Retail" };
             const catalogList = mCatalogs[merchantId] || [];
 
@@ -480,7 +506,6 @@ storeRouter.post('/checkout', softAuth(ROLES.REGULAR_USER), (req, res) => {
     
     const { itemsTotal, distanceKm, pickupLocation, dropoffLocation, cartItems, merchantId, userId, phone } = req.body;
 
-    // HARDENED: input validation (negative/NaN/huge values previously flowed into the ledger)
     if (itemsTotal !== undefined && !isMoney(itemsTotal)) return bad(res, "itemsTotal must be a non-negative number within limits.");
     if (distanceKm !== undefined && !(Number(distanceKm) >= 0 && Number(distanceKm) <= 500)) return bad(res, "distanceKm out of range.");
     if (cartItems !== undefined && (!Array.isArray(cartItems) || cartItems.length > 100)) return bad(res, "cartItems must be an array (max 100).");
@@ -501,7 +526,6 @@ storeRouter.post('/checkout', softAuth(ROLES.REGULAR_USER), (req, res) => {
     const netSysIncome = totalSysIncome - kraTax;
     const grossTotal = totalPrice + sysFeeOnItems + deliveryFee;
 
-    // HARDENED: ledger invariant. Everything the customer pays must equal everything distributed.
     const distributed = merchantPayout + driverPayout + appDeliveryComm + sysFeeOnItems;
     const ledgerBalanced = Math.abs(grossTotal - distributed) < 0.01;
     if (!ledgerBalanced) return bad(res, "Ledger imbalance detected; order rejected.", 500);
@@ -587,7 +611,6 @@ storeRouter.post('/logistics/complete-trip', softAuth(ACTOR_ROLES.RIDER), (req, 
     const { deliveryId } = req.body;
     const order = storeOrders.find(o => o.delivery && o.delivery.deliveryId === deliveryId);
     if (!order) return res.status(404).json({ success: false, error: "Active delivery session not found." });
-    // HARDENED: idempotent, cannot settle twice
     if (order.status === 'COMPLETED_SETTLED') return bad(res, "Trip already settled.", 409);
     order.delivery.status = 'COMPLETED';
     order.status = 'COMPLETED_SETTLED';
@@ -617,7 +640,6 @@ driverRouter.post('/register-and-send-otp', registerLimiter, authLimiter, (req, 
         vehicleType: cleanText(vehicleType, 20) || 'BODA', plate: cleanText(plate, 20), psvBadge: cleanText(psvBadge, 40) || 'N/A',
         nationalId: cleanText(nationalId, 30) || 'N/A', hasPassportSnap: !!passportSnap,
         hasVehicleSnap: !!vehicleSnap, verified: true, registeredAt: Date.now(),
-        // HARDENED: honest status. No document review actually happens in this build.
         documentsReviewed: false, verificationStatus: 'AUTO_ACCEPTED_PENDING_MANUAL_REVIEW'
     };
 
@@ -678,13 +700,11 @@ driverRouter.post('/accept-dispatch', softAuth(ACTOR_ROLES.RIDER), (req, res) =>
     const bizId = pickKey(req.headers['x-business-id'], 'MERCH_DEF_172');
     if (!bizId) return bad(res, "Invalid business id.");
     if (driverId !== undefined && !isSafeKey(driverId)) return bad(res, "Invalid driverId.");
-    // HARDENED: a rider may only accept as themselves
     const effectiveDriver = (req.user && req.user.driverId) || driverId || 'DRV_001';
     if (!ownsDriver(req, effectiveDriver)) return bad(res, "Forbidden.", 403);
     const dispatches = global.activeDispatches[bizId] || [];
     const dispatch = dispatches.find(d => d.id === dispatchId);
     if (!dispatch) return res.status(404).json({ success: false, error: "Dispatch not found." });
-    // HARDENED: state machine, so a taken job can't be hijacked
     if (dispatch.status !== 'PENDING_DRIVER_ACCEPTANCE') return bad(res, `Dispatch is ${dispatch.status}, cannot accept.`, 409);
 
     dispatch.status = 'ACCEPTED_BY_DRIVER';
@@ -702,7 +722,6 @@ driverRouter.post('/complete-dispatch', softAuth(ACTOR_ROLES.RIDER), (req, res) 
     const dispatches = global.activeDispatches[bizId] || [];
     const dispatch = dispatches.find(d => d.id === dispatchId);
     if (!dispatch) return res.status(404).json({ success: false, error: "Dispatch not found." });
-    // HARDENED: prevents double-crediting the wallet by replaying this call
     if (dispatch.status === 'COMPLETED') return bad(res, "Dispatch already completed.", 409);
 
     const drvKey = (req.user && req.user.driverId) || driverId || 'DRV_001';
@@ -732,7 +751,6 @@ driverRouter.post('/payout', authLimiter, softAuth(ACTOR_ROLES.RIDER), (req, res
     const drvKey = pickKey(ownerId, 'DRV_001');
     if (!drvKey) return bad(res, "Invalid ownerId.");
     if (!ownsDriver(req, drvKey)) return bad(res, "Forbidden.", 403);
-    // HARDENED: negative amounts used to INCREASE the wallet; NaN bypassed the balance check
     const amt = Number(amount);
     if (!Number.isFinite(amt) || amt <= 0 || amt > MAX_AMOUNT) return bad(res, "Amount must be a positive number.");
     if (!driverWallets[drvKey] || driverWallets[drvKey] < amt) {
@@ -740,7 +758,6 @@ driverRouter.post('/payout', authLimiter, softAuth(ACTOR_ROLES.RIDER), (req, res
     }
     driverWallets[drvKey] -= amt;
     const payoutId = `MPESA_B2C_${crypto.randomInt(100000, 1000000)}`;
-    // HARDENED: honest flag. No real M-Pesa call is made in this build.
     res.json({ success: true, message: "M-Pesa B2C payout executed successfully!", payoutId, remainingBalance: driverWallets[drvKey], simulated: true });
 });
 app.use('/api/driver', driverRouter);
@@ -750,10 +767,8 @@ app.use('/api/driver', driverRouter);
 // ============================================================================
 const merchantRouter = express.Router();
 
-// HARDENED: every :merchantId is used as an object key; block prototype/garbage keys
 merchantRouter.param('merchantId', (req, res, next, val) => isSafeKey(val) ? next() : bad(res, "Invalid merchantId."));
 
-// HARDENED: approval links are HMAC-signed so the GET link works from an email but can't be guessed
 function approvalSig(merchantId) {
     return crypto.createHmac("sha256", JWT_SECRET).update(`approve:${merchantId}`).digest("hex");
 }
@@ -777,7 +792,6 @@ merchantRouter.get('/all-tenants', (req, res) => {
 
 merchantRouter.post('/register', registerLimiter, (req, res) => {
     const { shopName, businessType, regNumber, ownerName, phone, mpesaPhone, email, gpsLat, gpsLon, passportImage, storePhoto } = req.body;
-    // HARDENED: required fields (previously produced shops named "undefined")
     if (!shopName || !ownerName || !phone) return bad(res, "shopName, ownerName and phone are required.");
     if (!isPhone(phone) || (mpesaPhone && !isPhone(mpesaPhone))) return bad(res, "Invalid phone number.");
     if (pendingMerchants.length >= 500) return bad(res, "Registration queue is full. Try again later.", 503);
@@ -806,7 +820,6 @@ merchantRouter.post('/register', registerLimiter, (req, res) => {
 merchantRouter.get('/approve/:merchantId', (req, res) => {
     const { merchantId } = req.params;
 
-    // HARDENED: approval is state-changing and was fully public. Require admin token OR signed link.
     let authorised = false;
     const h = req.headers['authorization'];
     if (h && h.startsWith('Bearer ')) {
@@ -833,7 +846,6 @@ merchantRouter.get('/approve/:merchantId', (req, res) => {
     if (!global.merchantOrders[merchantId]) global.merchantOrders[merchantId] = [];
     appendAudit('MERCHANT_APPROVED', { merchantId, shopName: merchant.shopName });
 
-    // HARDENED: values are HTML-escaped (shopName etc. were injected raw => XSS)
     res.send(`
         <div style="font-family: Arial; padding: 40px; background: #0b0f19; color: #fff; text-align: center;">
             <h1 style="color: #00ff88;">✅ Independent Shop Approved!</h1>
@@ -852,7 +864,6 @@ merchantRouter.post('/login', authLimiter, (req, res) => {
 
     if (!merchant) return res.status(404).json({ success: false, error: "Phone number not registered or approved." });
     if (!isTenantActive(merchant.merchantId)) return bad(res, "This merchant account is suspended. Contact support.", 403);
-    // HARDENED: constant-time compare; the "1234" backdoor exists only in test mode
     const tokenOk = (merchant.loginToken && safeEqual(merchant.loginToken, String(token))) || (ALLOW_TEST_CREDENTIALS && String(token) === "1234");
     if (!tokenOk) {
         return res.status(401).json({ success: false, error: ALLOW_TEST_CREDENTIALS ? "Invalid SMS login token. Use 1234 for test account." : "Invalid SMS login token." });
@@ -866,7 +877,6 @@ merchantRouter.get('/catalog/:merchantId', (req, res) => {
     const { merchantId } = req.params;
     const catalog = merchantCatalogs[merchantId] || merchantCatalogs['MERCH_DEF_172'] || [];
     const profile = merchantProfiles[merchantId] || merchantProfiles['MERCH_DEF_172'] || { shopName: "Independent Shop" };
-    // HARDENED: publicProfile() strips loginToken and owner PII (previously returned to anyone)
     res.json({ success: true, profile: publicProfile(profile), catalog });
 });
 
@@ -932,7 +942,6 @@ merchantRouter.post('/orders/accept', softAuth(ACTOR_ROLES.MERCHANT), (req, res)
     if (orderIndex === -1) return res.status(404).json({ success: false, error: "Order ID not found." });
 
     const order = global.merchantOrders[targetId][orderIndex];
-    // HARDENED: accepting twice used to push duplicate dispatches to the driver radar
     if (order.status !== 'PENDING_VENDOR_ACCEPTANCE') return bad(res, `Order is ${order.status}, cannot accept.`, 409);
     order.status = 'AWAITING_DRIVER_PICKUP';
     order.acceptedAt = Date.now();
@@ -999,7 +1008,6 @@ function calculateAccurateDrivingDistance(lat1, lon1, lat2, lon2) {
     return Number(adjustedKm.toFixed(1));
 }
 
-// HARDENED: coordinates must be real numbers in range (NaN previously poisoned fees)
 function coordOk(c) {
     if (c === undefined || c === null) return true;
     if (typeof c !== 'object') return false;
@@ -1031,7 +1039,6 @@ userRouter.post('/verify-otp', authLimiter, (req, res) => {
         return res.status(401).json({ success: false, error: "Invalid or expired OTP code." });
     }
     const userId = `USR_${phone.replace(/[^0-9]/g, '')}`;
-    // HARDENED: client-supplied role was stored as-is (privilege claim). Only USER/REGULAR_USER accepted.
     const safeRole = role === 'REGULAR_USER' ? 'REGULAR_USER' : 'USER';
     const userProfile = { id: userId, phone, email: cleanText(email, 120) || SOVEREIGN_OWNER_EMAIL, role: safeRole, verifiedAt: Date.now() };
     users[userId] = userProfile;
@@ -1061,7 +1068,7 @@ userRouter.get('/products', (req, res) => {
     if (!merchantId) return bad(res, "Invalid merchantId.");
     const currency = 'KES';
     let products = merchantCatalogs[merchantId] || merchantCatalogs['MERCH_DEF_172'] || [];
-    if (!isTenantActive(merchantId)) products = []; // HARDENED: suspended tenants sell nothing
+    if (!isTenantActive(merchantId)) products = [];
     const { category } = req.query;
     if (typeof category === 'string' && category !== 'ALL') {
         products = products.filter(p => String(p.category).toUpperCase() === category.toUpperCase());
@@ -1275,11 +1282,6 @@ let connectedPeripheralsList = [
     { peripheralId: "PERIPH_POS_02", deviceType: "NFC Terminal Reader", connectionMode: "Bluetooth BLE", docHashSnippet: "8f434346...1a2b3c4d", timestamp: Date.now() }
 ];
 
-// ============================================================================
-// HARDENED (additive): TAMPER-EVIDENT, PERSISTENT AUDIT CHAIN
-// Each block commits to the previous block's hash, so editing/deleting any past
-// entry breaks every later hash. Persisted to an append-only JSONL file.
-// ============================================================================
 const AUDIT_GENESIS = "0".repeat(64);
 const AUDIT_FILE = path.join(process.env.DATA_DIR || __dirname, "audit-chain.jsonl");
 const AUDIT_HMAC_KEY = process.env.AUDIT_HMAC_KEY || JWT_SECRET;
@@ -1297,7 +1299,6 @@ function appendAudit(actionType, record) {
         auditId: `AUD_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`,
         timestamp: Date.now(),
         actionType,
-        // HMAC (not bare SHA-256) so low-entropy PII such as national IDs can't be brute-forced from the vault
         payloadHash: crypto.createHmac("sha256", AUDIT_HMAC_KEY).update(stableStringify(record)).digest("hex"),
         previousHash: prev
     };
@@ -1334,9 +1335,8 @@ function verifyAuditChain(stream = sovereignAuditStream) {
     }
 })();
 
-const corridorStatus = {};       // tenantId -> status set by admins
-const corridorRequests = [];     // legacy inline list (routes/admin.js keeps the live request registry)
-// HARDENED: per-tenant scoping + real enforcement of suspension
+const corridorStatus = {};       
+const corridorRequests = [];     
 function tenantOf(req) { return pickKey(req.headers['x-business-id'], 'INST-CBK-RTGS'); }
 function tenantBlocked(id) { return ['SUSPENDED', 'REVOKED'].includes(corridorStatus[id]); }
 
@@ -1345,7 +1345,6 @@ function tenantBlocked(id) { return ['SUSPENDED', 'REVOKED'].includes(corridorSt
 // ============================================================================
 const adminRouter = express.Router();
 
-// HARDENED: strict authentication + role on every admin route (see legacy note above)
 adminRouter.get('/dashboard', verifySovereignTokenStrict, requireAdminRoleStrict, (req, res) => { 
     res.json({ success: true, message: "Admin active" }); 
 });
@@ -1365,7 +1364,6 @@ adminRouter.get('/compliance-dashboard', verifySovereignTokenStrict, requireAdmi
         localIdVerificationsCount: sovereignVerifications.length,
         transactionsCount: sovereignTransactions.length,
         lanTrafficLogsCount: lanTrafficLogs.length,
-        // NOTE: the five counters below are static placeholders; no engine backs them yet.
         aiApprovedIntentsCount: 12,
         shadowTrapsCount: 2,
         makerCheckerCount: 4,
@@ -1392,7 +1390,6 @@ adminRouter.get('/sovereign-vault', verifySovereignTokenStrict, requireAdminRole
 
 adminRouter.post('/toggle-tenant-status', verifySovereignTokenStrict, requireSovereignAdminOnly, (req, res) => {
     const { tenantId, status } = req.body;
-    // HARDENED: this endpoint used to only echo "successfully updated". It now records the change and audits it.
     const ALLOWED = ["APPROVED_ACTIVE", "SUSPENDED", "REVOKED"];
     if (!isSafeKey(tenantId) || !ALLOWED.includes(status)) return bad(res, `tenantId required; status must be one of ${ALLOWED.join(", ")}.`);
     corridorStatus[tenantId] = status;
@@ -1409,7 +1406,6 @@ adminRouter.post('/request-tenant-corridor', verifySovereignTokenStrict, (req, r
     res.json({ success: true, message: `Tenant corridor request for "${reqRec.businessName}" submitted successfully for owner approval.` });
 });
 
-// HARDENED: external admin module shares the same auth + audit chain (mounted first, so it wins)
 const adminModule = require('./routes/admin');
 adminModule.init({
     verifyToken: verifySovereignTokenStrict,
@@ -1435,7 +1431,6 @@ app.use('/api/admin', adminRouter);
 app.get('/api/compliance/generate-regulatory-package', verifySovereignTokenStrict, requireAdminRoleStrict, (req, res) => {
     const tenantId = pickKey(req.headers['x-business-id'], 'INST-CBK-RTGS');
     if (!tenantId) return bad(res, "Invalid business id.");
-    // HARDENED: status is now derived from the real chain check instead of a hard-coded "VERIFIED_COMPLIANT"
     const integrity = verifyAuditChain();
     const regulatoryPackage = {
         institution: tenantId,
@@ -1466,7 +1461,6 @@ app.post('/api/kyc/verify-biometric-face', verifySovereignTokenStrict, requireRo
         accountId, tenantId, selfieSha256: selfieSha256 || null, fullName: cleanText(fullName, 100), nationalIdNumber: cleanText(nationalIdNumber, 30),
         registrySource: countryCode === 'KE' ? 'Kenya IPRS Bureau' : 'International Registry',
         initialDeposit: Number(initialDeposit) || 0,
-        // HARDENED: no real IPRS/face-match is wired in; label the outcome honestly
         riskRating: 'LOW_RISK (99.8%)',
         simulated: true,
         status: 'VERIFIED_ACTIVE',
@@ -1482,7 +1476,6 @@ app.post('/api/cashier/process-transaction', verifySovereignTokenStrict, require
     const tenantId = tenantOf(req);
     if (!tenantId) return bad(res, "Invalid business id.");
     if (tenantBlocked(tenantId)) return bad(res, `Corridor ${tenantId} is ${corridorStatus[tenantId]}: operations frozen.`, 403);
-    // HARDENED: amount must be a real positive number (was silently coerced to 0)
     if (amount === undefined || !isMoney(amount) || Number(amount) <= 0) return bad(res, "amount must be a positive number within limits.");
     const tx = {
         timestamp: Date.now(),
@@ -1521,17 +1514,16 @@ app.get('/api/ai/openapi.json', (req, res) => {
 app.post('/api/ai/intent-eval', verifySovereignTokenStrict, (req, res) => {
     res.json({
         success: true,
-        simulated: true, // HARDENED: no model backs this verdict yet
+        simulated: true,
         intentResult: { intentId: `INTENT_${crypto.randomInt(1000, 10000)}`, status: "APPROVED", confidence: "99.8%" }
     });
 });
 
 // ============================================================================
-// HARDENED (additive block): AUTH ISSUANCE + AUDIT INTEGRITY + MERCHANT REVIEW
+// --- AUTH ISSUANCE + AUDIT INTEGRITY + MERCHANT REVIEW ---
 // ============================================================================
 const authRouter = express.Router();
 
-// Admin login. Configure SOVEREIGN_ADMIN_PASSWORD_HASH (bcrypt) or SOVEREIGN_ADMIN_PASSWORD.
 authRouter.post('/admin-login', authLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -1556,7 +1548,6 @@ app.use('/api/auth', authRouter);
 const adminExtras = express.Router();
 adminExtras.use(verifySovereignTokenStrict);
 
-// Admin issues a scoped token to a cashier / auditor account
 adminExtras.post('/issue-token', requireSovereignAdminOnly, (req, res) => {
     const { email, role, ttlHours } = req.body;
     const allowed = [ROLES.CENTRAL_BANK_AUDITOR, ROLES.COMMERCIAL_CASHIER];
@@ -1567,7 +1558,6 @@ adminExtras.post('/issue-token', requireSovereignAdminOnly, (req, res) => {
     res.json({ success: true, token: signJwt({ sub: email, email, role }, hours * 3600), expiresInHours: hours });
 });
 
-// Anyone in the org can verify the ledger hasn't been altered
 adminExtras.get('/audit-integrity', requireAdminRoleStrict, (req, res) => {
     res.json({ success: true, integrity: verifyAuditChain() });
 });
@@ -1584,19 +1574,28 @@ adminExtras.get('/pending-merchants', requireAdminRoleStrict, (req, res) => {
 });
 app.use('/api/admin', adminExtras);
 
-// --- MOUNT ADS & REELS ROUTER ---
+// ============================================================================
+// --- SAFE MOUNT FOR ADS & REELS ROUTER ---
+// ============================================================================
 const adsRouter = require('./routes/ads');
-if (typeof adsRouter.setSocketIo === 'function') {
-    adsRouter.setSocketIo(io);
+if (adsRouter) {
+    if (typeof adsRouter.setSocketIo === 'function') {
+        adsRouter.setSocketIo(io);
+    }
+    if (typeof adsRouter === 'function') {
+        app.use('/api/ads', adsRouter);
+    } else if (typeof adsRouter.router === 'function') {
+        app.use('/api/ads', adsRouter.router);
+    } else {
+        console.warn("⚠️ [SERVER] adsRouter module loaded, but is not a valid express middleware router function.");
+    }
 }
-app.use('/api/ads', adsRouter);
 
 // HARDENED: unknown API paths return JSON 404
 app.use('/api', (req, res) => res.status(404).json({ success: false, error: "Not found." }));
 
 // --- FALLBACK ERROR HANDLER ---
 app.use((err, req, res, next) => {
-    // HARDENED: correct status codes; no stack/internal message leakage in production
     if (err && err.type === 'entity.parse.failed') return res.status(400).json({ success: false, error: "Malformed JSON body." });
     if (err && err.type === 'entity.too.large') return res.status(413).json({ success: false, error: "Payload too large." });
     if (err && err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ success: false, error: "File too large." });
@@ -1608,12 +1607,11 @@ app.use((err, req, res, next) => {
 process.on('unhandledRejection', (r) => console.error('[UNHANDLED REJECTION]', r));
 process.on('uncaughtException', (e) => console.error('[UNCAUGHT EXCEPTION]', e));
 
-server.keepAliveTimeout = 65000; // above typical proxy idle timeout
+server.keepAliveTimeout = 65000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 RDS Sovereign Enterprise Server Stage 190 Fully Active on port ${PORT}`);
 });
 
-// HARDENED: graceful shutdown so in-flight requests and audit writes finish
 ['SIGTERM', 'SIGINT'].forEach(sig => process.on(sig, () => {
     console.log(`${sig} received: shutting down.`);
     io.close();
