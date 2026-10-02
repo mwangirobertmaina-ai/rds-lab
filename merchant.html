@@ -1,723 +1,534 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS Sovereign Multi-Merchant Vendor Console</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="/socket.io/socket.io.js"></script>
-    <style>
-        @keyframes pulseAlert {
-            from { transform: scale(1); opacity: 0.9; }
-            to { transform: scale(1.02); opacity: 1; }
-        }
-        .ringing-banner {
-            animation: pulseAlert 0.8s infinite alternate;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f19">
+<title>RDS Vendor Console</title>
+<style>
+:root{--g:#00ff88;--bg:#0b0f19;--panel:#111827;--card:#151b2a;--dim:#9ca3af;--cy:#38bdf8;--red:#ff4d6d;--gold:#ffd700;--pu:#a855f7;--line:#222c3d;--r:12px;--safe:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:#fff;min-height:100vh;padding-bottom:calc(30px + var(--safe))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.wrap{max-width:1100px;margin:0 auto;padding:14px}
+.narrow{max-width:520px;margin:0 auto;padding:18px 14px}
+h1{font-size:1.25rem}h2{font-size:1rem;margin-bottom:10px}h3{font-size:.78rem;color:var(--cy);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.muted{color:var(--dim);font-size:.78rem}.err{color:var(--red);font-size:.8rem;margin:6px 0}.ok{color:var(--g)}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid #374151;border-radius:9px;padding:11px;margin-bottom:10px;font-size:.9rem;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--g)}input[readonly]{opacity:.7}
+label{display:block;font-size:.72rem;color:var(--cy);margin:2px 0 4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:9px;padding:11px 16px;font-weight:700;font-size:.82rem;cursor:pointer;background:#1f2937;transition:transform .08s,opacity .15s}
+.btn.block{width:100%}.btn:active{transform:scale(.98)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.go{background:var(--g);color:#000}.btn.cy{background:var(--cy);color:#000}.btn.gold{background:var(--gold);color:#000}.btn.danger{background:transparent;border:1px solid var(--red);color:var(--red)}.btn.ghost{background:transparent;border:1px solid #374151}.btn.sm{padding:7px 12px;font-size:.74rem}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}.btn.go .spin,.btn.cy .spin,.btn.gold .spin{border-color:rgba(0,0,0,.3);border-top-color:#000}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none!important}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>.grow{flex:1;min-width:140px}.between{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:520px){.g2{grid-template-columns:1fr}}
+.brandbox{width:46px;height:46px;border-radius:12px;background:var(--g);color:#000;display:grid;place-items:center;font-size:1.4rem;margin:0 auto 8px}
+.top{position:sticky;top:0;z-index:40;background:rgba(11,15,25,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px}
+.shop b{display:block;font-size:1rem;color:var(--g)}.shop span{font-size:.7rem;color:var(--dim)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;margin-right:6px}.dot.on{background:var(--g);box-shadow:0 0 8px var(--g)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px}.kpi small{color:var(--dim);font-size:.68rem;display:block}.kpi b{font-size:1.15rem}
+.tabs{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;background:var(--panel);border:1px solid #374151;color:var(--dim);padding:9px 16px;border-radius:20px;font-size:.8rem;font-weight:700;cursor:pointer}.tab.on{background:var(--g);border-color:var(--g);color:#000}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px}.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;background:var(--panel);border:1px solid #374151;color:var(--dim);padding:6px 12px;border-radius:18px;font-size:.72rem;font-weight:700;cursor:pointer}.chip.on{background:var(--pu);border-color:var(--pu);color:#fff}
+.orders{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
+.order{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px;animation:in .25s}
+.order.new{border-color:var(--g);box-shadow:0 0 0 1px rgba(0,255,136,.25)}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.order ul{list-style:none;font-size:.82rem;color:#d1d5db}.order li{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--line)}.order li:last-child{border:0}
+.pill{font-size:.64rem;font-weight:800;padding:3px 9px;border-radius:12px;background:rgba(56,189,248,.14);color:var(--cy);white-space:nowrap}
+.pill.new{background:rgba(0,255,136,.16);color:var(--g)}.pill.rider,.pill.waiting_rider{background:rgba(255,215,0,.15);color:var(--gold)}.pill.completed,.pill.delivered{background:rgba(168,85,247,.18);color:#d8b4fe}.pill.cancelled{background:rgba(255,77,109,.15);color:var(--red)}
+.acts{display:flex;gap:8px;flex-wrap:wrap}.acts .btn{flex:1}
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem}.tbl th{font-size:.68rem;color:var(--dim);text-transform:uppercase;text-align:left;padding:8px;border-bottom:1px solid var(--line)}.tbl td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl img{width:42px;height:42px;border-radius:8px;object-fit:cover;background:#000}.tbl input{margin:0;width:84px;padding:7px}
+.tag{font-size:.64rem;padding:2px 8px;border-radius:10px;background:#1f2937}.tag.low{background:rgba(255,215,0,.15);color:var(--gold)}.tag.out{background:rgba(255,77,109,.15);color:var(--red)}
+.scroll{overflow-x:auto}
+.skel{background:linear-gradient(90deg,#111827 25%,#1b2437 50%,#111827 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:var(--r);height:150px}@keyframes sh{to{background-position:-200% 0}}
+.empty{text-align:center;color:var(--dim);padding:30px 10px;font-size:.85rem;grid-column:1/-1}
+.thumb{display:flex;align-items:center;gap:10px;margin-bottom:10px}.thumb img{width:54px;height:54px;border-radius:9px;object-fit:cover;border:1px solid #374151;background:#000}
+.alert{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:150;width:calc(100% - 24px);max-width:460px;background:linear-gradient(90deg,#10b981,#38bdf8);color:#04111a;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:pulse .8s infinite alternate}
+@keyframes pulse{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(1.02)}}
+.alert b{font-size:.9rem}.alert p{font-size:.74rem;font-weight:600}
+.banner{background:rgba(255,77,109,.12);border:1px solid var(--red);color:#fecdd3;border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:.84rem}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.7);z-index:200;padding:18px}.modal.on{display:grid}
+.modal .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;max-width:420px;width:100%}.modal p{font-size:.82rem;color:var(--dim);margin-bottom:12px}
+video{width:100%;border-radius:10px;background:#000;max-height:50vh}
+#toasts{position:fixed;bottom:calc(14px + var(--safe));left:0;right:0;max-width:480px;margin:0 auto;padding:0 14px;z-index:300;pointer-events:none;display:flex;flex-direction:column;gap:8px}
+.toast{background:#1f2937;border:1px solid #374151;border-left:4px solid var(--cy);border-radius:10px;padding:11px 14px;font-size:.82rem;animation:in .2s;pointer-events:auto}.toast.ok{border-left-color:var(--g)}.toast.err{border-left-color:var(--red)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+<body>
 
-    <!-- INCOMING ORDER RINGER / ALERT BANNER -->
-    <div id="incomingOrderAlert" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-full mx-4 bg-gradient-to-r from-emerald-500 to-sky-500 text-slate-950 p-4 rounded-2xl shadow-2xl ringing-banner border-2 border-white flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-            <div class="bg-slate-950 text-emerald-400 p-3 rounded-xl text-xl animate-bounce">
-                <i class="fa-solid fa-bell"></i>
-            </div>
-            <div>
-                <h4 class="font-black text-sm tracking-wide" id="alertTitle">🚨 NEW INCOMING ORDER!</h4>
-                <p class="text-xs font-semibold" id="alertOrderDetails">A customer just placed an order. Check your live feed!</p>
-            </div>
-        </div>
-        <button onclick="dismissOrderAlert()" class="bg-slate-950 hover:bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition">Dismiss</button>
-    </div>
+<!-- new order ringer -->
+<div class="alert hidden" id="alert" role="alert">
+  <div><b>🔔 New order!</b><p id="alertTxt">A customer just placed an order.</p></div>
+  <div class="row" style="flex:none"><button class="btn sm" style="background:#04111a;color:#fff" id="alertView">View</button><button class="btn sm" style="background:#04111a;color:#fff" id="alertStop">Silence</button></div>
+</div>
 
-    <!-- VIEW 1: AUTHENTICATION / LOGIN WITH SMS TOKEN -->
-    <div id="viewAuth" class="max-w-md mx-auto mt-16 p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
-        <div class="text-center mb-6">
-            <div class="bg-emerald-500 text-slate-950 w-12 h-12 rounded-xl flex items-center justify-center mx-auto text-xl font-bold mb-2">
-                <i class="fa-solid fa-store"></i>
-            </div>
-            <h1 class="text-xl font-bold text-emerald-400">Vendor Sign In</h1>
-            <p class="text-xs text-slate-400 mt-1">Enter your registered phone number & 4-digit SMS login token (default: 1234).</p>
-        </div>
+<!-- ============ AUTH ============ -->
+<section id="viewAuth" class="narrow">
+  <div id="loginBox" class="panel">
+    <div style="text-align:center;margin-bottom:14px"><div class="brandbox">🏪</div><h1 style="color:var(--g)">Vendor sign in</h1><p class="muted" style="margin-top:4px">Use your registered phone and the login token sent to you by SMS.</p></div>
+    <label for="lPhone">Phone number</label><input id="lPhone" type="tel" inputmode="tel" placeholder="07XX XXX XXX or +2547…" autocomplete="tel">
+    <label for="lToken">Login token</label><input id="lToken" inputmode="numeric" maxlength="8" placeholder="Token from SMS" autocomplete="one-time-code" style="text-align:center;letter-spacing:4px;font-size:1.1rem">
+    <div class="err" id="lErr"></div>
+    <button class="btn go block" id="lGo">Sign in</button>
+    <div style="text-align:center;border-top:1px solid var(--line);margin-top:16px;padding-top:14px"><p class="muted">New shop owner?</p><button class="btn ghost block" id="toReg" style="margin-top:8px">Register a new shop</button></div>
+  </div>
 
-        <div class="space-y-4">
-            <div>
-                <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Phone Number</label>
-                <input type="text" id="loginPhone" value="+254712345678" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
-            </div>
-            <div>
-                <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">SMS Login Token</label>
-                <input type="text" id="loginToken" value="1234" placeholder="1234" maxlength="6" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-center tracking-widest text-lg font-mono focus:outline-none focus:border-emerald-500">
-            </div>
-            <button onclick="loginMerchantWithToken()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-500/20">
-                Login to Store Dashboard
-            </button>
-            
-            <div class="text-center pt-4 border-t border-slate-800">
-                <p class="text-xs text-slate-400">New shop owner?</p>
-                <button onclick="switchAuthMode('REGISTER')" class="mt-2 text-xs font-semibold text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-4 py-2 rounded-xl transition w-full">
-                    Register New Independent Shop
-                </button>
-            </div>
-        </div>
-    </div>
+  <form id="regBox" class="panel hidden" novalidate>
+    <div style="text-align:center;margin-bottom:12px"><h1 style="color:var(--g)">Register your shop</h1><p class="muted" style="margin-top:4px">An admin reviews every application. You receive your login token by SMS once approved.</p></div>
+    <div class="g2"><div><label for="rShop">Shop name</label><input id="rShop" maxlength="100" placeholder="e.g. Naivas Westlands"></div><div><label for="rType">Business category</label><input id="rType" maxlength="40" placeholder="e.g. Pharmacy, Electronics"></div></div>
+    <div class="g2"><div><label for="rReg">Licence / registration no.</label><input id="rReg" maxlength="40" placeholder="PVT-2026XYZ"></div><div><label for="rOwner">Owner full legal name</label><input id="rOwner" maxlength="100"></div></div>
+    <div class="g2"><div><label for="rPhone">Phone (receives login token)</label><input id="rPhone" type="tel" placeholder="07XX XXX XXX"></div><div><label for="rMpesa">M-Pesa phone number</label><input id="rMpesa" type="tel" placeholder="Same as phone if blank"></div></div>
+    <div class="panel" style="background:var(--bg)"><div class="between"><h3 style="margin:0">Shop location</h3><button type="button" class="btn cy sm" id="rGps">📍 Detect GPS</button></div>
+      <div class="g2" style="margin-top:10px"><input id="rLat" placeholder="Latitude" inputmode="decimal"><input id="rLon" placeholder="Longitude" inputmode="decimal"></div></div>
+    <div class="panel" style="background:var(--bg)"><h3>Owner ID / passport photo</h3><div class="thumb"><img id="pvId" alt="" class="hidden"><span class="muted" id="pvIdT">Required</span></div>
+      <div class="row"><button type="button" class="btn go sm" data-cam="id" data-facing="user">📸 Take photo</button><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="id" class="hidden"></label></div></div>
+    <div class="panel" style="background:var(--bg)"><h3>Storefront photo</h3><div class="thumb"><img id="pvShop" alt="" class="hidden"><span class="muted" id="pvShopT">Required</span></div>
+      <div class="row"><button type="button" class="btn go sm" data-cam="shop" data-facing="environment">📸 Take photo</button><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="shop" class="hidden"></label></div></div>
+    <div class="err" id="rErr"></div>
+    <div class="row"><button type="submit" class="btn go grow" id="rGo">Submit application</button><button type="button" class="btn ghost" id="toLogin">Back</button></div>
+  </form>
 
-    <!-- VIEW 2: NEW MERCHANT REGISTRATION -->
-    <div id="viewRegister" class="max-w-2xl mx-auto mt-10 p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl hidden">
-        <div class="text-center mb-6">
-            <h1 class="text-xl font-bold text-emerald-400">Merchant Registration & Verification</h1>
-            <p class="text-xs text-slate-400 mt-1">Applications are reviewed and approved by admin.</p>
-        </div>
+  <div id="regDone" class="panel hidden" style="text-align:center"><div class="brandbox">✅</div><h1>Application received</h1><p class="muted" style="margin:8px 0 14px">An admin will review it shortly. You will get your login token by SMS when it is approved.</p><button class="btn go block" id="doneBack">Back to sign in</button></div>
+</section>
 
-        <form onsubmit="submitMerchantRegistration(event)" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Shop Name</label>
-                    <input type="text" id="regShopName" required placeholder="e.g. Naivas Westlands" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Business Vertical / Category</label>
-                    <input type="text" id="regBusinessType" required placeholder="e.g. Electronics, Pharmacy, Agrovet..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm">
-                </div>
-            </div>
+<!-- ============ DASHBOARD ============ -->
+<section id="viewApp" class="hidden">
+  <header class="top"><div class="wrap">
+    <div class="shop"><b id="hShop">Shop</b><span id="hMeta"></span></div>
+    <div class="row"><span class="muted" id="live"><i class="dot"></i><span>Offline</span></span>
+      <button class="btn ghost sm" id="soundBtn" title="Order alert sound">🔔 On</button><button class="btn danger sm" id="logout">Sign out</button></div>
+  </div></header>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">License / Reg Number</label>
-                    <input type="text" id="regNumber" required placeholder="PVT-2026XYZ" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Owner Full Legal Name</label>
-                    <input type="text" id="regOwnerName" required placeholder="Robert Maina" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm">
-                </div>
-            </div>
+  <main class="wrap">
+    <div class="banner hidden" id="suspBanner">⚠️ This shop is currently suspended by the platform. You cannot accept orders or edit your catalogue. Please contact support.</div>
+    <div class="kpis" id="kpis"></div>
+    <div class="tabs" role="tablist"><button class="tab on" data-tab="tOrders">Orders <span id="newCount"></span></button><button class="tab" data-tab="tCatalog">Catalogue</button><button class="tab" data-tab="tSettings">Shop settings</button></div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Phone Number (SMS Token)</label>
-                    <input type="text" id="regPhone" required placeholder="+254712345678" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">M-Pesa Phone / Till Number</label>
-                    <input type="text" id="regMpesaPhone" required placeholder="+254712345678 or Till No" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm">
-                </div>
-            </div>
+    <!-- ORDERS -->
+    <section id="tOrders">
+      <div class="between" style="margin-bottom:10px"><div class="chips" id="ofilters"></div>
+        <div class="row"><input id="oq" type="search" placeholder="Search order or item…" style="margin:0;width:200px" aria-label="Search orders"><button class="btn ghost sm" id="oRefresh">↻ Refresh</button><button class="btn ghost sm" id="oCsv">⬇ CSV</button></div></div>
+      <div class="orders" id="orders"></div>
+    </section>
 
-            <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs uppercase tracking-wider text-slate-400">Shop GPS Geo-Coordinates</span>
-                    <button type="button" onclick="detectMerchantGps()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3 py-1 rounded-lg transition">📍 Auto-Detect GPS</button>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="regGpsLat" placeholder="Latitude" readonly class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1 text-xs">
-                    <input type="text" id="regGpsLon" placeholder="Longitude" readonly class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1 text-xs">
-                </div>
-            </div>
-
-            <!-- Owner ID / Passport Photo -->
-            <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
-                <div class="flex justify-between items-center flex-wrap gap-2">
-                    <label class="text-xs uppercase tracking-wider text-slate-400">Owner ID / Passport Photo</label>
-                    <div class="flex space-x-2">
-                        <button type="button" onclick="openCameraModal('regPassportInput', 'ownerIdPreview')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold transition flex items-center">
-                            <i class="fa-solid fa-camera mr-1.5"></i> Snap Live Photo
-                        </button>
-                        <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer flex items-center">
-                            <i class="fa-solid fa-upload mr-1.5"></i> Upload File
-                            <input type="file" accept="image/*" onchange="encodeImageFile(this, 'ownerIdPreview', 'regPassportInput')" class="hidden">
-                        </label>
-                    </div>
-                </div>
-                <input type="hidden" id="regPassportInput" value="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300">
-                <div id="ownerIdPreview" class="text-xs text-emerald-400">Default image selected.</div>
-            </div>
-
-            <!-- Storefront / Shop Photo -->
-            <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
-                <div class="flex justify-between items-center flex-wrap gap-2">
-                    <label class="text-xs uppercase tracking-wider text-slate-400">Storefront / Shop Photo</label>
-                    <div class="flex space-x-2">
-                        <button type="button" onclick="openCameraModal('regStorePhotoInput', 'storePhotoPreview')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold transition flex items-center">
-                            <i class="fa-solid fa-camera mr-1.5"></i> Snap Live Photo
-                        </button>
-                        <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer flex items-center">
-                            <i class="fa-solid fa-upload mr-1.5"></i> Upload File
-                            <input type="file" accept="image/*" onchange="encodeImageFile(this, 'storePhotoPreview', 'regStorePhotoInput')" class="hidden">
-                        </label>
-                    </div>
-                </div>
-                <input type="hidden" id="regStorePhotoInput" value="https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=300">
-                <div id="storePhotoPreview" class="text-xs text-emerald-400">Default storefront image selected.</div>
-            </div>
-
-            <div class="flex space-x-3 pt-2">
-                <button type="submit" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition">Submit Application to Admin</button>
-                <button type="button" onclick="switchAuthMode('LOGIN')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-3 rounded-xl transition">Back</button>
-            </div>
+    <!-- CATALOGUE -->
+    <section id="tCatalog" class="hidden">
+      <div class="g2" style="align-items:start">
+        <form class="panel" id="itemForm" novalidate>
+          <h2 id="formTitle">Add item</h2>
+          <label for="iName">Product / service name</label><input id="iName" maxlength="120">
+          <label for="iCat">Category</label><input id="iCat" maxlength="40" list="catList" placeholder="e.g. Groceries"><datalist id="catList"></datalist>
+          <div class="g2"><div><label for="iPrice">Price (KES)</label><input id="iPrice" type="number" inputmode="decimal" min="0" step="0.01"></div><div><label for="iStock">Stock</label><input id="iStock" type="number" inputmode="numeric" min="0" step="1" value="10"></div></div>
+          <label>Image</label><div class="thumb"><img id="pvItem" alt="" class="hidden"><span class="muted" id="pvItemT">Optional</span></div>
+          <div class="row" style="margin-bottom:10px"><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="item" class="hidden"></label><input id="iImg" type="url" placeholder="…or paste an image URL" style="margin:0;flex:1;min-width:150px"></div>
+          <div class="err" id="iErr"></div>
+          <div class="row"><button type="submit" class="btn go grow" id="iGo">Publish item</button><button type="button" class="btn ghost hidden" id="iCancel">Cancel edit</button></div>
         </form>
-    </div>
+        <div class="panel"><div class="between" style="margin-bottom:10px"><h2 style="margin:0">Inventory <span class="muted" id="cCount"></span></h2><input id="cq" type="search" placeholder="Search items…" style="margin:0;width:170px" aria-label="Search items"></div>
+          <div class="scroll"><table class="tbl"><thead><tr><th>Item</th><th>Price</th><th>Stock</th><th></th></tr></thead><tbody id="catalog"></tbody></table></div></div>
+      </div>
+    </section>
 
-    <!-- LIVE WEBCAM CAPTURE MODAL -->
-    <div id="cameraModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl space-y-4 text-center">
-            <h3 class="text-lg font-bold text-emerald-400"><i class="fa-solid fa-camera mr-2"></i> Live Camera Capture</h3>
-            <div class="relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800 aspect-video flex items-center justify-center">
-                <video id="cameraStream" autoplay playsinline class="w-full h-full object-cover"></video>
-                <canvas id="cameraCanvas" class="hidden"></canvas>
-            </div>
-            <div class="flex space-x-3">
-                <button type="button" onclick="captureSnapshot()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl transition">
-                    📸 Capture & Save Photo
-                </button>
-                <button type="button" onclick="closeCameraModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl transition">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- SETTINGS -->
+    <section id="tSettings" class="hidden">
+      <form class="panel" id="setForm" style="max-width:560px" novalidate>
+        <h2>Shop settings</h2>
+        <div class="g2"><div><label>Merchant ID</label><input id="sId" readonly></div><div><label>Phone</label><input id="sPhone" readonly></div></div>
+        <label for="sName">Shop name</label><input id="sName" maxlength="100">
+        <label for="sType">Business category</label><input id="sType" maxlength="40">
+        <div class="between"><label style="margin:0">Location</label><button type="button" class="btn cy sm" id="sGps">📍 Detect GPS</button></div>
+        <div class="g2" style="margin-top:8px"><input id="sLat" placeholder="Latitude" inputmode="decimal"><input id="sLon" placeholder="Longitude" inputmode="decimal"></div>
+        <label>Shop banner</label><div class="thumb"><img id="pvBanner" alt="" class="hidden"><span class="muted" id="pvBannerT">No banner</span></div>
+        <div class="row" style="margin-bottom:10px"><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="banner" class="hidden"></label><input id="sBanner" type="url" placeholder="…or paste an image URL" style="margin:0;flex:1;min-width:150px"></div>
+        <div class="err" id="sErr"></div>
+        <button class="btn go block" id="sGo" type="submit">Save changes</button>
+      </form>
+    </section>
+  </main>
+</section>
 
-    <!-- VIEW 3: LIVE VENDOR CONSOLE -->
-    <div id="viewDashboard" class="hidden min-h-screen flex flex-col">
-        <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-lg">
-            <div class="flex items-center space-x-3">
-                <div class="bg-emerald-500 text-slate-950 p-2 rounded-lg font-black text-xl"><i class="fa-solid fa-store"></i></div>
-                <div>
-                    <h1 id="shopTitle" class="text-xl font-bold tracking-wide text-emerald-400">Independent Shop Hub</h1>
-                    <p id="shopVertical" class="text-xs text-slate-400">Vertical Corridor: Loading...</p>
-                </div>
-            </div>
-            <div class="flex items-center space-x-4">
-                <span id="merchantIdBadge" class="bg-slate-800 text-emerald-400 text-xs px-3 py-1 rounded-full font-mono border border-emerald-500/30">ID: Loading...</span>
-                <button onclick="logoutMerchant()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white px-3 py-1.5 rounded-lg text-sm transition border border-rose-500/30">
-                    <i class="fa-solid fa-power-off mr-1"></i> Logout
-                </button>
-            </div>
-        </header>
+<!-- dialogs -->
+<div class="modal" id="dlg"><div class="box"><h2 id="dlgT"></h2><p id="dlgP"></p><div class="hidden" id="dlgReasonBox"><label for="dlgReason">Reason (shown to the customer)</label><select id="dlgReason"><option>Out of stock</option><option>Shop is closing</option><option>Cannot deliver to this area</option><option>Other</option></select></div><div class="row"><button class="btn ghost grow" id="dlgNo">Cancel</button><button class="btn go grow" id="dlgYes">OK</button></div></div></div>
+<div class="modal" id="cam"><div class="box"><h2>📸 Camera</h2><video id="camVid" autoplay playsinline muted></video><canvas id="camCan" class="hidden"></canvas><div class="row" style="margin-top:12px"><button class="btn go grow" id="camSnap">Capture</button><button class="btn ghost" id="camX">Cancel</button></div></div></div>
+<div id="toasts" aria-live="polite"></div>
 
-        <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 w-full">
-            <!-- Left Column: Add / Update Product Form -->
-            <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl lg:col-span-1 h-fit">
-                <h2 class="text-lg font-semibold mb-4 text-emerald-400 flex items-center">
-                    <i class="fa-solid fa-circle-plus mr-2"></i> Add / Update Shop Item
-                </h2>
-                
-                <form id="catalogForm" onsubmit="handleCatalogUpdate(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Product / Service Name</label>
-                        <input type="text" id="itemName" required placeholder="e.g. Sovereign Organic Milk" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Category</label>
-                        <input type="text" id="itemCategory" required placeholder="e.g. Groceries" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Price (KES)</label>
-                            <input type="number" id="itemPrice" required placeholder="180" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Stock Qty</label>
-                            <input type="number" id="itemStock" required value="50" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Image URL</label>
-                        <input type="url" id="itemImage" placeholder="https://images.unsplash.com/..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm">
-                    </div>
-                    <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-500/20">
-                        <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Publish to My Shop
-                    </button>
-                </form>
-            </section>
+<script src="/socket.io/socket.io.js" onerror="void 0"></script>
+<script>
+(() => {
+'use strict';
+/* ===================== helpers ===================== */
+const API = (location.origin && location.origin !== 'null') ? location.origin : 'http://localhost:3000';
+const BASE_TITLE = 'RDS Vendor Console';
+const CANCELLED = new Set(['CANCELLED_BY_CUSTOMER','REJECTED_BY_VENDOR','ORDERLY_DISMISSED','CANCELLED']);
+const PH = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100%" height="100%" fill="#1b2437"/></svg>');
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => 'KES ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const ago = ms => { if (!ms) return ''; const s = Math.max(0, (Date.now() - ms) / 1000); if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + ' min ago'; if (s < 86400) return Math.floor(s / 3600) + ' h ago'; return new Date(ms).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' }); };
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} }
+};
+const state = { token: LS.get('rds_m_token', null), shop: LS.get('rds_m_shop', null), orders: [], catalog: [], stats: null, filter: 'new', oq: '', cq: '', editing: null, seen: null, sound: LS.get('rds_m_sound', true), socket: null, photos: { id: null, shop: null, item: null, banner: null }, suspended: false };
 
-            <!-- Right Column: Catalog, Customer Orders, Driver Dispatch -->
-            <section class="space-y-6 lg:col-span-2">
-                <!-- Catalog Table -->
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-semibold text-emerald-400 flex items-center"><i class="fa-solid fa-boxes-stacked mr-2"></i> Store Inventory Catalog</h2>
-                        <button onclick="loadDashboardData()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-700"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase tracking-wider">
-                                    <th class="py-3 px-4">Item Name</th>
-                                    <th class="py-3 px-4">Category</th>
-                                    <th class="py-3 px-4">Price (KES)</th>
-                                    <th class="py-3 px-4">Stock</th>
-                                    <th class="py-3 px-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="catalogTableBody" class="divide-y divide-slate-800 text-sm">
-                                <tr><td colspan="5" class="py-6 text-center text-slate-500">Loading catalog...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+function toast(msg, type = 'info', ms = 3400) {
+  const el = document.createElement('div'); el.className = 'toast ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : ''); el.textContent = msg;
+  $('#toasts').appendChild(el); setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, ms);
+}
+function ask(title, text, ok = 'OK', reason = false) {
+  return new Promise(res => {
+    $('#dlgT').textContent = title; $('#dlgP').textContent = text; $('#dlgYes').textContent = ok; $('#dlgReasonBox').classList.toggle('hidden', !reason);
+    const m = $('#dlg'); m.classList.add('on');
+    const done = v => { m.classList.remove('on'); $('#dlgYes').onclick = $('#dlgNo').onclick = null; res(v ? (reason ? $('#dlgReason').value : true) : false); };
+    $('#dlgYes').onclick = () => done(true); $('#dlgNo').onclick = () => done(false);
+  });
+}
+function busy(btn, on, label) {
+  if (!btn) return;
+  if (on) { btn.dataset.l = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + (label ? ' ' + esc(label) : ''); }
+  else { btn.disabled = false; if (btn.dataset.l !== undefined) btn.innerHTML = btn.dataset.l; }
+}
+async function api(path, { method = 'GET', body, token = state.token, signal, timeout = 20000, raw = false } = {}) {
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), timeout);
+  if (signal) signal.addEventListener('abort', () => ctrl.abort());
+  try {
+    const h = {}; if (body !== undefined) h['Content-Type'] = 'application/json'; if (token) h.Authorization = 'Bearer ' + token;
+    const res = await fetch(API + path, { method, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined, signal: ctrl.signal });
+    if (raw && res.ok) return res;
+    let data = null; try { data = await res.json(); } catch {}
+    if (!res.ok || !data || data.success === false) {
+      const e = new Error((data && data.error) || `Request failed (${res.status})`); e.status = res.status; e.retryAfter = res.headers.get('Retry-After');
+      if (res.status === 401 && token && token === state.token) sessionExpired();
+      if (res.status === 403 && /suspended/i.test(e.message)) setSuspended(true);
+      if (res.status === 429) e.message = `Too many requests. Try again in ${e.retryAfter || 'a few'} seconds.`;
+      throw e;
+    }
+    return data;
+  } catch (e) {
+    if (e.name === 'AbortError') { if (signal && signal.aborted) { e.aborted = true; throw e; } const t = new Error('The server took too long to respond.'); t.status = 0; throw t; }
+    if (e instanceof TypeError) { const n = new Error('Cannot reach the server. Check your connection.'); n.status = 0; throw n; }
+    throw e;
+  } finally { clearTimeout(timer); }
+}
+const normPhone = v => { const s = String(v || '').replace(/[\s()-]/g, ''); if (/^0[17]\d{8}$/.test(s)) return '+254' + s.slice(1); if (/^254[17]\d{8}$/.test(s)) return '+' + s; if (/^\+\d{9,15}$/.test(s)) return s; return null; };
 
-                <!-- Incoming Customer Orders -->
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-semibold text-sky-400 flex items-center"><i class="fa-solid fa-receipt mr-2"></i> Incoming Customer Orders (Targeted)</h2>
-                        <span class="text-xs bg-sky-500/10 text-sky-400 px-2.5 py-1 rounded-full border border-sky-500/20 animate-pulse">● Live Socket Feed Active</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase tracking-wider">
-                                    <th class="py-3 px-4">Order ID</th>
-                                    <th class="py-3 px-4">Items</th>
-                                    <th class="py-3 px-4">Total Amount</th>
-                                    <th class="py-3 px-4">Status</th>
-                                    <th class="py-3 px-4 text-right">Fulfill & Dispatch Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ordersTableBody" class="divide-y divide-slate-800 text-sm">
-                                <tr><td colspan="5" class="py-6 text-center text-slate-500">No incoming customer orders yet.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+/* ===================== images (compress + camera) ===================== */
+function fileToDataUrl(file, maxDim = 1024, q = 0.82) {
+  return new Promise((resolve, reject) => {
+    if (!file || !/^image\//.test(file.type) || file.type === 'image/svg+xml') return reject(new Error('Please choose a photo (JPG, PNG or WebP).'));
+    const rd = new FileReader();
+    rd.onerror = () => reject(new Error('Could not read that file.'));
+    rd.onload = () => { const img = new Image(); img.onerror = () => reject(new Error('That image could not be opened.')); img.onload = () => resolve(canvasToJpeg(img, img.naturalWidth, img.naturalHeight, maxDim, q)); img.src = rd.result; };
+    rd.readAsDataURL(file);
+  });
+}
+function canvasToJpeg(src, w, h, maxDim, q) {
+  const k = Math.min(1, maxDim / Math.max(w, h)), c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  let out = c.toDataURL('image/jpeg', q); while (out.length > 2.5 * 1024 * 1024 && q > 0.3) { q -= 0.15; out = c.toDataURL('image/jpeg', q); } return out;
+}
+function setPhoto(key, url) {
+  state.photos[key] = url;
+  const map = { id: ['#pvId', '#pvIdT'], shop: ['#pvShop', '#pvShopT'], item: ['#pvItem', '#pvItemT'], banner: ['#pvBanner', '#pvBannerT'] }[key];
+  const img = $(map[0]), t = $(map[1]); if (url) { img.src = url; img.classList.remove('hidden'); t.textContent = 'Photo ready'; t.classList.add('ok'); } else { img.classList.add('hidden'); t.classList.remove('ok'); }
+}
+document.addEventListener('change', async e => {
+  const f = e.target.closest('[data-file]'); if (!f || !f.files[0]) return;
+  try { setPhoto(f.dataset.file, await fileToDataUrl(f.files[0])); if (f.dataset.file === 'item') $('#iImg').value = ''; if (f.dataset.file === 'banner') $('#sBanner').value = ''; } catch (err) { toast(err.message, 'err'); }
+  f.value = '';
+});
+let camStream = null, camKey = null;
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-cam]'); if (!b) return;
+  camKey = b.dataset.cam;
+  try { camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: b.dataset.facing || 'environment' }, audio: false }); $('#camVid').srcObject = camStream; $('#cam').classList.add('on'); }
+  catch { toast('Camera is not available. Use Upload instead.', 'err'); }
+});
+function closeCam() { if (camStream) camStream.getTracks().forEach(t => t.stop()); camStream = null; $('#cam').classList.remove('on'); }
+$('#camX').onclick = closeCam;
+$('#camSnap').onclick = () => { const v = $('#camVid'); if (!v.videoWidth) return toast('Camera is still starting…'); setPhoto(camKey, canvasToJpeg(v, v.videoWidth, v.videoHeight, 1024, 0.82)); closeCam(); };
 
-                <!-- Live Driver Dispatch Pool -->
-                <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-6 shadow-xl">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-semibold text-amber-400 flex items-center"><i class="fa-solid fa-motorcycle mr-2"></i> Live Driver & Rider Dispatch Pool</h2>
-                        <button onclick="loadDriverQueue()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-700"><i class="fa-solid fa-rotate mr-1"></i> Refresh Queue</button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase tracking-wider">
-                                    <th class="py-3 px-4">Order ID</th>
-                                    <th class="py-3 px-4">Shop Name</th>
-                                    <th class="py-3 px-4">Items Packed</th>
-                                    <th class="py-3 px-4">Payout</th>
-                                    <th class="py-3 px-4 text-right">Driver Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="driverQueueTableBody" class="divide-y divide-slate-800 text-sm">
-                                <tr><td colspan="5" class="py-6 text-center text-slate-500">No orders awaiting driver dispatch currently.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
+/* ===================== auth ===================== */
+function show(view) { $('#viewAuth').classList.toggle('hidden', view !== 'auth'); $('#viewApp').classList.toggle('hidden', view !== 'app'); }
+function authPane(p) { $('#loginBox').classList.toggle('hidden', p !== 'login'); $('#regBox').classList.toggle('hidden', p !== 'reg'); $('#regDone').classList.toggle('hidden', p !== 'done'); }
+$('#toReg').onclick = () => authPane('reg'); $('#toLogin').onclick = () => authPane('login'); $('#doneBack').onclick = () => authPane('login');
+$('#lToken').addEventListener('keydown', e => { if (e.key === 'Enter') $('#lGo').click(); });
+$('#lGo').onclick = async () => {
+  $('#lErr').textContent = ''; const phone = normPhone($('#lPhone').value), token = $('#lToken').value.trim();
+  if (!phone) return void ($('#lErr').textContent = 'Enter a valid Kenyan mobile number.');
+  if (!token) return void ($('#lErr').textContent = 'Enter your login token.');
+  const b = $('#lGo'); busy(b, true);
+  try {
+    const d = await api('/api/merchant/login', { method: 'POST', body: { phone, token }, token: null });
+    state.token = d.token; state.shop = { merchantId: d.merchantId, shopName: d.shopName, businessType: d.businessType, phone };
+    LS.set('rds_m_token', state.token); LS.set('rds_m_shop', state.shop); $('#lToken').value = '';
+    enterApp();
+  } catch (e) { $('#lErr').textContent = e.message; } finally { busy(b, false); }
+};
+function sessionExpired() { if (!state.token) return; clearSession(); toast('Your session expired. Please sign in again.', 'err'); }
+function clearSession() {
+  state.token = null; state.shop = null; state.seen = null; state.orders = []; LS.del('rds_m_token'); LS.del('rds_m_shop'); stopRing();
+  if (state.socket) { state.socket.auth = {}; state.socket.disconnect(); } setLive(false); show('auth'); authPane('login'); document.title = BASE_TITLE;
+}
+$('#logout').onclick = async () => { try { await api('/api/auth/logout', { method: 'POST' }); } catch {} clearSession(); };
+async function restore() {
+  if (!state.token || !state.shop) { clearSession(); return; }
+  try {
+    const d = await api('/api/auth/me');
+    if (!d.identity || d.identity.merchantId !== state.shop.merchantId) return clearSession();
+    if (d.identity.expiresInSeconds < 3600) { try { const r = await api('/api/auth/refresh', { method: 'POST' }); state.token = r.token; LS.set('rds_m_token', r.token); } catch {} }
+    enterApp();
+  } catch (e) { if (e.status !== 401) { toast(e.message, 'err'); } if (!state.token) return; show('auth'); }
+}
 
-    <script>
-        const LOCAL_API = "http://localhost:3000";
-        const CLOUD_API = "https://rds-lab.onrender.com";
-        let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
+/* registration */
+$('#rGps').onclick = () => gps(p => { $('#rLat').value = p.latitude.toFixed(6); $('#rLon').value = p.longitude.toFixed(6); }, $('#rGps'));
+function gps(cb, btn) {
+  if (!navigator.geolocation) return toast('Location is not supported on this device.', 'err');
+  busy(btn, true, 'Locating…');
+  navigator.geolocation.getCurrentPosition(pos => { busy(btn, false); cb(pos.coords); toast('Location captured', 'ok'); }, err => { busy(btn, false); toast(err.code === 1 ? 'Location permission denied.' : 'Could not get your location.', 'err'); }, { enableHighAccuracy: true, timeout: 12000 });
+}
+$('#regBox').addEventListener('submit', async e => {
+  e.preventDefault(); const err = $('#rErr'); err.textContent = '';
+  const shopName = $('#rShop').value.trim(), businessType = $('#rType').value.trim(), regNumber = $('#rReg').value.trim(), ownerName = $('#rOwner').value.trim();
+  const phone = normPhone($('#rPhone').value), mpesa = $('#rMpesa').value.trim() ? normPhone($('#rMpesa').value) : phone;
+  if (!shopName || !ownerName) return void (err.textContent = 'Shop name and owner name are required.');
+  if (!businessType) return void (err.textContent = 'Enter your business category.');
+  if (!phone) return void (err.textContent = 'Enter a valid Kenyan mobile number.');
+  if (!mpesa) return void (err.textContent = 'M-Pesa number must be a valid phone number (till numbers are not supported yet).');
+  const lat = $('#rLat').value.trim(), lon = $('#rLon').value.trim();
+  if ((lat || lon) && !(Math.abs(Number(lat)) <= 90 && Math.abs(Number(lon)) <= 180 && lat !== '' && lon !== '')) return void (err.textContent = 'Enter a valid latitude and longitude, or leave both empty.');
+  if (!state.photos.id) return void (err.textContent = 'Please add your owner ID / passport photo.');
+  if (!state.photos.shop) return void (err.textContent = 'Please add a storefront photo.');
+  const payload = { shopName, businessType, regNumber, ownerName, phone, mpesaPhone: mpesa, passportImage: state.photos.id, storePhoto: state.photos.shop };
+  if (lat && lon) { payload.gpsLat = Number(lat); payload.gpsLon = Number(lon); }
+  const b = $('#rGo'); busy(b, true, 'Submitting…');
+  try { await api('/api/merchant/register', { method: 'POST', body: payload, token: null }); authPane('done'); $('#regBox').reset(); setPhoto('id', null); setPhoto('shop', null); }
+  catch (er) { err.textContent = er.message; } finally { busy(b, false); }
+});
 
-        let currentMerchantId = localStorage.getItem('rds_merchantId') || 'MERCH_DEF_172';
-        let currentShopName = localStorage.getItem('rds_shopName') || 'Sovereign Supermarket';
-        const socket = io();
+/* ===================== ringer ===================== */
+let audioCtx = null, ringTimer = null, ringUntil = 0, titleTimer = null;
+function unlockAudio() { try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch {} }
+document.addEventListener('pointerdown', unlockAudio); document.addEventListener('keydown', unlockAudio);
+function chime() {
+  try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch {}
+  if (!state.sound || !audioCtx) return;
+  const t = audioCtx.currentTime;
+  [659.25, 880, 659.25, 880].forEach((f, i) => { const o = audioCtx.createOscillator(), g = audioCtx.createGain(), s = t + i * 0.16; o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.35, s + 0.02); g.gain.exponentialRampToValueAtTime(0.001, s + 0.22); o.connect(g); g.connect(audioCtx.destination); o.start(s); o.stop(s + 0.24); });
+}
+const pendingCount = () => state.orders.filter(o => stageOf(o).key === 'new').length;
+function startRing() {
+  ringUntil = Date.now() + 90000; $('#alert').classList.remove('hidden'); updateAlert();
+  if (!ringTimer) { chime(); ringTimer = setInterval(() => { if (Date.now() > ringUntil || !pendingCount()) return stopRing(); chime(); }, 3000); }
+  if (!titleTimer) { let on = false; titleTimer = setInterval(() => { on = !on; document.title = on ? `🔔 (${pendingCount()}) New order!` : BASE_TITLE; }, 900); }
+}
+function stopRing() { clearInterval(ringTimer); ringTimer = null; clearInterval(titleTimer); titleTimer = null; $('#alert').classList.add('hidden'); document.title = BASE_TITLE; }
+function updateAlert() { const n = pendingCount(); $('#alertTxt').textContent = n === 1 ? '1 order is waiting for you to accept it.' : `${n} orders are waiting for you to accept them.`; }
+$('#alertStop').onclick = stopRing; $('#alertView').onclick = () => { stopRing(); tab('tOrders'); setFilter('new'); };
+function paintSound() { $('#soundBtn').textContent = state.sound ? '🔔 On' : '🔕 Off'; }
+$('#soundBtn').onclick = () => { state.sound = !state.sound; LS.set('rds_m_sound', state.sound); paintSound(); unlockAudio(); if (state.sound) chime(); };
 
-        let activeTargetInput = null;
-        let activePreviewElement = null;
-        let mediaStreamInstance = null;
+/* ===================== realtime ===================== */
+function setLive(on) { const l = $('#live'); $('.dot', l).classList.toggle('on', on); $('span', l).textContent = on ? 'Live' : 'Offline'; }
+function initSocket() {
+  if (typeof io !== 'function') return;
+  if (state.socket) { state.socket.auth = { token: state.token }; state.socket.disconnect().connect(); return; }
+  const s = io({ auth: { token: state.token }, reconnection: true }); state.socket = s;
+  s.on('connect', () => { setLive(true); joinOrderRooms(); });
+  s.on('disconnect', () => setLive(false));
+  s.on('connect_error', err => { setLive(false); if (err && err.message === 'unauthorized' && state.token) sessionExpired(); });
+  s.on('new_customer_order', () => softReload(true));
+  s.on('merchant_order_update', () => softReload());
+  s.on('orderListUpdated', () => softReload());
+  s.on('order_status_update', () => softReload());
+  s.on('tenant_status_changed', p => { if (p && state.shop && p.merchantId === state.shop.merchantId) { setSuspended(p.status === 'SUSPENDED' || p.status === 'REVOKED'); toast(p.status === 'APPROVED_ACTIVE' ? 'Your shop is active again.' : 'Your shop status changed: ' + p.status, p.status === 'APPROVED_ACTIVE' ? 'ok' : 'err'); } });
+}
+function joinOrderRooms() { if (state.socket && state.socket.connected) state.orders.filter(o => !['completed', 'cancelled'].includes(stageOf(o).key)).forEach(o => state.socket.emit('join_order', o.orderId)); }
+const softReload = (() => { const run = debounce(() => { loadOrders(); loadStats(); }, 400); return () => run(); })();
+function setSuspended(v) { state.suspended = !!v; $('#suspBanner').classList.toggle('hidden', !state.suspended); }
 
-        if (currentMerchantId) {
-            showDashboard();
-        }
+/* ===================== orders ===================== */
+function stageOf(o) {
+  const s = o.status || '', d = o.deliveryStatus;
+  if (CANCELLED.has(s)) return { key: 'cancelled', label: s === 'REJECTED_BY_VENDOR' ? 'Declined' : s === 'CANCELLED_BY_CUSTOMER' ? 'Customer cancelled' : 'Cancelled', group: 'cancelled' };
+  if (s === 'COMPLETED & PAID OUT') return { key: 'completed', label: 'Completed', group: 'done' };
+  if (d === 'DELIVERED') return { key: 'delivered', label: 'Delivered', group: 'progress' };
+  if (s === 'PENDING_VENDOR_ACCEPTANCE') return { key: 'new', label: 'New order', group: 'new' };
+  if (s === 'AWAITING_DRIVER_PICKUP' && d === 'DRIVER_ASSIGNED') return { key: 'rider', label: 'Rider assigned', group: 'progress' };
+  if (s === 'AWAITING_DRIVER_PICKUP') return { key: 'waiting_rider', label: 'Waiting for rider', group: 'progress' };
+  return { key: 'other', label: s.replace(/_/g, ' ').toLowerCase(), group: 'progress' };
+}
+const FILTERS = [['new', 'New'], ['progress', 'In progress'], ['done', 'Completed'], ['cancelled', 'Cancelled'], ['all', 'All']];
+function setFilter(f) { state.filter = f; renderOrders(); }
+let ordersCtrl = null;
+async function loadOrders() {
+  if (!state.token) return;
+  if (ordersCtrl) ordersCtrl.abort(); ordersCtrl = new AbortController();
+  try {
+    const d = await api('/api/merchant/orders/' + encodeURIComponent(state.shop.merchantId), { signal: ordersCtrl.signal });
+    state.orders = (d.orders || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    detectNew(state.orders); renderOrders(); joinOrderRooms();
+  } catch (e) { if (!e.aborted && !$('#orders').children.length) $('#orders').innerHTML = `<div class="empty">${esc(e.message)}<br><br><button class="btn go sm" id="retryOrders">Try again</button></div>`; }
+}
+function detectNew(list) {
+  const pend = list.filter(o => stageOf(o).key === 'new');
+  if (state.seen === null) { state.seen = new Set(list.map(o => o.orderId)); if (pend.length) { $('#alert').classList.remove('hidden'); updateAlert(); } return; }
+  const fresh = pend.filter(o => !state.seen.has(o.orderId)); list.forEach(o => state.seen.add(o.orderId));
+  if (fresh.length) startRing(); else if (!pend.length) stopRing(); else updateAlert();
+}
+function orderCard(o) {
+  const s = stageOf(o), amount = Number(o.shopOwnerPayout) || Number(o.totalAmount) || 0;
+  const items = (o.items || []).map(i => `<li><span>${esc(i.name)}</span><b>× ${i.qty || 1}</b></li>`).join('') || '<li><span>Standard order</span></li>';
+  let acts = '';
+  if (s.key === 'new') acts = `<button class="btn go" data-act="accept" data-oid="${esc(o.orderId)}">✓ Accept &amp; call rider</button><button class="btn danger" data-act="reject" data-oid="${esc(o.orderId)}">Decline</button>`;
+  else if (s.key === 'waiting_rider') acts = '<span class="muted">Packed. Waiting for a rider to accept the delivery…</span>';
+  else if (s.key === 'rider') acts = `<button class="btn gold" data-act="handover" data-oid="${esc(o.orderId)}">📦 Handed to rider</button>`;
+  else if (s.key === 'delivered') acts = `<button class="btn cy" data-act="handover" data-oid="${esc(o.orderId)}">Mark complete</button>`;
+  return `<article class="order ${s.key === 'new' ? 'new' : ''}"><div class="between"><b style="font-family:monospace;font-size:.82rem;color:var(--cy)">${esc(o.orderId)}</b><span class="pill ${s.key}">${esc(s.label)}</span></div>
+    <div class="muted">${ago(o.createdAt)}${o.cancelReason ? ' · ' + esc(o.cancelReason) : ''}</div><ul>${items}</ul>
+    <div class="between"><span class="muted">You receive</span><b style="color:var(--g)">${fmt(amount)}</b></div>${acts ? `<div class="acts">${acts}</div>` : ''}</article>`;
+}
+function renderOrders() {
+  const counts = { all: state.orders.length }; state.orders.forEach(o => { const g = stageOf(o).group; counts[g] = (counts[g] || 0) + 1; });
+  $('#ofilters').innerHTML = FILTERS.map(([k, l]) => `<button class="chip ${state.filter === k ? 'on' : ''}" data-f="${k}">${l}${counts[k] ? ' · ' + counts[k] : ''}</button>`).join('');
+  $('#newCount').textContent = counts.new ? `(${counts.new})` : '';
+  const q = state.oq.toLowerCase();
+  const list = state.orders.filter(o => (state.filter === 'all' || stageOf(o).group === state.filter) && (!q || o.orderId.toLowerCase().includes(q) || (o.items || []).some(i => String(i.name).toLowerCase().includes(q))));
+  $('#orders').innerHTML = list.length ? list.map(orderCard).join('') : `<div class="empty">${state.orders.length ? 'No orders in this view.' : 'No orders yet. New orders appear here instantly.'}</div>`;
+  renderKpis();
+}
+$('#ofilters').addEventListener('click', e => { const c = e.target.closest('[data-f]'); if (c) setFilter(c.dataset.f); });
+$('#oq').addEventListener('input', debounce(e => { state.oq = e.target.value.trim(); renderOrders(); }, 200));
+$('#oRefresh').onclick = () => { loadOrders(); loadStats(); loadCatalog(); };
+$('#orders').addEventListener('click', async e => {
+  if (e.target.id === 'retryOrders') return loadOrders();
+  const b = e.target.closest('[data-act]'); if (!b) return; const id = b.dataset.oid, mid = state.shop.merchantId;
+  try {
+    if (b.dataset.act === 'accept') { busy(b, true); await api('/api/merchant/orders/accept', { method: 'POST', body: { merchantId: mid, orderId: id } }); toast(`Order ${id} accepted. Rider requested.`, 'ok'); loadCatalog(); }
+    if (b.dataset.act === 'reject') { const r = await ask('Decline this order?', 'The customer is notified and a refund is marked as due.', 'Decline order', true); if (!r) return; busy(b, true); await api('/api/merchant/orders/reject', { method: 'POST', body: { merchantId: mid, orderId: id, reason: r } }); toast('Order declined', 'ok'); }
+    if (b.dataset.act === 'handover') { busy(b, true); await api('/api/merchant/orders/complete-handover', { method: 'POST', body: { merchantId: mid, orderId: id } }); toast('Order marked complete', 'ok'); }
+    stopRing(); await loadOrders(); loadStats();
+  } catch (err) { toast(err.message, 'err', 5000); loadOrders(); }
+});
+$('#oCsv').onclick = async () => {
+  const b = $('#oCsv'); busy(b, true);
+  try { const res = await api(`/api/merchant/orders/${encodeURIComponent(state.shop.merchantId)}/export.csv`, { raw: true }); const url = URL.createObjectURL(await res.blob()); const a = document.createElement('a'); a.href = url; a.download = `orders-${state.shop.merchantId}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); }
+  catch (e) { toast(e.message, 'err'); } finally { busy(b, false); }
+};
 
-        // Dedicated Merchant Ringer Function with Audio Beeps & Banner
-        function triggerMerchantRinger(orderId, customTitle = "🚨 NEW INCOMING ORDER!") {
-            const banner = document.getElementById('incomingOrderAlert');
-            const titleEl = document.getElementById('alertTitle');
-            const details = document.getElementById('alertOrderDetails');
-            
-            if (titleEl) titleEl.innerText = customTitle;
-            if (details) details.innerText = `Order ID ${orderId} received for ${currentShopName}!`;
-            if (banner) banner.classList.remove('hidden');
+/* ===================== stats ===================== */
+async function loadStats() { if (!state.token) return; try { const d = await api('/api/merchant/stats/' + encodeURIComponent(state.shop.merchantId)); state.stats = d; renderKpis(); } catch {} }
+function renderKpis() {
+  const s = state.stats, pend = pendingCount(), inprog = state.orders.filter(o => stageOf(o).group === 'progress').length;
+  const k = [['New orders', pend, pend ? 'var(--g)' : ''], ['In progress', inprog, ''], ['Orders today', s ? s.orders.today : '–', ''], ['Completed sales today', s ? fmt(s.revenue.today) : '–', ''], ['Completed sales total', s ? fmt(s.revenue.allTime) : '–', ''], ['Low stock items', s ? s.catalog.lowStock.length : '–', s && s.catalog.lowStock.length ? 'var(--gold)' : ''], ['Rating', s && s.rating.average ? s.rating.average + ' ★ (' + s.rating.count + ')' : '–', '']];
+  $('#kpis').innerHTML = k.map(([l, v, c]) => `<div class="kpi"><small>${l}</small><b ${c ? `style="color:${c}"` : ''}>${esc(v)}</b></div>`).join('');
+}
 
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
+/* ===================== catalogue ===================== */
+async function loadCatalog() {
+  if (!state.token) return;
+  try {
+    const d = await api('/api/merchant/catalog/' + encodeURIComponent(state.shop.merchantId), { token: null });
+    state.catalog = d.catalog || []; if (d.profile) { state.shop = { ...state.shop, ...pickProfile(d.profile) }; LS.set('rds_m_shop', state.shop); paintHeader(); fillSettings(d.profile); }
+    renderCatalog();
+  } catch (e) { $('#catalog').innerHTML = `<tr><td colspan="4" class="empty">${esc(e.message)}</td></tr>`; }
+}
+const pickProfile = p => ({ shopName: p.shopName, businessType: p.businessType, phone: p.phone || (state.shop && state.shop.phone) });
+function stockTag(n) { n = Number(n); return n <= 0 ? '<span class="tag out">Out</span>' : n <= 5 ? '<span class="tag low">Low</span>' : ''; }
+function renderCatalog() {
+  const q = state.cq.toLowerCase();
+  const list = state.catalog.filter(i => !q || String(i.name).toLowerCase().includes(q) || String(i.category).toLowerCase().includes(q));
+  $('#cCount').textContent = `(${state.catalog.length})`;
+  $('#catList').innerHTML = [...new Set(state.catalog.map(i => i.category).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
+  $('#catalog').innerHTML = list.length ? list.map(i => `<tr data-id="${esc(i.id)}"><td><div class="row" style="flex-wrap:nowrap"><img src="${esc(i.image || PH)}" alt="" loading="lazy"><div><b>${esc(i.name)}</b><div class="muted">${esc(i.category || '')}</div></div></div></td><td>${fmt(i.price)}</td><td><div class="row" style="flex-wrap:nowrap;gap:6px"><input type="number" min="0" step="1" value="${Number(i.stock) || 0}" data-stock="${esc(i.id)}" aria-label="Stock for ${esc(i.name)}">${stockTag(i.stock)}</div></td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-edit="${esc(i.id)}">Edit</button> <button class="btn danger sm" data-del="${esc(i.id)}">Delete</button></td></tr>`).join('') : `<tr><td colspan="4" class="empty">${state.catalog.length ? 'No items match your search.' : 'Your catalogue is empty. Add your first item.'}</td></tr>`;
+}
+$('#cq').addEventListener('input', debounce(e => { state.cq = e.target.value.trim(); renderCatalog(); }, 200));
+$('#catalog').addEventListener('change', async e => {
+  const inp = e.target.closest('[data-stock]'); if (!inp) return; const n = Number(inp.value);
+  if (!Number.isInteger(n) || n < 0 || n > 1000000) { toast('Stock must be a whole number from 0 to 1,000,000.', 'err'); return renderCatalog(); }
+  try { const d = await api('/api/merchant/catalog/bulk-stock', { method: 'POST', body: { merchantId: state.shop.merchantId, updates: [{ itemId: inp.dataset.stock, stock: n }] } }); state.catalog = d.catalog || state.catalog; toast('Stock updated', 'ok', 1800); renderCatalog(); }
+  catch (err) { toast(err.message, 'err'); loadCatalog(); }
+});
+$('#catalog').addEventListener('click', async e => {
+  const ed = e.target.closest('[data-edit]'), del = e.target.closest('[data-del]');
+  if (ed) { const i = state.catalog.find(x => x.id === ed.dataset.edit); if (i) startEdit(i); }
+  if (del) {
+    const i = state.catalog.find(x => x.id === del.dataset.del); if (!i) return;
+    if (!(await ask('Delete item?', `“${i.name}” will be removed from your shop.`, 'Delete'))) return;
+    try { const d = await api('/api/merchant/catalog/delete', { method: 'POST', body: { merchantId: state.shop.merchantId, itemId: i.id } }); state.catalog = d.catalog || []; renderCatalog(); toast('Item deleted', 'ok'); if (state.editing === i.id) resetForm(); loadStats(); }
+    catch (err) { toast(err.message, 'err'); }
+  }
+});
+function startEdit(i) {
+  state.editing = i.id; $('#formTitle').textContent = 'Edit item'; $('#iGo').textContent = 'Save changes'; $('#iCancel').classList.remove('hidden');
+  $('#iName').value = i.name; $('#iCat').value = i.category || ''; $('#iPrice').value = i.price; $('#iStock').value = i.stock ?? 0;
+  const isData = /^data:/.test(i.image || ''); $('#iImg').value = isData ? '' : (i.image || ''); setPhoto('item', isData ? i.image : null);
+  if (!isData && i.image) { const img = $('#pvItem'); img.src = i.image; img.classList.remove('hidden'); } $('#itemForm').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('#iName').focus();
+}
+function resetForm() { state.editing = null; $('#itemForm').reset(); $('#iStock').value = 10; setPhoto('item', null); $('#formTitle').textContent = 'Add item'; $('#iGo').textContent = 'Publish item'; $('#iCancel').classList.add('hidden'); $('#iErr').textContent = ''; }
+$('#iCancel').onclick = resetForm;
+$('#itemForm').addEventListener('submit', async e => {
+  e.preventDefault(); const err = $('#iErr'); err.textContent = '';
+  const name = $('#iName').value.trim(), category = $('#iCat').value.trim(), price = Number($('#iPrice').value), stock = Number($('#iStock').value);
+  if (!name) return void (err.textContent = 'Enter the item name.'); if (!category) return void (err.textContent = 'Enter a category.');
+  if (!Number.isFinite(price) || price < 0 || price > 10000000 || $('#iPrice').value === '') return void (err.textContent = 'Enter a valid price (0 to 10,000,000).');
+  if (!Number.isInteger(stock) || stock < 0 || stock > 1000000) return void (err.textContent = 'Stock must be a whole number from 0 to 1,000,000.');
+  const body = { merchantId: state.shop.merchantId, name, category, price, stock }; if (state.editing) body.itemId = state.editing;
+  const img = state.photos.item || $('#iImg').value.trim(); if (img) body.image = img;
+  const b = $('#iGo'); busy(b, true);
+  try { const d = await api('/api/merchant/catalog/update', { method: 'POST', body }); state.catalog = d.catalog || []; toast(state.editing ? 'Item updated' : 'Item published', 'ok'); resetForm(); renderCatalog(); loadStats(); }
+  catch (er) { err.textContent = er.message; } finally { busy(b, false); }
+});
 
-                let count = 0;
-                const ringInterval = setInterval(() => {
-                    if (count >= 6) {
-                        clearInterval(ringInterval);
-                        return;
-                    }
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5 note
-                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15); // A5 note
-                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+/* ===================== settings ===================== */
+function fillSettings(p) {
+  if (document.activeElement && $('#setForm').contains(document.activeElement)) return;
+  $('#sId').value = state.shop.merchantId; $('#sPhone').value = p.phone || state.shop.phone || ''; $('#sName').value = p.shopName || ''; $('#sType').value = p.businessType || '';
+  $('#sLat').value = p.gpsLat ?? ''; $('#sLon').value = p.gpsLon ?? '';
+  if (p.banner && !state.photos.banner) { const isData = /^data:/.test(p.banner); $('#sBanner').value = isData ? '' : p.banner; const im = $('#pvBanner'); im.src = p.banner; im.classList.remove('hidden'); $('#pvBannerT').textContent = ''; }
+}
+$('#sGps').onclick = () => gps(p => { $('#sLat').value = p.latitude.toFixed(6); $('#sLon').value = p.longitude.toFixed(6); }, $('#sGps'));
+$('#setForm').addEventListener('submit', async e => {
+  e.preventDefault(); const err = $('#sErr'); err.textContent = '';
+  const body = { merchantId: state.shop.merchantId }; const name = $('#sName').value.trim(); if (!name) return void (err.textContent = 'Shop name cannot be empty.');
+  body.shopName = name; const t = $('#sType').value.trim(); if (t) body.businessType = t;
+  const lat = $('#sLat').value.trim(), lon = $('#sLon').value.trim();
+  if (lat || lon) { if (!(lat !== '' && lon !== '' && Math.abs(Number(lat)) <= 90 && Math.abs(Number(lon)) <= 180)) return void (err.textContent = 'Enter a valid latitude and longitude.'); body.gpsLat = Number(lat); body.gpsLon = Number(lon); }
+  const ban = state.photos.banner || $('#sBanner').value.trim(); if (ban) body.banner = ban;
+  const b = $('#sGo'); busy(b, true);
+  try { const d = await api('/api/merchant/profile/update', { method: 'POST', body }); state.shop = { ...state.shop, ...pickProfile(d.profile) }; LS.set('rds_m_shop', state.shop); paintHeader(); toast('Shop settings saved', 'ok'); }
+  catch (er) { err.textContent = er.message; } finally { busy(b, false); }
+});
 
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.3);
-                    count++;
-                }, 350);
-            } catch (e) {
-                console.log("Audio ringer suppressed.");
-            }
-        }
-
-        function dismissOrderAlert() {
-            document.getElementById('incomingOrderAlert').classList.add('hidden');
-        }
-
-        function switchAuthMode(mode) {
-            if (mode === 'REGISTER') {
-                document.getElementById('viewAuth').classList.add('hidden');
-                document.getElementById('viewRegister').classList.remove('hidden');
-            } else {
-                document.getElementById('viewRegister').classList.add('hidden');
-                document.getElementById('viewAuth').classList.remove('hidden');
-            }
-        }
-
-        function detectMerchantGps() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        document.getElementById('regGpsLat').value = position.coords.latitude;
-                        document.getElementById('regGpsLon').value = position.coords.longitude;
-                        alert("📍 GPS Location acquired successfully!");
-                    },
-                    (error) => { alert("Could not retrieve GPS coordinates."); },
-                    { enableHighAccuracy: true, timeout: 10000 }
-                );
-            } else { alert("Geolocation not supported."); }
-        }
-
-        function encodeImageFile(element, previewId, targetInputId) {
-            const file = element.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById(targetInputId).value = e.target.result;
-                    document.getElementById(previewId).innerHTML = `<img src="${e.target.result}" class="w-10 h-10 rounded-lg object-cover border border-emerald-500/50 inline-block mr-2"> <span class="text-emerald-400 font-semibold">✅ File uploaded: ${file.name}</span>`;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        async function openCameraModal(targetInputId, previewId) {
-            activeTargetInput = document.getElementById(targetInputId);
-            activePreviewElement = document.getElementById(previewId);
-            document.getElementById('cameraModal').classList.remove('hidden');
-
-            try {
-                mediaStreamInstance = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-                const videoElement = document.getElementById('cameraStream');
-                videoElement.srcObject = mediaStreamInstance;
-            } catch (err) {
-                alert("Unable to access camera.");
-                closeCameraModal();
-            }
-        }
-
-        function closeCameraModal() {
-            if (mediaStreamInstance) {
-                mediaStreamInstance.getTracks().forEach(track => track.stop());
-                mediaStreamInstance = null;
-            }
-            document.getElementById('cameraModal').classList.add('hidden');
-        }
-
-        function captureSnapshot() {
-            const videoElement = document.getElementById('cameraStream');
-            const canvasElement = document.getElementById('cameraCanvas');
-            
-            canvasElement.width = videoElement.videoWidth || 640;
-            canvasElement.height = videoElement.videoHeight || 480;
-            
-            const ctx = canvasElement.getContext('2d');
-            ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-            
-            const dataUrl = canvasElement.toDataURL('image/jpeg', 0.85);
-            if (activeTargetInput) activeTargetInput.value = dataUrl;
-            if (activePreviewElement) {
-                activePreviewElement.innerHTML = `<img src="${dataUrl}" class="w-10 h-10 rounded-lg object-cover border border-emerald-500/50 inline-block mr-2"> <span class="text-emerald-400 font-semibold">✅ Live Photo Captured!</span>`;
-            }
-
-            closeCameraModal();
-        }
-
-        async function submitMerchantRegistration(event) {
-            event.preventDefault();
-            const payload = {
-                shopName: document.getElementById('regShopName').value.trim(),
-                businessType: document.getElementById('regBusinessType').value.trim(),
-                regNumber: document.getElementById('regNumber').value.trim(),
-                ownerName: document.getElementById('regOwnerName').value.trim(),
-                phone: document.getElementById('regPhone').value.trim(),
-                mpesaPhone: document.getElementById('regMpesaPhone').value.trim(),
-                email: 'mwangirobertmaina@gmail.com',
-                gpsLat: document.getElementById('regGpsLat').value || -1.2863,
-                gpsLon: document.getElementById('regGpsLon').value || 36.8172,
-                passportImage: document.getElementById('regPassportInput').value,
-                storePhoto: document.getElementById('regStorePhotoInput').value
-            };
-
-            try {
-                const res = await fetch(`${API_BASE}/api/merchant/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`✅ ${data.message}`);
-                    switchAuthMode('LOGIN');
-                } else {
-                    alert(data.error || "Registration failed.");
-                }
-            } catch (e) { alert("Network connection error."); }
-        }
-
-        async function loginMerchantWithToken() {
-            const phone = document.getElementById('loginPhone').value.trim();
-            const token = document.getElementById('loginToken').value.trim();
-
-            if (!phone || !token) {
-                alert("Enter phone and token.");
-                return;
-            }
-
-            try {
-                const res = await fetch(`${API_BASE}/api/merchant/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, token })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    currentMerchantId = data.merchantId;
-                    currentShopName = data.shopName;
-                    localStorage.setItem('rds_merchantId', currentMerchantId);
-                    localStorage.setItem('rds_shopName', currentShopName);
-                    showDashboard();
-                } else {
-                    alert(data.error || "Invalid login credentials.");
-                }
-            } catch (e) { alert("Network connection error."); }
-        }
-
-        function showDashboard() {
-            document.getElementById('viewAuth').classList.add('hidden');
-            document.getElementById('viewRegister').classList.add('hidden');
-            document.getElementById('viewDashboard').classList.remove('hidden');
-            
-            socket.emit('join_merchant_room', currentMerchantId);
-            loadDashboardData();
-        }
-
-        // Real-time socket listeners for incoming order ringer
-        socket.on('new_customer_order', (order) => { 
-            loadOrders(); 
-            triggerMerchantRinger(order.orderId || 'NEW_ORDER', "🚨 NEW CUSTOMER ORDER!");
-        });
-        socket.on('merchant_order_update', (order) => {
-            loadOrders();
-            if (order.status === 'DRIVER_EN_ROUTE_TO_MERCHANT') {
-                triggerMerchantRinger(order.orderId, "🛵 DRIVER ARRIVING!");
-            }
-        });
-        socket.on('orderListUpdated', () => { loadOrders(); loadDriverQueue(); });
-        socket.on('new_driver_dispatch', () => { loadDriverQueue(); });
-
-        async function loadDashboardData() {
-            loadCatalog();
-            loadOrders();
-            loadDriverQueue();
-        }
-
-        async function loadCatalog() {
-            try {
-                const res = await fetch(`${API_BASE}/api/merchant/catalog/${currentMerchantId}`);
-                const data = await res.json();
-                if (data.success && data.profile) {
-                    document.getElementById('shopTitle').innerText = data.profile.shopName;
-                    document.getElementById('shopVertical').innerText = `Vertical Corridor: ${data.profile.businessType || 'GENERAL_RETAIL'}`;
-                    document.getElementById('merchantIdBadge').innerText = `ID: ${currentMerchantId}`;
-                }
-                const tbody = document.getElementById('catalogTableBody');
-                if (!data.success || !data.catalog || data.catalog.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-500">No active catalog items.</td></tr>`;
-                    return;
-                }
-                tbody.innerHTML = data.catalog.map(item => `
-                    <tr class="hover:bg-slate-800/50 transition">
-                        <td class="py-3 px-4 font-medium text-slate-200 flex items-center space-x-3">
-                            <img src="${item.image || 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=100'}" class="w-10 h-10 rounded-lg object-cover">
-                            <span>${item.name}</span>
-                        </td>
-                        <td class="py-3 px-4"><span class="bg-slate-800 text-xs px-2 py-1 rounded">${item.category}</span></td>
-                        <td class="py-3 px-4 text-emerald-400 font-semibold">KES ${Number(item.price).toLocaleString()}</td>
-                        <td class="py-3 px-4">${item.stock} Units</td>
-                        <td class="py-3 px-4 text-right">
-                            <button onclick="deleteItem('${item.id}')" class="text-rose-400 text-xs bg-rose-500/10 px-2.5 py-1 rounded">Delete</button>
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (err) {}
-        }
-
-        async function loadOrders() {
-            try {
-                const res = await fetch(`${API_BASE}/api/merchant/orders/${currentMerchantId}`);
-                const data = await res.json();
-                const tbody = document.getElementById('ordersTableBody');
-                if (!data.success || !data.orders || data.orders.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-500">No incoming customer orders.</td></tr>`;
-                    return;
-                }
-                tbody.innerHTML = data.orders.map(order => {
-                    let actionBtn = `<button onclick="acceptOrder('${order.orderId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs font-semibold">Accept & Call Driver</button>`;
-                    if (order.status === 'DRIVER_EN_ROUTE_TO_MERCHANT' || order.status === 'AWAITING_DRIVER_PICKUP') {
-                        actionBtn = `<button onclick="completeHandover('${order.orderId}')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-3 py-1 rounded-lg text-xs animate-bounce">📦 Handover & Get Paid</button>`;
-                    } else if (order.status === 'COMPLETED & PAID OUT') {
-                        actionBtn = `<span class="text-xs text-emerald-400 font-bold">✅ Paid Out Successfully</span>`;
-                    }
-
-                    return `
-                        <tr class="hover:bg-slate-800/50 transition">
-                            <td class="py-3 px-4 font-mono text-xs text-sky-400">${order.orderId}</td>
-                            <td class="py-3 px-4 text-slate-300">${order.items ? order.items.map(i => `${i.name} (x${i.qty || 1})`).join(', ') : 'Standard'}</td>
-                            <td class="py-3 px-4 font-semibold text-emerald-400">KES ${Number(order.totalAmount || 0).toLocaleString()}</td>
-                            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs bg-sky-500/10 text-sky-400">${order.status}</span></td>
-                            <td class="py-3 px-4 text-right">${actionBtn}</td>
-                        </tr>
-                    `;
-                }).join('');
-            } catch (err) {}
-        }
-
-        async function acceptOrder(orderId) {
-            try {
-                const res = await fetch(`${API_BASE}/api/merchant/orders/accept`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ merchantId: currentMerchantId, orderId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`✅ Order ${orderId} packed & driver called successfully!`);
-                    loadOrders();
-                    loadDriverQueue();
-                } else {
-                    alert(data.error || "Failed to accept order.");
-                }
-            } catch (err) { alert("Network error connecting to server."); }
-        }
-
-        async function completeHandover(orderId) {
-            try {
-                const res = await fetch(`${API_BASE}/api/merchant/orders/complete-handover`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ merchantId: currentMerchantId, orderId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`💰 Order ${orderId} handed over and payment credited immediately!`);
-                    loadOrders();
-                } else {
-                    alert(data.error || "Failed to complete handover.");
-                }
-            } catch (err) { alert("Network error connecting to server."); }
-        }
-
-        async function loadDriverQueue() {
-            try {
-                const res = await fetch(`${API_BASE}/api/driver/queue`);
-                const data = await res.json();
-                const tbody = document.getElementById('driverQueueTableBody');
-                if (!data.success || !data.queue || data.queue.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-500">No orders awaiting driver dispatch.</td></tr>`;
-                    return;
-                }
-                tbody.innerHTML = data.queue.map(order => `
-                    <tr class="hover:bg-slate-800/50 transition">
-                        <td class="py-3 px-4 font-mono text-xs text-amber-400">${order.orderId || order.id}</td>
-                        <td class="py-3 px-4 font-medium">${order.shopName || order.pickup}</td>
-                        <td class="py-3 px-4 text-slate-300">${order.items ? order.items.map(i => `${i.name} (x${i.qty || 1})`).join(', ') : 'Items'}</td>
-                        <td class="py-3 px-4 font-semibold text-emerald-400">KES ${Number(order.totalAmount || order.total || 0).toLocaleString()}</td>
-                        <td class="py-3 px-4 text-right">
-                            <button onclick="driverAcceptOrder('${order.orderId || order.id}')" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-3 py-1 rounded-lg text-xs transition">Claim & Deliver</button>
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (err) {}
-        }
-
-        async function driverAcceptOrder(orderId) {
-            try {
-                const res = await fetch(`${API_BASE}/api/driver/accept-dispatch`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ dispatchId: orderId, driverId: 'RIDER_UNIT_01' })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`🛵 Order ${orderId} claimed! You are en route to the merchant.`);
-                    loadDriverQueue();
-                    loadOrders();
-                } else {
-                    alert(data.error || "Failed to claim dispatch.");
-                }
-            } catch (err) { alert("Network error connecting to server."); }
-        }
-
-        async function handleCatalogUpdate(event) {
-            event.preventDefault();
-            const payload = {
-                merchantId: currentMerchantId,
-                name: document.getElementById('itemName').value,
-                category: document.getElementById('itemCategory').value,
-                price: document.getElementById('itemPrice').value,
-                stock: document.getElementById('itemStock').value,
-                image: document.getElementById('itemImage').value || 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300'
-            };
-            try {
-                const res = await fetch(`${API_BASE}/api/merchant/catalog/update`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('catalogForm').reset();
-                    loadCatalog();
-                }
-            } catch (err) {}
-        }
-
-        async function deleteItem(itemId) {
-            if (!confirm("Delete item?")) return;
-            try {
-                await fetch(`${API_BASE}/api/merchant/catalog/delete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ merchantId: currentMerchantId, itemId })
-                });
-                loadCatalog();
-            } catch (err) {}
-        }
-
-        function logoutMerchant() {
-            localStorage.removeItem('rds_merchantId');
-            localStorage.removeItem('rds_shopName');
-            location.reload();
-        }
-    </script>
+/* ===================== shell ===================== */
+function paintHeader() { $('#hShop').textContent = state.shop.shopName || 'Shop'; $('#hMeta').textContent = `${state.shop.businessType || 'General retail'} · ${state.shop.merchantId}`; }
+function tab(id) { $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === id)); ['tOrders', 'tCatalog', 'tSettings'].forEach(s => $('#' + s).classList.toggle('hidden', s !== id)); }
+document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) tab(t.dataset.tab); });
+function enterApp() {
+  show('app'); paintHeader(); paintSound(); setSuspended(false); renderKpis(); $('#orders').innerHTML = '<div class="skel"></div>'.repeat(3);
+  initSocket(); loadOrders(); loadStats(); loadCatalog();
+}
+setInterval(() => { if (state.token && !document.hidden) { loadOrders(); } }, 20000);
+setInterval(() => { if (state.token && !document.hidden) { loadStats(); } }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.token) { loadOrders(); loadStats(); } });
+restore();
+})();
+</script>
 </body>
 </html>

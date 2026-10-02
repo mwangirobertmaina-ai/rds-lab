@@ -148,7 +148,7 @@ nav .dot{position:absolute;top:0;left:56%;background:var(--red);color:#fff;borde
     </div>
     <div id="stepOtp" style="display:none">
       <p class="muted" id="otpMsg" style="margin-bottom:8px"></p>
-      <label for="otp">6-digit code</label><input id="otp" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="Enter code">
+      <label for="otp">Verification code</label><input id="otp" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="Enter code">
       <div class="row"><button class="btn ghost" id="backPhone">Back</button><button class="btn go" id="verifyOtp">Verify &amp; sign in</button></div>
     </div>
     <div class="err" id="authErr"></div>
@@ -425,6 +425,7 @@ $('#grid').addEventListener('click', e => {
   changeQty(card.dataset.id, b.dataset.act === 'inc' ? 1 : -1);
 });
 document.addEventListener('error', e => { const t = e.target; if (t && t.tagName === 'IMG' && t.src !== PH) t.src = PH; }, true);
+document.addEventListener('load', e => { const t = e.target; if (t && t.tagName === 'IMG') t.classList.add('ok'); }, true);
 
 /* ===================== cart ===================== */
 const cartCount = () => Object.values(state.cart.lines).reduce((s, l) => s + l.qty, 0);
@@ -653,10 +654,10 @@ function initSocket() {
 }
 
 /* ===================== staff tools ===================== */
-try { $('#staffTok').value = sessionStorage.getItem('rds_staff') || ''; } catch (e) {}
+$('#staffTok').value = sessionStorage.getItem('rds_staff') || '';
 function staffLog(msg, ok = true) { const l = $('#staffLog'); l.style.display = ''; l.innerHTML = `<div style="color:${ok ? 'var(--g)' : 'var(--red)'}">${esc(new Date().toLocaleTimeString())} · ${esc(msg)}</div>` + l.innerHTML; }
 async function staffCall(btn, path, body) {
-  const tok = $('#staffTok').value.trim(); try { sessionStorage.setItem('rds_staff', tok); } catch (e) {}
+  const tok = $('#staffTok').value.trim(); sessionStorage.setItem('rds_staff', tok);
   if (!tok) return staffLog('Paste a staff token first.', false);
   busy(btn, true);
   try { const d = await api(path, { method: 'POST', token: tok, headers: { 'x-business-id': $('#tenant').value.trim() || 'INST-CBK-RTGS' }, body }); staffLog((d.message || 'Done') + (d.simulated ? ' (simulated)' : '')); toast(d.message || 'Done', 'ok'); }

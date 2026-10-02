@@ -107,7 +107,7 @@ if (!process.env.JWT_SECRET) {
     console.warn("⚠️  JWT_SECRET not set: using a random per-boot secret. All tokens die on restart. Set JWT_SECRET in production.");
 }
 if (ALLOW_TEST_CREDENTIALS) {
-    console.warn("⚠️  TEST CREDENTIALS ENABLED (OTP/merchant token 1234). Set NODE_ENV=production and leave ALLOW_TEST_CREDENTIALS unset to disable.");
+    console.warn("⚠️  TEST CREDENTIALS ENABLED (OTP/merchant token 1234 for ANY phone). Set NODE_ENV=production and leave ALLOW_TEST_CREDENTIALS unset to disable.");
 }
 
 // ============================================================================
@@ -358,6 +358,32 @@ function bindUserIdentity191(req, res, next) {
     next();
 }
 app.post(['/api/store/checkout', '/api/user/checkout'], idempotency191, bindUserIdentity191);
+
+// STAGE 191 — store extension (additive): server-side price guard + authoritative /quote
+const storeExt191 = safeRequire191('./routes/store', 'store');
+if (storeExt191) {
+    if (typeof storeExt191.priceGuard === 'function') app.post('/api/store/checkout', storeExt191.priceGuard);
+    app.use('/api/store', storeExt191);
+}
+
+// STAGE 191 — production: never advertise the test code in OTP responses (additive)
+if (!ALLOW_TEST_CREDENTIALS) {
+    app.post(['/api/user/send-otp', '/api/driver/register-and-send-otp'], (req, res, next) => {
+        const orig = res.json.bind(res);
+        res.json = (body) => {
+            if (body && typeof body.message === 'string') body = { ...body, message: body.message.replace(/\s*\(Use 1234[^)]*\)/i, '') };
+            return orig(body);
+        };
+        next();
+    });
+}
+
+// STAGE 191 — merchant extension (additive): handover guard + stock deduction on accept
+const merchantExt191 = safeRequire191('./routes/merchants', 'merchants');
+if (merchantExt191) {
+    if (typeof merchantExt191.handoverGuard === 'function') app.post('/api/merchant/orders/complete-handover', merchantExt191.handoverGuard);
+    if (typeof merchantExt191.stockOnAccept === 'function') app.post('/api/merchant/orders/accept', merchantExt191.stockOnAccept);
+}
 
 let stateDirty191 = false;
 app.use('/api', (req, res, next) => {
@@ -2544,21 +2570,32 @@ app.use('/api/admin/ops', adminOps191);
 // ============================================================================
 
 // ---------------------------------------------------------------------------
-// 1. PRODUCTION OTP HARDENING
-//    Original issueOtp/checkOtp always use the code "1234" and accept it for ANY
-//    phone, in every environment. That lets anyone log in as any customer or
-//    driver. When ALLOW_TEST_CREDENTIALS is false (production default) these
-//    overrides issue a random 6-digit code and remove the master bypass.
-//    In test mode the original behaviour is untouched.
+// 1. PRODUCTION OTP: REAL CODES FOR EVERYONE, FIXED CODE ONLY FOR THE TEST NUMBER(S)
+//    Original issueOtp/checkOtp accept "1234" for ANY phone. In production that
+//    would let anyone sign in as any customer or driver. When test credentials are
+//    off (production default) these overrides:
+//      - issue a random 6-digit code and send it by SMS to real customers;
+//      - accept a fixed code ONLY for numbers in TEST_PHONES (default
+//        +254722334455, code 1234). Env: TEST_PHONES="a,b" (empty = no test
+//        numbers), TEST_OTP="1234".
+//    Test mode (ALLOW_TEST_CREDENTIALS) keeps the original behaviour.
 // ---------------------------------------------------------------------------
+const TEST_OTP_191 = String(process.env.TEST_OTP || '1234');
+const TEST_PHONES_191 = new Set(
+    (process.env.TEST_PHONES !== undefined ? process.env.TEST_PHONES : '+254722334455')
+        .split(',').map(x => x.trim()).filter(Boolean).map(normalizeMsisdn191).filter(x => x.length >= 9)
+);
+const isTestPhone191 = (p) => TEST_PHONES_191.has(normalizeMsisdn191(String(p)));
+
 if (!ALLOW_TEST_CREDENTIALS) {
     issueOtp = function (store, phone, extra) {
         const cleanPhone = String(phone).trim();
-        const otp = String(crypto.randomInt(100000, 1000000));
+        const isTest = isTestPhone191(cleanPhone);
+        const otp = isTest ? TEST_OTP_191 : String(crypto.randomInt(100000, 1000000));
         const payload = { ...extra, otp, createdAt: Date.now(), attempts: 0 };
         global.rdsGlobalOtps[cleanPhone] = payload;
         store[cleanPhone] = payload;
-        deliverOtp(cleanPhone, otp);
+        if (!isTest) deliverOtp(cleanPhone, otp);
         return otp;
     };
     checkOtp = function (store, phone, otp) {
@@ -2574,9 +2611,19 @@ if (!ALLOW_TEST_CREDENTIALS) {
         return false;
     };
     if (!SMS_CONFIGURED_191) {
-        console.error("🚨 [STAGE191] Production mode but no SMS provider configured: OTP and merchant tokens cannot be delivered. Set SMS_PROVIDER (+ AT_USERNAME/AT_API_KEY or SMS_WEBHOOK_URL).");
+        console.error("🚨 [STAGE191] Production mode but no SMS provider configured: real customers cannot receive login codes (only TEST_PHONES can sign in). Set SMS_PROVIDER (+ AT_USERNAME/AT_API_KEY or SMS_WEBHOOK_URL).");
     }
 }
+
+// Vendor console test login: the seeded shop whose phone is a test number keeps token 1234.
+// Called again after the saved state is restored, because a snapshot would overwrite it.
+function applyTestAccounts191() {
+    if (ALLOW_TEST_CREDENTIALS) return;
+    for (const p of Object.values(merchantProfiles)) {
+        if (p && p.phone && isTestPhone191(p.phone)) p.loginToken = TEST_OTP_191;
+    }
+}
+applyTestAccounts191();
 
 // ---------------------------------------------------------------------------
 // 2. REAL SECURITY POSTURE (stub above is kept untouched)
@@ -2596,6 +2643,7 @@ function securityPostureReal191() {
     if (!PERSIST_STATE_191) add('MEDIUM', 'PERSIST', 'State persistence disabled: all orders/wallets are lost on restart.');
     if (lastSnapshot191.ok === false) add('HIGH', 'SNAPSHOT_FAILING', `Last state snapshot failed: ${lastSnapshot191.error}`);
     if (!verifyAuditChain().valid) add('CRITICAL', 'AUDIT_CHAIN', 'Audit chain integrity check FAILED.');
+    if (!ALLOW_TEST_CREDENTIALS && TEST_PHONES_191.size) add('INFO', 'TEST_PHONES', `${TEST_PHONES_191.size} test phone(s) accept the fixed code. Set TEST_PHONES= (empty) in Render to remove them before launch.`);
     if (!METRICS_TOKEN_191) add('INFO', 'METRICS', 'METRICS_TOKEN unset: /metrics is disabled.');
     Object.entries(MODULE_STATUS_191).forEach(([k, v]) => { if (!v.loaded) add('MEDIUM', 'MODULE_' + k.toUpperCase(), `Optional module "${k}" not loaded: ${v.error}`); });
     const failing = f.filter(x => x.severity === 'CRITICAL' || x.severity === 'HIGH').length;
@@ -2865,6 +2913,7 @@ setInterval(() => {
 // ============================================================================
 
 restoreSnapshot191();
+applyTestAccounts191();
 
 const adsRouter = safeRequire191('./routes/ads', 'ads');
 if (adsRouter) {
