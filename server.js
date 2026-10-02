@@ -2537,6 +2537,333 @@ adminOps191.get('/system/health', requireAdminRoleStrict, (req, res) => {
 });
 app.use('/api/admin/ops', adminOps191);
 
+// ============================================================================
+// STAGE 191 — COMPLETION BLOCK (ADDITIVE ONLY)
+// Inserted after app.use('/api/admin/ops', adminOps191) and before
+// restoreSnapshot191(), so every helper it uses is already defined.
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 1. PRODUCTION OTP HARDENING
+//    Original issueOtp/checkOtp always use the code "1234" and accept it for ANY
+//    phone, in every environment. That lets anyone log in as any customer or
+//    driver. When ALLOW_TEST_CREDENTIALS is false (production default) these
+//    overrides issue a random 6-digit code and remove the master bypass.
+//    In test mode the original behaviour is untouched.
+// ---------------------------------------------------------------------------
+if (!ALLOW_TEST_CREDENTIALS) {
+    issueOtp = function (store, phone, extra) {
+        const cleanPhone = String(phone).trim();
+        const otp = String(crypto.randomInt(100000, 1000000));
+        const payload = { ...extra, otp, createdAt: Date.now(), attempts: 0 };
+        global.rdsGlobalOtps[cleanPhone] = payload;
+        store[cleanPhone] = payload;
+        deliverOtp(cleanPhone, otp);
+        return otp;
+    };
+    checkOtp = function (store, phone, otp) {
+        const cleanPhone = String(phone).trim();
+        const cleanOtp = String(otp).trim();
+        const rec = global.rdsGlobalOtps[cleanPhone] || store[cleanPhone];
+        if (!rec) return false;
+        const drop = () => { delete global.rdsGlobalOtps[cleanPhone]; delete store[cleanPhone]; };
+        if (Date.now() - rec.createdAt > 5 * 60 * 1000) { drop(); return false; }
+        rec.attempts = (rec.attempts || 0) + 1;
+        if (rec.attempts > 5) { drop(); return false; }
+        if (safeEqual(rec.otp, cleanOtp)) { drop(); return true; }
+        return false;
+    };
+    if (!SMS_CONFIGURED_191) {
+        console.error("🚨 [STAGE191] Production mode but no SMS provider configured: OTP and merchant tokens cannot be delivered. Set SMS_PROVIDER (+ AT_USERNAME/AT_API_KEY or SMS_WEBHOOK_URL).");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 2. REAL SECURITY POSTURE (stub above is kept untouched)
+// ---------------------------------------------------------------------------
+function securityPostureReal191() {
+    const f = [];
+    const add = (severity, id, msg) => f.push({ severity, id, message: msg });
+    if (ALLOW_TEST_CREDENTIALS) add('CRITICAL', 'TEST_CREDS', 'Test credentials (OTP/merchant token 1234) are enabled.');
+    if (!process.env.JWT_SECRET) add('HIGH', 'JWT_SECRET', 'JWT_SECRET not set: tokens die on every restart and cannot be shared across instances.');
+    if (!STRICT_ACTOR_AUTH) add('HIGH', 'STRICT_ACTOR_AUTH', 'STRICT_ACTOR_AUTH is off: requests without a token can still reach driver/merchant/store endpoints.');
+    if (CORS_ORIGIN === '*') add('MEDIUM', 'CORS_WILDCARD', 'ALLOWED_ORIGINS is unset: CORS allows any origin.');
+    if (!process.env.SOVEREIGN_ADMIN_PASSWORD_HASH && !process.env.SOVEREIGN_ADMIN_PASSWORD) add('HIGH', 'ADMIN_LOGIN', 'No admin password configured: admin login returns 503.');
+    if (!process.env.SOVEREIGN_ADMIN_PASSWORD_HASH && process.env.SOVEREIGN_ADMIN_PASSWORD) add('LOW', 'ADMIN_PLAINTEXT', 'Admin password is plaintext in env; prefer SOVEREIGN_ADMIN_PASSWORD_HASH (bcrypt).');
+    if (!SMS_CONFIGURED_191) add(IS_PROD ? 'HIGH' : 'LOW', 'SMS', 'No SMS provider configured: OTPs and merchant approval tokens are not delivered.');
+    if (!process.env.AUDIT_HMAC_KEY) add('MEDIUM', 'AUDIT_KEY', 'AUDIT_HMAC_KEY not set: audit payload hashes use the JWT secret.');
+    if (!process.env.DATA_DIR) add('LOW', 'DATA_DIR', 'DATA_DIR unset: state and audit log live beside server.js (lost on ephemeral disks, e.g. Render without a disk).');
+    if (!PERSIST_STATE_191) add('MEDIUM', 'PERSIST', 'State persistence disabled: all orders/wallets are lost on restart.');
+    if (lastSnapshot191.ok === false) add('HIGH', 'SNAPSHOT_FAILING', `Last state snapshot failed: ${lastSnapshot191.error}`);
+    if (!verifyAuditChain().valid) add('CRITICAL', 'AUDIT_CHAIN', 'Audit chain integrity check FAILED.');
+    if (!METRICS_TOKEN_191) add('INFO', 'METRICS', 'METRICS_TOKEN unset: /metrics is disabled.');
+    Object.entries(MODULE_STATUS_191).forEach(([k, v]) => { if (!v.loaded) add('MEDIUM', 'MODULE_' + k.toUpperCase(), `Optional module "${k}" not loaded: ${v.error}`); });
+    const failing = f.filter(x => x.severity === 'CRITICAL' || x.severity === 'HIGH').length;
+    return { ok: failing === 0, failing, findings: f };
+}
+
+// ---------------------------------------------------------------------------
+// 3. ADMIN OPERATIONS API  (all under /api/admin/ops, behind strict JWT)
+//    Read = admin or auditor. Write = SOVEREIGN_ADMIN only. Writes are audited.
+// ---------------------------------------------------------------------------
+const OPS_191 = (method, p, role, summary) => ROUTE_CATALOG_191.push({ method, path: '/api/admin/ops' + p, access: role, summary });
+const merchantStatusOf191 = (id) => {
+    const p = merchantProfiles[id] || {};
+    return corridorStatus[id] || p.status || 'APPROVED_ACTIVE';
+};
+
+adminOps191.get('/kpis', requireAdminRoleStrict, (req, res) => {
+    const orders = normalizedOrders191();
+    const dayStart = eatDayStart191();
+    const drvList = Object.values(drivers);
+    const ratings = orderRatings191;
+    res.json({
+        success: true, currency: 'KES', generatedAt: Date.now(),
+        orders: {
+            total: orders.length,
+            today: orders.filter(o => (o.createdAt || 0) >= dayStart).length,
+            active: orders.filter(o => !CANCELLED_STATES_191.has(o.status) && !/COMPLETED|DELIVERED/.test(String(o.status))).length,
+            byStatus: countBy191(orders, o => o.status),
+            bySource: countBy191(orders, o => o.source)
+        },
+        merchants: {
+            pending: pendingMerchants.length,
+            total: Object.keys(merchantProfiles).length,
+            active: Object.keys(merchantProfiles).filter(isTenantActive).length,
+            suspended: Object.keys(merchantProfiles).filter(id => !isTenantActive(id)).length
+        },
+        drivers: {
+            registered: drvList.length,
+            online: Object.values(driverPresence191).filter(p => p && p.online).length,
+            byStanding: countBy191(drvList, d => d.standing || 'UNREVIEWED'),
+            queueDepth: (global.driverQueue || []).length
+        },
+        ledger: ledgerSummary191(),
+        ratings: { count: ratings.length, average: ratings.length ? money2(ratings.reduce((s, r) => s + r.rating, 0) / ratings.length) : null },
+        platform: {
+            stage: STAGE_191, version: VERSION_191, uptimeSeconds: Math.floor(process.uptime()),
+            auditBlocks: sovereignAuditStream.length, auditChainValid: verifyAuditChain().valid,
+            socketClients: io.engine ? io.engine.clientsCount : 0,
+            snapshot: lastSnapshot191, eventLoopLagMs: Number(eventLoopLagMs191.toFixed(2)),
+            errors5xx: METRICS_191.byClass['5xx']
+        }
+    });
+});
+OPS_191('GET', '/kpis', 'admin|auditor', 'Live KPIs: orders, merchants, drivers, ledger, ratings, platform health');
+
+adminOps191.get('/orders', requireAdminRoleStrict, (req, res) => {
+    let list = normalizedOrders191();
+    if (typeof req.query.status === 'string') list = list.filter(o => o.status === req.query.status);
+    if (isSafeKey(req.query.merchantId)) list = list.filter(o => o.merchantId === req.query.merchantId);
+    if (isSafeKey(req.query.userId)) list = list.filter(o => o.userId === req.query.userId);
+    const r = paginate191(req, list, 50, 200);
+    res.json({ success: true, ...r, orders: r.items, items: undefined });
+});
+OPS_191('GET', '/orders', 'admin|auditor', 'All orders across store, merchant and direct-ride sources (filters: status, merchantId, userId, page, limit)');
+
+adminOps191.get('/orders/:orderId', requireAdminRoleStrict, (req, res) => {
+    if (!isSafeKey(req.params.orderId)) return bad(res, "Invalid orderId.");
+    const v = orderView191(req.params.orderId, true);
+    if (!v) return res.status(404).json({ success: false, error: "Order not found." });
+    res.json({ success: true, order: v });
+});
+OPS_191('GET', '/orders/:orderId', 'admin|auditor', 'Full order view incl. driver, breakdown and live location');
+
+adminOps191.post('/orders/cancel', requireSovereignAdminOnly, (req, res) => {
+    const { orderId, reason } = req.body;
+    if (!isSafeKey(orderId)) return bad(res, "Invalid orderId.");
+    const v = orderView191(orderId, false);
+    if (!v) return res.status(404).json({ success: false, error: "Order not found." });
+    if (CANCELLED_STATES_191.has(v.status)) return bad(res, `Order already ${v.status}.`, 409);
+    if (/COMPLETED|DELIVERED/.test(String(v.status)) || v.deliveryStatus === 'DELIVERED') return bad(res, "Completed orders cannot be cancelled.", 409);
+    cancelOrderEverywhere191(orderId, 'CANCELLED', cleanText(reason, 200));
+    appendAudit('ADMIN_ORDER_CANCEL', { orderId, reason: cleanText(reason, 200), by: req.user.email || req.user.sub });
+    stateDirty191 = true;
+    res.json({ success: true, message: `Order ${orderId} cancelled; refund marked due.` });
+});
+OPS_191('POST', '/orders/cancel', 'admin', 'Cancel an in-flight order everywhere and mark refund due');
+
+adminOps191.get('/merchants', requireAdminRoleStrict, (req, res) => {
+    const list = Object.keys(merchantProfiles).map(id => {
+        const p = merchantProfiles[id];
+        const orders = merchantOrdersOf191(id);
+        return {
+            merchantId: id, shopName: p.shopName, businessType: p.businessType, phone: p.phone,
+            status: merchantStatusOf191(id), active: isTenantActive(id),
+            catalogItems: (merchantCatalogs[id] || []).length,
+            orders: orders.length, createdAt: p.createdAt || null
+        };
+    });
+    res.json({ success: true, merchants: list, pending: pendingMerchants.map(m => ({ merchantId: m.merchantId, shopName: m.shopName, businessType: m.businessType, ownerName: m.ownerName, phone: m.phone, createdAt: m.createdAt })) });
+});
+OPS_191('GET', '/merchants', 'admin|auditor', 'All merchants with status, plus the pending application queue');
+
+adminOps191.post('/merchants/approve', requireSovereignAdminOnly, (req, res) => {
+    const { merchantId } = req.body;
+    if (!isSafeKey(merchantId)) return bad(res, "Invalid merchantId.");
+    const i = pendingMerchants.findIndex(m => m.merchantId === merchantId);
+    if (i === -1) return res.status(404).json({ success: false, error: "Application not found or already processed." });
+    const m = pendingMerchants.splice(i, 1)[0];
+    m.status = 'APPROVED';
+    m.loginToken = ALLOW_TEST_CREDENTIALS ? "1234" : String(crypto.randomInt(100000, 1000000));
+    approvedMerchants.push(m);
+    merchantProfiles[merchantId] = m;
+    if (!merchantCatalogs[merchantId]) merchantCatalogs[merchantId] = [];
+    if (!global.merchantOrders[merchantId]) global.merchantOrders[merchantId] = [];
+    appendAudit('MERCHANT_APPROVED', { merchantId, shopName: m.shopName, by: req.user.email || req.user.sub });
+    if (!ALLOW_TEST_CREDENTIALS) sendSms191(m.phone, `RDS: ${m.shopName} is approved. Your merchant login token is ${m.loginToken}.`);
+    stateDirty191 = true;
+    const showToken = ALLOW_TEST_CREDENTIALS || !SMS_CONFIGURED_191;
+    res.json({ success: true, message: `${m.shopName} approved.`, merchantId, loginToken: showToken ? m.loginToken : undefined, tokenSentBySms: !showToken });
+});
+OPS_191('POST', '/merchants/approve', 'admin', 'Approve a pending merchant application (token is SMSed when SMS is configured)');
+
+adminOps191.post('/merchants/reject', requireSovereignAdminOnly, (req, res) => {
+    const { merchantId, reason } = req.body;
+    if (!isSafeKey(merchantId)) return bad(res, "Invalid merchantId.");
+    const i = pendingMerchants.findIndex(m => m.merchantId === merchantId);
+    if (i === -1) return res.status(404).json({ success: false, error: "Application not found or already processed." });
+    const m = pendingMerchants.splice(i, 1)[0];
+    appendAudit('MERCHANT_REJECTED', { merchantId, shopName: m.shopName, reason: cleanText(reason, 200), by: req.user.email || req.user.sub });
+    stateDirty191 = true;
+    res.json({ success: true, message: `Application for ${m.shopName} rejected.` });
+});
+OPS_191('POST', '/merchants/reject', 'admin', 'Reject a pending merchant application');
+
+adminOps191.get('/drivers', requireAdminRoleStrict, (req, res) => {
+    const list = Object.values(drivers).map(d => ({
+        id: d.id, name: d.name, phone: d.phone, vehicleType: d.vehicleType, plate: d.plate, psvBadge: d.psvBadge,
+        standing: d.standing || 'UNREVIEWED', verificationStatus: d.verificationStatus, documentsReviewed: !!d.documentsReviewed,
+        hasPassportSnap: !!d.hasPassportSnap, hasVehicleSnap: !!d.hasVehicleSnap, registeredAt: d.registeredAt,
+        reviewedAt: d.reviewedAt || null, reviewedBy: d.reviewedBy || null, reviewNote: d.reviewNote || null,
+        balance: money2(driverWallets[d.id] || 0), online: !!(driverPresence191[d.id] && driverPresence191[d.id].online)
+    }));
+    res.json({ success: true, total: list.length, drivers: list });
+});
+OPS_191('GET', '/drivers', 'admin|auditor', 'All drivers with documents status, standing, wallet and presence');
+
+adminOps191.post('/drivers/review', requireSovereignAdminOnly, (req, res) => {
+    const { driverId, standing, note } = req.body;
+    const ALLOWED = ['APPROVED', 'SUSPENDED', 'REJECTED'];
+    if (!isSafeKey(driverId) || !ALLOWED.includes(standing)) return bad(res, `driverId required; standing must be one of ${ALLOWED.join(', ')}.`);
+    const d = drivers[driverId];
+    if (!d) return res.status(404).json({ success: false, error: "Driver not found." });
+    d.standing = standing;
+    d.documentsReviewed = true;
+    d.reviewedAt = Date.now();
+    d.reviewedBy = req.user.email || req.user.sub;
+    d.reviewNote = cleanText(note, 300) || null;
+    d.verificationStatus = standing === 'APPROVED' ? 'MANUALLY_VERIFIED' : standing;
+    if (standing !== 'APPROVED' && driverPresence191[driverId]) driverPresence191[driverId].online = false;
+    appendAudit('DRIVER_REVIEW', { driverId, standing, by: d.reviewedBy });
+    emitSafe191('drivers', 'driver_standing_changed', { driverId, standing });
+    stateDirty191 = true;
+    res.json({ success: true, message: `Driver ${driverId} is now ${standing}.`, driver: d });
+});
+OPS_191('POST', '/drivers/review', 'admin', 'Approve, suspend or reject a driver (enforced by the existing standing guard)');
+
+adminOps191.get('/dispatches', requireAdminRoleStrict, (req, res) => {
+    const queue = global.driverQueue || [];
+    const active = [];
+    for (const [biz, list] of Object.entries(global.activeDispatches || {})) for (const d of list) active.push({ ...d, businessId: biz });
+    res.json({ success: true, queueDepth: queue.length, queue, active, activeByStatus: countBy191(active, d => d.status) });
+});
+OPS_191('GET', '/dispatches', 'admin|auditor', 'Driver radar queue and all active dispatches');
+
+adminOps191.get('/ledger', requireAdminRoleStrict, (req, res) => {
+    res.json({ success: true, summary: ledgerSummary191(), driverEntries: driverLedger191.length });
+});
+OPS_191('GET', '/ledger', 'admin|auditor', 'Money summary with variance detection and driver wallet liability');
+
+adminOps191.get('/ledger/export.csv', requireAdminRoleStrict, (req, res) => {
+    const rows = [['entryId', 'driverId', 'dispatchId', 'gross', 'credited', 'at'].join(',')];
+    for (const e of driverLedger191) rows.push([e.entryId, e.driverId, e.dispatchId, e.gross, e.credited, new Date(e.at).toISOString()].map(csvCell191).join(','));
+    res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="driver-ledger.csv"' }).send(rows.join('\n') + '\n');
+});
+OPS_191('GET', '/ledger/export.csv', 'admin|auditor', 'Driver ledger CSV export (formula-injection safe)');
+
+adminOps191.get('/ratings', requireAdminRoleStrict, (req, res) => {
+    const r = paginate191(req, [...orderRatings191].reverse(), 50, 200);
+    res.json({ success: true, ...r, ratings: r.items, items: undefined });
+});
+OPS_191('GET', '/ratings', 'admin|auditor', 'Customer ratings, newest first');
+
+adminOps191.get('/traffic', requireAdminRoleStrict, (req, res) => {
+    const top = {};
+    for (const l of lanTrafficLogs) { const k = `${l.method} ${l.endpoint}`; top[k] = (top[k] || 0) + 1; }
+    res.json({
+        success: true, window: lanTrafficLogs.length,
+        byStatus: countBy191(lanTrafficLogs, l => l.status.split(' ')[0]),
+        topEndpoints: Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 15).map(([endpoint, count]) => ({ endpoint, count })),
+        slowest: Object.entries(METRICS_191.byRoute).map(([route, r]) => ({ route, count: r.count, avgMs: Number((r.ms / r.count).toFixed(2)), errors: r.errors })).sort((a, b) => b.avgMs - a.avgMs).slice(0, 10)
+    });
+});
+OPS_191('GET', '/traffic', 'admin|auditor', 'Traffic summary: status classes, hot endpoints, slowest routes');
+
+adminOps191.get('/security-posture', requireAdminRoleStrict, (req, res) => {
+    res.json({ success: true, posture: securityPostureReal191() });
+});
+OPS_191('GET', '/security-posture', 'admin|auditor', 'Live configuration risk findings');
+
+adminOps191.post('/snapshot/save', requireSovereignAdminOnly, async (req, res) => {
+    const ok = await saveSnapshot191(true);
+    appendAudit('ADMIN_SNAPSHOT_FORCED', { by: req.user.email || req.user.sub, ok });
+    res.status(ok ? 200 : 500).json({ success: ok, snapshot: lastSnapshot191 });
+});
+OPS_191('POST', '/snapshot/save', 'admin', 'Force a durable state snapshot now');
+
+adminOps191.get('/routes', requireAdminRoleStrict, (req, res) => {
+    res.json({ success: true, stage: STAGE_191, count: ROUTE_CATALOG_191.length, routes: ROUTE_CATALOG_191, panels: PANELS_191, modules: MODULE_STATUS_191 });
+});
+OPS_191('GET', '/routes', 'admin|auditor', 'This catalog');
+
+// Panel registry: which HTML file serves which URL, and whether it is deployed.
+Object.entries(PANEL_MAP_191).forEach(([url, file]) => {
+    PANELS_191.push({ url, file, deployed: fs.existsSync(path.join(__dirname, file)) });
+});
+
+// ---------------------------------------------------------------------------
+// 4. REAL-TIME: periodic heartbeat to admins (clients with an admin JWT are
+//    already placed in the "admins" room by the socket auth above).
+// ---------------------------------------------------------------------------
+setInterval(() => {
+    try {
+        emitSafe191('admins', 'ops_heartbeat', {
+            at: Date.now(), queueDepth: (global.driverQueue || []).length,
+            pendingMerchants: pendingMerchants.length,
+            onlineDrivers: Object.values(driverPresence191).filter(p => p && p.online).length,
+            socketClients: io.engine ? io.engine.clientsCount : 0
+        });
+    } catch (e) {}
+}, 15000).unref();
+
+// ---------------------------------------------------------------------------
+// 5. STALE DISPATCH SWEEPER: ACCEPTED dispatches whose driver has been silent
+//    for >30 min are returned to the radar so orders are never stranded.
+// ---------------------------------------------------------------------------
+setInterval(() => {
+    try {
+        const cutoff = Date.now() - 30 * 60 * 1000;
+        for (const list of allDispatchLists191()) for (const d of list) {
+            if (d.status !== 'ACCEPTED_BY_DRIVER' || !d.driverId || !d.acceptedAt || d.acceptedAt > cutoff) continue;
+            const loc = driverLocations191[d.driverId];
+            const pres = driverPresence191[d.driverId];
+            const alive = (loc && loc.at > cutoff) || (pres && pres.online && pres.at > cutoff);
+            if (alive) continue;
+            const prev = d.driverId;
+            d.status = 'PENDING_DRIVER_ACCEPTANCE'; delete d.driverId; delete d.acceptedAt;
+            if (!(global.driverQueue || []).some(q => q.id === d.id)) global.driverQueue.push(d);
+            appendAudit('DISPATCH_AUTO_RELEASED', { dispatchId: d.id, previousDriver: prev });
+            emitSafe191(null, 'new_driver_dispatch', d);
+            stateDirty191 = true;
+        }
+    } catch (e) {}
+}, 5 * 60 * 1000).unref();
+
+// ============================================================================
+// END STAGE 191 COMPLETION BLOCK
+// ============================================================================
+
 restoreSnapshot191();
 
 const adsRouter = safeRequire191('./routes/ads', 'ads');

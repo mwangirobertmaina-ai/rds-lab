@@ -1,889 +1,681 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0b0f19">
-    <title>RDS Sovereign Multi-Merchant Supermarket & Hotel Hub</title>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
-
-    <style>
-        :root {
-            --neon-green: #00ff88;
-            --dark-bg: #0b0f19;
-            --panel-bg: #111827;
-            --card-bg: #181824;
-            --text-dim: #9ca3af;
-            --cyan: #38bdf8;
-            --alert-red: #ff3366;
-            --gold: #ffd700;
-            --stage-purple: #a855f7;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
-
-        body {
-            background-color: var(--dark-bg);
-            color: #fff;
-            padding: 15px;
-            max-width: 480px;
-            margin: 0 auto;
-            padding-bottom: 140px;
-        }
-
-        .app-view { display: none; }
-        .app-view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .telemetry-ribbon {
-            background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(56,189,248,0.1));
-            border: 1px solid var(--stage-purple);
-            border-radius: 8px;
-            padding: 6px 10px;
-            font-size: 0.65rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            color: var(--stage-purple);
-            font-weight: bold;
-        }
-
-        .header-location {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .location-box { display: flex; align-items: center; gap: 8px; }
-        .location-text span { font-size: 0.75rem; color: var(--text-dim); display: block; }
-        .location-text strong { font-size: 0.95rem; color: #fff; }
-
-        .corridor-selector {
-            display: flex;
-            gap: 6px;
-            overflow-x: auto;
-            margin-bottom: 15px;
-            padding-bottom: 4px;
-            scrollbar-width: none;
-        }
-        .corridor-selector::-webkit-scrollbar { display: none; }
-        .corridor-btn {
-            background: var(--panel-bg);
-            border: 1px solid #374151;
-            border-radius: 8px;
-            padding: 8px 10px;
-            text-align: center;
-            cursor: pointer;
-            color: var(--text-dim);
-            font-size: 0.75rem;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-        .corridor-btn.active, .corridor-btn:hover {
-            border-color: var(--stage-purple);
-            background: rgba(168, 85, 247, 0.1);
-            color: #fff;
-        }
-
-        .category-filter-bar {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            margin-bottom: 20px;
-            padding-bottom: 4px;
-            scrollbar-width: none;
-        }
-        .category-filter-bar::-webkit-scrollbar { display: none; }
-        .cat-btn {
-            background: var(--panel-bg);
-            border: 1px solid #374151;
-            color: var(--text-dim);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            white-space: nowrap;
-            cursor: pointer;
-        }
-        .cat-btn.active, .cat-btn:hover {
-            background: var(--stage-purple);
-            border-color: var(--stage-purple);
-            color: #fff;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-        .section-header h3 { font-size: 1rem; color: #fff; font-weight: 700; }
-
-        .catalog-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 25px;
-        }
-
-        .product-card {
-            background: var(--panel-bg);
-            border: 1px solid #222c3d;
-            border-radius: 12px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .image-wrapper {
-            width: 100%;
-            height: 110px;
-            overflow: hidden;
-            background: #000;
-            position: relative;
-        }
-
-        .merchant-badge {
-            position: absolute;
-            top: 6px; left: 6px;
-            background: rgba(0,0,0,0.75);
-            color: var(--cyan);
-            font-size: 0.6rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .product-img { width: 100%; height: 100%; object-fit: cover; }
-        .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
-        .product-title { font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 2px; }
-        .product-price { font-size: 0.85rem; color: var(--stage-purple); font-weight: 700; margin-bottom: 8px; }
-
-        .quantity-stepper {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--dark-bg);
-            border: 1px solid #374151;
-            border-radius: 6px;
-            overflow: hidden;
-            margin-bottom: 6px;
-        }
-        .quantity-stepper button {
-            background: #222e3c;
-            color: #fff;
-            border: none;
-            padding: 6px 10px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-        .quantity-display { font-size: 0.8rem; font-weight: bold; color: var(--neon-green); padding: 0 8px; }
-
-        button {
-            background: var(--stage-purple);
-            color: #fff;
-            border: none;
-            padding: 10px;
-            font-weight: 700;
-            width: 100%;
-            cursor: pointer;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-        }
-        button:hover { background: var(--cyan); color: #000; }
-
-        .floating-cart {
-            position: fixed;
-            bottom: 65px; 
-            left: 15px; 
-            right: 15px;
-            max-width: 450px;
-            margin: 0 auto;
-            background: linear-gradient(135deg, #111827, #1f2937);
-            border: 1px solid var(--stage-purple);
-            border-radius: 12px;
-            padding: 10px 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 990;
-            display: none;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.5);
-        }
-        .floating-cart.active { display: flex; }
-
-        .checkout-panel {
-            background: var(--panel-bg);
-            border: 1px solid #222c3d;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        .checkout-panel h3 { font-size: 0.9rem; margin-bottom: 12px; color: var(--cyan); text-transform: uppercase; }
-
-        input, select {
-            width: 100%;
-            background: var(--dark-bg);
-            border: 1px solid #374151;
-            color: #fff;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            outline: none;
-        }
-        input:focus, select:focus { border-color: var(--stage-purple); }
-
-        .btn-cyan { background: var(--cyan); color: #000; }
-        .btn-cyan:hover { background: var(--neon-green); }
-
-        .bottom-nav {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: #0d1322;
-            border-top: 1px solid #222c3d;
-            display: flex;
-            justify-content: space-around;
-            padding: 8px 0;
-            z-index: 1000;
-            max-width: 480px;
-            margin: 0 auto;
-        }
-        .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.60rem; font-weight: 600; cursor: pointer; }
-        .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
-        .nav-item svg { width: 18px; height: 18px; fill: currentColor; margin: 0 auto 2px auto; display: block; }
-
-        .order-history-card {
-            background: rgba(0,0,0,0.4);
-            border: 1px solid #222c3d;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
-            font-size: 0.75rem;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f19">
+<title>RDS Store | Shop, Hotels &amp; Dining</title>
+<style>
+:root{--g:#00ff88;--bg:#0b0f19;--panel:#111827;--card:#151b2a;--dim:#9ca3af;--cy:#38bdf8;--red:#ff4d6d;--gold:#ffd700;--pu:#a855f7;--line:#222c3d;--r:12px;--safe:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:#fff;max-width:480px;margin:0 auto;min-height:100vh;padding:0 14px calc(150px + var(--safe))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.topbar{position:sticky;top:0;z-index:30;background:linear-gradient(var(--bg) 80%,transparent);padding:12px 0 8px;display:flex;justify-content:space-between;align-items:center}
+.brand{font-weight:800;letter-spacing:.3px}.brand b{color:var(--pu)}
+.live{display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--dim)}
+.live i{width:8px;height:8px;border-radius:50%;background:#6b7280;transition:background .3s}
+.live.on i{background:var(--g);box-shadow:0 0 8px var(--g)}
+.view{display:none}.view.active{display:block;animation:in .25s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h2{font-size:1.05rem;margin:6px 0 12px}h3{font-size:.8rem;color:var(--cy);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:14px}
+.muted{color:var(--dim);font-size:.78rem}.err{color:var(--red);font-size:.8rem;margin:6px 0}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid #374151;border-radius:8px;padding:11px;margin-bottom:10px;font-size:.9rem;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--pu)}
+label{display:block;font-size:.72rem;color:var(--cy);margin:2px 0 4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:9px;padding:12px;font-weight:700;font-size:.82rem;cursor:pointer;background:#1f2937;transition:transform .08s,opacity .15s,background .15s}
+.btn:active{transform:scale(.98)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--pu)}.btn.go{background:var(--g);color:#000}.btn.cy{background:var(--cy);color:#000}.btn.danger{background:transparent;border:1px solid var(--red);color:var(--red)}.btn.ghost{background:transparent;border:1px solid #374151}
+.btn.sm{width:auto;padding:8px 14px}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.search{position:relative}.search input{padding-left:36px}.search span{position:absolute;left:12px;top:11px;opacity:.7}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;background:var(--panel);border:1px solid #374151;color:var(--dim);padding:7px 13px;border-radius:20px;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .15s}
+.chip.on{background:var(--pu);border-color:var(--pu);color:#fff}
+.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}.between{display:flex;justify-content:space-between;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;content-visibility:auto;contain-intrinsic-size:260px}
+.img{position:relative;height:112px;background:#000;overflow:hidden}.img img{width:100%;height:100%;object-fit:cover}
+.badge{position:absolute;top:6px;left:6px;z-index:1;background:rgba(0,0,0,.75);color:var(--cy);font-size:.6rem;padding:2px 6px;border-radius:4px;font-weight:700;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.info{padding:10px;display:flex;flex-direction:column;justify-content:space-between;flex:1;gap:8px}
+.title{font-size:.8rem;font-weight:600;line-height:1.25}.price{color:var(--pu);font-weight:800;font-size:.88rem;margin-top:2px}.low{color:var(--gold);font-size:.66rem}
+.stepper{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid #374151;border-radius:8px;overflow:hidden}
+.stepper button{background:#222e3c;border:0;width:38px;padding:8px 0;font-weight:800;cursor:pointer}.stepper button:active{background:var(--pu)}
+.stepper span{font-weight:800;color:var(--g);font-size:.85rem}.soldout{width:100%;text-align:center;padding:8px;color:var(--red);font-size:.72rem;font-weight:700}
+.skel{background:linear-gradient(90deg,#111827 25%,#1b2437 50%,#111827 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:var(--r);height:210px}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{text-align:center;color:var(--dim);padding:34px 10px;font-size:.85rem;grid-column:span 2}
+.line{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.line:last-child{border:0}
+.line img{width:52px;height:52px;border-radius:8px;object-fit:cover;background:#000}.line .t{flex:1;font-size:.8rem}.line .t b{display:block}
+.line .stepper{width:104px}
+.sum div{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:6px}.sum .big{font-size:1rem;font-weight:800;color:var(--g);border-top:1px solid #374151;padding-top:8px;margin-top:6px}
+details{margin-top:8px}summary{cursor:pointer;font-size:.74rem;color:var(--cy)}
+.tag{display:inline-block;font-size:.62rem;padding:2px 7px;border-radius:10px;font-weight:700}
+.tag.ok{background:rgba(0,255,136,.12);color:var(--g)}.tag.est{background:rgba(255,215,0,.12);color:var(--gold)}.tag.bad{background:rgba(255,77,109,.12);color:var(--red)}
+.order{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}.order:hover{border-color:var(--pu)}
+.pill{font-size:.66rem;font-weight:800;padding:3px 9px;border-radius:12px;background:rgba(56,189,248,.14);color:var(--cy)}
+.pill.done{background:rgba(0,255,136,.14);color:var(--g)}.pill.cancelled{background:rgba(255,77,109,.14);color:var(--red)}.pill.driver{background:rgba(168,85,247,.18);color:#d8b4fe}
+.fbar{position:fixed;left:14px;right:14px;bottom:calc(66px + var(--safe));max-width:452px;margin:0 auto;background:#1a2133;border:1px solid var(--pu);border-radius:var(--r);padding:10px 14px;display:none;justify-content:space-between;align-items:center;z-index:40;box-shadow:0 -4px 16px rgba(0,0,0,.5);cursor:pointer;animation:in .2s}
+.fbar.on{display:flex}
+nav{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:#0d1322;border-top:1px solid var(--line);display:flex;padding:6px 0 calc(6px + var(--safe));z-index:50}
+nav button{flex:1;background:none;border:0;color:var(--dim);font-size:.64rem;font-weight:700;cursor:pointer;padding:4px;position:relative}
+nav button .ic{display:block;font-size:1.15rem}nav button.on{color:var(--pu)}
+nav .dot{position:absolute;top:0;left:56%;background:var(--red);color:#fff;border-radius:10px;font-size:.58rem;padding:1px 5px;display:none}
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:80;display:none}.backdrop.on{display:block;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;padding:16px 16px calc(20px + var(--safe));z-index:90;transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.sheet.on{transform:none}
+.grab{width:42px;height:4px;border-radius:2px;background:#374151;margin:0 auto 12px}
+.steps{list-style:none;margin:8px 0 14px}.steps li{display:flex;gap:10px;align-items:center;padding:7px 0;color:var(--dim);font-size:.82rem}
+.steps li i{width:20px;height:20px;border-radius:50%;border:2px solid #374151;display:grid;place-items:center;font-size:.6rem;font-style:normal;flex:none}
+.steps li.done{color:#fff}.steps li.done i{background:var(--g);border-color:var(--g);color:#000}
+.stars{display:flex;gap:6px;margin:8px 0}.stars button{background:none;border:0;font-size:1.7rem;cursor:pointer;filter:grayscale(1);opacity:.5}.stars button.on{filter:none;opacity:1}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.65);z-index:120;padding:20px}.modal.on{display:grid}
+.modal .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;max-width:340px;width:100%}.modal h4{margin-bottom:6px}.modal p{font-size:.82rem;color:var(--dim);margin-bottom:14px}
+#toasts{position:fixed;top:12px;left:0;right:0;max-width:480px;margin:0 auto;padding:0 14px;z-index:200;pointer-events:none;display:flex;flex-direction:column;gap:8px}
+.toast{background:#1f2937;border:1px solid #374151;border-left:4px solid var(--cy);border-radius:10px;padding:11px 14px;font-size:.82rem;animation:in .2s;pointer-events:auto}
+.toast.ok{border-left-color:var(--g)}.toast.err{border-left-color:var(--red)}
+.log{background:rgba(0,0,0,.45);border-radius:8px;padding:8px;font-size:.7rem;max-height:130px;overflow:auto;color:var(--g);margin-top:8px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+</style>
 </head>
-<body id="appBody">
+<body>
+<header class="topbar">
+  <div class="brand">RDS <b>Store</b></div>
+  <div class="live" id="live" title="Live order updates"><i></i><span>Offline</span></div>
+</header>
 
-    <!-- HOME STOREFRONT & SUPERMARKET VIEW -->
-    <div id="viewHome" class="app-view active-view">
-        <div class="telemetry-ribbon">
-            <span>🏬 KENYAN TARIFF COMMERCE & RIDE HUB</span>
-            <span style="color:var(--neon-green);">100% Mathematical Precision</span>
-        </div>
+<main>
+<!-- SHOP -->
+<section id="viewShop" class="view active">
+  <div class="search"><span>🔎</span><input id="q" type="search" placeholder="Search products, shops, rooms…" autocomplete="off" aria-label="Search"></div>
+  <div class="chips" id="chips" role="tablist" aria-label="Categories"></div>
+  <div class="between" style="margin-bottom:10px">
+    <span class="muted" id="resultInfo">Loading…</span>
+    <select id="sort" style="width:auto;margin:0;padding:6px 8px;font-size:.74rem" aria-label="Sort">
+      <option value="">Featured</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option>
+    </select>
+  </div>
+  <div class="grid" id="grid"></div>
+  <button class="btn ghost" id="more" style="display:none;margin-bottom:16px">Load more</button>
+</section>
 
-        <div class="header-location">
-            <div class="location-box">
-                <span class="icon">📍</span>
-                <div class="location-text">
-                    <span>Active Corridor</span>
-                    <strong id="corridorLabel">Central Bank of Kenya (CBK RTGS)</strong>
-                </div>
-            </div>
-            <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">INST-CBK-RTGS</div>
-        </div>
+<!-- CART & CHECKOUT -->
+<section id="viewCart" class="view">
+  <h2>Your cart</h2>
+  <div id="cartEmpty" class="panel muted" style="text-align:center">Your cart is empty.<br><br><button class="btn primary sm" data-go="viewShop">Browse the shop</button></div>
+  <div id="cartFilled" style="display:none">
+    <div class="panel"><div class="between"><h3 style="margin:0" id="cartShop">Shop</h3><button class="btn ghost sm" id="clearCart">Clear</button></div><div id="cartLines"></div></div>
 
-        <div class="corridor-selector">
-            <div class="corridor-btn active" onclick="switchCorridor('INST-CBK-RTGS', 'CBK RTGS Gateway', 'KES', this)">🇰🇪 CBK RTGS</div>
-            <div class="corridor-btn" onclick="switchCorridor('INST-WORLDBANK', 'World Bank Corridor', 'USD', this)">🇺🇸 World Bank</div>
-            <div class="corridor-btn" onclick="switchCorridor('INST-MPESA', 'M-Pesa Mobile Hub', 'KES', this)">📱 M-Pesa Hub</div>
-            <div class="corridor-btn" onclick="switchCorridor('BIZ-UK', 'London Central Reserve', 'GBP', this)">🇬🇧 UK Reserve</div>
-        </div>
-
-        <div class="category-filter-bar">
-            <button class="cat-btn active" onclick="filterCategory('ALL', this)">🛒 All Items</button>
-            <button class="cat-btn" onclick="filterCategory('SUPERMARKET', this)">🏬 Supermarket</button>
-            <button class="cat-btn" onclick="filterCategory('HOTELS', this)">🏨 Hotel Rooms & Suites</button>
-            <button class="cat-btn" onclick="filterCategory('RESTAURANT', this)">🍽️ Restaurant & Dining</button>
-        </div>
-
-        <div class="section-header">
-            <h3 id="catalogTitle">Merchant Product & Service Catalog</h3>
-            <span id="activeCurrencyLabel" style="font-size:0.75rem; color:var(--stage-purple);">KES</span>
-        </div>
-
-        <div class="catalog-grid" id="catalogGrid">
-            <em style="color:var(--text-dim); grid-column:span 2; text-align:center; padding:20px;">Loading multi-merchant inventory...</em>
-        </div>
+    <div class="panel">
+      <h3>Delivery</h3>
+      <label for="pickup">Pickup</label><input id="pickup" readonly>
+      <label for="drop">Drop-off address</label><input id="drop" placeholder="e.g. Westlands, Sarit Centre" maxlength="200" autocomplete="street-address">
+      <button class="btn cy" id="gps" type="button">📍 Use my live location</button>
+      <div class="row" style="margin-top:10px">
+        <div><label for="km">Distance (km)</label><input id="km" type="number" inputmode="decimal" min="0.5" max="500" step="0.1" placeholder="e.g. 6.5"></div>
+        <div><label>Est. time</label><input id="eta" readonly placeholder="–"></div>
+      </div>
+      <div class="muted" id="kmHint">Tap “Use my live location” to calculate distance, or type it in.</div>
     </div>
 
-    <!-- LOGISTICS, ESCROW & DYNAMIC FEE SPLIT DISPATCH VIEW -->
-    <div id="viewOrders" class="app-view">
-        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>🚗 KENYAN TARIFF DISTANCE & AUTO-DISPATCH ENGINE</span>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>1. Dispatch Route & GPS Coordinates (Uber / Bolt Standard)</h3>
-            
-            <div style="margin-bottom: 10px;">
-                <button onclick="detectUserLiveLocation()" class="btn-cyan" style="padding: 8px; font-size: 0.7rem;">📍 Auto-Detect My Live Location via GPS</button>
-            </div>
-
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-top:6px;">Pickup / Merchant Location</label>
-            <input type="text" id="pickupInput" value="Nairobi CBD Supermarket Hub (-1.2863, 36.8172)">
-            
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Drop-off Destination</label>
-            <input type="text" id="destinationInput" value="Westlands Sarit Centre (-1.2587, 36.8025)">
-
-            <div style="display: flex; gap: 10px;">
-                <div style="flex:1;">
-                    <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Distance (Km)</label>
-                    <input type="number" id="distanceKmInput" value="6.5" step="0.5" oninput="recalculateCartSummary()">
-                </div>
-                <div style="flex:1;">
-                    <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Est. Time (Mins)</label>
-                    <input type="number" id="estimatedMinsInput" value="18" oninput="recalculateCartSummary()">
-                </div>
-            </div>
-        </div>
-
-        <!-- RIDER LIVE GPS NAVIGATION PANEL -->
-        <div class="checkout-panel" style="border: 1px solid var(--neon-green);">
-            <h3>🏍️ Active Rider GPS Turn-by-Turn Navigation</h3>
-            <div id="riderTripLiveBox" style="background: rgba(0,255,136,0.05); padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 10px;">
-                <em style="color: var(--text-dim);">Add items in Storefront & press checkout dispatch to trigger exact GPS map routing...</em>
-            </div>
-            
-            <div id="riderActionControls" style="display: none; flex-direction: column; gap: 8px;">
-                <button onclick="openGpsNavigation('PICKUP')" class="btn-cyan">🗺️ Open GPS Map to Pickup Hub</button>
-                <button onclick="executeRiderAction('ARRIVED_AT_MERCHANT')" style="background:var(--gold); color:#000;">2. Arrived at Supermarket Hub</button>
-                <button onclick="executeRiderAction('PICKED_COMMODITY')" style="background:var(--stage-purple);">3. Confirm Commodity Picked & Loaded</button>
-                <button onclick="openGpsNavigation('DROPOFF')" style="background:var(--cyan); color:#000;">🚀 4. Open GPS Navigation to Customer Drop-off</button>
-                <button onclick="completeTripAndPayout()" style="background:var(--neon-green); color:#000; font-weight:bold; margin-top: 6px;">🏁 5. End Trip, Drop-off Confirmed & Rider Paid Instantly</button>
-            </div>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>2. Real-Time Kenyan Tariff & Tax Split Preview</h3>
-            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.8rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Items Total:</span> <strong id="previewItemsTotal">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Merchant Payout (100%):</span> <strong id="previewMerchantPayout" style="color:var(--neon-green);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>System Fee (2% on top):</span> <strong id="previewSysFee">0.00</strong></div>
-                <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Calculated Delivery Fee (Kenyan Tariff):</span> <strong id="previewDeliveryFee" style="color:var(--cyan);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Driver Payout (95% of Delivery):</span> <strong id="previewDriverPayout">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>App Delivery Commission (5%):</span> <strong id="previewAppDeliveryComm">0.00</strong></div>
-                <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Total System Income:</span> <strong id="previewTotalSysIncome" style="color:var(--cyan);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>KRA Tax (16% on System Income):</span> <strong id="previewKraTax" style="color:var(--alert-red);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Net System Revenue:</span> <strong id="previewNetSysIncome" style="color:var(--stage-purple);">0.00</strong></div>
-                <hr style="border:0; border-top:1px solid #374151; margin:6px 0;">
-                <div style="display:flex; justify-content:space-between; font-size:0.95rem;"><span>Gross Checkout Total:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
-            </div>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>3. Dispatch & Execute Split</h3>
-            <button onclick="triggerCheckoutAndSplit()" class="btn-cyan">Press Dispatch: Auto-Pay Merchant & Assign Ride</button>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>4. Assigned Delivery Rider Status</h3>
-            <div id="liveRiderStatus" style="background: rgba(56,189,248,0.1); border: 1px dashed var(--cyan); padding: 12px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 12px;">
-                <em style="color: var(--text-dim);">Awaiting checkout dispatch to call nearest available driver...</em>
-            </div>
-
-            <h3>5. Recent Tenant Orders & Settlements</h3>
-            <div id="tenantOrdersContainer" style="max-height: 200px; overflow-y: auto;">
-                <em style="color:var(--text-dim); font-size:0.75rem;">No dispatches executed yet in this corridor.</em>
-            </div>
-        </div>
+    <div class="panel">
+      <div class="between"><h3 style="margin:0">Total</h3><span id="qTag" class="tag est">Estimate</span></div>
+      <div class="sum" id="sum" style="margin-top:10px"></div>
+      <details><summary>How your payment is split</summary><div class="sum" id="split" style="margin-top:8px"></div></details>
     </div>
+    <button class="btn go" id="order" style="margin-bottom:16px">Place order</button>
+  </div>
+</section>
 
-    <!-- POS WEBHOOK & KYC HUB -->
-    <div id="viewPosKyc" class="app-view">
-        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>🛡️ POS WEBHOOK & LOCAL IPRS KYC VERIFICATION</span>
-        </div>
+<!-- ORDERS -->
+<section id="viewOrders" class="view">
+  <div class="between"><h2>My orders</h2><button class="btn ghost sm" id="refreshOrders">Refresh</button></div>
+  <div id="ordersBox"></div>
+</section>
 
-        <div class="checkout-panel">
-            <h3>1. Simulate POS Cashier Webhook</h3>
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Terminal ID</label>
-            <input type="text" id="posTerminalId" value="POS-SUPERMARKET-01">
-            <button onclick="simulatePosWebhook()" class="btn-cyan">Ingest POS Webhook</button>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>2. Local ID & Civil Registry Verification</h3>
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Full Legal Name</label>
-            <input type="text" id="kycFullName" value="Robert Maina">
-
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block;">National ID Number</label>
-            <input type="text" id="kycDocNumber" value="38291029">
-
-            <button onclick="submitKycVerification()" style="background: var(--neon-green); color: #000; font-weight: bold;">Verify via IPRS & Open Account</button>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>3. Ingested Stream Log</h3>
-            <div id="posKycLogOutput" style="background:rgba(0,0,0,0.5); padding:10px; border-radius:6px; font-size:0.7rem; color:var(--neon-green); max-height:160px; overflow-y:auto;">
-                <em>No logs recorded yet.</em>
-            </div>
-        </div>
+<!-- ACCOUNT -->
+<section id="viewAccount" class="view">
+  <h2>Account</h2>
+  <div class="panel" id="authBox">
+    <h3>Sign in with your phone</h3>
+    <div id="stepPhone">
+      <label for="phone">Mobile number</label><input id="phone" type="tel" inputmode="tel" placeholder="07XX XXX XXX or +2547…" autocomplete="tel">
+      <button class="btn primary" id="sendOtp">Send code</button>
     </div>
-
-    <!-- PROFILE & VAULT LINK -->
-    <div id="viewProfile" class="app-view">
-        <div class="section-header" style="margin-bottom: 20px;">
-            <h3>User Profile & Sovereign Ledger State</h3>
-        </div>
-        <div class="checkout-panel">
-            <p><strong>Operator:</strong> Robert Maina</p>
-            <p style="margin-top: 6px;"><strong>Owner Email:</strong> mwangirobertmaina@gmail.com</p>
-            <p style="margin-top: 6px;"><strong>KYC Status:</strong> <span style="color: var(--neon-green);">Tier-3 Sovereign Verified</span></p>
-            <p style="margin-top: 12px;"><strong>Compliance Portal:</strong> <a href="/admin.html" target="_blank" style="color: var(--cyan); font-weight: bold;">Open Admin Mathematical Vault ➔</a></p>
-        </div>
+    <div id="stepOtp" style="display:none">
+      <p class="muted" id="otpMsg" style="margin-bottom:8px"></p>
+      <label for="otp">6-digit code</label><input id="otp" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="Enter code">
+      <div class="row"><button class="btn ghost" id="backPhone">Back</button><button class="btn go" id="verifyOtp">Verify &amp; sign in</button></div>
     </div>
+    <div class="err" id="authErr"></div>
+  </div>
+  <div class="panel" id="profileBox" style="display:none">
+    <h3>Signed in</h3>
+    <p id="who" style="margin-bottom:12px"></p>
+    <button class="btn danger" id="logout">Sign out</button>
+  </div>
 
-    <div id="floatingCart" class="floating-cart" onclick="switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1])">
-        <div>
-            <strong id="cartItemCount" style="color: var(--neon-green); display: block; font-size: 0.85rem;">0 Items</strong>
-            <span id="cartTotalSum" style="font-size: 0.75rem; color: var(--text-dim);">0</span>
-        </div>
-        <button style="width: auto; padding: 6px 14px; font-size: 0.75rem;">Proceed to Dispatch ➔</button>
-    </div>
+  <details class="panel">
+    <summary>Staff tools (cashier &amp; KYC)</summary>
+    <p class="muted" style="margin:8px 0">Needs a staff token issued by the admin (Cashier or Admin role). These calls are simulated by the server and are logged in the audit chain.</p>
+    <label for="staffTok">Staff token</label><textarea id="staffTok" rows="2" placeholder="Paste staff token"></textarea>
+    <label for="tenant">Tenant / corridor id</label><input id="tenant" value="INST-CBK-RTGS">
+    <h3 style="margin-top:6px">POS sale</h3>
+    <div class="row"><div><label for="posName">Terminal / customer</label><input id="posName" value="POS-SUPERMARKET-01"></div><div><label for="posAmt">Amount (KES)</label><input id="posAmt" type="number" min="1" value="2500"></div></div>
+    <button class="btn cy" id="posGo">Record POS sale</button>
+    <h3 style="margin-top:14px">Identity verification</h3>
+    <label for="kycName">Full legal name</label><input id="kycName">
+    <div class="row"><div><label for="kycId">National ID</label><input id="kycId" inputmode="numeric"></div><div><label for="kycDep">Initial deposit</label><input id="kycDep" type="number" min="0" value="0"></div></div>
+    <button class="btn go" id="kycGo">Verify &amp; open account</button>
+    <div class="log" id="staffLog" style="display:none"></div>
+  </details>
+  <p class="muted" style="text-align:center;margin:10px 0"><a href="/admin" style="color:var(--cy)">Admin portal ➔</a></p>
+</section>
+</main>
 
-    <input type="hidden" id="storeBusinessId" value="INST-CBK-RTGS">
-    <input type="hidden" id="storeCurrency" value="KES">
+<div class="fbar" id="fbar" role="button" tabindex="0" aria-label="Open cart">
+  <div><b id="fCount" style="color:var(--g)">0 items</b><div class="muted" id="fTotal"></div></div>
+  <span class="btn primary sm" style="pointer-events:none">View cart ➔</span>
+</div>
 
-    <div class="bottom-nav">
-        <a class="nav-item active" onclick="switchTab('viewHome', this)"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Storefront</a>
-        <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Dispatch</a>
-        <a class="nav-item" onclick="switchTab('viewPosKyc', this)"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>POS & KYC</a>
-        <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
-    </div>
+<nav aria-label="Main">
+  <button class="on" data-go="viewShop"><span class="ic">🏬</span>Shop</button>
+  <button data-go="viewCart"><span class="ic">🛒</span>Cart<span class="dot" id="navDot">0</span></button>
+  <button data-go="viewOrders"><span class="ic">📦</span>Orders</button>
+  <button data-go="viewAccount"><span class="ic">👤</span>Account</button>
+</nav>
 
-    <script>
-        const API_BASE = (window.location && window.location.origin && window.location.origin !== 'null') 
-            ? window.location.origin 
-            : 'http://localhost:3000';
+<div class="backdrop" id="backdrop"></div>
+<aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Order tracking"><div class="grab"></div><div id="sheetBody"></div></aside>
+<div class="modal" id="dlg"><div class="box"><h4 id="dlgT"></h4><p id="dlgP"></p><div class="row"><button class="btn ghost" id="dlgNo">Cancel</button><button class="btn primary" id="dlgYes">OK</button></div></div></div>
+<div id="toasts" aria-live="polite"></div>
 
-        let allProductsCache = [];
-        let activeCategory = 'ALL';
-        let cart = {};
-        let socket = io();
-        let activeDeliveryId = null;
+<script src="/socket.io/socket.io.js" onerror="void 0"></script>
+<script>
+(() => {
+'use strict';
+/* ===================== config & helpers ===================== */
+const API = (location.origin && location.origin !== 'null') ? location.origin : 'http://localhost:3000';
+const DEFAULT_MERCHANT = 'MERCH_DEF_172';
+const PRICING = { baseFee:150, perKm:35, surcharge:72, roundTo:5, serviceFeeRate:.02, driverShare:.95, appCommissionRate:.05, kraRate:.16, roadFactor:1.4, minKm:4 };
+const CANCELLED = new Set(['CANCELLED_BY_CUSTOMER','REJECTED_BY_VENDOR','ORDERLY_DISMISSED','CANCELLED']);
+const PH = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="100%" height="100%" fill="#1b2437"/><text x="50%" y="52%" fill="#6b7280" font-family="sans-serif" font-size="14" text-anchor="middle">No image</text></svg>');
 
-        const MERCHANT_LAT = -1.2863;
-        const MERCHANT_LON = 36.8172;
-        let userLat = -1.2587;
-        let userLon = 36.8025;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => 'KES ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt0 = n => 'KES ' + Number(n || 0).toLocaleString('en-KE', { maximumFractionDigits: 0 });
+const money2 = n => Math.round(Number(n) * 100) / 100;
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(16) + Math.random().toString(16).slice(2)).replace(/-/g, '');
+const when = ms => ms ? new Date(ms).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} }
+};
 
-        window.addEventListener('DOMContentLoaded', () => {
-            loadStoreCatalog();
-            fetchTenantOrders();
-        });
+/* ===================== state ===================== */
+const state = {
+  token: LS.get('rds_token', null), user: LS.get('rds_user', null),
+  cart: LS.get('rds_cart', { merchantId: null, lines: {} }),
+  products: new Map(), list: [], page: 1, pages: 1, total: 0, q: '', category: 'ALL', sort: '', loadingList: false,
+  merchants: {}, dest: LS.get('rds_dest', { label: '', lat: null, lng: null }), km: LS.get('rds_km', null),
+  quote: null, quoteSeq: 0, idem: null, orders: [], tracking: null, view: 'viewShop', socket: null, poll: null, rated: LS.get('rds_rated', {}), rating: 0
+};
+if (!state.cart || typeof state.cart !== 'object' || !state.cart.lines) state.cart = { merchantId: null, lines: {} };
 
-        function detectUserLiveLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        userLat = position.coords.latitude;
-                        userLon = position.coords.longitude;
-                        
-                        const distKm = calculateHaversineDistance(MERCHANT_LAT, MERCHANT_LON, userLat, userLon);
-                        const estMins = Math.round(distKm * 3.5);
+/* ===================== ui primitives ===================== */
+function toast(msg, type = 'info', ms = 3400) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : '');
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, ms);
+}
+function askConfirm(title, text, ok = 'OK') {
+  return new Promise(res => {
+    $('#dlgT').textContent = title; $('#dlgP').textContent = text; $('#dlgYes').textContent = ok;
+    const m = $('#dlg'); m.classList.add('on');
+    const done = v => { m.classList.remove('on'); $('#dlgYes').onclick = $('#dlgNo').onclick = null; res(v); };
+    $('#dlgYes').onclick = () => done(true); $('#dlgNo').onclick = () => done(false);
+  });
+}
+function busy(btn, on, label) {
+  if (!btn) return;
+  if (on) { btn.dataset.l = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + (label ? ' ' + esc(label) : ''); }
+  else { btn.disabled = false; if (btn.dataset.l !== undefined) btn.innerHTML = btn.dataset.l; }
+}
 
-                        document.getElementById('destinationInput').value = `Live GPS Drop-off (${userLat.toFixed(4)}, ${userLon.toFixed(4)})`;
-                        document.getElementById('distanceKmInput').value = distKm.toFixed(1);
-                        document.getElementById('estimatedMinsInput').value = estMins > 2 ? estMins : 5;
-                        
-                        recalculateCartSummary();
-                        alert("📍 Live GPS Location acquired successfully!");
-                    },
-                    (error) => {
-                        alert("Could not retrieve GPS. Please check location permissions.");
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                );
-            } else {
-                alert("Geolocation is not supported by your browser.");
-            }
-        }
+/* ===================== api ===================== */
+async function api(path, { method = 'GET', body, headers = {}, token = state.token, signal, timeout = 15000 } = {}) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeout);
+  if (signal) signal.addEventListener('abort', () => ctrl.abort());
+  try {
+    const h = { ...headers };
+    if (body !== undefined) h['Content-Type'] = 'application/json';
+    if (token) h.Authorization = 'Bearer ' + token;
+    const res = await fetch(API + path, { method, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined, signal: ctrl.signal });
+    let data = null; try { data = await res.json(); } catch {}
+    if (!res.ok || !data || data.success === false) {
+      const e = new Error((data && data.error) || `Request failed (${res.status})`);
+      e.status = res.status; e.retryAfter = res.headers.get('Retry-After');
+      if (res.status === 401 && token && token === state.token) sessionExpired();
+      if (res.status === 429) e.message = `Too many requests. Try again in ${e.retryAfter || 'a few'} seconds.`;
+      throw e;
+    }
+    return data;
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      if (signal && signal.aborted) { e.aborted = true; throw e; }
+      const t = new Error('The server took too long to respond.'); t.status = 0; throw t;
+    }
+    if (e instanceof TypeError) { const n = new Error('Cannot reach the server. Check your connection.'); n.status = 0; throw n; }
+    throw e;
+  } finally { clearTimeout(timer); }
+}
 
-        function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
+/* ===================== session ===================== */
+function setSession(token, user) {
+  state.token = token; state.user = user;
+  if (token) { LS.set('rds_token', token); LS.set('rds_user', user); } else { LS.del('rds_token'); LS.del('rds_user'); }
+  renderAccount(); initSocket();
+}
+function sessionExpired() {
+  if (!state.token) return;
+  setSession(null, null); state.orders = [];
+  toast('Your session expired. Please sign in again.', 'err');
+}
+async function verifySession() {
+  if (!state.token) return;
+  try {
+    const d = await api('/api/auth/me');
+    if (d.identity && d.identity.expiresInSeconds < 3600) {
+      const r = await api('/api/auth/refresh', { method: 'POST' });
+      setSession(r.token, state.user);
+    }
+  } catch (e) { if (e.status === 401) { /* handled by api() */ } }
+}
+function normPhone(v) {
+  const s = String(v || '').replace(/[\s()-]/g, '');
+  if (/^0[17]\d{8}$/.test(s)) return '+254' + s.slice(1);
+  if (/^254[17]\d{8}$/.test(s)) return '+' + s;
+  if (/^\+\d{9,15}$/.test(s)) return s;
+  return null;
+}
+function renderAccount() {
+  const on = !!state.token;
+  $('#authBox').style.display = on ? 'none' : '';
+  $('#profileBox').style.display = on ? '' : 'none';
+  if (on && state.user) $('#who').innerHTML = `📱 <b>${esc(state.user.phone || '')}</b><br><span class="muted">ID ${esc(state.user.id || '')}</span>`;
+  renderSummary();
+}
+$('#sendOtp').onclick = async () => {
+  const phone = normPhone($('#phone').value); $('#authErr').textContent = '';
+  if (!phone) { $('#authErr').textContent = 'Enter a valid Kenyan mobile number.'; return; }
+  const b = $('#sendOtp'); busy(b, true);
+  try {
+    const d = await api('/api/user/send-otp', { method: 'POST', body: { phone }, token: null });
+    state.pendingPhone = phone;
+    const local = /^(localhost|127\.|192\.168\.)/.test(location.hostname);
+    $('#otpMsg').textContent = local ? d.message : `We sent a code to ${phone}.`;
+    $('#stepPhone').style.display = 'none'; $('#stepOtp').style.display = ''; $('#otp').focus();
+  } catch (e) { $('#authErr').textContent = e.message; } finally { busy(b, false); }
+};
+$('#backPhone').onclick = () => { $('#stepOtp').style.display = 'none'; $('#stepPhone').style.display = ''; };
+$('#verifyOtp').onclick = async () => {
+  const otp = $('#otp').value.trim(); $('#authErr').textContent = '';
+  if (!otp) { $('#authErr').textContent = 'Enter the code.'; return; }
+  const b = $('#verifyOtp'); busy(b, true);
+  try {
+    const d = await api('/api/user/verify-otp', { method: 'POST', body: { phone: state.pendingPhone, otp, role: 'REGULAR_USER' }, token: null });
+    setSession(d.token, d.user); $('#otp').value = '';
+    $('#stepOtp').style.display = 'none'; $('#stepPhone').style.display = '';
+    toast('Signed in', 'ok'); loadOrders(); refreshOrderRooms();
+  } catch (e) { $('#authErr').textContent = e.message; } finally { busy(b, false); }
+};
+$('#logout').onclick = async () => {
+  try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
+  setSession(null, null); state.orders = []; renderOrders(); toast('Signed out');
+};
 
-        socket.on('rider_dispatched', (orderRecord) => {
-            handleRiderDispatchPayload(orderRecord);
-        });
+/* ===================== navigation ===================== */
+function go(view) {
+  state.view = view;
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === view));
+  $$('nav button').forEach(b => b.classList.toggle('on', b.dataset.go === view));
+  window.scrollTo({ top: 0 });
+  if (view === 'viewCart') { renderCart(); scheduleQuote(); }
+  if (view === 'viewOrders') loadOrders();
+  updateFbar();
+}
+document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go); });
+$('#fbar').onclick = () => go('viewCart');
+$('#fbar').onkeydown = e => { if (e.key === 'Enter') go('viewCart'); };
 
-        function handleRiderDispatchPayload(orderRecord) {
-            const d = orderRecord.delivery || { deliveryId: orderRecord.orderId || `DEL_${Date.now()}`, assignedDriver: orderRecord.assignedDriver || { name: "Kiprono Driver", phone: "+254712345678" }, pickupLocation: "Nairobi CBD", dropoffLocation: "Westlands", distanceKm: 6.5 };
-            activeDeliveryId = d.deliveryId || orderRecord.orderId;
-            
-            document.getElementById('liveRiderStatus').innerHTML = `
-                <div style="color:var(--neon-green); font-weight:bold; margin-bottom:4px;">🔔 RIDER & ESCROW LINKED</div>
-                <div>Escrow Vault ID: <b>${orderRecord.escrowId || 'ESCROW_SECURED'}</b></div>
-                <div>Delivery ID: <b>${activeDeliveryId}</b></div>
-                <div>Rider: <b>${d.assignedDriver ? d.assignedDriver.name : 'Kiprono Driver'}</b> (${d.assignedDriver ? d.assignedDriver.phone : '+254712345678'})</div>
-                <div style="color:var(--cyan); margin-top:4px;">Route: ${d.pickupLocation || 'Nairobi'} ➔ ${d.dropoffLocation || 'Westlands'} (${d.distanceKm || 6.5} km)</div>
-            `;
+/* ===================== catalogue ===================== */
+let listCtrl = null;
+async function loadProducts(reset = true) {
+  if (reset) state.page = 1;
+  if (listCtrl) listCtrl.abort(); listCtrl = new AbortController();
+  state.loadingList = true;
+  if (reset) $('#grid').innerHTML = '<div class="skel"></div>'.repeat(4);
+  const qs = new URLSearchParams({ page: state.page, limit: 20 });
+  if (state.q) qs.set('q', state.q);
+  if (state.category !== 'ALL') qs.set('category', state.category);
+  if (state.sort) qs.set('sort', state.sort);
+  try {
+    const d = await api('/api/store/search?' + qs, { signal: listCtrl.signal, token: null });
+    d.products.forEach(p => state.products.set(p.id, p));
+    state.list = reset ? d.products : state.list.concat(d.products);
+    state.pages = d.pages || 1; state.total = d.total || 0;
+    renderGrid();
+  } catch (e) {
+    if (e.aborted) return;
+    $('#grid').innerHTML = `<div class="empty">${esc(e.message)}<br><br><button class="btn primary sm" id="retryList">Try again</button></div>`;
+    $('#resultInfo').textContent = '';
+  } finally { state.loadingList = false; }
+}
+function productCard(p) {
+  const line = state.cart.lines[p.id]; const qty = line ? line.qty : 0;
+  const out = p.stock !== null && p.stock !== undefined && p.stock <= 0;
+  const low = !out && p.stock !== null && p.stock !== undefined && p.stock <= 5;
+  return `<article class="card" data-id="${esc(p.id)}">
+    <div class="img"><span class="badge">${esc(p.merchant || 'Shop')}</span><img loading="lazy" decoding="async" alt="${esc(p.name)}" src="${esc(p.image || PH)}"></div>
+    <div class="info"><div><div class="title">${esc(p.name)}</div><div class="price">${fmt0(p.price)}</div>${low ? `<div class="low">Only ${p.stock} left</div>` : ''}</div>
+    ${out ? '<div class="soldout">Out of stock</div>' : `<div class="stepper"><button data-act="dec" aria-label="Remove one">−</button><span data-qty="${esc(p.id)}">${qty}</span><button data-act="inc" aria-label="Add one">+</button></div>`}</div></article>`;
+}
+function renderGrid() {
+  const g = $('#grid');
+  g.innerHTML = state.list.length ? state.list.map(productCard).join('') : '<div class="empty">No items match your search.</div>';
+  $('#resultInfo').textContent = state.total ? `${state.total} item${state.total === 1 ? '' : 's'}` : '';
+  $('#more').style.display = state.page < state.pages ? '' : 'none';
+}
+async function loadCategories() {
+  try {
+    const d = await api('/api/store/categories', { token: null });
+    const cats = [{ name: 'ALL', count: null }, ...d.categories];
+    $('#chips').innerHTML = cats.map(c => `<button class="chip ${c.name === state.category ? 'on' : ''}" data-cat="${esc(c.name)}" role="tab">${c.name === 'ALL' ? '🛒 All' : esc(c.name.charAt(0) + c.name.slice(1).toLowerCase())}${c.count ? ' · ' + c.count : ''}</button>`).join('');
+  } catch { $('#chips').innerHTML = '<button class="chip on" data-cat="ALL">🛒 All</button>'; }
+}
+async function loadMerchants() {
+  try {
+    const d = await api('/api/user/tenants', { token: null });
+    const m = {};
+    (d.tenants || []).forEach(t => { m[t.merchantId] = { merchantId: t.merchantId, shopName: t.shopName, gpsLat: t.gpsLat, gpsLon: t.gpsLon }; });
+    state.merchants = m;
+  } catch {}
+}
+$('#q').addEventListener('input', debounce(e => { state.q = e.target.value.trim(); loadProducts(true); }, 300));
+$('#sort').onchange = e => { state.sort = e.target.value; loadProducts(true); };
+$('#more').onclick = () => { if (state.page < state.pages && !state.loadingList) { state.page++; loadProducts(false); } };
+$('#chips').addEventListener('click', e => {
+  const c = e.target.closest('[data-cat]'); if (!c) return;
+  state.category = c.dataset.cat; $$('#chips .chip').forEach(x => x.classList.toggle('on', x === c)); loadProducts(true);
+});
+$('#grid').addEventListener('click', e => {
+  if (e.target.id === 'retryList') return loadProducts(true);
+  const b = e.target.closest('[data-act]'); const card = e.target.closest('[data-id]'); if (!b || !card) return;
+  changeQty(card.dataset.id, b.dataset.act === 'inc' ? 1 : -1);
+});
+document.addEventListener('error', e => { const t = e.target; if (t && t.tagName === 'IMG' && t.src !== PH) t.src = PH; }, true);
 
-            document.getElementById('riderTripLiveBox').innerHTML = `
-                <div style="color:var(--gold); font-weight:bold;">🚨 Order Escrow & Kenyan Tariff Verified!</div>
-                <div>Assigned Rider: <b>${d.assignedDriver ? d.assignedDriver.name : 'Kiprono Driver'}</b></div>
-                <div>Route: ${d.pickupLocation || 'Nairobi'} ➔ ${d.dropoffLocation || 'Westlands'}</div>
-            `;
-            document.getElementById('riderActionControls').style.display = 'flex';
-        }
+/* ===================== cart ===================== */
+const cartCount = () => Object.values(state.cart.lines).reduce((s, l) => s + l.qty, 0);
+const cartTotal = () => money2(Object.values(state.cart.lines).reduce((s, l) => s + l.price * l.qty, 0));
+const shopName = id => (state.merchants[id] && state.merchants[id].shopName) || (Object.values(state.cart.lines)[0] || {}).merchant || 'Shop';
+function persistCart() { LS.set('rds_cart', state.cart); state.idem = null; }
 
-        function openGpsNavigation(type) {
-            const pickupLatLon = `${MERCHANT_LAT},${MERCHANT_LON}`;
-            const dropoffLatLon = `${userLat},${userLon}`;
+async function changeQty(id, delta) {
+  const line = state.cart.lines[id];
+  const p = state.products.get(id) || line;
+  if (!p) return;
+  const mid = p.merchantId || DEFAULT_MERCHANT;
+  if (delta > 0 && !line && state.cart.merchantId && state.cart.merchantId !== mid && cartCount() > 0) {
+    const ok = await askConfirm('Start a new cart?', 'Your cart has items from another shop. One order can only contain one shop’s items.', 'Clear & add');
+    if (!ok) return;
+    state.cart = { merchantId: null, lines: {} };
+  }
+  const max = (p.stock !== null && p.stock !== undefined) ? Math.min(99, p.stock) : 99;
+  let qty = (state.cart.lines[id] ? state.cart.lines[id].qty : 0) + delta;
+  if (qty > max) { toast(max <= 0 ? 'Out of stock' : `Only ${max} available`); qty = max; }
+  if (qty <= 0) delete state.cart.lines[id];
+  else { state.cart.merchantId = mid; state.cart.lines[id] = { id, name: p.name, price: Number(p.price), qty, image: p.image, merchant: p.merchant, merchantId: mid, stock: p.stock ?? null }; }
+  if (!Object.keys(state.cart.lines).length) state.cart.merchantId = null;
+  persistCart(); syncQty(id); updateFbar(); if (state.view === 'viewCart') { renderCart(); scheduleQuote(); }
+}
+function syncQty(id) { $$(`[data-qty="${CSS.escape(id)}"]`).forEach(el => el.textContent = state.cart.lines[id] ? state.cart.lines[id].qty : 0); }
+function updateFbar() {
+  const n = cartCount(), on = n > 0 && state.view === 'viewShop';
+  $('#fbar').classList.toggle('on', on);
+  $('#fCount').textContent = `${n} item${n === 1 ? '' : 's'}`; $('#fTotal').textContent = fmt0(cartTotal());
+  const d = $('#navDot'); d.style.display = n ? 'block' : 'none'; d.textContent = n;
+}
+function renderCart() {
+  const has = cartCount() > 0;
+  $('#cartEmpty').style.display = has ? 'none' : ''; $('#cartFilled').style.display = has ? '' : 'none';
+  if (!has) return;
+  const mid = state.cart.merchantId;
+  $('#cartShop').textContent = shopName(mid); $('#pickup').value = shopName(mid);
+  $('#cartLines').innerHTML = Object.values(state.cart.lines).map(l => `<div class="line" data-id="${esc(l.id)}"><img src="${esc(l.image || PH)}" alt=""><div class="t"><b>${esc(l.name)}</b><span class="muted">${fmt0(l.price)} each</span></div><div class="stepper"><button data-act="dec" aria-label="Remove one">−</button><span>${l.qty}</span><button data-act="inc" aria-label="Add one">+</button></div></div>`).join('');
+  if (document.activeElement !== $('#drop')) $('#drop').value = state.dest.label || '';
+  if (document.activeElement !== $('#km')) $('#km').value = state.km || '';
+  updateEta(); renderSummary();
+}
+$('#cartLines').addEventListener('click', e => { const b = e.target.closest('[data-act]'), l = e.target.closest('[data-id]'); if (b && l) changeQty(l.dataset.id, b.dataset.act === 'inc' ? 1 : -1); });
+$('#clearCart').onclick = async () => { if (await askConfirm('Clear cart?', 'Remove all items from your cart.', 'Clear')) { state.cart = { merchantId: null, lines: {} }; persistCart(); $$('[data-qty]').forEach(el => el.textContent = 0); updateFbar(); renderCart(); } };
 
-            let mapsUrl = "";
-            if (type === 'PICKUP') {
-                mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${pickupLatLon}&travelmode=driving`;
-            } else if (type === 'DROPOFF') {
-                mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${pickupLatLon}&destination=${dropoffLatLon}&travelmode=driving`;
-            }
+/* ===================== delivery & quote ===================== */
+const drivingKm = (a, b, c, d) => { const r = Math.PI / 180, dl = (c - a) * r, dn = (d - b) * r; const x = Math.sin(dl / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin(dn / 2) ** 2; return Number(Math.max(6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)) * PRICING.roadFactor, PRICING.minKm).toFixed(1)); };
+function localQuote(items, km) {
+  const P = PRICING, fee = Math.round((P.baseFee + km * P.perKm + P.surcharge) / P.roundTo) * P.roundTo;
+  const svc = items * P.serviceFeeRate, drv = fee * P.driverShare, comm = fee * P.appCommissionRate, inc = svc + comm, tax = inc * P.kraRate;
+  return { itemsTotal: money2(items), distanceKm: km, deliveryFee: money2(fee), serviceFee: money2(svc), total: money2(items + svc + fee), splits: { merchantPayout: money2(items), driverPayout: money2(drv), appCommission: money2(comm), systemIncome: money2(inc), kraTax: money2(tax), netRevenue: money2(inc - tax) } };
+}
+function recomputeKm() {
+  const m = state.merchants[state.cart.merchantId];
+  if (m && state.dest.lat !== null && Number.isFinite(Number(m.gpsLat))) {
+    state.km = drivingKm(Number(m.gpsLat), Number(m.gpsLon), state.dest.lat, state.dest.lng); LS.set('rds_km', state.km);
+    $('#km').value = state.km; $('#kmHint').textContent = 'Distance calculated from your location (road estimate).'; updateEta();
+  }
+}
+function updateEta() { $('#eta').value = state.km ? `~${Math.max(5, Math.round(state.km * 3.5))} min` : ''; }
+$('#drop').addEventListener('input', e => { state.dest.label = e.target.value; LS.set('rds_dest', state.dest); renderSummary(); });
+$('#km').addEventListener('input', e => {
+  const v = Number(e.target.value);
+  state.km = Number.isFinite(v) && v >= 0.5 && v <= 500 ? v : null; LS.set('rds_km', state.km); updateEta(); state.idem = null; scheduleQuote();
+});
+$('#gps').onclick = () => {
+  if (!navigator.geolocation) return toast('Location is not supported on this device.', 'err');
+  const b = $('#gps'); busy(b, true, 'Locating…');
+  navigator.geolocation.getCurrentPosition(async pos => {
+    busy(b, false);
+    state.dest.lat = pos.coords.latitude; state.dest.lng = pos.coords.longitude;
+    if (!state.dest.label || /^My location/.test(state.dest.label)) { state.dest.label = `My location (${state.dest.lat.toFixed(4)}, ${state.dest.lng.toFixed(4)})`; $('#drop').value = state.dest.label; }
+    LS.set('rds_dest', state.dest);
+    if (!Object.keys(state.merchants).length) await loadMerchants();
+    if (state.merchants[state.cart.merchantId]) { recomputeKm(); scheduleQuote(); toast('Location set', 'ok'); }
+    else toast('Shop location unknown. Please enter the distance.', 'err');
+  }, err => { busy(b, false); toast(err.code === 1 ? 'Location permission denied. Enter the distance manually.' : 'Could not get your location.', 'err'); }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+};
+const scheduleQuote = debounce(refreshQuote, 250);
+async function refreshQuote() {
+  const items = cartTotal(), seq = ++state.quoteSeq;
+  if (!items || !state.km) { state.quote = null; return renderSummary(); }
+  state.quote = { ...localQuote(items, state.km), source: 'estimate' }; renderSummary();
+  try {
+    const d = await api('/api/store/quote', { method: 'POST', body: { itemsTotal: items, distanceKm: state.km, merchantId: state.cart.merchantId }, token: null });
+    if (seq === state.quoteSeq) state.quote = { ...d.quote, source: 'server' };
+  } catch (e) { if (seq === state.quoteSeq && e.status === 403) state.quote = { ...state.quote, source: 'unavailable', error: e.message }; }
+  if (seq === state.quoteSeq) renderSummary();
+}
+function renderSummary() {
+  const q = state.quote, tag = $('#qTag'), btn = $('#order');
+  if (!q) {
+    $('#sum').innerHTML = `<div><span>Items</span><b>${fmt(cartTotal())}</b></div><div class="muted">Add your distance to see delivery and total.</div>`; $('#split').innerHTML = '';
+    tag.className = 'tag est'; tag.textContent = 'Estimate';
+  } else {
+    tag.className = 'tag ' + (q.source === 'server' ? 'ok' : q.source === 'unavailable' ? 'bad' : 'est');
+    tag.textContent = q.source === 'server' ? '✓ Confirmed by server' : q.source === 'unavailable' ? 'Unavailable' : 'Estimate';
+    $('#sum').innerHTML = `<div><span>Items</span><b>${fmt(q.itemsTotal)}</b></div><div><span>Service fee (2%)</span><b>${fmt(q.serviceFee)}</b></div><div><span>Delivery · ${q.distanceKm} km</span><b>${fmt(q.deliveryFee)}</b></div><div class="big"><span>Total</span><span>${fmt(q.total)}</span></div>${q.error ? `<div class="err">${esc(q.error)}</div>` : ''}`;
+    const s = q.splits;
+    $('#split').innerHTML = `<div><span>Shop receives</span><b>${fmt(s.merchantPayout)}</b></div><div><span>Rider receives (95% of delivery)</span><b>${fmt(s.driverPayout)}</b></div><div><span>Platform income</span><b>${fmt(s.systemIncome)}</b></div><div><span>KRA tax (16% of platform income)</span><b>${fmt(s.kraTax)}</b></div><div><span>Net platform revenue</span><b>${fmt(s.netRevenue)}</b></div>`;
+  }
+  if (btn && !btn.disabled) btn.textContent = state.token ? 'Place order' : 'Sign in to order';
+}
+$('#order').onclick = placeOrder;
+async function placeOrder() {
+  if (!state.token) { toast('Please sign in to place your order.'); return go('viewAccount'); }
+  if (!cartCount()) return;
+  if (!state.dest.label || state.dest.label.trim().length < 3) { toast('Enter your drop-off address.', 'err'); return $('#drop').focus(); }
+  if (!state.km) { toast('Enter the distance or use your live location.', 'err'); return $('#km').focus(); }
+  const b = $('#order'); busy(b, true, 'Placing order…');
+  if (!state.idem) state.idem = 'co_' + uuid();
+  const mid = state.cart.merchantId;
+  try {
+    const d = await api('/api/store/checkout', {
+      method: 'POST', headers: { 'x-business-id': mid, 'Idempotency-Key': state.idem },
+      body: { merchantId: mid, itemsTotal: cartTotal(), distanceKm: state.km, pickupLocation: shopName(mid), dropoffLocation: state.dest.label.trim(), phone: state.user && state.user.phone, cartItems: Object.values(state.cart.lines).map(({ id, name, price, qty }) => ({ id, name, price, qty })) }
+    });
+    const rec = d.orderRecord;
+    state.cart = { merchantId: null, lines: {} }; persistCart(); state.idem = null; state.quote = null;
+    $$('[data-qty]').forEach(el => el.textContent = 0); updateFbar(); renderCart();
+    toast(`Order ${rec.orderId} placed. Total ${fmt(rec.totalAmount)}`, 'ok', 4500);
+    joinRoom(rec.orderId); go('viewOrders'); openTracking(rec.orderId);
+  } catch (e) { toast(e.message, 'err', 5000); } finally { busy(b, false); renderSummary(); }
+}
 
-            window.open(mapsUrl, '_blank');
-        }
+/* ===================== orders & tracking ===================== */
+function stageOf(o) {
+  const st = o.status || '', v = o.vendorStatus, d = o.deliveryStatus;
+  if (CANCELLED.has(st)) return { key: 'cancelled', step: -1, label: st === 'REJECTED_BY_VENDOR' ? 'Shop declined' : 'Cancelled' };
+  if (d === 'DELIVERED' || /COMPLETED/.test(st) || v === 'COMPLETED & PAID OUT') return { key: 'done', step: 3, label: 'Delivered' };
+  if (d === 'DRIVER_ASSIGNED') return { key: 'driver', step: 2, label: 'Driver on the way' };
+  if (v && v !== 'PENDING_VENDOR_ACCEPTANCE') return { key: 'confirmed', step: 1, label: 'Shop is preparing' };
+  return { key: 'placed', step: 0, label: 'Waiting for shop' };
+}
+const isFinal = o => ['cancelled', 'done'].includes(stageOf(o).key);
+let ordersCtrl = null;
+async function loadOrders() {
+  if (!state.token) { state.orders = []; return renderOrders(); }
+  if (ordersCtrl) ordersCtrl.abort(); ordersCtrl = new AbortController();
+  try { const d = await api('/api/user/orders/history?limit=30', { signal: ordersCtrl.signal }); state.orders = d.orders || []; renderOrders(); refreshOrderRooms(); }
+  catch (e) { if (!e.aborted) $('#ordersBox').innerHTML = `<div class="panel err">${esc(e.message)}</div>`; }
+}
+function renderOrders() {
+  const box = $('#ordersBox');
+  if (!state.token) { box.innerHTML = '<div class="panel muted" style="text-align:center">Sign in to see your orders.<br><br><button class="btn primary sm" data-go="viewAccount">Sign in</button></div>'; return; }
+  if (!state.orders.length) { box.innerHTML = '<div class="panel muted" style="text-align:center">No orders yet.</div>'; return; }
+  box.innerHTML = state.orders.map(o => { const s = stageOf(o); return `<div class="order" data-oid="${esc(o.orderId)}"><div class="between"><b>${esc(o.orderId)}</b><span class="pill ${s.key}">${esc(s.label)}</span></div><div class="between" style="margin-top:6px"><span class="muted">${when(o.createdAt)}</span><b style="color:var(--g)">${fmt(o.total)}</b></div></div>`; }).join('');
+}
+$('#ordersBox').addEventListener('click', e => { const o = e.target.closest('[data-oid]'); if (o) openTracking(o.dataset.oid); });
+$('#refreshOrders').onclick = loadOrders;
+const loadOrdersSoft = debounce(() => { if (state.view === 'viewOrders') loadOrders(); }, 600);
 
-        async function executeRiderAction(action) {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const targetDeliveryId = activeDeliveryId || `DEL_${Date.now()}`;
+async function openTracking(orderId) {
+  state.tracking = { orderId, order: null, loading: true, error: null }; state.rating = 0;
+  $('#backdrop').classList.add('on'); $('#sheet').classList.add('on'); renderTracking(); joinRoom(orderId);
+  await refreshTracking(); clearInterval(state.poll);
+  state.poll = setInterval(() => { if (!document.hidden && state.tracking) refreshTracking(); }, 8000);
+}
+async function refreshTracking() {
+  const t = state.tracking; if (!t) return;
+  try { const d = await api('/api/user/orders/track/' + encodeURIComponent(t.orderId)); if (state.tracking && state.tracking.orderId === t.orderId) { state.tracking.order = d.order; state.tracking.error = null; } }
+  catch (e) { if (state.tracking) state.tracking.error = e.message; }
+  if (state.tracking) { state.tracking.loading = false; renderTracking(); if (state.tracking.order && isFinal(state.tracking.order)) clearInterval(state.poll); }
+}
+function closeSheet() { $('#sheet').classList.remove('on'); $('#backdrop').classList.remove('on'); clearInterval(state.poll); state.tracking = null; loadOrdersSoft(); }
+$('#backdrop').onclick = closeSheet;
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('#dlg').classList.contains('on')) $('#dlgNo').click(); else if (state.tracking) closeSheet(); } });
+function renderTracking() {
+  const t = state.tracking, body = $('#sheetBody'); if (!t) return;
+  if (!t.order) { body.innerHTML = t.error ? `<p class="err">${esc(t.error)}</p><button class="btn ghost" data-act="retrack">Retry</button><button class="btn ghost" data-act="close" style="margin-top:8px">Close</button>` : '<div class="skel" style="height:160px"></div>'; return; }
+  const o = t.order, s = stageOf(o), owner = Array.isArray(o.items);
+  const names = ['Order placed', 'Shop confirmed', 'Driver assigned', 'Delivered'];
+  let h = `<div class="between"><h2 style="margin:0">${esc(o.orderId)}</h2><span class="pill ${s.key}">${esc(s.label)}</span></div><div class="muted">${when(o.createdAt)}</div>`;
+  if (s.key === 'cancelled') h += `<div class="panel err" style="margin-top:12px">This order was cancelled.${o.refundStatus ? ' Refund status: ' + esc(o.refundStatus.replace(/_/g, ' ').toLowerCase()) + '.' : ''}</div>`;
+  else h += `<ul class="steps">${names.map((n, i) => `<li class="${i <= s.step ? 'done' : ''}"><i>${i <= s.step ? '✓' : ''}</i>${n}</li>`).join('')}</ul>`;
+  if (owner) {
+    h += `<div class="panel" style="margin-top:6px"><h3>Items</h3>${o.items.map(i => `<div class="between muted" style="margin-bottom:4px"><span>${i.qty || 1} × ${esc(i.name)}</span><span>${i.price ? fmt0((i.qty || 1) * i.price) : ''}</span></div>`).join('')}<div class="between" style="margin-top:8px"><b>Total</b><b style="color:var(--g)">${fmt(o.total)}</b></div></div>`;
+    if (o.destination) h += `<div class="muted" style="margin-bottom:8px">📍 ${esc(o.destination)}</div>`;
+    if (o.assignedDriver && s.key !== 'cancelled') h += `<div class="panel"><h3>Rider</h3><b>${esc(o.assignedDriver.name || 'Rider')}</b>${o.assignedDriver.vehicle ? `<div class="muted">${esc(o.assignedDriver.vehicle)}</div>` : ''}${o.assignedDriver.phone ? `<div><a href="tel:${esc(String(o.assignedDriver.phone).replace(/\s/g, ''))}" style="color:var(--cy)">📞 ${esc(o.assignedDriver.phone)}</a></div>` : ''}</div>`;
+    const L = o.driverLocation;
+    if (L && s.key === 'driver') h += `<div class="panel"><h3>Live location</h3><div class="muted">Updated ${Math.max(0, Math.round((Date.now() - L.at) / 1000))}s ago</div><a class="btn cy" style="margin-top:8px;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(L.lat + ',' + L.lng)}">🗺️ Open rider on map</a></div>`;
+  }
+  if (owner && s.step <= 1 && s.key !== 'cancelled') h += `<button class="btn danger" data-act="cancel" style="margin-top:6px">Cancel order</button>`;
+  if (owner && s.key === 'done') {
+    if (state.rated[o.orderId]) h += `<div class="tag ok">Thanks for rating (${state.rated[o.orderId]}★)</div>`;
+    else h += `<div class="panel"><h3>Rate your delivery</h3><div class="stars">${[1, 2, 3, 4, 5].map(n => `<button data-star="${n}" class="${n <= state.rating ? 'on' : ''}" aria-label="${n} star${n > 1 ? 's' : ''}">⭐</button>`).join('')}</div><input id="rateNote" placeholder="Optional comment" maxlength="300"><button class="btn go" data-act="rate">Submit rating</button></div>`;
+  }
+  if (t.error) h += `<div class="err">${esc(t.error)}</div>`;
+  h += `<button class="btn ghost" data-act="close" style="margin-top:10px">Close</button>`;
+  body.innerHTML = h;
+}
+$('#sheetBody').addEventListener('click', async e => {
+  const st = e.target.closest('[data-star]'); if (st) { state.rating = Number(st.dataset.star); return renderTracking(); }
+  const b = e.target.closest('[data-act]'); if (!b || !state.tracking) return;
+  const id = state.tracking.orderId;
+  if (b.dataset.act === 'close') return closeSheet();
+  if (b.dataset.act === 'retrack') { state.tracking.loading = true; renderTracking(); return refreshTracking(); }
+  if (b.dataset.act === 'cancel') {
+    if (!(await askConfirm('Cancel this order?', 'The shop has not started delivery yet. A refund will be marked as due.', 'Cancel order'))) return;
+    busy(b, true);
+    try { await api('/api/user/orders/cancel', { method: 'POST', body: { orderId: id, reason: 'Cancelled by customer' } }); toast('Order cancelled', 'ok'); await refreshTracking(); loadOrdersSoft(); }
+    catch (err) { toast(err.message, 'err'); busy(b, false); }
+  }
+  if (b.dataset.act === 'rate') {
+    if (!state.rating) return toast('Pick a star rating first.', 'err');
+    busy(b, true);
+    try { await api('/api/user/orders/rate', { method: 'POST', body: { orderId: id, rating: state.rating, comment: ($('#rateNote') || {}).value || '' } }); state.rated[id] = state.rating; LS.set('rds_rated', state.rated); toast('Thanks for your feedback!', 'ok'); renderTracking(); }
+    catch (err) { toast(err.message, 'err'); busy(b, false); }
+  }
+});
 
-            try {
-                const res = await fetch(`${API_BASE}/api/store/logistics/rider-action`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId, 'Authorization': 'Bearer SIMULATED_TOKEN' },
-                    body: JSON.stringify({ deliveryId: targetDeliveryId, action })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    alert(`✅ ${data.message}`);
+/* ===================== live updates (socket) ===================== */
+function setLive(on) { const l = $('#live'); l.classList.toggle('on', on); $('span', l).textContent = on ? 'Live' : 'Offline'; }
+function joinRoom(orderId) { if (state.socket && state.socket.connected) state.socket.emit('join_order', orderId); }
+function refreshOrderRooms() { state.orders.filter(o => !isFinal(o)).forEach(o => joinRoom(o.orderId)); if (state.tracking) joinRoom(state.tracking.orderId); }
+function initSocket() {
+  if (typeof io !== 'function') return;
+  if (state.socket) { state.socket.auth = { token: state.token || undefined }; state.socket.disconnect().connect(); return; }
+  const s = io({ auth: { token: state.token || undefined }, reconnection: true }); state.socket = s;
+  s.on('connect', () => { setLive(true); refreshOrderRooms(); });
+  s.on('disconnect', () => setLive(false));
+  s.on('connect_error', err => { setLive(false); if (err && err.message === 'unauthorized' && state.token) sessionExpired(); });
+  s.on('order_status_update', p => { if (state.tracking && p && p.orderId === state.tracking.orderId) refreshTracking(); loadOrdersSoft(); });
+  s.on('orderListUpdated', () => loadOrdersSoft());
+}
 
-                    if (action === "ARRIVED_AT_MERCHANT") {
-                        document.getElementById('riderTripLiveBox').innerHTML = `<div style="color:var(--gold); font-weight:bold;">📍 Rider Arrived at Supermarket Hub. Ready to load!</div>`;
-                    } else if (action === "PICKED_COMMODITY") {
-                        document.getElementById('riderTripLiveBox').innerHTML = `<div style="color:var(--neon-green); font-weight:bold;">📦 Commodity Loaded into Delivery Box!</div>`;
-                    }
-                } else {
-                    alert(data.error || "Action failed.");
-                }
-            } catch (e) {
-                console.error("Rider action error:", e);
-                alert("Network communication error.");
-            }
-        }
+/* ===================== staff tools ===================== */
+try { $('#staffTok').value = sessionStorage.getItem('rds_staff') || ''; } catch (e) {}
+function staffLog(msg, ok = true) { const l = $('#staffLog'); l.style.display = ''; l.innerHTML = `<div style="color:${ok ? 'var(--g)' : 'var(--red)'}">${esc(new Date().toLocaleTimeString())} · ${esc(msg)}</div>` + l.innerHTML; }
+async function staffCall(btn, path, body) {
+  const tok = $('#staffTok').value.trim(); try { sessionStorage.setItem('rds_staff', tok); } catch (e) {}
+  if (!tok) return staffLog('Paste a staff token first.', false);
+  busy(btn, true);
+  try { const d = await api(path, { method: 'POST', token: tok, headers: { 'x-business-id': $('#tenant').value.trim() || 'INST-CBK-RTGS' }, body }); staffLog((d.message || 'Done') + (d.simulated ? ' (simulated)' : '')); toast(d.message || 'Done', 'ok'); }
+  catch (e) { staffLog(e.message, false); } finally { busy(btn, false); }
+}
+$('#posGo').onclick = () => staffCall($('#posGo'), '/api/cashier/process-transaction', { customerName: $('#posName').value.trim(), amount: Number($('#posAmt').value), transactionType: 'POS Terminal Sale' });
+$('#kycGo').onclick = () => {
+  if (!$('#kycName').value.trim() || !$('#kycId').value.trim()) return staffLog('Name and National ID are required.', false);
+  staffCall($('#kycGo'), '/api/kyc/verify-biometric-face', { fullName: $('#kycName').value.trim(), nationalIdNumber: $('#kycId').value.trim(), countryCode: 'KE', initialDeposit: Number($('#kycDep').value) || 0 });
+};
 
-        async function completeTripAndPayout() {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const targetDeliveryId = activeDeliveryId || `DEL_${Date.now()}`;
-
-            try {
-                const res = await fetch(`${API_BASE}/api/store/logistics/complete-trip`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ deliveryId: targetDeliveryId })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    alert(`✅ ${data.message}`);
-                    const payoutAmount = (data.settlement && data.settlement.driverPayout) ? data.settlement.driverPayout : 427.5;
-                    document.getElementById('riderTripLiveBox').innerHTML = `
-                        <div style="color:var(--neon-green); font-weight:bold;">✅ Trip Completed & Settled!</div>
-                        <div>Driver Payout Disbursed: <b>KES ${payoutAmount.toLocaleString()}</b></div>
-                    `;
-                    document.getElementById('riderActionControls').style.display = 'none';
-                    fetchTenantOrders();
-                } else {
-                    alert(data.error || "Failed to complete trip.");
-                }
-            } catch (e) {
-                console.error("Complete trip error:", e);
-                alert("Network communication error.");
-            }
-        }
-
-        function switchCorridor(tenantId, locationName, currencyCode, el) {
-            document.querySelectorAll('.corridor-btn').forEach(b => b.classList.remove('active'));
-            if(el) el.classList.add('active');
-            document.getElementById('storeBusinessId').value = tenantId;
-            document.getElementById('storeCurrency').value = currencyCode;
-            document.getElementById('tenantBadge').innerText = tenantId;
-            document.getElementById('corridorLabel').innerText = locationName;
-            document.getElementById('activeCurrencyLabel').innerText = currencyCode;
-            cart = {};
-            recalculateCartSummary();
-            loadStoreCatalog();
-            fetchTenantOrders();
-        }
-
-        function filterCategory(category, el) {
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-            if(el) el.classList.add('active');
-            activeCategory = category;
-            loadStoreCatalog();
-        }
-
-        async function loadStoreCatalog() {
-            try {
-                const response = await fetch(`${API_BASE}/api/store/products`);
-                const data = await response.json();
-                
-                const defaultItems = [
-                    { id: "M_01", category: "SUPERMARKET", name: "Sovereign Organic Milk (1L)", price: 180, merchant: "Nakumatt Supermarket", image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300" },
-                    { id: "M_02", category: "SUPERMARKET", name: "Fresh Farm Bread (Loaf)", price: 110, merchant: "Naivas Supermarket", image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300" },
-                    { id: "H_01", category: "HOTELS", name: "Executive Suite (1 Night Stay)", price: 15000, merchant: "Serena Hotel", image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=300" },
-                    { id: "H_02", category: "HOTELS", name: "Deluxe Double Room (Breakfast)", price: 9500, merchant: "Radisson Blu", image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=300" },
-                    { id: "R_01", category: "RESTAURANT", name: "Sovereign Nyama Platter", price: 2500, merchant: "Carnivore Grill", image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=300" },
-                    { id: "R_02", category: "RESTAURANT", name: "Artisan Wood-Fired Pizza", price: 1400, merchant: "Artcaffe Bistro", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300" }
-                ];
-
-                let items = (data.success && data.products && data.products.length > 0) ? data.products : defaultItems;
-                
-                if (activeCategory === 'ALL') {
-                    allProductsCache = items;
-                } else {
-                    allProductsCache = items.filter(i => (i.category || '').toUpperCase().includes(activeCategory.toUpperCase()) || !i.category);
-                }
-
-                renderCatalog(allProductsCache);
-            } catch (err) {
-                console.error("Failed to load catalog from API, using fallback cache:", err);
-            }
-        }
-
-        function renderCatalog(products) {
-            const grid = document.getElementById('catalogGrid');
-            const curr = document.getElementById('storeCurrency').value;
-            if (!products || products.length === 0) {
-                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center;">No items found for this category.</em>';
-                return;
-            }
-            let html = '';
-            products.forEach(p => {
-                const qty = cart[p.id] ? cart[p.id].qty : 0;
-                const img = p.image || "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300";
-                const merchant = p.merchant || "RDS Independent Shop";
-                html += `
-                    <div class="product-card">
-                        <div class="image-wrapper"><span class="merchant-badge">${merchant}</span><img src="${img}" class="product-img"></div>
-                        <div class="product-info">
-                            <div><div class="product-title">${p.name}</div><div class="product-price">${curr} ${Number(p.price).toLocaleString()}</div></div>
-                            <div class="quantity-stepper">
-                                <button onclick="updateCart('${p.id}', '${p.name}', ${p.price}, -1)">-</button>
-                                <span class="quantity-display" id="qty-${p.id}">${qty}</span>
-                                <button onclick="updateCart('${p.id}', '${p.name}', ${p.price}, 1)">+</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            grid.innerHTML = html;
-        }
-
-        function updateCart(id, name, price, change) {
-            if (!cart[id]) cart[id] = { name, price: Number(price), qty: 0 };
-            cart[id].qty += change;
-            if (cart[id].qty <= 0) delete cart[id];
-            const qEl = document.getElementById(`qty-${id}`);
-            if(qEl) qEl.innerText = cart[id] ? cart[id].qty : 0;
-            recalculateCartSummary();
-        }
-
-        function recalculateCartSummary() {
-            let totalQty = 0, totalPrice = 0;
-            const curr = document.getElementById('storeCurrency').value;
-            for (let id in cart) {
-                totalQty += cart[id].qty;
-                totalPrice += (cart[id].price || 0) * cart[id].qty;
-            }
-            const floatingBar = document.getElementById('floatingCart');
-            if (totalQty > 0) {
-                floatingBar.classList.add('active');
-                document.getElementById('cartItemCount').innerText = `${totalQty} Item(s)`;
-                document.getElementById('cartTotalSum').innerText = `${curr} ${totalPrice.toLocaleString()}`;
-            } else { floatingBar.classList.remove('active'); }
-
-            const km = Number(document.getElementById('distanceKmInput').value) || 6.5;
-            const mins = Number(document.getElementById('estimatedMinsInput').value) || 18;
-
-            const baseFare = 150.0;
-            const ratePerKm = 35.0;
-            const ratePerMin = 4.0;
-            const deliveryFee = Math.round((baseFare + (km * ratePerKm) + (mins * ratePerMin)) / 5) * 5;
-
-            const merchantPayout = totalPrice; 
-            const sysFeeOnItems = totalPrice * 0.02; 
-            const driverPayout = deliveryFee * 0.95; 
-            const appDeliveryComm = deliveryFee * 0.05; 
-            const totalSysIncome = sysFeeOnItems + appDeliveryComm;
-            const kraTax = totalSysIncome * 0.16; 
-            const netSysIncome = totalSysIncome - kraTax;
-            const grossTotal = totalPrice + sysFeeOnItems + deliveryFee;
-
-            document.getElementById('previewItemsTotal').innerText = `${curr} ${totalPrice.toLocaleString()}`;
-            document.getElementById('previewMerchantPayout').innerText = `${curr} ${merchantPayout.toLocaleString()}`;
-            document.getElementById('previewSysFee').innerText = `${curr} ${sysFeeOnItems.toLocaleString()}`;
-            document.getElementById('previewDeliveryFee').innerText = `${curr} ${deliveryFee.toLocaleString()}`;
-            document.getElementById('previewDriverPayout').innerText = `${curr} ${driverPayout.toLocaleString()}`;
-            document.getElementById('previewAppDeliveryComm').innerText = `${curr} ${appDeliveryComm.toLocaleString()}`;
-            document.getElementById('previewTotalSysIncome').innerText = `${curr} ${totalSysIncome.toLocaleString()}`;
-            document.getElementById('previewKraTax').innerText = `${curr} ${kraTax.toLocaleString()}`;
-            document.getElementById('previewNetSysIncome').innerText = `${curr} ${netSysIncome.toLocaleString()}`;
-            document.getElementById('previewTotal').innerText = `${curr} ${grossTotal.toLocaleString()}`;
-        }
-
-        async function triggerCheckoutAndSplit() {
-            let totalPrice = 0;
-            for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
-            
-            if (totalPrice <= 0) {
-                totalPrice = 1500; 
-                cart["TEST_ITEM"] = { name: "Sovereign Test Commodity", price: 1500, qty: 1 };
-            }
-
-            const bizId = document.getElementById('storeBusinessId').value;
-            const pickupLocation = document.getElementById('pickupInput').value;
-            const dropoffLocation = document.getElementById('destinationInput').value;
-            const distanceKm = Number(document.getElementById('distanceKmInput').value) || 6.5;
-            const estimatedMinutes = Number(document.getElementById('estimatedMinsInput').value) || 18;
-            
-            try {
-                const res = await fetch(`${API_BASE}/api/store/checkout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': bizId },
-                    body: JSON.stringify({ 
-                        merchantId: "MERCH_DEF_172", 
-                        customerName: "Robert Maina", 
-                        itemsTotal: totalPrice,
-                        distanceKm,
-                        estimatedMinutes,
-                        pickupLocation,
-                        dropoffLocation,
-                        cartItems: Object.values(cart)
-                    })
-                });
-                
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    alert(`✅ ${data.message}`);
-                    if(data.orderRecord) {
-                        handleRiderDispatchPayload(data.orderRecord);
-                    }
-                    cart = {}; 
-                    recalculateCartSummary();
-                    loadStoreCatalog();
-                    fetchTenantOrders();
-                } else { 
-                    alert(data.error || "Checkout failed."); 
-                }
-            } catch (e) { 
-                console.error("Network connection error details:", e);
-                alert(`Network connection error: Unable to reach backend at ${API_BASE}. Please ensure server is running.`); 
-            }
-        }
-
-        async function fetchTenantOrders() {
-            const bizId = document.getElementById('storeBusinessId').value;
-            try {
-                const res = await fetch(`${API_BASE}/api/store/orders/${bizId}`, {
-                    headers: { 'x-business-id': bizId }
-                });
-                const data = await res.json();
-                const container = document.getElementById('tenantOrdersContainer');
-                if (data.success && data.orders && data.orders.length > 0) {
-                    let html = '';
-                    data.orders.forEach(o => {
-                        html += `
-                            <div class="order-history-card">
-                                <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--cyan); margin-bottom:4px;">
-                                    <span>${o.orderId}</span>
-                                    <span style="color:var(--neon-green);">KES ${(o.totalAmount || 0).toLocaleString()}</span>
-                                </div>
-                                <div>Status: <b>${o.status}</b></div>
-                            </div>
-                        `;
-                    });
-                    container.innerHTML = html;
-                } else {
-                    container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No orders found for this corridor.</em>';
-                }
-            } catch (e) {
-                console.error("Failed to load orders:", e);
-            }
-        }
-
-        async function simulatePosWebhook() {
-            const terminalId = document.getElementById('posTerminalId').value.trim();
-            const bizId = document.getElementById('storeBusinessId').value;
-            try {
-                // FIXED: Mapped to backend cashier transaction processing endpoint
-                const res = await fetch(`${API_BASE}/api/cashier/process-transaction`, {
-                    method: 'POST', 
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'x-business-id': bizId,
-                        'Authorization': 'Bearer SIMULATED_TOKEN' 
-                    },
-                    body: JSON.stringify({ customerName: terminalId, amount: 2500, transactionType: 'POS Terminal Sale' })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('posKycLogOutput').innerHTML = `<span style="color:var(--cyan);">${data.message}</span><br>` + document.getElementById('posKycLogOutput').innerHTML;
-                } else {
-                    alert(data.error || "POS transaction failed.");
-                }
-            } catch(e) { alert("Webhook network error."); }
-        }
-
-        async function submitKycVerification() {
-            const fullName = document.getElementById('kycFullName').value.trim();
-            const nationalIdNumber = document.getElementById('kycDocNumber').value.trim();
-            const bizId = document.getElementById('storeBusinessId').value;
-            try {
-                // FIXED: Mapped to backend biometric verification route
-                const res = await fetch(`${API_BASE}/api/kyc/verify-biometric-face`, {
-                    method: 'POST', 
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'x-business-id': bizId,
-                        'Authorization': 'Bearer SIMULATED_TOKEN' 
-                    },
-                    body: JSON.stringify({ fullName, nationalIdNumber, countryCode: 'KE', initialDeposit: 25000 })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('posKycLogOutput').innerHTML = `<span style="color:var(--gold);">${data.message}</span><br>` + document.getElementById('posKycLogOutput').innerHTML;
-                } else {
-                    alert(data.error || "KYC verification failed.");
-                }
-            } catch(e) { alert("KYC network error."); }
-        }
-
-        function switchTab(viewId, el) {
-            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
-            document.getElementById(viewId).classList.add('active-view');
-            document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
-            if(el) el.classList.add('active');
-            window.scrollTo(0, 0);
-            if (viewId === 'viewOrders') fetchTenantOrders();
-        }
-    </script>
+/* ===================== boot ===================== */
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.view === 'viewOrders') loadOrders(); });
+(async function boot() {
+  renderAccount(); updateFbar(); renderOrders();
+  await Promise.all([loadCategories(), loadProducts(true), loadMerchants()]);
+  initSocket(); verifySession().then(() => { if (state.token) loadOrders(); });
+})();
+})();
+</script>
 </body>
 </html>
