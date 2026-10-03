@@ -366,6 +366,31 @@ if (storeExt191) {
     app.use('/api/store', storeExt191);
 }
 
+// STAGE 191 — merchant registration KYC (additive): 3 photos required, owner face kept private
+app.post('/api/merchant/register', (req, res, next) => {
+    const b = req.body || {};
+    const idPhoto = cleanImage(b.passportImage, null), facePhoto = cleanImage(b.ownerFace, null), shopPhoto = cleanImage(b.storePhoto, null);
+    if (!idPhoto) return bad(res, "A photo of the owner's ID or passport is required.");
+    if (!facePhoto) return bad(res, "A clear photo of the owner's face is required.");
+    if (!shopPhoto) return bad(res, "A photo of the shop front is required.");
+    res.on('finish', () => {
+        if (res.statusCode !== 200) return;
+        const mine = pendingMerchants.filter(m => m.phone === b.phone).pop();
+        if (mine) mine.ownerFaceUrl = facePhoto;
+    });
+    next();
+});
+const stripKycFields191 = (req, res, next) => {
+    const orig = res.json.bind(res);
+    res.json = (body) => {
+        if (body && body.profile && typeof body.profile === 'object') { const { ownerFaceUrl, ...rest } = body.profile; body = { ...body, profile: rest }; }
+        return orig(body);
+    };
+    next();
+};
+app.get('/api/merchant/catalog/:merchantId', stripKycFields191);
+app.post('/api/merchant/profile/update', stripKycFields191);
+
 // STAGE 191 — production: never advertise the test code in OTP responses (additive)
 if (!ALLOW_TEST_CREDENTIALS) {
     app.post(['/api/user/send-otp', '/api/driver/register-and-send-otp'], (req, res, next) => {
@@ -2777,6 +2802,18 @@ adminOps191.post('/merchants/reject', requireSovereignAdminOnly, (req, res) => {
     res.json({ success: true, message: `Application for ${m.shopName} rejected.` });
 });
 OPS_191('POST', '/merchants/reject', 'admin', 'Reject a pending merchant application');
+
+adminOps191.get('/merchants/:merchantId/kyc', requireAdminRoleStrict, (req, res) => {
+    const id = req.params.merchantId;
+    if (!isSafeKey(id)) return bad(res, "Invalid merchantId.");
+    const rec = pendingMerchants.find(m => m.merchantId === id) || approvedMerchants.find(m => m.merchantId === id) ||
+        (Object.prototype.hasOwnProperty.call(merchantProfiles, id) ? merchantProfiles[id] : null);
+    if (!rec) return res.status(404).json({ success: false, error: "Merchant not found." });
+    appendAudit('KYC_VIEWED', { merchantId: id, by: req.user.email || req.user.sub });
+    res.json({ success: true, kyc: { merchantId: id, shopName: rec.shopName, ownerName: rec.ownerName, regNumber: rec.regNumber, phone: rec.phone, status: rec.status || null,
+        idPhoto: rec.passportUrl || null, ownerFace: rec.ownerFaceUrl || null, shopPhoto: rec.storePhotoUrl || null } });
+});
+OPS_191('GET', '/merchants/:merchantId/kyc', 'admin|auditor', 'Registration photos for review: ID, owner face, shop front');
 
 adminOps191.get('/drivers', requireAdminRoleStrict, (req, res) => {
     const list = Object.values(drivers).map(d => ({

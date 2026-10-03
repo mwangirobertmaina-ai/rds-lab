@@ -93,8 +93,10 @@ video{width:100%;border-radius:10px;background:#000;max-height:50vh}
     <div class="panel" style="background:var(--bg)"><div class="between"><h3 style="margin:0">Shop location</h3><button type="button" class="btn cy sm" id="rGps">📍 Detect GPS</button></div>
       <div class="g2" style="margin-top:10px"><input id="rLat" placeholder="Latitude" inputmode="decimal"><input id="rLon" placeholder="Longitude" inputmode="decimal"></div></div>
     <div class="panel" style="background:var(--bg)"><h3>Owner ID / passport photo</h3><div class="thumb"><img id="pvId" alt="" class="hidden"><span class="muted" id="pvIdT">Required</span></div>
-      <div class="row"><button type="button" class="btn go sm" data-cam="id" data-facing="user">📸 Take photo</button><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="id" class="hidden"></label></div></div>
-    <div class="panel" style="background:var(--bg)"><h3>Storefront photo</h3><div class="thumb"><img id="pvShop" alt="" class="hidden"><span class="muted" id="pvShopT">Required</span></div>
+      <div class="row"><button type="button" class="btn go sm" data-cam="id" data-facing="environment">📸 Take photo</button><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="id" class="hidden"></label></div></div>
+    <div class="panel" style="background:var(--bg)"><h3>Owner face photo</h3><div class="thumb"><img id="pvFace" alt="" class="hidden"><span class="muted" id="pvFaceT">Required: clear photo of the owner's face</span></div>
+      <div class="row"><button type="button" class="btn go sm" data-cam="face" data-facing="user">🤳 Take selfie</button><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="face" class="hidden"></label></div></div>
+    <div class="panel" style="background:var(--bg)"><h3>Shop front photo</h3><div class="thumb"><img id="pvShop" alt="" class="hidden"><span class="muted" id="pvShopT">Required</span></div>
       <div class="row"><button type="button" class="btn go sm" data-cam="shop" data-facing="environment">📸 Take photo</button><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="shop" class="hidden"></label></div></div>
     <div class="err" id="rErr"></div>
     <div class="row"><button type="submit" class="btn go grow" id="rGo">Submit application</button><button type="button" class="btn ghost" id="toLogin">Back</button></div>
@@ -184,7 +186,7 @@ const LS = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
   del(k) { try { localStorage.removeItem(k); } catch {} }
 };
-const state = { token: LS.get('rds_m_token', null), shop: LS.get('rds_m_shop', null), orders: [], catalog: [], stats: null, filter: 'new', oq: '', cq: '', editing: null, seen: null, sound: LS.get('rds_m_sound', true), socket: null, photos: { id: null, shop: null, item: null, banner: null }, suspended: false };
+const state = { token: LS.get('rds_m_token', null), shop: LS.get('rds_m_shop', null), orders: [], catalog: [], stats: null, filter: 'new', oq: '', cq: '', editing: null, seen: null, sound: LS.get('rds_m_sound', true), socket: null, photos: { id: null, face: null, shop: null, item: null, banner: null }, suspended: false };
 
 function toast(msg, type = 'info', ms = 3400) {
   const el = document.createElement('div'); el.className = 'toast ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : ''); el.textContent = msg;
@@ -244,7 +246,7 @@ function canvasToJpeg(src, w, h, maxDim, q) {
 }
 function setPhoto(key, url) {
   state.photos[key] = url;
-  const map = { id: ['#pvId', '#pvIdT'], shop: ['#pvShop', '#pvShopT'], item: ['#pvItem', '#pvItemT'], banner: ['#pvBanner', '#pvBannerT'] }[key];
+  const map = { id: ['#pvId', '#pvIdT'], face: ['#pvFace', '#pvFaceT'], shop: ['#pvShop', '#pvShopT'], item: ['#pvItem', '#pvItemT'], banner: ['#pvBanner', '#pvBannerT'] }[key];
   const img = $(map[0]), t = $(map[1]); if (url) { img.src = url; img.classList.remove('hidden'); t.textContent = 'Photo ready'; t.classList.add('ok'); } else { img.classList.add('hidden'); t.classList.remove('ok'); }
 }
 document.addEventListener('change', async e => {
@@ -313,12 +315,13 @@ $('#regBox').addEventListener('submit', async e => {
   if (!mpesa) return void (err.textContent = 'M-Pesa number must be a valid phone number (till numbers are not supported yet).');
   const lat = $('#rLat').value.trim(), lon = $('#rLon').value.trim();
   if ((lat || lon) && !(Math.abs(Number(lat)) <= 90 && Math.abs(Number(lon)) <= 180 && lat !== '' && lon !== '')) return void (err.textContent = 'Enter a valid latitude and longitude, or leave both empty.');
-  if (!state.photos.id) return void (err.textContent = 'Please add your owner ID / passport photo.');
-  if (!state.photos.shop) return void (err.textContent = 'Please add a storefront photo.');
-  const payload = { shopName, businessType, regNumber, ownerName, phone, mpesaPhone: mpesa, passportImage: state.photos.id, storePhoto: state.photos.shop };
+  if (!state.photos.id) return void (err.textContent = 'Please take or upload a photo of the owner ID / passport.');
+  if (!state.photos.face) return void (err.textContent = 'Please take a selfie or upload a clear photo of the owner\'s face.');
+  if (!state.photos.shop) return void (err.textContent = 'Please take or upload a photo of the shop front.');
+  const payload = { shopName, businessType, regNumber, ownerName, phone, mpesaPhone: mpesa, passportImage: state.photos.id, ownerFace: state.photos.face, storePhoto: state.photos.shop };
   if (lat && lon) { payload.gpsLat = Number(lat); payload.gpsLon = Number(lon); }
   const b = $('#rGo'); busy(b, true, 'Submitting…');
-  try { await api('/api/merchant/register', { method: 'POST', body: payload, token: null }); authPane('done'); $('#regBox').reset(); setPhoto('id', null); setPhoto('shop', null); }
+  try { await api('/api/merchant/register', { method: 'POST', body: payload, token: null }); authPane('done'); $('#regBox').reset(); setPhoto('id', null); setPhoto('face', null); setPhoto('shop', null); }
   catch (er) { err.textContent = er.message; } finally { busy(b, false); }
 });
 
