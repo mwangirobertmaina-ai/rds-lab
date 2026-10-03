@@ -64,6 +64,68 @@ video{width:100%;border-radius:10px;background:#000;max-height:50vh}
 #toasts{position:fixed;bottom:calc(14px + var(--safe));left:0;right:0;max-width:480px;margin:0 auto;padding:0 14px;z-index:300;pointer-events:none;display:flex;flex-direction:column;gap:8px}
 .toast{background:#1f2937;border:1px solid #374151;border-left:4px solid var(--cy);border-radius:10px;padding:11px 14px;font-size:.82rem;animation:in .2s;pointer-events:auto}.toast.ok{border-left-color:var(--g)}.toast.err{border-left-color:var(--red)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+
+/* ===================== RESPONSIVE LAYER: phones, tablets, laptops ===================== */
+html{color-scheme:dark;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*{scrollbar-width:thin;scrollbar-color:#374151 transparent}
+body{min-height:100vh;min-height:100dvh}
+img,video,canvas,svg{max-width:100%}
+@media (min-width:1200px){html{font-size:17px}}
+@media (min-width:1700px){html{font-size:18px}}
+
+.alert{top:calc(12px + env(safe-area-inset-top,0px))}
+.top .wrap{padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.shop{min-width:0}.shop b,.shop span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
+.orders{grid-template-columns:repeat(auto-fill,minmax(min(310px,100%),1fr))}
+.narrow{padding-top:max(18px,5vh)}
+@media (pointer:coarse){input,select,textarea{font-size:16px}.btn,.tab,.chip{min-height:44px}.tbl input{min-height:40px}}
+@media (hover:hover){.order:hover{border-color:#3b4a63}.btn:not(:disabled):hover{filter:brightness(1.08)}}
+
+/* phones: inventory turns into stacked cards instead of scrolling sideways */
+@media (max-width:640px){
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
+  .tbl thead{display:none}
+  .tbl tr{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+  .tbl td{border:0;padding:5px 0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .tbl td[data-label]::before{content:attr(data-label);color:var(--dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.4px}
+  .tbl td:last-child{justify-content:flex-end;padding-top:8px}
+  .tbl td.empty{display:block;padding:20px 0}
+}
+@media (max-width:520px){
+  #oq,#cq{width:100%!important}
+  .top .row{gap:6px}.top .btn.sm{padding:7px 9px}
+  .panel{padding:13px}
+  .wrap{padding:12px}
+}
+@media (max-width:380px){.kpis{grid-template-columns:1fr 1fr;gap:8px}.kpi b{font-size:1rem}.tab{padding:8px 12px}}
+/* the catalogue form and inventory sit side by side only when there is room */
+@media (max-width:899px){#tCatalog>.g2{grid-template-columns:1fr}}
+@media (min-width:900px){
+  #tCatalog>.g2{grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:16px}
+  #itemForm{position:sticky;top:76px}
+}
+@media (min-width:1000px){
+  .wrap{padding:20px 28px}
+  .top .wrap{padding:12px 28px}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+  .kpi{padding:16px}.kpi b{font-size:1.35rem}
+  #toasts{left:auto;right:24px;max-width:380px;margin:0}
+}
+@media (min-width:1400px){.wrap{max-width:1320px}}
+/* phones turned sideways */
+@media (max-height:500px) and (orientation:landscape){.top{position:static}.alert{max-width:520px}}
+
+
+/* ===================== POLISH LAYER 2: banner, figures, touch ===================== */
+/* the "new order" banner never covers the header or the figures: bottom on phones and tablets, inside the header on laptops */
+.alert{top:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));max-width:520px}
+.alert>div{min-width:0}
+@media (min-width:1100px){.alert{top:6px;bottom:auto;max-width:480px;padding:8px 12px}.alert p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+/* figures: an even grid, never five in one row and two in the next */
+.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:last-child:nth-child(odd){grid-column:1/-1}
+@media (min-width:600px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi:last-child:nth-child(odd){grid-column:auto}}
+@media (min-width:1200px){.kpis{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}.kpi{padding:14px}.kpi b{font-size:1.2rem}}
+@media (pointer:coarse){.btn{min-height:44px}.btn.sm{min-height:40px}}
 </style>
 </head>
 <body>
@@ -462,7 +524,7 @@ function renderCatalog() {
   const list = state.catalog.filter(i => !q || String(i.name).toLowerCase().includes(q) || String(i.category).toLowerCase().includes(q));
   $('#cCount').textContent = `(${state.catalog.length})`;
   $('#catList').innerHTML = [...new Set(state.catalog.map(i => i.category).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
-  $('#catalog').innerHTML = list.length ? list.map(i => `<tr data-id="${esc(i.id)}"><td><div class="row" style="flex-wrap:nowrap"><img src="${esc(i.image || PH)}" alt="" loading="lazy"><div><b>${esc(i.name)}</b><div class="muted">${esc(i.category || '')}</div></div></div></td><td>${fmt(i.price)}</td><td><div class="row" style="flex-wrap:nowrap;gap:6px"><input type="number" min="0" step="1" value="${Number(i.stock) || 0}" data-stock="${esc(i.id)}" aria-label="Stock for ${esc(i.name)}">${stockTag(i.stock)}</div></td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-edit="${esc(i.id)}">Edit</button> <button class="btn danger sm" data-del="${esc(i.id)}">Delete</button></td></tr>`).join('') : `<tr><td colspan="4" class="empty">${state.catalog.length ? 'No items match your search.' : 'Your catalogue is empty. Add your first item.'}</td></tr>`;
+  $('#catalog').innerHTML = list.length ? list.map(i => `<tr data-id="${esc(i.id)}"><td><div class="row" style="flex-wrap:nowrap"><img src="${esc(i.image || PH)}" alt="" loading="lazy"><div><b>${esc(i.name)}</b><div class="muted">${esc(i.category || '')}</div></div></div></td><td data-label="Price">${fmt(i.price)}</td><td data-label="Stock"><div class="row" style="flex-wrap:nowrap;gap:6px"><input type="number" min="0" step="1" value="${Number(i.stock) || 0}" data-stock="${esc(i.id)}" aria-label="Stock for ${esc(i.name)}">${stockTag(i.stock)}</div></td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-edit="${esc(i.id)}">Edit</button> <button class="btn danger sm" data-del="${esc(i.id)}">Delete</button></td></tr>`).join('') : `<tr><td colspan="4" class="empty">${state.catalog.length ? 'No items match your search.' : 'Your catalogue is empty. Add your first item.'}</td></tr>`;
 }
 $('#cq').addEventListener('input', debounce(e => { state.cq = e.target.value.trim(); renderCatalog(); }, 200));
 $('#catalog').addEventListener('change', async e => {

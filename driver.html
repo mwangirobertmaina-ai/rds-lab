@@ -50,6 +50,72 @@ video{width:100%;border-radius:12px;background:#000;max-height:50vh}
 .toast{background:#1f2937;border:1px solid #374151;border-left:4px solid var(--cy);border-radius:12px;padding:12px 14px;font-size:.84rem;animation:in .2s;pointer-events:auto}.toast.ok{border-left-color:var(--g)}.toast.err{border-left-color:var(--red)}
 .leaflet-container{background:#1b2437}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===================== RESPONSIVE LAYER: phones, tablets, laptops ===================== */
+html{color-scheme:dark;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*{scrollbar-width:thin;scrollbar-color:#374151 transparent}
+body{min-height:100vh;min-height:100dvh}
+img,video,canvas,svg{max-width:100%}
+@media (min-width:1200px){html{font-size:17px}}
+@media (min-width:1700px){html{font-size:18px}}
+
+.top{padding-top:calc(14px + env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#mapEmpty{display:none}
+@media (pointer:coarse){input,select,textarea{font-size:16px}.btn,.seg button{min-height:44px}.doc .a button,.doc .a label{min-height:36px;display:grid;place-items:center}nav button{min-height:50px}}
+@media (hover:hover){.job:hover{border-color:#3b4a63}.btn:not(:disabled):hover{filter:brightness(1.08)}}
+
+/* small phones (320 to 380 px) */
+@media (max-width:380px){
+  .view{padding-left:12px;padding-right:12px}.top{padding-left:12px;padding-right:12px}.auth{padding:28px 14px 36px}
+  .kpi{gap:8px}.kpi b{font-size:1rem}.bal{font-size:1.7rem}.doc{gap:8px;padding:8px}.doc img,.doc .ph{width:46px;height:46px}
+}
+/* big phones in landscape and small tablets */
+@media (min-width:640px){
+  body{max-width:640px}
+  nav{max-width:640px}
+  .banner{max-width:600px}
+  #toasts{max-width:560px}
+  .auth{padding-top:8vh}
+  #docs{display:grid;grid-template-columns:1fr 1fr;gap:10px}.doc{margin-bottom:0}
+  .map{height:260px}
+}
+/* laptops and desktops: side rail, jobs list beside a large map */
+@media (min-width:1000px){
+  body{max-width:1280px}
+  #app{padding-left:96px}
+  .auth{max-width:620px;margin:0 auto;padding-top:6vh}
+  nav{left:max(0px,calc(50vw - 640px));right:auto;top:0;bottom:0;width:96px;max-width:none;margin:0;flex-direction:column;justify-content:flex-start;gap:6px;padding:18px 8px;border-top:0;border-right:1px solid var(--line)}
+  nav::before{content:"RDS Rider";display:block;text-align:center;font-weight:900;font-size:.9rem;color:var(--g);padding:6px 0 20px}
+  nav button{flex:none;padding:13px 4px;border-radius:14px;font-size:.72rem}
+  nav button:hover{background:rgba(255,255,255,.05);color:#fff}nav button.on{background:rgba(0,255,136,.1)}
+  .top{padding-top:22px;padding-bottom:10px;padding-left:40px;padding-right:40px}
+  .toggle{max-width:520px}
+  .view{padding:12px 40px 60px}
+  #vJobs.active{display:grid;grid-template-columns:minmax(340px,460px) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;column-gap:28px;align-items:start}
+  #vJobs>#blockedBox,#vJobs>#activeBox,#vJobs>#radarHead,#vJobs>#radar{grid-column:1}
+  #vJobs>#jobMapWrap,#vJobs>#mapEmpty{grid-column:2;grid-row:1 / span 5;position:sticky;top:150px;align-self:start}
+  #jobMapWrap .map{height:calc(100vh - 210px);min-height:380px;margin:0}
+  #jobMapWrap.hidden + #mapEmpty{display:grid;place-items:center;text-align:center;height:calc(100vh - 210px);min-height:380px;border:1px dashed #374151;border-radius:var(--r);padding:30px;line-height:1.6}
+  #vEarn.active{display:grid;grid-template-columns:minmax(320px,440px) minmax(0,1fr);grid-template-rows:auto auto auto 1fr;column-gap:28px;align-items:start}
+  #vEarn>:nth-child(1),#vEarn>:nth-child(2),#vEarn>:nth-child(3){grid-column:1}
+  #vEarn>:nth-child(4){grid-column:2;grid-row:1 / span 4}
+  #vAcct{max-width:600px}
+  #toasts{left:auto;right:24px;top:20px;max-width:380px;margin:0}
+  .banner{max-width:520px}
+}
+/* phones turned sideways */
+@media (max-height:500px) and (orientation:landscape) and (max-width:999px){
+  nav{padding-top:3px}nav .ic{display:inline-block;margin-right:6px;font-size:1rem}nav button{min-height:40px}
+  .view{padding-bottom:90px}.map{height:150px}.top{padding-top:8px}
+}
+
+
+/* ===================== POLISH LAYER 2: finger-sized controls ===================== */
+@media (pointer:coarse){
+  .sw{width:66px;height:40px}.sw::after{top:5px;left:5px;width:30px;height:30px}.sw.on::after{transform:translateX(26px)}
+  .doc .a button,.doc .a label{min-height:42px;padding:8px 12px;font-size:.74rem}
+  .btn.sm{min-height:42px}
+}
 </style>
 </head>
 <body>
@@ -91,6 +157,7 @@ video{width:100%;border-radius:12px;background:#000;max-height:50vh}
       <div id="blockedBox"></div>
       <div id="activeBox"></div>
       <div id="jobMapWrap" class="hidden"><div class="map" id="jobMap"></div></div>
+      <div id="mapEmpty" class="empty">🗺️<br>When you accept a job, the pickup, drop-off<br>and your route appear on this map.</div>
       <div id="radarHead" class="between hidden" style="margin:6px 0 10px"><h2>Jobs near you</h2><span class="muted" id="radarCount"></span></div>
       <div id="radar"></div>
     </section>
@@ -233,7 +300,7 @@ function nav(p) { return p && Number.isFinite(p.lat) ? `https://www.google.com/m
 function routeHtml(j) { return `<div class="route"><div><b>${esc(j.pickup || 'Pickup')}</b></div><div><b>${esc(j.destination || 'Drop-off')}</b></div></div>`; }
 function activeHtml(j) {
   const ride = j.kind === 'RIDE', st = j.stage || 'ACCEPTED', label = { ACCEPTED: ride ? 'Head to the pickup point' : 'Head to the shop', ARRIVED_PICKUP: ride ? 'Waiting for the passenger' : 'Collect the order', PICKED_UP: ride ? 'Trip in progress' : 'Deliver to the customer' }[st];
-  let h = `<div class="job new"><div class="between"><span class="tag ${ride ? 'ride' : ''}">${ride ? '🏍️ RIDE' : '📦 DELIVERY'}</span><span class="earn">${fmt(j.earn)}</span></div><h2 style="margin-top:8px">${esc(label)}</h2>${routeHtml(j)}<div class="muted">${j.distanceKm ? j.distanceKm + ' km' : ''}${j.etaMin ? ' · ~' + j.etaMin + ' min' : ''} · you earn 95% of the ${fmt0(j.fare)} fare</div>`;
+  let h = `<div class="job new"><div class="between"><span class="tag ${ride ? 'ride' : ''}">${ride ? '🏍️ RIDE' : '📦 DELIVERY'}</span><span class="earn">${fmt(j.earn)}</span></div><h2 style="margin-top:8px">${esc(label)}</h2>${routeHtml(j)}<div class="muted">${j.distanceKm ? Number(j.distanceKm).toFixed(1) + ' km' : ''}${j.etaMin ? ' · ~' + j.etaMin + ' min' : ''} · you earn 95% of the ${fmt0(j.fare)} fare</div>`;
   if (j.customerPhone) h += `<a class="btn ghost" style="margin-top:12px;text-decoration:none" href="tel:${esc(String(j.customerPhone).replace(/\s/g, ''))}">📞 Call customer</a>`;
   const target = st === 'PICKED_UP' ? j.destinationCoords : j.pickupCoords, nv = nav(target); if (nv) h += `<a class="btn cy" style="margin-top:10px;text-decoration:none" target="_blank" rel="noopener" href="${nv}">🗺️ Navigate to ${st === 'PICKED_UP' ? 'drop-off' : 'pickup'}</a>`;
   if (st === 'ACCEPTED') h += `<button class="btn cy" style="margin-top:10px" data-act="arrived">I've arrived at the ${ride ? 'pickup' : 'shop'}</button>`;
@@ -250,7 +317,7 @@ function renderJobs() {
   if (state.blocked || state.active) { rd.innerHTML = ''; return; }
   if (!state.online) { rd.innerHTML = '<div class="empty">You are offline.<br>Switch on <b>online</b> above to start receiving jobs.</div>'; return; }
   $('#radarCount').textContent = state.jobs.length ? `${state.jobs.length} available` : '';
-  rd.innerHTML = state.jobs.length ? state.jobs.map(j => `<div class="job"><div class="between"><span class="tag ${j.kind === 'RIDE' ? 'ride' : ''}">${j.kind === 'RIDE' ? '🏍️ RIDE' : '📦 DELIVERY'}</span><span class="earn">${fmt0(j.earn)}</span></div>${routeHtml(j)}<div class="muted" style="margin-bottom:12px">${j.distanceToPickupKm != null ? j.distanceToPickupKm + ' km to pickup · ' : ''}${j.distanceKm ? j.distanceKm + ' km trip' : ''}${j.etaMin ? ' · ~' + j.etaMin + ' min' : ''} · fare ${fmt0(j.fare)}</div><button class="btn go" data-act="accept" data-id="${esc(j.id)}">Accept job</button></div>`).join('') : '<div class="empty">No jobs right now.<br>Stay online. New jobs ring automatically.</div>';
+  rd.innerHTML = state.jobs.length ? state.jobs.map(j => `<div class="job"><div class="between"><span class="tag ${j.kind === 'RIDE' ? 'ride' : ''}">${j.kind === 'RIDE' ? '🏍️ RIDE' : '📦 DELIVERY'}</span><span class="earn">${fmt0(j.earn)}</span></div>${routeHtml(j)}<div class="muted" style="margin-bottom:12px">${j.distanceToPickupKm != null ? Number(j.distanceToPickupKm).toFixed(1) + ' km to pickup · ' : ''}${j.distanceKm ? Number(j.distanceKm).toFixed(1) + ' km trip' : ''}${j.etaMin ? ' · ~' + j.etaMin + ' min' : ''} · fare ${fmt0(j.fare)}</div><button class="btn go" data-act="accept" data-id="${esc(j.id)}">Accept job</button></div>`).join('') : '<div class="empty">No jobs right now.<br>Stay online. New jobs ring automatically.</div>';
 }
 $('#vJobs').addEventListener('click', async e => {
   if (e.target.id === 'recheck') { await loadMe(); return loadJobs(); }
