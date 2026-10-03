@@ -20,8 +20,8 @@
 //  - METRICS_TOKEN         enables GET /metrics (Prometheus text) behind this bearer
 //  Requires Node 18+ (global fetch, crypto.randomUUID). No new npm packages.
 //
-// STAGE 192 (additive) — hybrid server: one RDS app for customers (/user, /store), vendors (/merchant) and
-//  riders (/driver), all wired through the same order record. New optional env vars:
+// STAGE 192 (additive) — hybrid server: one RDS app for customers (/user), vendors (/merchant) and
+//  riders (/driver), plus the owner control room (/store), all wired through the same order record. New optional env vars:
 //  - PAYMENTS_MODE            "simulated" (default). Payments and payouts are labelled SIMULATED until Daraja is wired.
 //  - DRIVER_APPROVAL_REQUIRED "true"/"false". Default: true in production (riders need admin approval to take jobs).
 //  - TEST_PHONES / TEST_OTP   fixed-code test numbers (default +254722334455 / 1234), production only.
@@ -38,6 +38,20 @@ const fs = require("fs");
 const fsPromises = require("fs").promises;
 const cors = require("cors");
 const path = require("path");
+
+// Local setup helper: if a file named ".env" sits next to server.js, its KEY=VALUE lines become environment
+// settings (a setting that already exists is never overridden, so Render's own settings always win).
+// ".env" is never served to browsers and is excluded from git by .gitignore.
+try {
+    const envFile = path.join(__dirname, ".env");
+    if (fs.existsSync(envFile)) {
+        for (const line of fs.readFileSync(envFile, "utf8").split(/\r?\n/)) {
+            const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+            if (!m || line.trim().startsWith("#") || process.env[m[1]] !== undefined) continue;
+            process.env[m[1]] = m[2].replace(/^(["'])(.*)\1$/, "$2");
+        }
+    }
+} catch (e) { /* a broken .env must never stop the server */ }
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs"); // ✅ Pure-JS bcryptjs configured for flawless CI/CD builds
 const multer = require("multer");
@@ -371,6 +385,7 @@ app.post(['/api/store/checkout', '/api/user/checkout'], idempotency191, bindUser
 // STAGE 191 — store extension (additive): server-side price guard + authoritative /quote
 const storeExt191 = safeRequire191('./routes/store', 'store');
 if (storeExt191) {
+    if (typeof storeExt191.gate === 'function') app.use(storeExt191.gate);     // MASTER CONTROL switches: enforced on every page and API before anything else
     if (typeof storeExt191.priceGuard === 'function') app.post('/api/store/checkout', storeExt191.priceGuard);
     app.use('/api/store', storeExt191);
 }
@@ -390,8 +405,18 @@ if (userExt191) {
     app.use('/api/user', userExt191);
 }
 
-// STAGE 191 — serve the new consumer app at /user (falls back to the old page if user.html is not deployed)
-app.get(['/user', '/store'], (req, res, next) => {
+// STAGE 192 — count page views of every panel (feeds the owner control room); must run before the page routes
+const PANEL_PATHS_192 = new Set(['/', '/ads', '/store', '/user', '/driver', '/merchant', '/admin', '/print', '/owner']);
+const panelHits192 = {};
+app.use((req, res, next) => {
+    if (req.method === 'GET') {
+        const p = (req.path.length > 1 ? req.path.replace(/\/+$/, '') : req.path).replace(/\.html$/, '');   // /store.html counts as /store
+        if (PANEL_PATHS_192.has(p)) { const h = panelHits192[p] || (panelHits192[p] = { n: 0, last: null }); h.n++; h.last = Date.now(); }
+    }
+    next();
+});
+// STAGE 191 — serve the customer app at /user (falls back to the old page if user.html is not deployed)
+app.get('/user', (req, res, next) => {
     const f = path.join(__dirname, 'user.html');
     if (fs.existsSync(f)) return res.sendFile(f);
     next();
@@ -403,6 +428,7 @@ app.get(['/user', '/store'], (req, res, next) => {
 const STAGE_192 = STAGE_191, VERSION_192 = VERSION_191;
 const driverDocs192 = {};        // driverId -> { selfie, licence, goodConduct, vehicle, insurance, inspection, submittedAt }
 const driverPayouts192 = [];     // simulated M-Pesa B2C payouts
+const switches192 = { panels: {}, users: {} };   // MASTER CONTROL: panel on/off + switched-off customers (saved across restarts)
 const PAYMENTS_MODE_192 = (process.env.PAYMENTS_MODE || 'simulated').toLowerCase();
 const DRIVER_APPROVAL_REQUIRED_192 = process.env.DRIVER_APPROVAL_REQUIRED
     ? process.env.DRIVER_APPROVAL_REQUIRED === 'true'
@@ -419,7 +445,7 @@ app.get('/readyz', (req, res) => {
     res.status(ready ? 200 : 503).json({
         ready, stage: STAGE_192, version: VERSION_192, auditChainValid: audit.valid, persistenceOk: persistOk, missingModules: missing,
         modules: MODULE_STATUS_191, paymentsMode: PAYMENTS_MODE_192, driverApprovalRequired: DRIVER_APPROVAL_REQUIRED_192,
-        testCredentials: ALLOW_TEST_CREDENTIALS, uptimeSeconds: Math.floor(process.uptime())
+        testCredentials: ALLOW_TEST_CREDENTIALS, adminLoginConfigured: !adminSetupRequired192(), adminSetupRequired: adminSetupRequired192(), uptimeSeconds: Math.floor(process.uptime())
     });
 });
 
@@ -427,7 +453,7 @@ app.get('/readyz', (req, res) => {
 const _snapshotPayload191 = snapshotPayload191;
 snapshotPayload191 = function () {
     const p = _snapshotPayload191();
-    p.version = 192; p.driverDocs192 = driverDocs192; p.driverPayouts192 = driverPayouts192;
+    p.version = 192; p.driverDocs192 = driverDocs192; p.driverPayouts192 = driverPayouts192; p.switches192 = switches192;
     return p;
 };
 const _restoreSnapshot191 = restoreSnapshot191;
@@ -437,7 +463,13 @@ restoreSnapshot191 = function () {
     try {
         let raw = null;
         for (const f of [SNAPSHOT_FILE_191, SNAPSHOT_FILE_191 + '.bak']) { try { raw = JSON.parse(fs.readFileSync(f, 'utf8')); break; } catch (e) {} }
-        if (raw) { replaceObject191(driverDocs192, raw.driverDocs192); replaceArray191(driverPayouts192, raw.driverPayouts192); }
+        if (raw) {
+            replaceObject191(driverDocs192, raw.driverDocs192); replaceArray191(driverPayouts192, raw.driverPayouts192);
+            const sw = raw.switches192 || {};
+            switches192.panels = {}; switches192.users = {};
+            for (const k of Object.keys(sw.panels || {})) if (isSafeKey(k) && sw.panels[k] && typeof sw.panels[k] === 'object') switches192.panels[k] = sw.panels[k];
+            for (const k of Object.keys(sw.users || {})) if (isSafeKey(k) && sw.users[k] && typeof sw.users[k] === 'object') switches192.users[k] = sw.users[k];
+        }
     } catch (e) {}
 };
 
@@ -486,6 +518,82 @@ function ensureTestRider192(phone) {
     if (!Object.prototype.hasOwnProperty.call(driverWallets, id)) driverWallets[id] = 0;
     stateDirty191 = true;
     return true;
+}
+
+// ---------------------------------------------------------------------------
+// OWNER CONTROL ROOM data sources: live activity feed, panel page views, request samples
+// ---------------------------------------------------------------------------
+const activity192 = [];
+function logActivity192(room, event, payload) {
+    try {
+        const p = payload && typeof payload === 'object' ? payload : {};
+        activity192.push({ at: Date.now(), room: room || '*', event: String(event).slice(0, 60), orderId: p.orderId || p.dispatchId || p.id || null, status: p.deliveryStatus || p.status || null });
+        if (activity192.length > 300) activity192.shift();
+    } catch (e) {}
+}
+const _ioEmit192 = io.emit.bind(io);
+io.emit = (ev, ...a) => { logActivity192(null, ev, a[0]); return _ioEmit192(ev, ...a); };
+const _ioTo192 = io.to.bind(io);
+io.to = (room) => { const op = _ioTo192(room); const e = op.emit.bind(op); op.emit = (ev, ...a) => { logActivity192(room, ev, a[0]); return e(ev, ...a); }; return op; };
+
+const samples192 = []; let _lastTotal192 = 0, _last5xx192 = 0;
+function takeSample192() {
+    const tot = METRICS_191.total, e5 = METRICS_191.byClass['5xx'] || 0;
+    samples192.push({ t: Date.now(), req: tot - _lastTotal192, err: e5 - _last5xx192, inflight: METRICS_191.inflight, lag: Number(eventLoopLagMs191.toFixed(1)), rssMB: Math.round(process.memoryUsage().rss / 1048576) });
+    _lastTotal192 = tot; _last5xx192 = e5; if (samples192.length > 180) samples192.shift();
+}
+setInterval(takeSample192, 60000).unref();
+setTimeout(takeSample192, 3000).unref();
+
+// /store IS the owner control room (store.html). /owner is just another address for the same page.
+app.get(['/store', '/owner'], (req, res, next) => {
+    const f = path.join(__dirname, 'store.html');
+    if (fs.existsSync(f)) return res.sendFile(f);
+    next();
+});
+
+// MASTER CONTROL (routes/store.js): see the whole project live, and switch panels, customers, riders and shops on or off
+if (storeExt191 && typeof storeExt191.init === 'function') {
+    storeExt191.init({
+        verifyToken: (req, res, next) => verifySovereignTokenStrict(req, res, next),
+        requireAdmin: (req, res, next) => requireAdminRoleStrict(req, res, next),
+        requireSovereign: (req, res, next) => requireSovereignAdminOnly(req, res, next),
+        verifyJwt, normalizePhone: normalizeMsisdn191,
+        vatRate: (userExt191 && userExt191.VAT_RATE) || 0.16, stage: STAGE_192, version: VERSION_192,
+        paymentsMode: PAYMENTS_MODE_192, approvalRequired: DRIVER_APPROVAL_REQUIRED_192, testCreds: ALLOW_TEST_CREDENTIALS, smsConfigured: SMS_CONFIGURED_191,
+        getSwitches: () => switches192, resetTestData: resetTestData192, getCorridor: () => corridorStatus, getDriverDocs: () => driverDocs192, emitSafe: emitSafe191, appendAudit, markDirty: () => { stateDirty191 = true; },
+        getActiveOrders: () => activeOrders, getStoreOrders: () => storeOrders, getDrivers: () => drivers, getWallets: () => driverWallets, getLedger: () => driverLedger191,
+        getPayouts: () => driverPayouts192, getPresence: () => driverPresence191, getUsers: () => users, getRatings: () => orderRatings191, getPendingMerchants: () => pendingMerchants,
+        getMetrics: () => METRICS_191, getModuleStatus: () => MODULE_STATUS_191,
+        getPanels: () => PANELS_191.map(p => (p.url === '/user' ? { ...p, file: 'user.html', deployed: fs.existsSync(path.join(__dirname, 'user.html')) } : p)),
+        getPanelHits: () => panelHits192, getSamples: () => samples192, getActivity: () => activity192,
+        getSocketStats: () => {
+            const o = { total: 0, admins: 0, merchants: 0, riders: 0, customers: 0, anonymous: 0 };
+            try { for (const s of io.sockets.sockets.values()) { o.total++; const u = s.user; if (!u) o.anonymous++; else if (u.merchantId) o.merchants++; else if (u.driverId) o.riders++; else if (u.userId) o.customers++; else if (u.role && /ADMIN|AUDITOR/.test(u.role)) o.admins++; } } catch (e) {}
+            return o;
+        },
+        getAuditInfo: () => verifyAuditChain(), getAuditTail: (n) => sovereignAuditStream.slice(-n), getSnapshot: () => lastSnapshot191, getLag: () => eventLoopLagMs191,
+        getPosture: () => securityPostureReal191(), isTenantActive, eatDayStart: eatDayStart191
+    });
+}
+
+// TEST MODE ONLY: wipe test orders and money so the books start clean. Keeps customers, riders, shops, products and switches.
+// The master control refuses this unless payments are simulated, and writes a backup of the saved state first.
+function resetTestData192() {
+    let backup = null;
+    try { if (fs.existsSync(SNAPSHOT_FILE_191)) { backup = SNAPSHOT_FILE_191 + ".before-reset-" + Date.now() + ".snapshot"; fs.copyFileSync(SNAPSHOT_FILE_191, backup); } } catch (e) { backup = null; }
+    replaceObject191(activeOrders, {});
+    for (const k of Object.keys(merchantOrders)) if (Array.isArray(merchantOrders[k])) merchantOrders[k].length = 0;
+    replaceArray191(storeOrders, []);
+    replaceArray191(global.driverQueue, []);
+    replaceObject191(global.activeDispatches, {});
+    replaceArray191(driverLedger191, []);
+    replaceArray191(driverPayouts192, []);
+    replaceArray191(orderRatings191, []);
+    for (const k of Object.keys(driverWallets)) driverWallets[k] = 0;
+    stateDirty191 = true;
+    try { saveSnapshotSync191(); } catch (e) {}
+    return { backup: backup ? path.basename(backup) : null };
 }
 
 // the rider app: radar, job lifecycle with delivery PIN, wallet, payouts (takes over the inline rider routes)
@@ -2078,16 +2186,58 @@ app.post('/api/ai/intent-eval', verifySovereignTokenStrict, (req, res) => {
     });
 });
 
+// ---------------------------------------------------------------------------
+// STAGE 192 — first-time owner setup. If no admin password is configured (environment) and none has been
+// created yet, the owner creates one on the login page. A one-time SETUP CODE is printed in the server window
+// (or Render -> Logs) so only the person who controls the server can do it. The password is stored as a
+// salted scrypt hash OUTSIDE the project folder (DATA_DIR if set, otherwise ~/.rds-lab), never in git or web-served.
+// ---------------------------------------------------------------------------
+const ADMIN_CRED_FILE_192 = process.env.DATA_DIR ? path.join(DATA_DIR_191, "admin-credential.snapshot") : path.join(os.homedir(), ".rds-lab", "admin-credential.json");
+function adminEnvConfigured192() { return !!((process.env.SOVEREIGN_ADMIN_PASSWORD_HASH || "").trim() || (process.env.SOVEREIGN_ADMIN_PASSWORD || "").trim()); }
+function readAdminCred192() {
+    try { const c = JSON.parse(fs.readFileSync(ADMIN_CRED_FILE_192, "utf8")); return c && typeof c.salt === "string" && typeof c.hash === "string" ? c : null; } catch (e) { return null; }
+}
+function adminSetupRequired192() { return !adminEnvConfigured192() && !readAdminCred192(); }
+let adminSetupCode192 = null, adminSetupFails192 = 0;
+function newSetupCode192() {
+    adminSetupCode192 = String(crypto.randomInt(10000000, 100000000)); adminSetupFails192 = 0;
+    console.log("\n=========================================================\n  ADMIN SETUP CODE:  " + adminSetupCode192 + "\n  Open /store, choose your password and enter this code.\n=========================================================\n");
+}
+if (adminSetupRequired192()) newSetupCode192();
+
 const authRouter = express.Router();
+authRouter.post('/admin-setup', authLimiter, (req, res) => {
+    try {
+        if (!adminSetupRequired192()) return bad(res, "Admin login is already set up.", 409);
+        const { code, email, password } = req.body || {};
+        if (typeof code !== 'string' || typeof email !== 'string' || typeof password !== 'string') return bad(res, "code, email and password are required.");
+        if (!adminSetupCode192) newSetupCode192();
+        if (!safeEqual(code.trim(), adminSetupCode192)) {
+            adminSetupFails192++; appendAudit('ADMIN_SETUP_FAILED', { ip: req.ip });
+            if (adminSetupFails192 >= 5) { newSetupCode192(); return bad(res, "Too many wrong codes. A new setup code was printed in your server window (or Render, Logs).", 429); }
+            return bad(res, `Wrong setup code. ${5 - adminSetupFails192} tries left.`, 403);
+        }
+        if (!safeEqual(email.trim().toLowerCase(), SOVEREIGN_OWNER_EMAIL.toLowerCase())) return bad(res, "That email is not the owner email for this server.", 403);
+        const pw = password.trim();
+        if (pw.length < 8 || pw.length > 128) return bad(res, "Choose a password of 8 to 128 characters.");
+        const salt = crypto.randomBytes(16).toString('hex'), hash = crypto.scryptSync(pw, salt, 32).toString('hex');
+        fs.mkdirSync(path.dirname(ADMIN_CRED_FILE_192), { recursive: true });
+        fs.writeFileSync(ADMIN_CRED_FILE_192, JSON.stringify({ salt, hash, createdAt: Date.now() }), { mode: 0o600 });
+        adminSetupCode192 = null; adminSetupFails192 = 0;
+        appendAudit('ADMIN_SETUP_DONE', { ip: req.ip });
+        res.json({ success: true, message: "Password created. You can sign in now." });
+    } catch (e) { bad(res, "Setup failed.", 500); }
+});
 authRouter.post('/admin-login', authLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
-        const hash = process.env.SOVEREIGN_ADMIN_PASSWORD_HASH;
-        const plain = process.env.SOVEREIGN_ADMIN_PASSWORD;
-        if (!hash && !plain) return bad(res, "Admin login is not configured on this server.", 503);
+        const hash = (process.env.SOVEREIGN_ADMIN_PASSWORD_HASH || '').trim();
+        const plain = (process.env.SOVEREIGN_ADMIN_PASSWORD || '').trim();
+        const cred = (!hash && !plain) ? readAdminCred192() : null;
+        if (!hash && !plain && !cred) return res.status(503).json({ success: false, error: "Admin login is not set up yet.", setupRequired: true });
         if (typeof email !== 'string' || typeof password !== 'string') return bad(res, "email and password required.");
         const emailOk = safeEqual(email.toLowerCase(), SOVEREIGN_OWNER_EMAIL.toLowerCase());
-        const passOk = hash ? await bcrypt.compare(password, hash) : safeEqual(password, plain);
+        const passOk = hash ? await bcrypt.compare(password.trim(), hash) : plain ? safeEqual(password.trim(), plain) : safeEqual(crypto.scryptSync(password.trim(), cred.salt, 32).toString('hex'), cred.hash);
         if (!emailOk || !passOk) {
             appendAudit('ADMIN_LOGIN_FAILED', { email: cleanText(email, 120), ip: req.ip });
             return bad(res, "Invalid credentials.", 401);
@@ -2813,7 +2963,7 @@ function securityPostureReal191() {
     if (!process.env.JWT_SECRET) add('HIGH', 'JWT_SECRET', 'JWT_SECRET not set: tokens die on every restart and cannot be shared across instances.');
     if (!STRICT_ACTOR_AUTH) add('HIGH', 'STRICT_ACTOR_AUTH', 'STRICT_ACTOR_AUTH is off: requests without a token can still reach driver/merchant/store endpoints.');
     if (CORS_ORIGIN === '*') add('MEDIUM', 'CORS_WILDCARD', 'ALLOWED_ORIGINS is unset: CORS allows any origin.');
-    if (!process.env.SOVEREIGN_ADMIN_PASSWORD_HASH && !process.env.SOVEREIGN_ADMIN_PASSWORD) add('HIGH', 'ADMIN_LOGIN', 'No admin password configured: admin login returns 503.');
+    if (adminSetupRequired192()) add('HIGH', 'ADMIN_LOGIN', 'No admin password has been created yet: open /store and finish the first-time setup.');
     if (!process.env.SOVEREIGN_ADMIN_PASSWORD_HASH && process.env.SOVEREIGN_ADMIN_PASSWORD) add('LOW', 'ADMIN_PLAINTEXT', 'Admin password is plaintext in env; prefer SOVEREIGN_ADMIN_PASSWORD_HASH (bcrypt).');
     if (!SMS_CONFIGURED_191) add(IS_PROD ? 'HIGH' : 'LOW', 'SMS', 'No SMS provider configured: OTPs and merchant approval tokens are not delivered.');
     if (!process.env.AUDIT_HMAC_KEY) add('MEDIUM', 'AUDIT_KEY', 'AUDIT_HMAC_KEY not set: audit payload hashes use the JWT secret.');

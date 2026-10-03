@@ -226,6 +226,7 @@ async function api(path, { method = 'GET', body, headers = {}, token = state.tok
     if (!res.ok || !data || data.success === false) {
       const e = new Error((data && data.error) || `Request failed (${res.status})`); e.status = res.status; e.retryAfter = res.headers.get('Retry-After');
       if (res.status === 401 && token && token === state.token) sessionExpired();
+      if (res.status === 403 && data && data.code === 'ACCOUNT_SUSPENDED' && token && token === state.token) { signOutLocal(); toast(data.error || 'Your account has been suspended.', 'err', 7000); }
       if (res.status === 429) e.message = `Too many requests. Try again in ${e.retryAfter || 'a few'} seconds.`;
       throw e;
     }
@@ -257,6 +258,7 @@ $('#btnVerify').onclick = async () => {
   try { const d = await api('/api/user/verify-otp', { method: 'POST', body: { phone: state.pendingPhone, otp, role: 'REGULAR_USER' }, token: null }); state.token = d.token; state.user = d.user; LS.set('rds_u_token', d.token); LS.set('rds_u_user', d.user); $('#otp').value = ''; enterApp(); }
   catch (e) { $('#authErr').textContent = e.message; } finally { busy(b, false); }
 };
+function suspendedNow() { if (!state.token) return; signOutLocal(); toast('Your account has been suspended. Please contact support.', 'err', 7000); }
 function sessionExpired() { if (!state.token) return; signOutLocal(); toast('Your session expired. Please sign in again.', 'err'); }
 function signOutLocal() { state.token = null; state.user = null; state.orders = []; LS.del('rds_u_token'); LS.del('rds_u_user'); if (state.socket) { state.socket.auth = {}; state.socket.disconnect(); } setLive(false); closeAll(); $('#app').classList.add('hidden'); $('#auth').classList.remove('hidden'); $('#stOtp').classList.add('hidden'); $('#stPhone').classList.remove('hidden'); }
 $('#logout').onclick = async () => { try { await api('/api/auth/logout', { method: 'POST' }); } catch {} signOutLocal(); toast('Signed out'); };
@@ -537,6 +539,7 @@ function initSocket() {
   if (typeof io !== 'function') return; if (state.socket) { state.socket.auth = { token: state.token || undefined }; state.socket.disconnect().connect(); return; }
   const s = io({ auth: { token: state.token || undefined }, reconnection: true }); state.socket = s;
   s.on('connect', () => { setLive(true); refreshRooms(); }); s.on('disconnect', () => setLive(false));
+  s.on('account_status', p => { if (p && p.active === false) suspendedNow(); });
   s.on('connect_error', err => { setLive(false); if (err && err.message === 'unauthorized' && state.token) sessionExpired(); });
   s.on('order_status_update', p => { if (state.tracking && p && p.orderId === state.tracking.id) refreshTracking(); loadOrdersSoft(); });
   s.on('orderListUpdated', () => loadOrdersSoft());
