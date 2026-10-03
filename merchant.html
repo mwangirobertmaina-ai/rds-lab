@@ -45,7 +45,7 @@ label{display:block;font-size:.72rem;color:var(--cy);margin:2px 0 4px}
 @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .order ul{list-style:none;font-size:.82rem;color:#d1d5db}.order li{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--line)}.order li:last-child{border:0}
 .pill{font-size:.64rem;font-weight:800;padding:3px 9px;border-radius:12px;background:rgba(56,189,248,.14);color:var(--cy);white-space:nowrap}
-.pill.new{background:rgba(0,255,136,.16);color:var(--g)}.pill.rider,.pill.waiting_rider{background:rgba(255,215,0,.15);color:var(--gold)}.pill.completed,.pill.delivered{background:rgba(168,85,247,.18);color:#d8b4fe}.pill.cancelled{background:rgba(255,77,109,.15);color:var(--red)}
+.pill.new{background:rgba(0,255,136,.16);color:var(--g)}.pill.rider,.pill.enroute,.pill.waiting_rider{background:rgba(255,215,0,.15);color:var(--gold)}.pill.completed,.pill.delivered{background:rgba(168,85,247,.18);color:#d8b4fe}.pill.cancelled{background:rgba(255,77,109,.15);color:var(--red)}
 .acts{display:flex;gap:8px;flex-wrap:wrap}.acts .btn{flex:1}
 .tbl{width:100%;border-collapse:collapse;font-size:.82rem}.tbl th{font-size:.68rem;color:var(--dim);text-transform:uppercase;text-align:left;padding:8px;border-bottom:1px solid var(--line)}.tbl td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
 .tbl img{width:42px;height:42px;border-radius:8px;object-fit:cover;background:#000}.tbl input{margin:0;width:84px;padding:7px}
@@ -373,6 +373,8 @@ function stageOf(o) {
   if (s === 'COMPLETED & PAID OUT') return { key: 'completed', label: 'Completed', group: 'done' };
   if (d === 'DELIVERED') return { key: 'delivered', label: 'Delivered', group: 'progress' };
   if (s === 'PENDING_VENDOR_ACCEPTANCE') return { key: 'new', label: 'New order', group: 'new' };
+  if (s === 'AWAITING_DRIVER_PICKUP' && d === 'PICKED_UP') return { key: 'enroute', label: 'Out for delivery', group: 'progress' };
+  if (s === 'AWAITING_DRIVER_PICKUP' && d === 'ARRIVED_AT_PICKUP') return { key: 'rider', label: 'Rider is here', group: 'progress' };
   if (s === 'AWAITING_DRIVER_PICKUP' && d === 'DRIVER_ASSIGNED') return { key: 'rider', label: 'Rider assigned', group: 'progress' };
   if (s === 'AWAITING_DRIVER_PICKUP') return { key: 'waiting_rider', label: 'Waiting for rider', group: 'progress' };
   return { key: 'other', label: s.replace(/_/g, ' ').toLowerCase(), group: 'progress' };
@@ -401,6 +403,7 @@ function orderCard(o) {
   let acts = '';
   if (s.key === 'new') acts = `<button class="btn go" data-act="accept" data-oid="${esc(o.orderId)}">✓ Accept &amp; call rider</button><button class="btn danger" data-act="reject" data-oid="${esc(o.orderId)}">Decline</button>`;
   else if (s.key === 'waiting_rider') acts = '<span class="muted">Packed. Waiting for a rider to accept the delivery…</span>';
+  else if (s.key === 'enroute') acts = '<span class="muted">The rider has your parcel and is on the way to the customer.</span>';
   else if (s.key === 'rider') acts = `<button class="btn gold" data-act="handover" data-oid="${esc(o.orderId)}">📦 Handed to rider</button>`;
   else if (s.key === 'delivered') acts = `<button class="btn cy" data-act="handover" data-oid="${esc(o.orderId)}">Mark complete</button>`;
   return `<article class="order ${s.key === 'new' ? 'new' : ''}"><div class="between"><b style="font-family:monospace;font-size:.82rem;color:var(--cy)">${esc(o.orderId)}</b><span class="pill ${s.key}">${esc(s.label)}</span></div>

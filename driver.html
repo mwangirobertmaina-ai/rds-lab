@@ -1,778 +1,300 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0b0f19">
-  <title>RDS Sovereign | Professional Fleet Terminal</title>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <style>
-    :root {
-      --neon-green: #00ff88;
-      --dark-bg: #0b0f19;
-      --panel-bg: #111827;
-      --card-bg: #181824;
-      --text-dim: #9ca3af;
-      --cyan: #38bdf8;
-      --alert-red: #ff3366;
-      --gold: #ffd700;
-      --stage-purple: #a855f7;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
-
-    body {
-      background-color: var(--dark-bg);
-      color: #fff;
-      padding: 15px;
-      max-width: 480px;
-      margin: 0 auto;
-      padding-bottom: 110px;
-    }
-
-    .app-view { display: none; }
-    .app-view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .telemetry-ribbon {
-      background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(56,189,248,0.1));
-      border: 1px solid var(--stage-purple);
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 0.65rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      color: var(--stage-purple);
-      font-weight: bold;
-    }
-
-    .header-location {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    .location-box { display: flex; align-items: center; gap: 8px; }
-    .location-text span { font-size: 0.75rem; color: var(--text-dim); display: block; }
-    .location-text strong { font-size: 0.95rem; color: #fff; }
-
-    .corridor-selector {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      margin-bottom: 15px;
-      padding-bottom: 4px;
-      scrollbar-width: none;
-    }
-    .corridor-selector::-webkit-scrollbar { display: none; }
-    .corridor-btn {
-      background: var(--panel-bg);
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 8px 10px;
-      text-align: center;
-      cursor: pointer;
-      color: var(--text-dim);
-      font-size: 0.75rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .corridor-btn.active, .corridor-btn:hover {
-      border-color: var(--stage-purple);
-      background: rgba(168, 85, 247, 0.1);
-      color: #fff;
-    }
-
-    .checkout-panel {
-      background: var(--panel-bg);
-      border: 1px solid #222c3d;
-      border-radius: 12px;
-      padding: 15px;
-      margin-bottom: 20px;
-    }
-    .checkout-panel h3 { font-size: 0.9rem; margin-bottom: 12px; color: var(--cyan); text-transform: uppercase; }
-
-    label { font-size: 0.7rem; color: var(--text-dim); display: block; margin-bottom: 3px; font-weight: 600; }
-    input, select {
-      width: 100%;
-      background: var(--dark-bg);
-      border: 1px solid #374151;
-      color: #fff;
-      padding: 9px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      outline: none;
-    }
-    input:focus, select:focus { border-color: var(--stage-purple); }
-
-    button {
-      background: var(--stage-purple);
-      color: #fff;
-      border: none;
-      padding: 10px;
-      font-weight: 700;
-      width: 100%;
-      cursor: pointer;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-    }
-    button:hover { background: var(--cyan); color: #000; }
-
-    .btn-cyan { background: var(--cyan); color: #000; }
-    .btn-cyan:hover { background: var(--neon-green); }
-    .btn-gold { background: var(--gold); color: #000; }
-    .btn-snaps { background: #374151; color: var(--cyan); border: 1px solid var(--cyan); margin-bottom: 8px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .btn-snaps:hover { background: var(--cyan); color: #000; }
-
-    #incomingAlertBanner {
-      display: none;
-      background: linear-gradient(135deg, rgba(255,51,102,0.9), rgba(255,215,0,0.9));
-      color: #000;
-      border-radius: 10px;
-      padding: 12px;
-      text-align: center;
-      font-weight: bold;
-      margin-bottom: 15px;
-      animation: pulseAlert 0.8s infinite alternate;
-    }
-    @keyframes pulseAlert {
-      from { transform: scale(1); opacity: 0.9; }
-      to { transform: scale(1.02); opacity: 1; }
-    }
-
-    #cameraModal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.9);
-      z-index: 2000;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .camera-box {
-      background: var(--panel-bg);
-      border: 1px solid var(--stage-purple);
-      border-radius: 12px;
-      padding: 15px;
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
-    }
-    video { width: 100%; height: 260px; object-fit: cover; border-radius: 8px; background: #000; margin-bottom: 10px; }
-    canvas { display: none; }
-
-    .bottom-nav {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: var(--panel-bg);
-      border-top: 1px solid #222c3d;
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-      z-index: 1000;
-      max-width: 480px;
-      margin: 0 auto;
-    }
-    .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
-    .nav-item.active, .nav-item:hover { color: var(--stage-purple); }
-    .nav-item svg { width: 20px; height: 20px; fill: currentColor; margin: 0 auto 3px auto; display: block; }
-
-    #mapContainer {
-      width: 100%;
-      height: 240px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      border: 1px solid #374151;
-      z-index: 1;
-    }
-
-    .live-order-card {
-      background: rgba(0,0,0,0.4);
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 10px;
-    }
-    .live-order-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
-      margin-bottom: 6px;
-      color: var(--cyan);
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f19">
+<title>RDS Rider</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+:root{--g:#00ff88;--bg:#0b0f19;--panel:#111827;--dim:#9ca3af;--cy:#38bdf8;--red:#ff4d6d;--gold:#ffc244;--pu:#a855f7;--line:#222c3d;--r:16px;--safe:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:#fff;max-width:480px;margin:0 auto;min-height:100vh}
+button,input,select{font:inherit;color:inherit}:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.hidden{display:none!important}h1{font-size:1.4rem}h2{font-size:1.05rem}h3{font-size:.76rem;color:var(--cy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.muted{color:var(--dim);font-size:.78rem}.err{color:var(--red);font-size:.8rem;margin:8px 0}.ok{color:var(--g)}
+input,select{width:100%;background:var(--bg);border:1px solid #374151;border-radius:12px;padding:13px;margin-bottom:10px;font-size:.92rem;outline:none}input:focus,select:focus{border-color:var(--pu)}
+label{display:block;font-size:.72rem;color:var(--dim);margin:2px 0 5px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:14px;font-weight:800;font-size:.9rem;cursor:pointer;background:#1f2937;transition:transform .08s,opacity .15s}
+.btn:active{transform:scale(.98)}.btn:disabled{opacity:.5;cursor:not-allowed}.btn.pu{background:var(--pu)}.btn.go{background:var(--g);color:#000}.btn.cy{background:var(--cy);color:#000}.btn.gold{background:var(--gold);color:#000}.btn.danger{background:transparent;border:1px solid var(--red);color:var(--red)}.btn.ghost{background:transparent;border:1px solid #374151}.btn.sm{width:auto;padding:9px 14px;font-size:.78rem;border-radius:11px}
+.spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}.btn.go .spin,.btn.cy .spin,.btn.gold .spin{border-color:rgba(0,0,0,.3);border-top-color:#000}@keyframes sp{to{transform:rotate(360deg)}}
+.row{display:flex;gap:10px;align-items:center}.between{display:flex;justify-content:space-between;align-items:center;gap:10px}.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.auth{padding:34px 20px 40px}.logo{width:64px;height:64px;margin:0 auto 12px;border-radius:20px;background:linear-gradient(135deg,var(--g),var(--cy));display:grid;place-items:center;font-size:2rem;color:#000}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0}.seg button{background:var(--panel);border:1px solid #374151;border-radius:14px;padding:12px;font-weight:800;cursor:pointer}.seg button.on{border-color:var(--g);background:rgba(0,255,136,.1);color:var(--g)}
+.phone{display:flex;gap:8px}.phone span{flex:none;background:var(--bg);border:1px solid #374151;border-radius:12px;padding:13px;margin-bottom:10px;font-size:.92rem}.phone input{flex:1}
+.doc{display:flex;gap:12px;align-items:center;background:var(--bg);border:1px solid #374151;border-radius:14px;padding:10px;margin-bottom:10px}.doc img{width:54px;height:54px;border-radius:10px;object-fit:cover;background:#000;flex:none}.doc .ph{width:54px;height:54px;border-radius:10px;background:#1b2437;display:grid;place-items:center;font-size:1.3rem;flex:none}.doc .t{flex:1;min-width:0;font-size:.8rem}.doc .t b{display:block}.doc .a{display:flex;flex-direction:column;gap:6px}
+.doc .a button,.doc .a label{margin:0;background:#1f2937;border:0;border-radius:9px;padding:7px 10px;font-size:.7rem;font-weight:800;cursor:pointer;text-align:center}
+.top{position:sticky;top:0;z-index:30;background:linear-gradient(var(--bg) 85%,transparent);padding:14px 16px 8px}
+.live{display:flex;align-items:center;gap:6px;font-size:.66rem;color:var(--dim)}.live i{width:8px;height:8px;border-radius:50%;background:#6b7280}.live.on i{background:var(--g);box-shadow:0 0 8px var(--g)}
+.toggle{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px 14px;margin-top:10px}
+.sw{position:relative;width:58px;height:32px;background:#374151;border-radius:20px;cursor:pointer;transition:background .2s;flex:none;border:0}.sw::after{content:'';position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:transform .2s}.sw.on{background:var(--g)}.sw.on::after{transform:translateX(26px)}
+.view{display:none;padding:6px 16px 110px}.view.active{display:block;animation:in .25s}@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+nav{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:#0d1322;border-top:1px solid var(--line);display:flex;padding:7px 0 calc(7px + var(--safe));z-index:50}
+nav button{flex:1;background:none;border:0;color:var(--dim);font-size:.66rem;font-weight:700;cursor:pointer;padding:4px}nav .ic{display:block;font-size:1.25rem}nav button.on{color:var(--g)}
+.job{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px;animation:in .25s}.job.new{border-color:var(--g)}
+.tag{font-size:.64rem;font-weight:800;padding:3px 9px;border-radius:9px;background:rgba(56,189,248,.14);color:var(--cy)}.tag.ride{background:rgba(255,194,68,.15);color:var(--gold)}
+.route{position:relative;padding-left:22px;margin:12px 0}.route::before{content:'';position:absolute;left:6px;top:8px;bottom:8px;border-left:2px dashed #374151}.route div{position:relative;font-size:.84rem;margin-bottom:10px}.route div::before{content:'';position:absolute;left:-21px;top:4px;width:11px;height:11px;border-radius:50%;background:var(--gold)}.route div:last-child::before{background:var(--red)}
+.earn{font-size:1.15rem;font-weight:900;color:var(--g)}
+.map{height:210px;border-radius:14px;overflow:hidden;border:1px solid #374151;margin:10px 0;z-index:1}
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.kpi div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px}.kpi small{color:var(--dim);font-size:.68rem;display:block}.kpi b{font-size:1.1rem}
+.bal{font-size:2rem;font-weight:900;color:var(--gold)}
+.hist{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:.82rem}.hist:last-child{border:0}
+.skel{background:linear-gradient(90deg,#111827 25%,#1b2437 50%,#111827 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:var(--r);height:130px;margin-bottom:12px}@keyframes sh{to{background-position:-200% 0}}
+.empty{text-align:center;color:var(--dim);padding:34px 10px;font-size:.88rem}
+.note{background:rgba(255,194,68,.1);border:1px solid rgba(255,194,68,.35);color:#fde68a;border-radius:12px;padding:10px 12px;font-size:.76rem;margin:10px 0}
+.banner{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:150;width:calc(100% - 24px);max-width:456px;background:linear-gradient(90deg,#10b981,#38bdf8);color:#04111a;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.72);z-index:200;padding:20px}.modal.on{display:grid}.modal .box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;max-width:380px;width:100%}.modal p{font-size:.84rem;color:var(--dim);margin:6px 0 14px}
+video{width:100%;border-radius:12px;background:#000;max-height:50vh}
+#toasts{position:fixed;top:12px;left:0;right:0;max-width:480px;margin:0 auto;padding:0 14px;z-index:300;pointer-events:none;display:flex;flex-direction:column;gap:8px}
+.toast{background:#1f2937;border:1px solid #374151;border-left:4px solid var(--cy);border-radius:12px;padding:12px 14px;font-size:.84rem;animation:in .2s;pointer-events:auto}.toast.ok{border-left-color:var(--g)}.toast.err{border-left-color:var(--red)}
+.leaflet-container{background:#1b2437}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
 </head>
 <body>
 
-    <!-- LIVE CAMERA MODAL -->
-    <div id="cameraModal">
-        <div class="camera-box">
-            <h3 id="cameraModalTitle" style="color: var(--cyan); margin-bottom: 8px;">Capture Photo</h3>
-            <video id="cameraStream" autoplay playsinline></video>
-            <canvas id="cameraCanvas"></canvas>
-            <div style="display: flex; gap: 8px;">
-                <button onclick="captureSnapshot()" class="btn-cyan">📸 Take Snap</button>
-                <button onclick="closeCameraModal()" style="background: var(--alert-red); color: #fff;">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- AUTHENTICATION & REGISTRATION VIEW -->
-    <div id="viewAuth" class="app-view active-view">
-        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 15px;">
-            <span>🚀 INTERNATIONAL FLEET COMPLIANCE & CAMERA ONBOARDING</span>
-        </div>
-
-        <div class="checkout-panel">
-            <h3 style="color: var(--cyan); text-align: center; margin-bottom: 4px;">Driver & Fleet Registration</h3>
-            <p style="color: var(--text-dim); font-size: 0.7rem; text-align: center; margin-bottom: 12px;">Register your Boda or Cab with live camera snaps & compliance credentials.</p>
-
-            <label>Full Legal Name</label>
-            <input type="text" id="regName" value="Robert Maina">
-
-            <label>Mobile Phone (M-Pesa Payout Number)</label>
-            <input type="text" id="authPhone" value="254708374149">
-
-            <label>Email Address</label>
-            <input type="email" id="authEmail" value="driver@rds.com">
-
-            <label>Select Fleet Category</label>
-            <select id="regVehicleType">
-                <option value="BODA">Boda (Motorbike - Direct Ride & Quick Delivery)</option>
-                <option value="CAB">Cab (Car - Direct Comfort Ride & Heavy Logistics)</option>
-            </select>
-
-            <label>Vehicle Number Plate</label>
-            <input type="text" id="regPlate" value="KMC 112A">
-
-            <div style="border-top: 1px dashed #374151; margin: 12px 0; padding-top: 10px;">
-                <label style="color: var(--stage-purple); font-weight: bold; margin-bottom: 6px;">📸 Live Camera Snaps & Compliance</label>
-                
-                <button type="button" onclick="openCamera('passport', 'Passport Photo / Self-Portrait')" class="btn-snaps"><i class="fa-solid fa-camera"></i> Snap Passport Photo (<span id="status_passport">Pending</span>)</button>
-                
-                <label style="margin-top: 6px;">Certificate of Good Conduct</label>
-                <input type="file" id="docGoodConduct" accept="image/*,.pdf">
-
-                <label>PSV Badge Number & Document</label>
-                <input type="text" id="docPsvBadge" placeholder="PSV Badge No." value="PSV-88219">
-
-                <label>National ID No. or Passport No.</label>
-                <input type="text" id="docNationalId" placeholder="ID / Passport Number" value="34892011">
-
-                <label>Driving Licence Copy</label>
-                <input type="file" id="docDrivingLicence" accept="image/*,.pdf">
-
-                <button type="button" onclick="openCamera('vehicle', 'Vehicle Front & Back Snap')" class="btn-snaps" style="margin-top:6px;"><i class="fa-solid fa-camera"></i> Snap Vehicle Front & Back (<span id="status_vehicle">Pending</span>)</button>
-
-                <label style="margin-top: 6px;">Car Insurance Copy</label>
-                <input type="file" id="docInsurance" accept="image/*,.pdf">
-
-                <label>Inspection Report</label>
-                <input type="file" id="docInspection" accept="image/*,.pdf">
-            </div>
-
-            <div id="phoneStep">
-                <button onclick="submitDriverRegistration()" class="btn-cyan" style="margin-top: 5px;">Submit Verification & Send OTP</button>
-            </div>
-
-            <div id="otpStep" style="display: none; margin-top: 15px;">
-                <label style="color: var(--neon-green);">Enter 4-Digit Verification OTP (Use 1234)</label>
-                <input type="text" id="authOtp" value="1234" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" maxlength="4">
-                <button onclick="verifyDriverOtpAndEnter()" style="background: var(--neon-green); color: #000; font-weight: bold;">Verify & Launch Terminal</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAP & GPS TELEMETRY VIEW -->
-    <div id="viewMap" class="app-view">
-        <div class="telemetry-ribbon">
-            <span>🛰️ REAL-TIME GPS & RADAR DISPATCH</span>
-            <span id="nodeLatency">Secure • Active</span>
-        </div>
-
-        <div class="header-location">
-            <div class="location-box">
-                <span class="icon">📍</span>
-                <div class="location-text">
-                    <span>Active Corridor</span>
-                    <strong id="corridorLabel">Nairobi, Kenya (KES)</strong>
-                </div>
-            </div>
-            <div id="tenantBadge" style="background:var(--stage-purple); color:#fff; padding:4px 8px; font-size:0.7rem; font-weight:bold; border-radius:4px;">BIZ-KE</div>
-        </div>
-
-        <div class="corridor-selector">
-            <div class="corridor-btn active" onclick="switchCorridor('MERCH_DEF_172', 'Nairobi Hub', 'KES', this)">🇰🇪 Nairobi Hub</div>
-            <div class="corridor-btn" onclick="switchCorridor('MERCH_JAVA_88', 'Java Corridor', 'KES', this)">☕ Java Corridor</div>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>Live Spatial Vector Map</h3>
-            <div id="mapContainer"></div>
-            <div style="font-size: 0.75rem; color: var(--neon-green); margin-top: 8px;">GPS Status: <strong id="gpsStatusDisplay">Acquiring Vector...</strong></div>
-            <button onclick="recenterMap()" class="btn-cyan" style="margin-top: 8px;">Recenter GPS Vector</button>
-        </div>
-    </div>
-
-    <!-- DISPATCH & FULFILLMENT VIEW -->
-    <div id="viewDispatches" class="app-view">
-        <div id="incomingAlertBanner">
-            🚨 NEW RIDE / DELIVERY REQUEST RECEIVED! RINGING RADAR...
-        </div>
-
-        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>📦 UNIFIED USER RIDES & MERCHANT DELIVERIES RADAR</span>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>Incoming Direct Rides & Merchant Dispatches</h3>
-            <div id="driverDispatchesContainer">
-                <em style="color:var(--text-dim); font-size: 0.75rem;">Scanning radar for incoming user rides, cab/boda requests, and store dispatches...</em>
-            </div>
-        </div>
-    </div>
-
-    <!-- WALLET & B2C PAYOUT VIEW -->
-    <div id="viewWallet" class="app-view">
-        <div class="telemetry-ribbon" style="justify-content: center; margin-bottom: 12px;">
-            <span>💰 ESCROW WALLET & M-PESA B2C</span>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>Available Earnings</h3>
-            <div style="font-size: 1.6rem; font-weight: bold; color: var(--gold); margin-bottom: 10px;" id="walletBalanceDisplay">KES 0.00</div>
-            
-            <label>Driver ID / Owner ID</label>
-            <input type="text" id="payoutOwnerId" value="DRV_001">
-
-            <label>Withdrawal Amount (<span id="walletCurrencyLabel">KES</span>)</label>
-            <input type="number" id="payoutAmount" value="500">
-
-            <button onclick="triggerB2CPayout()" class="btn-gold">Execute M-Pesa B2C Payout</button>
-        </div>
-    </div>
-
-    <!-- PROFILE VIEW -->
-    <div id="viewProfile" class="app-view">
-        <div class="checkout-panel">
-            <h3>Verified Fleet Profile</h3>
-            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Name:</strong> <span id="profileName">Robert Maina</span></p>
-            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">254708374149</span></p>
-            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Vehicle Category:</strong> <span id="profileVehicle">Boda (Motorbike)</span></p>
-            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Compliance Status:</strong> <span style="color: var(--neon-green);">Fully Verified ✓ (Token Active)</span></p>
-            <button onclick="logoutDriver()" style="background:var(--alert-red); color:#fff; margin-top:15px;">Log Out / Clear Session</button>
-        </div>
-    </div>
-
-    <input type="hidden" id="storeBusinessId" value="MERCH_DEF_172">
-    <input type="hidden" id="storeCurrency" value="KES">
-    <input type="hidden" id="capturedPassport" value="">
-    <input type="hidden" id="capturedVehicle" value="">
-
-    <div class="bottom-nav" id="bottomNav" style="display: none;">
-        <a class="nav-item active" onclick="switchTab('viewMap', this)"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>GPS Map</a>
-        <a class="nav-item" onclick="switchTab('viewDispatches', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Dispatches</a>
-        <a class="nav-item" onclick="switchTab('viewWallet', this)"><svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>Wallet</a>
-        <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
-    </div>
-
-    <script>
-        const LOCAL_API = "http://localhost:3000";
-        const CLOUD_API = "https://rds-lab.onrender.com";
-        let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
-
-        let currentDriver = null;
-        let map = null;
-        let driverMarker = null;
-        let gpsWatchId = null;
-        let lastLat = -1.286389;
-        let lastLng = 36.817223;
-        let socket = io();
-        let activeCameraTarget = null;
-        let mediaStream = null;
-
-        window.addEventListener('DOMContentLoaded', () => {
-            initMapSafely();
-            
-            // Check if token already exists in localStorage for automatic login
-            const savedToken = localStorage.getItem('rds_driver_token');
-            const savedUser = localStorage.getItem('rds_driver_profile');
-            if (savedToken && savedUser) {
-                try {
-                    currentDriver = JSON.parse(savedUser);
-                    document.getElementById('payoutOwnerId').value = currentDriver.id || 'DRV_001';
-                    document.getElementById('profilePhone').innerText = currentDriver.phone || '254708374149';
-                    document.getElementById('profileName').innerText = currentDriver.name || 'Robert Maina';
-                    document.getElementById('profileVehicle').innerText = currentDriver.vehicleType === 'CAB' ? 'Cab (Car)' : 'Boda (Motorbike)';
-                    document.getElementById('bottomNav').style.display = 'flex';
-                    switchTab('viewMap', document.querySelectorAll('.bottom-nav .nav-item')[0]);
-                    startAutomaticGpsTracking();
-                    fetchDriverDispatches();
-                } catch (e) {
-                    localStorage.removeItem('rds_driver_token');
-                    localStorage.removeItem('rds_driver_profile');
-                }
-            }
-
-            socket.on('orderListUpdated', () => {
-                triggerRingingAlert();
-                fetchDriverDispatches();
-            });
-            socket.on('new_customer_order', () => {
-                triggerRingingAlert();
-                fetchDriverDispatches();
-            });
-        });
-
-        function getAuthHeaders() {
-            const token = localStorage.getItem('rds_driver_token');
-            return {
-                'Content-Type': 'application/json',
-                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-            };
-        }
-
-        function triggerRingingAlert() {
-            const banner = document.getElementById('incomingAlertBanner');
-            if (banner) {
-                banner.style.display = 'block';
-                setTimeout(() => { banner.style.display = 'none'; }, 6000);
-            }
-
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') { audioCtx.resume(); }
-
-                let beepCount = 0;
-                const interval = setInterval(() => {
-                    if (beepCount >= 4) {
-                        clearInterval(interval);
-                        return;
-                    }
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.4);
-                    beepCount++;
-                }, 500);
-            } catch (e) {}
-        }
-
-        async function openCamera(targetType, titleText) {
-            activeCameraTarget = targetType;
-            document.getElementById('cameraModalTitle').innerText = titleText;
-            document.getElementById('cameraModal').style.display = 'flex';
-            try {
-                mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-                document.getElementById('cameraStream').srcObject = mediaStream;
-            } catch (err) {
-                alert("Camera access denied or unavailable.");
-                closeCameraModal();
-            }
-        }
-
-        function closeCameraModal() {
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(track => track.stop());
-                mediaStream = null;
-            }
-            document.getElementById('cameraModal').style.display = 'none';
-        }
-
-        function captureSnapshot() {
-            const video = document.getElementById('cameraStream');
-            const canvas = document.getElementById('cameraCanvas');
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-            if (activeCameraTarget === 'passport') {
-                document.getElementById('capturedPassport').value = dataUrl;
-                document.getElementById('status_passport').innerText = "Captured ✓";
-                document.getElementById('status_passport').style.color = "var(--neon-green)";
-            } else if (activeCameraTarget === 'vehicle') {
-                document.getElementById('capturedVehicle').value = dataUrl;
-                document.getElementById('status_vehicle').innerText = "Captured ✓";
-                document.getElementById('status_vehicle').style.color = "var(--neon-green)";
-            }
-            closeCameraModal();
-        }
-
-        function initMapSafely() {
-            if (map) return;
-            const container = document.getElementById('mapContainer');
-            if (!container) return;
-
-            map = L.map('mapContainer', { zoomControl: false, attributionControl: false }).setView([lastLat, lastLng], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-            driverMarker = L.marker([lastLat, lastLng]).addTo(map).bindPopup("🛵 Active Fleet Vector");
-            setTimeout(() => { if(map) map.invalidateSize(); }, 200);
-        }
-
-        function recenterMap() {
-            if (map && driverMarker) {
-                map.invalidateSize();
-                map.setView(driverMarker.getLatLng(), 17, { animate: false });
-            }
-        }
-
-        async function submitDriverRegistration() {
-            const phone = document.getElementById('authPhone').value.trim();
-            const email = document.getElementById('authEmail').value.trim();
-            const name = document.getElementById('regName').value.trim();
-            const vehicleType = document.getElementById('regVehicleType').value;
-            const plate = document.getElementById('regPlate').value.trim();
-            const psvBadge = document.getElementById('docPsvBadge').value.trim();
-            const nationalId = document.getElementById('docNationalId').value.trim();
-            const passportSnap = document.getElementById('capturedPassport').value;
-            const vehicleSnap = document.getElementById('capturedVehicle').value;
-
-            if (!phone || !name || !plate) {
-                alert("Please fill in all mandatory registration fields.");
-                return;
-            }
-
-            try {
-                const res = await fetch(`${API_BASE}/api/driver/register-and-send-otp`, {
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, email, name, vehicleType, plate, psvBadge, nationalId, passportSnap, vehicleSnap })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    document.getElementById('phoneStep').style.display = 'none';
-                    document.getElementById('otpStep').style.display = 'block';
-                } else {
-                    alert(data.error || "Registration failed.");
-                }
-            } catch (e) { alert("Network connection error."); }
-        }
-
-        async function verifyDriverOtpAndEnter() {
-            const phone = document.getElementById('authPhone').value.trim();
-            const otp = document.getElementById('authOtp').value.trim();
-            
-            try {
-                const res = await fetch(`${API_BASE}/api/driver/verify-otp`, {
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, otp })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    currentDriver = data.user;
-                    // Automatically save token & profile for seamless re-logins
-                    if (data.token) {
-                        localStorage.setItem('rds_driver_token', data.token);
-                        localStorage.setItem('rds_driver_profile', JSON.stringify(data.user));
-                    }
-
-                    document.getElementById('payoutOwnerId').value = currentDriver.id || 'DRV_001';
-                    document.getElementById('profilePhone').innerText = phone;
-                    document.getElementById('profileName').innerText = currentDriver.name || 'Robert Maina';
-                    document.getElementById('profileVehicle').innerText = currentDriver.vehicleType === 'CAB' ? 'Cab (Car)' : 'Boda (Motorbike)';
-                    document.getElementById('bottomNav').style.display = 'flex';
-                    switchTab('viewMap', document.querySelectorAll('.bottom-nav .nav-item')[0]);
-                    startAutomaticGpsTracking();
-                    fetchDriverDispatches();
-                    setTimeout(() => { if(map) map.invalidateSize(); }, 300);
-                } else { alert(data.error || "Invalid OTP code."); }
-            } catch (e) { alert("Verification error."); }
-        }
-
-        function logoutDriver() {
-            localStorage.removeItem('rds_driver_token');
-            localStorage.removeItem('rds_driver_profile');
-            location.reload();
-        }
-
-        function switchCorridor(tenantId, locationName, currencyCode, el) {
-            document.querySelectorAll('.corridor-btn').forEach(b => b.classList.remove('active'));
-            if(el) el.classList.add('active');
-            document.getElementById('storeBusinessId').value = tenantId;
-            document.getElementById('storeCurrency').value = currencyCode;
-            document.getElementById('walletCurrencyLabel').innerText = currencyCode;
-            document.getElementById('tenantBadge').innerText = tenantId;
-            document.getElementById('corridorLabel').innerText = locationName;
-            fetchDriverDispatches();
-        }
-
-        function startAutomaticGpsTracking() {
-            if (!navigator.geolocation) {
-                document.getElementById('gpsStatusDisplay').innerText = "Geolocation not supported.";
-                return;
-            }
-            if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
-
-            gpsWatchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    lastLat = pos.coords.latitude;
-                    lastLng = pos.coords.longitude;
-                    document.getElementById('gpsStatusDisplay').innerText = `Locked (${lastLat.toFixed(4)}, ${lastLng.toFixed(4)})`;
-                    if (map && driverMarker) {
-                        driverMarker.setLatLng([lastLat, lastLng]);
-                        map.setView([lastLat, lastLng], map.getZoom(), { animate: false });
-                    }
-                    try {
-                        socket.emit('driver_location_update', {
-                            driverId: currentDriver ? currentDriver.id : 'DRV_001',
-                            lat: lastLat, lng: lastLng
-                        });
-                    } catch(e) {}
-                },
-                (err) => {
-                    document.getElementById('gpsStatusDisplay').innerText = "Standby (Using Nairobi Vector)";
-                },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
-            );
-        }
-
-        async function fetchDriverDispatches() {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const driverId = document.getElementById('payoutOwnerId').value.trim() || 'DRV_001';
-            
-            try {
-                const res = await fetch(`${API_BASE}/api/driver/dispatches`, { 
-                    headers: { ...getAuthHeaders(), "x-business-id": bizId } 
-                });
-                const data = await res.json();
-                if (data.success && data.dispatches) {
-                    renderDriverDispatches(data.dispatches);
-                }
-
-                const walletRes = await fetch(`${API_BASE}/api/driver/wallet?ownerId=${driverId}`, { 
-                    headers: { ...getAuthHeaders(), "x-business-id": bizId } 
-                });
-                const walletData = await walletRes.json();
-                if (walletData.success) {
-                    const curr = document.getElementById('storeCurrency').value;
-                    document.getElementById('walletBalanceDisplay').innerText = `${curr} ${Number(walletData.balance).toFixed(2)}`;
-                }
-            } catch (e) {}
-        }
-
-        function renderDriverDispatches(dispatches) {
-            const container = document.getElementById('driverDispatchesContainer');
-            if (!dispatches || dispatches.length === 0) {
-                container.innerHTML = '<em style="color:var(--text-dim); font-size: 0.75rem;">No incoming direct user rides or merchant dispatches on radar.</em>';
-                return;
-            }
-            let html = '';
-            dispatches.slice(-6).reverse().forEach(d => {
-                const isAccepted = d.status === 'ACCEPTED_BY_DRIVER' || d.status === 'COMPLETED';
-                const isDirect = d.isDirectRide;
-                const dispatchTypeLabel = isDirect ? '⚡ Direct User Ride Request (Cab / Boda)' : '📦 Store / Merchant Order Dispatch';
-                const typeColor = isDirect ? 'var(--gold)' : 'var(--cyan)';
-
-                html += `
-                    <div class="live-order-card">
-                        <div class="live-order-header">
-                            <span>🆔 ${d.id}</span>
-                            <span style="color: var(--neon-green);">${d.status}</span>
-                        </div>
-                        <div style="font-size: 0.75rem; color: #fff; margin-bottom: 8px;">
-                            <div style="color: ${typeColor}; font-weight: bold; margin-bottom: 3px;">${dispatchTypeLabel}</div>
-                            <div>📍 Pickup: ${d.pickup}</div>
-                            <div>🏁 Dropoff: ${d.destination}</div>
-                            <div>💰 Total / Fare: <strong>${d.currency} ${Number(d.total).toLocaleString()}</strong></div>
-                        </div>
-                        ${!isAccepted ? `<button onclick="acceptDispatch('${d.id}')" class="btn-cyan" style="padding:8px; font-size:0.7rem;">Accept Dispatch & Route</button>` : `<button onclick="completeDispatch('${d.id}')" style="background:var(--gold); color:#000; padding:8px; font-size:0.7rem;">Complete & Release Escrow</button>`}
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
-
-        async function acceptDispatch(dispatchId) {
-            const bizId = document.getElementById('storeBusinessId').value;
-            const driverId = document.getElementById('payoutOwnerId').value.trim() || 'DRV_001';
-            try {
-                const res = await fetch(`${API_BASE}/api/driver/accept-dispatch`, {
-                    method: 'POST',
-                    headers: { ...getAuthHeaders(), 'x-business-id': bizId },
-                    body: JSON.stringify({ dispatchId, driverId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert("Dispatch accepted! Navigate to pickup location.");
-                    fetchDriverDispatches();
-                } else { alert(data.error); }
-            } catch (e) { alert("Acceptance error."); }
-        }
-
-        async function completeDispatch(dispatchId) {
-            if (!confirm("Confirm successful drop-off and release escrow to wallet?")) return;
-            const bizId = document.getElementById('storeBusinessId').value;
-            const driverId = document.getElementById('payoutOwnerId').value.trim() || 'DRV_001';
-            try {
-                const res = await fetch(`${API_BASE}/api/driver/complete-dispatch`, {
-                    method: 'POST',
-                    headers: { ...getAuthHeaders(), 'x-business-id': bizId },
-                    body: JSON.stringify({ dispatchId, driverId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert("Delivery completed! Earnings credited to wallet.");
-                    fetchDriverDispatches();
-                } else { alert(data.error); }
-            } catch (e) { alert("Completion error."); }
-        }
-
-        async function triggerB2CPayout() {
-            const ownerId = document.getElementById('payoutOwnerId').value.trim();
-            const amount = document.getElementById('payoutAmount').value;
-            const bizId = document.getElementById('storeBusinessId').value;
-
-            if (!ownerId || !amount) { alert("Provide valid Owner ID and payout amount."); return; }
-
-            try {
-                const res = await fetch(`${API_BASE}/api/driver/payout`, {
-                    method: 'POST',
-                    headers: { ...getAuthHeaders(), 'x-business-id': bizId },
-                    body: JSON.stringify({ ownerId, amount: Number(amount) })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`M-Pesa B2C Payout Successful! Ref: ${data.payoutId}`);
-                    fetchDriverDispatches();
-                } else { alert(data.error || "Insufficient wallet balance."); }
-            } catch (e) { alert("Payout error."); }
-        }
-
-        function switchTab(viewId, el) {
-            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
-            document.getElementById(viewId).classList.add('active-view');
-            document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
-            if(el) el.classList.add('active');
-            window.scrollTo(0, 0);
-            if (viewId === 'viewMap' && map) setTimeout(() => { map.invalidateSize(); }, 200);
-        }
-    </script>
+<!-- ============ AUTH ============ -->
+<section id="auth" class="auth">
+  <div style="text-align:center"><div class="logo">🏍️</div><h1>RDS Rider</h1><p class="muted" style="margin-top:6px">Earn 95% of every delivery fee and ride fare.</p></div>
+  <div class="seg"><button id="tabLogin" class="on">Sign in</button><button id="tabReg">Register</button></div>
+
+  <div id="loginBox" class="card">
+    <div id="lPhoneStep"><label for="lPhone">Mobile number</label><div class="phone"><span>🇰🇪 +254</span><input id="lPhone" type="tel" inputmode="tel" placeholder="7XX XXX XXX" autocomplete="tel-national"></div><button class="btn go" id="lSend">Send code</button></div>
+    <div id="otpStep" class="hidden"><p class="muted" id="otpMsg" style="margin-bottom:10px"></p><label for="otp">Verification code</label><input id="otp" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="Enter code" style="text-align:center;letter-spacing:5px;font-size:1.15rem"><button class="btn go" id="otpGo">Verify &amp; continue</button><button class="btn ghost" id="otpBack" style="margin-top:10px">Change number</button></div>
+    <div class="err" id="authErr"></div>
+  </div>
+
+  <form id="regBox" class="card hidden" novalidate>
+    <h2 style="margin-bottom:4px">Rider registration</h2><p class="muted" style="margin-bottom:14px">Every document is reviewed by our team before you can take jobs.</p>
+    <label for="rName">Full legal name</label><input id="rName" maxlength="100" autocomplete="name">
+    <label for="rPhone">Mobile number (your M-Pesa number)</label><div class="phone"><span>🇰🇪 +254</span><input id="rPhone" type="tel" inputmode="tel" placeholder="7XX XXX XXX"></div>
+    <label for="rEmail">Email (optional)</label><input id="rEmail" type="email" maxlength="120" autocomplete="email">
+    <label for="rVeh">Vehicle</label><select id="rVeh"><option value="BODA">Boda (motorbike)</option><option value="CAB">Cab (car)</option></select>
+    <div class="g2"><div><label for="rPlate">Number plate</label><input id="rPlate" maxlength="20" placeholder="KMC 112A"></div><div><label for="rId">National ID / passport no.</label><input id="rId" maxlength="30" inputmode="numeric"></div></div>
+    <div id="psvWrap" class="hidden"><label for="rPsv">PSV badge number</label><input id="rPsv" maxlength="40"></div>
+    <h3 style="margin-top:8px">Documents (take a photo or upload)</h3>
+    <div id="docs"></div>
+    <div class="err" id="regErr"></div>
+    <button type="submit" class="btn go" id="regGo">Submit &amp; send code</button>
+  </form>
+</section>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <header class="top">
+    <div class="between"><div><b id="hName" style="font-size:1.05rem">Rider</b><div class="muted" id="hMeta"></div></div><div class="live" id="live"><i></i><span>Offline</span></div></div>
+    <div class="toggle"><button class="sw" id="sw" aria-label="Go online"></button><div><b id="swT">You are offline</b><div class="muted" id="swS">Go online to see jobs near you</div></div></div>
+  </header>
+  <main>
+    <section id="vJobs" class="view active">
+      <div id="blockedBox"></div>
+      <div id="activeBox"></div>
+      <div id="jobMapWrap" class="hidden"><div class="map" id="jobMap"></div></div>
+      <div id="radarHead" class="between hidden" style="margin:6px 0 10px"><h2>Jobs near you</h2><span class="muted" id="radarCount"></span></div>
+      <div id="radar"></div>
+    </section>
+    <section id="vEarn" class="view">
+      <div class="card" style="text-align:center"><div class="muted">Available balance</div><div class="bal" id="bal">KES 0.00</div></div>
+      <div class="kpi"><div><small>Today</small><b id="kToday">KES 0</b></div><div><small>Trips today</small><b id="kTrips">0</b></div><div><small>All-time earned</small><b id="kAll">KES 0</b></div><div><small>All-time trips</small><b id="kAllTrips">0</b></div></div>
+      <div class="card"><h3>Withdraw to M-Pesa</h3><p class="muted" id="payTo" style="margin-bottom:10px"></p><label for="payAmt">Amount (KES)</label><input id="payAmt" type="number" inputmode="decimal" min="100" step="1" placeholder="Minimum 100"><div class="note hidden" id="payNote">Test mode: no real money is sent yet.</div><div class="err" id="payErr"></div><button class="btn gold" id="payGo">Withdraw</button></div>
+      <div class="card"><h3>History</h3><div id="hist"></div></div>
+    </section>
+    <section id="vAcct" class="view"><h2 style="margin:8px 0 12px">Account</h2><div class="card" id="acct"></div><button class="btn danger" id="logout">Sign out</button></section>
+  </main>
+  <nav><button class="on" data-tab="vJobs"><span class="ic">📍</span>Jobs</button><button data-tab="vEarn"><span class="ic">💰</span>Earnings</button><button data-tab="vAcct"><span class="ic">👤</span>Account</button></nav>
+</div>
+
+<div class="banner hidden" id="newJob" role="alert"><div><b>🔔 New job!</b><div style="font-size:.76rem;font-weight:600" id="newJobTxt"></div></div><button class="btn sm" style="background:#04111a;color:#fff" id="newJobOk">OK</button></div>
+<div class="modal" id="dlg"><div class="box"><h2 id="dlgT"></h2><p id="dlgP"></p><div class="row"><button class="btn ghost" id="dlgNo">Cancel</button><button class="btn pu" id="dlgYes">OK</button></div></div></div>
+<div class="modal" id="cam"><div class="box"><h2>📸 Camera</h2><video id="camVid" autoplay playsinline muted></video><div class="row" style="margin-top:12px"><button class="btn go" id="camSnap">Capture</button><button class="btn ghost" id="camX">Cancel</button></div></div></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="/socket.io/socket.io.js" onerror="void 0"></script>
+<script>
+(() => {
+'use strict';
+const API = (location.origin && location.origin !== 'null') ? location.origin : 'http://localhost:3000';
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => 'KES ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt0 = n => 'KES ' + Number(n || 0).toLocaleString('en-KE', { maximumFractionDigits: 0 });
+const when = ms => ms ? new Date(ms).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }, del(k) { try { localStorage.removeItem(k); } catch {} } };
+const state = { token: LS.get('rds_r_token', null), me: LS.get('rds_r_me', null), online: false, blocked: null, active: null, jobs: [], seen: null, balance: 0, view: 'vJobs', docs: {}, pendingPhone: null, map: null, socket: null, poll: null, watch: null, lastSent: 0, loc: null, wake: null };
+const DOCS = [['selfie', '🤳', 'Your face', 'Clear selfie, no sunglasses', 'user', 'passportSnap'], ['licence', '🪪', 'Driving licence', 'Photo of the card', 'environment', 'licenceSnap'], ['goodConduct', '📄', 'Certificate of good conduct', 'Photo of the certificate', 'environment', 'goodConductSnap'], ['vehicle', '🏍️', 'Your vehicle', 'Front and number plate', 'environment', 'vehicleSnap'], ['insurance', '🛡️', 'Insurance cover', 'Cabs only', 'environment', 'insuranceSnap'], ['inspection', '🔧', 'Inspection report', 'Cabs only', 'environment', 'inspectionSnap']];
+
+function toast(msg, type = 'info', ms = 3600) { const el = document.createElement('div'); el.className = 'toast ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : ''); el.textContent = msg; $('#toasts').appendChild(el); setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, ms); }
+function ask(title, text, ok = 'OK') { return new Promise(res => { $('#dlgT').textContent = title; $('#dlgP').textContent = text; $('#dlgYes').textContent = ok; const m = $('#dlg'); m.classList.add('on'); const done = v => { m.classList.remove('on'); $('#dlgYes').onclick = $('#dlgNo').onclick = null; res(v); }; $('#dlgYes').onclick = () => done(true); $('#dlgNo').onclick = () => done(false); }); }
+function busy(btn, on, label) { if (!btn) return; if (on) { btn.dataset.l = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + (label ? ' ' + esc(label) : ''); } else { btn.disabled = false; if (btn.dataset.l !== undefined) btn.innerHTML = btn.dataset.l; } }
+async function api(path, { method = 'GET', body, token = state.token, signal, timeout = 15000 } = {}) {
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), timeout); if (signal) signal.addEventListener('abort', () => ctrl.abort());
+  try {
+    const h = {}; if (body !== undefined) h['Content-Type'] = 'application/json'; if (token) h.Authorization = 'Bearer ' + token;
+    const res = await fetch(API + path, { method, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined, signal: ctrl.signal });
+    let data = null; try { data = await res.json(); } catch {}
+    if (!res.ok || !data || data.success === false) { const e = new Error((data && data.error) || `Request failed (${res.status})`); e.status = res.status; e.retryAfter = res.headers.get('Retry-After'); if (res.status === 401 && token && token === state.token) sessionExpired(); if (res.status === 429) e.message = data && data.error ? data.error : `Too many requests. Try again in ${e.retryAfter || 'a few'} seconds.`; throw e; }
+    return data;
+  } catch (e) { if (e.name === 'AbortError') { if (signal && signal.aborted) { e.aborted = true; throw e; } const t = new Error('The server took too long to respond.'); t.status = 0; throw t; } if (e instanceof TypeError) { const n = new Error('Cannot reach the server. Check your connection.'); n.status = 0; throw n; } throw e; }
+  finally { clearTimeout(timer); }
+}
+const normPhone = v => { const s = String(v || '').replace(/[\s()-]/g, ''); if (/^0[17]\d{8}$/.test(s)) return '+254' + s.slice(1); if (/^[17]\d{8}$/.test(s)) return '+254' + s; if (/^254[17]\d{8}$/.test(s)) return '+' + s; if (/^\+\d{9,15}$/.test(s)) return s; return null; };
+
+/* ---------- images ---------- */
+function toJpeg(src, w, h, maxDim, q) { const k = Math.min(1, maxDim / Math.max(w, h)), c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k); c.getContext('2d').drawImage(src, 0, 0, c.width, c.height); let out = c.toDataURL('image/jpeg', q); while (out.length > 2.2 * 1024 * 1024 && q > 0.3) { q -= 0.15; out = c.toDataURL('image/jpeg', q); } return out; }
+function fileToJpeg(file) { return new Promise((res, rej) => { if (!file || !/^image\//.test(file.type) || file.type === 'image/svg+xml') return rej(new Error('Please choose a photo (JPG, PNG or WebP).')); const rd = new FileReader(); rd.onerror = () => rej(new Error('Could not read that file.')); rd.onload = () => { const im = new Image(); im.onerror = () => rej(new Error('That image could not be opened.')); im.onload = () => res(toJpeg(im, im.naturalWidth, im.naturalHeight, 1200, 0.82)); im.src = rd.result; }; rd.readAsDataURL(file); }); }
+let camStream = null, camKey = null;
+function renderDocs() {
+  const cab = $('#rVeh').value === 'CAB';
+  $('#docs').innerHTML = DOCS.filter(d => cab || !['insurance', 'inspection'].includes(d[0])).map(([k, ic, t, s]) => `<div class="doc" data-k="${k}">${state.docs[k] ? `<img src="${state.docs[k]}" alt="">` : `<div class="ph">${ic}</div>`}<div class="t"><b>${esc(t)}</b><span class="muted">${state.docs[k] ? '<span class="ok">Photo ready</span>' : esc(s)}</span></div><div class="a"><button type="button" data-cam="${k}">📸 Camera</button><label>⬆ Upload<input type="file" accept="image/*" data-file="${k}" class="hidden"></label></div></div>`).join('');
+}
+$('#rVeh').onchange = () => { $('#psvWrap').classList.toggle('hidden', $('#rVeh').value !== 'CAB'); renderDocs(); };
+document.addEventListener('change', async e => { const f = e.target.closest('[data-file]'); if (!f || !f.files[0]) return; try { state.docs[f.dataset.file] = await fileToJpeg(f.files[0]); renderDocs(); } catch (err) { toast(err.message, 'err'); } f.value = ''; });
+document.addEventListener('click', async e => { const b = e.target.closest('[data-cam]'); if (!b) return; camKey = b.dataset.cam; const facing = (DOCS.find(d => d[0] === camKey) || [])[4] || 'environment'; try { camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false }); $('#camVid').srcObject = camStream; $('#cam').classList.add('on'); } catch { toast('Camera is not available. Use Upload instead.', 'err'); } });
+function closeCam() { if (camStream) camStream.getTracks().forEach(t => t.stop()); camStream = null; $('#cam').classList.remove('on'); }
+$('#camX').onclick = closeCam; $('#camSnap').onclick = () => { const v = $('#camVid'); if (!v.videoWidth) return toast('Camera is still starting…'); state.docs[camKey] = toJpeg(v, v.videoWidth, v.videoHeight, 1200, 0.82); closeCam(); renderDocs(); };
+
+/* ---------- auth ---------- */
+function authTab(reg) { $('#tabLogin').classList.toggle('on', !reg); $('#tabReg').classList.toggle('on', reg); $('#loginBox').classList.toggle('hidden', reg); $('#regBox').classList.toggle('hidden', !reg); $('#authErr').textContent = ''; $('#regErr').textContent = ''; if (reg) renderDocs(); }
+$('#tabLogin').onclick = () => authTab(false); $('#tabReg').onclick = () => authTab(true);
+function showOtp(phone, msg) { state.pendingPhone = phone; const local = /^(localhost|127\.|192\.168\.)/.test(location.hostname); $('#otpMsg').textContent = local && msg ? msg : `We sent a code to ${phone}.`; $('#loginBox').classList.remove('hidden'); $('#regBox').classList.add('hidden'); $('#tabLogin').classList.add('on'); $('#tabReg').classList.remove('on'); $('#lPhoneStep').classList.add('hidden'); $('#otpStep').classList.remove('hidden'); $('#otp').focus(); }
+$('#lSend').onclick = async () => { const phone = normPhone($('#lPhone').value); $('#authErr').textContent = ''; if (!phone) return void ($('#authErr').textContent = 'Enter a valid Kenyan mobile number.'); const b = $('#lSend'); busy(b, true); try { const d = await api('/api/driver/login-otp', { method: 'POST', body: { phone }, token: null }); showOtp(phone, d.message); } catch (e) { $('#authErr').textContent = e.message; } finally { busy(b, false); } };
+$('#otpBack').onclick = () => { $('#otpStep').classList.add('hidden'); $('#lPhoneStep').classList.remove('hidden'); };
+$('#otpGo').onclick = async () => { const otp = $('#otp').value.trim(); $('#authErr').textContent = ''; if (!otp) return void ($('#authErr').textContent = 'Enter the code.'); const b = $('#otpGo'); busy(b, true); try { const d = await api('/api/driver/verify-otp', { method: 'POST', body: { phone: state.pendingPhone, otp }, token: null }); state.token = d.token; state.me = { id: d.user.id, name: d.user.name, phone: d.user.phone, vehicleType: d.user.vehicleType }; LS.set('rds_r_token', d.token); LS.set('rds_r_me', state.me); $('#otp').value = ''; enterApp(); } catch (e) { $('#authErr').textContent = e.message; } finally { busy(b, false); } };
+$('#regBox').addEventListener('submit', async e => {
+  e.preventDefault(); const err = $('#regErr'); err.textContent = ''; const cab = $('#rVeh').value === 'CAB';
+  const name = $('#rName').value.trim(), phone = normPhone($('#rPhone').value), plate = $('#rPlate').value.trim(), nid = $('#rId').value.trim(), psv = $('#rPsv').value.trim();
+  if (name.length < 3) return void (err.textContent = 'Enter your full legal name.'); if (!phone) return void (err.textContent = 'Enter a valid Kenyan mobile number.');
+  if (plate.length < 3) return void (err.textContent = 'Enter your vehicle number plate.'); if (nid.length < 6) return void (err.textContent = 'Enter your national ID or passport number.');
+  if (cab && psv.length < 3) return void (err.textContent = 'Cab drivers must enter their PSV badge number.');
+  for (const [k, , t] of DOCS) { if (!cab && ['insurance', 'inspection'].includes(k)) continue; if (!state.docs[k]) return void (err.textContent = `Please add: ${t}.`); }
+  const body = { phone, name, email: $('#rEmail').value.trim() || undefined, vehicleType: cab ? 'CAB' : 'BODA', plate, nationalId: nid, psvBadge: psv || undefined };
+  DOCS.forEach(([k, , , , , f]) => { if (state.docs[k] && (cab || !['insurance', 'inspection'].includes(k))) body[f] = state.docs[k]; });
+  const b = $('#regGo'); busy(b, true, 'Submitting…');
+  try { const d = await api('/api/driver/register-and-send-otp', { method: 'POST', body, token: null }); toast('Documents received.', 'ok'); showOtp(phone, d.message); } catch (er) { err.textContent = er.message; } finally { busy(b, false); }
+});
+function sessionExpired() { if (!state.token) return; signOutLocal(); toast('Your session expired. Please sign in again.', 'err'); }
+function signOutLocal() { state.token = null; state.me = null; state.online = false; stopAll(); LS.del('rds_r_token'); LS.del('rds_r_me'); $('#app').classList.add('hidden'); $('#auth').classList.remove('hidden'); $('#otpStep').classList.add('hidden'); $('#lPhoneStep').classList.remove('hidden'); }
+$('#logout').onclick = async () => { if (state.online && !(await ask('Sign out?', 'You will go offline.', 'Sign out'))) return; try { if (state.online) await api('/api/driver/status', { method: 'POST', body: { online: false } }); } catch {} try { await api('/api/auth/logout', { method: 'POST' }); } catch {} signOutLocal(); };
+
+/* ---------- shell ---------- */
+function tab(id) { state.view = id; $$('.view').forEach(v => v.classList.toggle('active', v.id === id)); $$('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === id)); window.scrollTo({ top: 0 }); if (id === 'vEarn') loadWallet(); if (id === 'vAcct') loadAcct(); if (id === 'vJobs') { loadJobs(); setTimeout(() => state.map && state.map.invalidateSize(), 200); } }
+document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) tab(t.dataset.tab); });
+function setLive(on) { const l = $('#live'); l.classList.toggle('on', on); $('span', l).textContent = on ? 'Live' : 'Offline'; }
+function paintOnline() { $('#sw').classList.toggle('on', state.online); $('#swT').textContent = state.online ? 'You are online' : 'You are offline'; $('#swS').textContent = state.online ? (state.active ? 'Finish your job to go offline' : 'Looking for jobs near you…') : 'Go online to see jobs near you'; }
+async function enterApp() {
+  $('#auth').classList.add('hidden'); $('#app').classList.remove('hidden'); $('#hName').textContent = (state.me && state.me.name) || 'Rider'; paintOnline(); initSocket(); await loadMe(); loadJobs(); loadWallet(true);
+  clearInterval(state.poll); state.poll = setInterval(() => { if (!document.hidden && state.token) loadJobs(); }, 6000);
+}
+async function loadMe() { try { const d = await api('/api/driver/me'); state.me = { ...state.me, ...d.driver }; state.online = !!d.online; LS.set('rds_r_me', state.me); $('#hName').textContent = state.me.name || 'Rider'; $('#hMeta').textContent = `${state.me.vehicleType === 'CAR' ? '🚕 Cab' : '🏍️ Boda'} · ${state.me.plate || ''}`; paintOnline(); if (state.online) startGps(); } catch {} }
+$('#sw').onclick = async () => { const want = !state.online; const b = $('#sw'); b.disabled = true; try { const d = await api('/api/driver/status', { method: 'POST', body: { online: want } }); state.online = d.online; paintOnline(); if (state.online) { startGps(); keepAwake(); toast('You are online', 'ok', 1800); } else { stopGps(); toast('You are offline', 'info', 1800); } loadJobs(); } catch (e) { toast(e.message, 'err', 5000); } finally { b.disabled = false; } };
+
+/* ---------- gps & screen ---------- */
+function startGps() {
+  if (!navigator.geolocation || state.watch !== null) return;
+  state.watch = navigator.geolocation.watchPosition(async pos => {
+    state.loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; updateMap();
+    const now = Date.now(); if (now - state.lastSent < 5000 || !state.token) return; state.lastSent = now;
+    try { await api('/api/driver/location', { method: 'POST', body: { lat: state.loc.lat, lng: state.loc.lng, heading: pos.coords.heading, speed: pos.coords.speed } }); } catch {}
+  }, () => toast('Turn on location so customers and shops can see you.', 'err'), { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 });
+}
+function stopGps() { if (state.watch !== null) navigator.geolocation.clearWatch(state.watch); state.watch = null; }
+async function keepAwake() { try { if ('wakeLock' in navigator && !state.wake) { state.wake = await navigator.wakeLock.request('screen'); state.wake.addEventListener('release', () => { state.wake = null; }); } } catch {} }
+function stopAll() { stopGps(); clearInterval(state.poll); if (state.socket) { state.socket.auth = {}; state.socket.disconnect(); } setLive(false); try { state.wake && state.wake.release(); } catch {} }
+
+/* ---------- map ---------- */
+const pin = c => L.divIcon({ className: '', html: `<div style="background:${c};width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.6)"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] });
+function ensureMap() { if (typeof L === 'undefined') return null; if (state.map) return state.map; const m = L.map('jobMap', { zoomControl: false, attributionControl: true }).setView([-1.286389, 36.817223], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(m); state.map = m; m._mk = {}; return m; }
+function updateMap() {
+  const wrap = $('#jobMapWrap'), j = state.active; if (!j || !(j.pickupCoords || j.destinationCoords)) { wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden'); const m = ensureMap(); if (!m) return; setTimeout(() => m.invalidateSize(), 150);
+  const set = (k, p, c) => { if (m._mk[k]) { m.removeLayer(m._mk[k]); delete m._mk[k]; } if (p && Number.isFinite(p.lat)) m._mk[k] = L.marker([p.lat, p.lng], { icon: pin(c) }).addTo(m); };
+  set('pu', j.pickupCoords, '#ffc244'); set('de', j.destinationCoords, '#ff4d6d'); set('me', state.loc, '#a855f7');
+  const pts = Object.values(m._mk).map(x => x.getLatLng()); const key = j.id + ':' + j.stage; if (m._fit !== key && pts.length) { m._fit = key; if (pts.length > 1) m.fitBounds(pts, { padding: [34, 34] }); else m.setView(pts[0], 15); }
+}
+
+/* ---------- jobs ---------- */
+let ringCtx = null;
+function chime() { try { navigator.vibrate && navigator.vibrate([250, 120, 250]); if (!ringCtx) ringCtx = new (window.AudioContext || window.webkitAudioContext)(); if (ringCtx.state === 'suspended') ringCtx.resume(); const t = ringCtx.currentTime; [880, 1175, 880].forEach((f, i) => { const o = ringCtx.createOscillator(), g = ringCtx.createGain(), s = t + i * 0.18; o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.4, s + 0.02); g.gain.exponentialRampToValueAtTime(0.001, s + 0.2); o.connect(g); g.connect(ringCtx.destination); o.start(s); o.stop(s + 0.22); }); } catch {} }
+document.addEventListener('pointerdown', () => { try { if (!ringCtx) ringCtx = new (window.AudioContext || window.webkitAudioContext)(); if (ringCtx.state === 'suspended') ringCtx.resume(); } catch {} }, { once: true });
+$('#newJobOk').onclick = () => $('#newJob').classList.add('hidden');
+let jobsCtrl = null;
+async function loadJobs() {
+  if (!state.token) return; if (jobsCtrl) jobsCtrl.abort(); jobsCtrl = new AbortController();
+  try {
+    const d = await api('/api/driver/dispatches', { signal: jobsCtrl.signal }); state.blocked = d.blocked; state.active = d.active; state.jobs = d.active ? [] : (d.dispatches || []); state.online = !!d.online; if (typeof d.balance === 'number') state.balance = d.balance;
+    if (state.seen === null) state.seen = new Set(state.jobs.map(j => j.id)); else { const fresh = state.jobs.filter(j => !state.seen.has(j.id)); state.jobs.forEach(j => state.seen.add(j.id)); if (fresh.length && state.online) { chime(); $('#newJobTxt').textContent = fresh[0].kind === 'RIDE' ? `Ride · earn ${fmt0(fresh[0].earn)}` : `Delivery · earn ${fmt0(fresh[0].earn)}`; $('#newJob').classList.remove('hidden'); setTimeout(() => $('#newJob').classList.add('hidden'), 7000); } }
+    paintOnline(); renderJobs();
+  } catch (e) { if (!e.aborted && !$('#radar').children.length) $('#radar').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+const NEXT = { ACCEPTED: ['arrived', "I've arrived at pickup", 'cy'], ARRIVED_PICKUP: ['picked-up', null, 'go'] };
+function nav(p) { return p && Number.isFinite(p.lat) ? `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving` : null; }
+function routeHtml(j) { return `<div class="route"><div><b>${esc(j.pickup || 'Pickup')}</b></div><div><b>${esc(j.destination || 'Drop-off')}</b></div></div>`; }
+function activeHtml(j) {
+  const ride = j.kind === 'RIDE', st = j.stage || 'ACCEPTED', label = { ACCEPTED: ride ? 'Head to the pickup point' : 'Head to the shop', ARRIVED_PICKUP: ride ? 'Waiting for the passenger' : 'Collect the order', PICKED_UP: ride ? 'Trip in progress' : 'Deliver to the customer' }[st];
+  let h = `<div class="job new"><div class="between"><span class="tag ${ride ? 'ride' : ''}">${ride ? '🏍️ RIDE' : '📦 DELIVERY'}</span><span class="earn">${fmt(j.earn)}</span></div><h2 style="margin-top:8px">${esc(label)}</h2>${routeHtml(j)}<div class="muted">${j.distanceKm ? j.distanceKm + ' km' : ''}${j.etaMin ? ' · ~' + j.etaMin + ' min' : ''} · you earn 95% of the ${fmt0(j.fare)} fare</div>`;
+  if (j.customerPhone) h += `<a class="btn ghost" style="margin-top:12px;text-decoration:none" href="tel:${esc(String(j.customerPhone).replace(/\s/g, ''))}">📞 Call customer</a>`;
+  const target = st === 'PICKED_UP' ? j.destinationCoords : j.pickupCoords, nv = nav(target); if (nv) h += `<a class="btn cy" style="margin-top:10px;text-decoration:none" target="_blank" rel="noopener" href="${nv}">🗺️ Navigate to ${st === 'PICKED_UP' ? 'drop-off' : 'pickup'}</a>`;
+  if (st === 'ACCEPTED') h += `<button class="btn cy" style="margin-top:10px" data-act="arrived">I've arrived at the ${ride ? 'pickup' : 'shop'}</button>`;
+  if (st === 'ACCEPTED' || st === 'ARRIVED_PICKUP') h += `<button class="btn go" style="margin-top:10px" data-act="picked-up">${ride ? 'Passenger on board: start trip' : 'I have the order'}</button>`;
+  if (st === 'PICKED_UP') h += `<div class="card" style="margin:14px 0 0;border-color:var(--g)"><h3>Customer PIN</h3><p class="muted" style="margin-bottom:8px">Ask the ${ride ? 'passenger' : 'customer'} for their 4-digit PIN. You are paid only when it matches.</p><input id="pin" inputmode="numeric" maxlength="4" placeholder="• • • •" autocomplete="off" style="text-align:center;font-size:1.6rem;letter-spacing:12px"><div class="err" id="pinErr"></div><button class="btn go" data-act="complete">Complete &amp; get paid</button></div>`;
+  if (st !== 'PICKED_UP') h += `<button class="btn danger" style="margin-top:10px" data-act="release">Give this job back</button>`;
+  return h + '</div>';
+}
+function renderJobs() {
+  const bb = $('#blockedBox'), ab = $('#activeBox'), rd = $('#radar');
+  bb.innerHTML = state.blocked ? `<div class="card" style="border-color:var(--gold)"><h2>⏳ Account under review</h2><p class="muted" style="margin:8px 0 12px">${esc(state.blocked)}</p><button class="btn ghost" id="recheck">Check again</button></div>` : '';
+  ab.innerHTML = state.active ? activeHtml(state.active) : ''; updateMap();
+  const showRadar = !state.blocked && !state.active; $('#radarHead').classList.toggle('hidden', !(showRadar && state.online));
+  if (state.blocked || state.active) { rd.innerHTML = ''; return; }
+  if (!state.online) { rd.innerHTML = '<div class="empty">You are offline.<br>Switch on <b>online</b> above to start receiving jobs.</div>'; return; }
+  $('#radarCount').textContent = state.jobs.length ? `${state.jobs.length} available` : '';
+  rd.innerHTML = state.jobs.length ? state.jobs.map(j => `<div class="job"><div class="between"><span class="tag ${j.kind === 'RIDE' ? 'ride' : ''}">${j.kind === 'RIDE' ? '🏍️ RIDE' : '📦 DELIVERY'}</span><span class="earn">${fmt0(j.earn)}</span></div>${routeHtml(j)}<div class="muted" style="margin-bottom:12px">${j.distanceToPickupKm != null ? j.distanceToPickupKm + ' km to pickup · ' : ''}${j.distanceKm ? j.distanceKm + ' km trip' : ''}${j.etaMin ? ' · ~' + j.etaMin + ' min' : ''} · fare ${fmt0(j.fare)}</div><button class="btn go" data-act="accept" data-id="${esc(j.id)}">Accept job</button></div>`).join('') : '<div class="empty">No jobs right now.<br>Stay online. New jobs ring automatically.</div>';
+}
+$('#vJobs').addEventListener('click', async e => {
+  if (e.target.id === 'recheck') { await loadMe(); return loadJobs(); }
+  const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act, j = state.active, id = a === 'accept' ? b.dataset.id : (j && j.id);
+  try {
+    busy(b, true);
+    if (a === 'accept') { const d = await api('/api/driver/accept-dispatch', { method: 'POST', body: { dispatchId: id } }); toast(d.message, 'ok'); }
+    else if (a === 'release') { busy(b, false); if (!(await ask('Give this job back?', 'It returns to the radar for other riders. Giving back too many jobs can affect your account.', 'Give back'))) return; busy(b, true); await api('/api/driver/release', { method: 'POST', body: { dispatchId: id } }); toast('Job returned', 'ok'); }
+    else if (a === 'complete') { const pin = ($('#pin') || {}).value || ''; if (!/^\d{4}$/.test(pin)) { $('#pinErr').textContent = "Enter the customer's 4-digit PIN."; busy(b, false); return; } const d = await api('/api/driver/complete-dispatch', { method: 'POST', body: { dispatchId: id, pin } }); toast(d.message, 'ok', 5000); state.balance = d.balance; }
+    else await api('/api/driver/' + a, { method: 'POST', body: { dispatchId: id } });
+    await loadJobs();
+  } catch (err) { if (a === 'complete' && $('#pinErr')) $('#pinErr').textContent = err.message; else toast(err.message, 'err', 5000); busy(b, false); loadJobs(); }
+});
+
+/* ---------- earnings ---------- */
+async function loadWallet(quiet) {
+  if (!state.token) return;
+  try {
+    const [w, h] = await Promise.all([api('/api/driver/wallet'), api('/api/driver/wallet/history?limit=20')]);
+    state.balance = w.balance; $('#bal').textContent = fmt(w.balance); $('#kToday').textContent = fmt0(w.today.earned); $('#kTrips').textContent = w.today.trips; $('#kAll').textContent = fmt0(w.allTime.earned); $('#kAllTrips').textContent = w.allTime.trips;
+    $('#payAmt').min = w.minPayout; $('#payAmt').placeholder = 'Minimum ' + w.minPayout; $('#payNote').classList.toggle('hidden', w.paymentsMode !== 'simulated'); const ph = (state.me && state.me.phone) || ''; $('#payTo').textContent = ph ? `Paid to your registered number ${ph.length > 6 ? ph.slice(0, 4) + '***' + ph.slice(-3) : ph}.` : '';
+    $('#hist').innerHTML = h.entries.length ? h.entries.map(e => `<div class="hist"><div><b>${e.kind === 'EARNING' ? 'Job earnings' : 'Withdrawal'}</b><div class="muted">${when(e.at)}</div></div><b style="color:${e.amount >= 0 ? 'var(--g)' : 'var(--gold)'}">${e.amount >= 0 ? '+' : '−'}${fmt(Math.abs(e.amount))}</b></div>`).join('') : '<div class="empty" style="padding:14px">No earnings yet. Complete a job to get started.</div>';
+  } catch (e) { if (!quiet) toast(e.message, 'err'); }
+}
+$('#payGo').onclick = async () => {
+  const amt = Number($('#payAmt').value); $('#payErr').textContent = ''; if (!Number.isFinite(amt) || amt <= 0) return void ($('#payErr').textContent = 'Enter an amount.');
+  if (!(await ask('Withdraw ' + fmt(amt) + '?', 'The money is sent to your registered M-Pesa number.', 'Withdraw'))) return; const b = $('#payGo'); busy(b, true);
+  try { const d = await api('/api/driver/payout', { method: 'POST', body: { amount: amt } }); toast(d.message, 'ok', 5500); $('#payAmt').value = ''; loadWallet(); } catch (e) { $('#payErr').textContent = e.message; } finally { busy(b, false); }
+};
+
+/* ---------- account ---------- */
+function loadAcct() { const m = state.me || {}, st = m.standing || (state.blocked ? 'UNREVIEWED' : 'APPROVED'); const col = st === 'APPROVED' ? 'ok' : (st === 'SUSPENDED' || st === 'REJECTED') ? '' : ''; $('#acct').innerHTML = `<div class="between"><b>${esc(m.name || '')}</b><span class="tag" style="${st === 'APPROVED' ? 'background:rgba(0,255,136,.14);color:var(--g)' : 'background:rgba(255,194,68,.15);color:var(--gold)'}">${esc(st === 'UNREVIEWED' ? 'Under review' : st.charAt(0) + st.slice(1).toLowerCase())}</span></div><div class="muted" style="margin-top:8px">${esc(m.phone || '')}<br>${m.vehicleType === 'CAR' ? '🚕 Cab' : '🏍️ Boda'} · ${esc(m.plate || '')}<br>Rider ID ${esc(m.id || '')}</div>${m.reviewNote ? `<div class="note">${esc(m.reviewNote)}</div>` : ''}`; }
+
+/* ---------- live updates ---------- */
+const loadSoon = (() => { let t; return () => { clearTimeout(t); t = setTimeout(() => { if (state.token) loadJobs(); }, 500); }; })();
+function initSocket() {
+  if (typeof io !== 'function') return; if (state.socket) { state.socket.auth = { token: state.token }; state.socket.disconnect().connect(); return; }
+  const s = io({ auth: { token: state.token }, reconnection: true }); state.socket = s; s.on('connect', () => setLive(true)); s.on('disconnect', () => setLive(false));
+  s.on('connect_error', err => { setLive(false); if (err && err.message === 'unauthorized' && state.token) sessionExpired(); });
+  ['new_driver_dispatch', 'orderListUpdated', 'driver_standing_changed'].forEach(ev => s.on(ev, p => { if (ev === 'driver_standing_changed' && p && state.me && p.driverId === state.me.id) { loadMe(); toast(p.standing === 'APPROVED' ? 'You have been approved. Go online to start earning.' : 'Your account status changed: ' + p.standing, p.standing === 'APPROVED' ? 'ok' : 'err', 6000); } loadSoon(); }));
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.token) { loadJobs(); if (state.online) keepAwake(); } });
+if (state.token && state.me) enterApp(); else renderDocs();
+})();
+</script>
 </body>
 </html>

@@ -19,6 +19,15 @@
 //                          or "webhook" (SMS_WEBHOOK_URL, SMS_WEBHOOK_TOKEN)
 //  - METRICS_TOKEN         enables GET /metrics (Prometheus text) behind this bearer
 //  Requires Node 18+ (global fetch, crypto.randomUUID). No new npm packages.
+//
+// STAGE 192 (additive) — hybrid server: one RDS app for customers (/user, /store), vendors (/merchant) and
+//  riders (/driver), all wired through the same order record. New optional env vars:
+//  - PAYMENTS_MODE            "simulated" (default). Payments and payouts are labelled SIMULATED until Daraja is wired.
+//  - DRIVER_APPROVAL_REQUIRED "true"/"false". Default: true in production (riders need admin approval to take jobs).
+//  - TEST_PHONES / TEST_OTP   fixed-code test numbers (default +254722334455 / 1234), production only.
+//  - TARIFF_JSON              override the Kenya fare tariff without code (see routes/user.js).
+//  Riders earn 95% of the delivery fee; the platform keeps 5% (+2% service fee charged on shop items).
+//  Rider completion needs the customer's 4-digit delivery PIN. Runs unchanged on localhost and on Render.
 // ============================================================================
 
 const express = require("express");
@@ -50,8 +59,8 @@ const MAX_AMOUNT = 10000000; // KES sanity ceiling per transaction
 // ---------------------------------------------------------------------------
 // STAGE 191: additive configuration + boot helpers
 // ---------------------------------------------------------------------------
-const STAGE_191 = "STAGE_191";
-const VERSION_191 = "191.0";
+const STAGE_191 = "STAGE_192"; // Stage 192 hybrid server (identifier kept for the additive blocks below)
+const VERSION_191 = "192.0";
 const BOOT_TIME_191 = Date.now();
 const DATA_DIR_191 = process.env.DATA_DIR || __dirname;
 try { fs.mkdirSync(DATA_DIR_191, { recursive: true }); } catch (e) { console.error("[BOOT] Cannot create DATA_DIR:", e.message); }
@@ -366,6 +375,134 @@ if (storeExt191) {
     app.use('/api/store', storeExt191);
 }
 
+// STAGE 191 — user extension (additive): real quote + checkout (2% on top), cancel/rate guards, rider info
+const userExt191 = safeRequire191('./routes/user', 'user');
+if (userExt191) {
+    if (typeof userExt191.init === 'function') {
+        userExt191.init({
+            softAuth, ROLES, isTenantActive, cleanText, isPhone, appendAudit,
+            findOrderRefs191, orderView191, normalizedOrders191,
+            getActiveOrders: () => activeOrders, getDrivers: () => drivers, getUsers: () => users, getRatings: () => orderRatings191
+        });
+    }
+    if (typeof userExt191.cancelGuard === 'function') app.post('/api/user/orders/cancel', userExt191.cancelGuard);
+    if (typeof userExt191.rateGuard === 'function') app.post('/api/user/orders/rate', userExt191.rateGuard);
+    app.use('/api/user', userExt191);
+}
+
+// STAGE 191 — serve the new consumer app at /user (falls back to the old page if user.html is not deployed)
+app.get(['/user', '/store'], (req, res, next) => {
+    const f = path.join(__dirname, 'user.html');
+    if (fs.existsSync(f)) return res.sendFile(f);
+    next();
+});
+
+// ============================================================================
+// STAGE 192 — HYBRID SERVER (additive)
+// ============================================================================
+const STAGE_192 = STAGE_191, VERSION_192 = VERSION_191;
+const driverDocs192 = {};        // driverId -> { selfie, licence, goodConduct, vehicle, insurance, inspection, submittedAt }
+const driverPayouts192 = [];     // simulated M-Pesa B2C payouts
+const PAYMENTS_MODE_192 = (process.env.PAYMENTS_MODE || 'simulated').toLowerCase();
+const DRIVER_APPROVAL_REQUIRED_192 = process.env.DRIVER_APPROVAL_REQUIRED
+    ? process.env.DRIVER_APPROVAL_REQUIRED === 'true'
+    : (IS_PROD && !ALLOW_TEST_CREDENTIALS);
+
+// health / readiness: ready only when every app module is loaded (a missing file must never go unnoticed)
+app.get('/health', (req, res) => res.json({ status: 'OK', stage: STAGE_192, version: VERSION_192, timestamp: Date.now() }));
+app.get('/api/meta/version', (req, res) => res.json({ success: true, stage: STAGE_192, version: VERSION_192 }));
+app.get('/readyz', (req, res) => {
+    const audit = verifyAuditChain();
+    const persistOk = !PERSIST_STATE_191 || lastSnapshot191.ok !== false;
+    const missing = ['store', 'merchants', 'user', 'driver'].filter(k => !(MODULE_STATUS_191[k] && MODULE_STATUS_191[k].loaded));
+    const ready = audit.valid && persistOk && missing.length === 0;
+    res.status(ready ? 200 : 503).json({
+        ready, stage: STAGE_192, version: VERSION_192, auditChainValid: audit.valid, persistenceOk: persistOk, missingModules: missing,
+        modules: MODULE_STATUS_191, paymentsMode: PAYMENTS_MODE_192, driverApprovalRequired: DRIVER_APPROVAL_REQUIRED_192,
+        testCredentials: ALLOW_TEST_CREDENTIALS, uptimeSeconds: Math.floor(process.uptime())
+    });
+});
+
+// the new state must survive restarts: wrap the snapshot writer and reader (originals stay untouched)
+const _snapshotPayload191 = snapshotPayload191;
+snapshotPayload191 = function () {
+    const p = _snapshotPayload191();
+    p.version = 192; p.driverDocs192 = driverDocs192; p.driverPayouts192 = driverPayouts192;
+    return p;
+};
+const _restoreSnapshot191 = restoreSnapshot191;
+restoreSnapshot191 = function () {
+    _restoreSnapshot191();
+    if (!PERSIST_STATE_191) return;
+    try {
+        let raw = null;
+        for (const f of [SNAPSHOT_FILE_191, SNAPSHOT_FILE_191 + '.bak']) { try { raw = JSON.parse(fs.readFileSync(f, 'utf8')); break; } catch (e) {} }
+        if (raw) { replaceObject191(driverDocs192, raw.driverDocs192); replaceArray191(driverPayouts192, raw.driverPayouts192); }
+    } catch (e) {}
+};
+
+// rider registration: real documents are required and kept for admin review (the inline route only stored yes/no flags)
+app.post('/api/driver/register-and-send-otp', (req, res, next) => {
+    const b = req.body || {};
+    const vt = String(b.vehicleType || 'BODA').toUpperCase();
+    if (!['BODA', 'CAB', 'CAR'].includes(vt)) return bad(res, "vehicleType must be BODA or CAB.");
+    const veh = vt === 'BODA' ? 'BODA' : 'CAR';
+    const docs = {
+        selfie: cleanImage(b.passportSnap, null), licence: cleanImage(b.licenceSnap, null),
+        goodConduct: cleanImage(b.goodConductSnap, null), vehicle: cleanImage(b.vehicleSnap, null)
+    };
+    if (veh === 'CAR') { docs.insurance = cleanImage(b.insuranceSnap, null); docs.inspection = cleanImage(b.inspectionSnap, null); }
+    const labels = { selfie: 'a clear photo of your face', licence: 'your driving licence', goodConduct: 'your certificate of good conduct', vehicle: 'a photo of your vehicle', insurance: 'your insurance cover', inspection: 'your inspection report' };
+    for (const k of Object.keys(docs)) if (!docs[k]) return bad(res, `Please add ${labels[k]}.`);
+    if (typeof b.nationalId !== 'string' || cleanText(b.nationalId, 30).length < 6) return bad(res, "Enter your national ID or passport number.");
+    if (veh === 'CAR' && (typeof b.psvBadge !== 'string' || cleanText(b.psvBadge, 40).length < 3)) return bad(res, "Cab drivers must enter their PSV badge number.");
+    res.on('finish', () => {
+        if (res.statusCode !== 200) return;
+        const id = `DRV_${String(b.phone).replace(/[^0-9]/g, '')}`;
+        driverDocs192[id] = { ...docs, submittedAt: Date.now() };
+        if (drivers[id]) {
+            drivers[id].vehicleType = veh; drivers[id].docsOnFile = true;
+            if (isTestPhone191(b.phone)) { drivers[id].standing = 'APPROVED'; drivers[id].documentsReviewed = true; drivers[id].reviewedBy = 'TEST_ACCOUNT'; }
+        }
+        stateDirty191 = true;
+    });
+    next();
+});
+
+// a ready-made, pre-approved rider for the test phone(s) (TEST_PHONES, default +254722334455, code 1234).
+// Real riders still register with documents. Set TEST_RIDER_VEHICLE=CAB to make the test rider a cab driver.
+function ensureTestRider192(phone) {
+    if (!isTestPhone191(phone)) return false;
+    const msisdn = normalizeMsisdn191(phone);
+    const id = `DRV_${msisdn.replace(/[^0-9]/g, '')}`;
+    const veh = String(process.env.TEST_RIDER_VEHICLE || 'BODA').toUpperCase() === 'CAB' ? 'CAR' : 'BODA';
+    if (!Object.prototype.hasOwnProperty.call(drivers, id)) {
+        drivers[id] = { id, name: 'Test Rider', phone: msisdn, email: 'driver@rds.com', vehicleType: veh, plate: 'KTEST 001A', psvBadge: 'N/A', nationalId: 'TEST-ACCOUNT',
+            hasPassportSnap: false, hasVehicleSnap: false, verified: true, registeredAt: Date.now(), documentsReviewed: true, verificationStatus: 'TEST_ACCOUNT' };
+    }
+    const d = drivers[id];
+    if (d.standing !== 'APPROVED') { d.standing = 'APPROVED'; d.documentsReviewed = true; d.reviewedBy = 'TEST_ACCOUNT'; d.reviewedAt = Date.now(); }
+    if (d.reviewedBy === 'TEST_ACCOUNT') d.vehicleType = veh;
+    if (!Object.prototype.hasOwnProperty.call(driverWallets, id)) driverWallets[id] = 0;
+    stateDirty191 = true;
+    return true;
+}
+
+// the rider app: radar, job lifecycle with delivery PIN, wallet, payouts (takes over the inline rider routes)
+const driverExt192 = safeRequire191('./routes/driver', 'driver');
+if (driverExt192) {
+    if (typeof driverExt192.init === 'function') {
+        driverExt192.init({
+            softAuth, ROLES, ACTOR_ROLES, findOrderRefs191, setDeliveryState191, findDispatchesById191, emitSafe191, appendAudit, eatDayStart191,
+            getDrivers: () => drivers, getWallets: () => driverWallets, getLedger: () => driverLedger191, getPresence: () => driverPresence191,
+            getLocations: () => driverLocations191, getPayouts: () => driverPayouts192,
+            isPhone, sendOtp: (phone) => issueOtp(otps, phone, {}), ensureTestRider: ensureTestRider192,
+            requireApproval: () => DRIVER_APPROVAL_REQUIRED_192, paymentsMode: () => PAYMENTS_MODE_192, markDirty: () => { stateDirty191 = true; }
+        });
+    }
+    app.use('/api/driver', driverExt192);
+}
+
 // STAGE 191 — merchant registration KYC (additive): 3 photos required, owner face kept private
 app.post('/api/merchant/register', (req, res, next) => {
     const b = req.body || {};
@@ -405,6 +542,7 @@ if (!ALLOW_TEST_CREDENTIALS) {
 
 // STAGE 191 — merchant extension (additive): handover guard + stock deduction on accept
 const merchantExt191 = safeRequire191('./routes/merchants', 'merchants');
+if (merchantExt191 && typeof merchantExt191.init === 'function') merchantExt191.init({ findOrderRefs191 });
 if (merchantExt191) {
     if (typeof merchantExt191.handoverGuard === 'function') app.post('/api/merchant/orders/complete-handover', merchantExt191.handoverGuard);
     if (typeof merchantExt191.stockOnAccept === 'function') app.post('/api/merchant/orders/accept', merchantExt191.stockOnAccept);
@@ -1856,7 +1994,7 @@ app.get('/api/compliance/generate-regulatory-package', verifySovereignTokenStric
     const regulatoryPackage = {
         institution: tenantId,
         generatedAt: new Date().toISOString(),
-        framework: "RDS Sovereign Financial OS v191.0 ULTIMATE",
+        framework: `RDS Sovereign Financial OS v${VERSION_191} ULTIMATE`,
         complianceStatus: integrity.valid ? "VERIFIED_COMPLIANT" : "AUDIT_INTEGRITY_FAILURE",
         metrics: {
             tierEcKYC: sovereignVerifications.length,
@@ -2650,6 +2788,21 @@ function applyTestAccounts191() {
 }
 applyTestAccounts191();
 
+// Customer can see the REAL rider assigned to their own order (name, vehicle, plate, phone).
+userExtras191.get('/orders/:orderId/rider', softAuth(ROLES.REGULAR_USER), (req, res) => {
+    const { orderId } = req.params;
+    if (!isSafeKey(orderId)) return bad(res, "Invalid orderId.");
+    const v = orderView191(orderId, true);
+    if (!v) return res.status(404).json({ success: false, error: "Order not found." });
+    const owner = req.user && (req.user.role === ROLES.SOVEREIGN_ADMIN || (req.user.userId && req.user.userId === v.userId));
+    if (!owner) return bad(res, "Forbidden.", 403);
+    const refs = findOrderRefs191(orderId);
+    const driverId = (refs.merchant[0] && refs.merchant[0].order.driverId) || (refs.store[0] && refs.store[0].driverId) || (refs.active[0] && refs.active[0].order.driverId) || null;
+    const d = driverId && Object.prototype.hasOwnProperty.call(drivers, driverId) ? drivers[driverId] : null;
+    if (!d) return res.json({ success: true, rider: null });
+    res.json({ success: true, rider: { firstName: String(d.name || 'Rider').split(' ')[0], vehicleType: d.vehicleType || null, plate: d.plate || null, phone: d.phone || null } });
+});
+
 // ---------------------------------------------------------------------------
 // 2. REAL SECURITY POSTURE (stub above is kept untouched)
 // ---------------------------------------------------------------------------
@@ -2847,6 +3000,18 @@ adminOps191.post('/drivers/review', requireSovereignAdminOnly, (req, res) => {
 });
 OPS_191('POST', '/drivers/review', 'admin', 'Approve, suspend or reject a driver (enforced by the existing standing guard)');
 
+adminOps191.get('/drivers/:driverId/kyc', requireAdminRoleStrict, (req, res) => {
+    const id = req.params.driverId;
+    if (!isSafeKey(id)) return bad(res, "Invalid driverId.");
+    const d = Object.prototype.hasOwnProperty.call(drivers, id) ? drivers[id] : null;
+    if (!d) return res.status(404).json({ success: false, error: "Driver not found." });
+    const docs = Object.prototype.hasOwnProperty.call(driverDocs192, id) ? driverDocs192[id] : {};
+    appendAudit('KYC_VIEWED', { driverId: id, by: req.user.email || req.user.sub });
+    res.json({ success: true, kyc: { driverId: id, name: d.name, phone: d.phone, nationalId: d.nationalId, plate: d.plate, psvBadge: d.psvBadge, vehicleType: d.vehicleType,
+        standing: d.standing || 'UNREVIEWED', submittedAt: docs.submittedAt || null, documents: { selfie: docs.selfie || null, licence: docs.licence || null, goodConduct: docs.goodConduct || null, vehicle: docs.vehicle || null, insurance: docs.insurance || null, inspection: docs.inspection || null } } });
+});
+OPS_191('GET', '/drivers/:driverId/kyc', 'admin|auditor', 'Rider documents for review: face, licence, good conduct, vehicle (+ insurance, inspection for cabs)');
+
 adminOps191.get('/dispatches', requireAdminRoleStrict, (req, res) => {
     const queue = global.driverQueue || [];
     const active = [];
@@ -2902,6 +3067,30 @@ adminOps191.get('/routes', requireAdminRoleStrict, (req, res) => {
 });
 OPS_191('GET', '/routes', 'admin|auditor', 'This catalog');
 
+// STAGE 191 — customer live order details: real driver info, driver location, map route
+userExtras191.get('/orders/:orderId/live', softAuth(), (req, res) => {
+    const { orderId } = req.params;
+    if (!isSafeKey(orderId)) return bad(res, "Invalid orderId.");
+    const view = orderView191(orderId, true);
+    if (!view) return res.status(404).json({ success: false, error: "Order not found." });
+    const owner = req.user && (req.user.role === ROLES.SOVEREIGN_ADMIN || (req.user.userId && req.user.userId === view.userId));
+    if (!owner) return bad(res, "Forbidden.", 403);
+    const refs = findOrderRefs191(orderId);
+    const act = refs.active[0] && refs.active[0].order;
+    const mer = refs.merchant[0] && refs.merchant[0].order;
+    const sto = refs.store[0];
+    const driverId = (mer && mer.driverId) || (act && act.driverId) || (sto && sto.driverId) || null;
+    const d = driverId && Object.prototype.hasOwnProperty.call(drivers, driverId) ? drivers[driverId] : null;
+    const loc = driverId && driverLocations191[driverId];
+    res.json({
+        success: true,
+        route: { pickup: (act && act.pickupCoords) || null, destination: (act && act.destinationCoords) || null },
+        driver: d ? { name: String(d.name || 'Driver').split(' ')[0], vehicleType: d.vehicleType, plate: d.plate, phone: d.phone } : null,
+        driverAssigned: !!driverId,
+        driverLocation: loc && (Date.now() - loc.at < 120000) ? { lat: loc.lat, lng: loc.lng, at: loc.at } : null
+    });
+});
+
 // Panel registry: which HTML file serves which URL, and whether it is deployed.
 Object.entries(PANEL_MAP_191).forEach(([url, file]) => {
     PANELS_191.push({ url, file, deployed: fs.existsSync(path.join(__dirname, file)) });
@@ -2951,6 +3140,11 @@ setInterval(() => {
 
 restoreSnapshot191();
 applyTestAccounts191();
+
+// test riders (TEST_PHONES) exist and are pre-approved after every start, so the test account works without an admin
+(function applyTestDrivers192() {
+    for (const p of TEST_PHONES_191) ensureTestRider192(p);
+})();
 
 const adsRouter = safeRequire191('./routes/ads', 'ads');
 if (adsRouter) {

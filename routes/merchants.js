@@ -12,13 +12,16 @@
 //   2. stockOnAccept : after a successful POST /api/merchant/orders/accept it
 //                      deducts the ordered quantities from the shop's catalogue
 //                      stock (by item id; by exact name for older orders), once
-//                      per order. This is what makes the store's stock check real.
+//                      per order, and builds the rider's job from the customer's order
+//                      (address, coordinates, rider payout, delivery PIN hash).
 //
 // Uses only globals that server.js publishes (merchantOrders, merchantCatalogs).
 // No routes are mounted from here; the exported router is empty on purpose.
 // ============================================================================
 const express = require('express');
 const router = express.Router();
+let D = {};
+function init(deps) { D = deps || {}; }
 
 const DEFAULT_MERCHANT = 'MERCH_DEF_172';
 const CANCELLED = new Set(['CANCELLED_BY_CUSTOMER', 'REJECTED_BY_VENDOR', 'ORDERLY_DISMISSED', 'CANCELLED']);
@@ -69,6 +72,23 @@ function stockOnAccept(req, res, next) {
                 }
             }
             order.stockDeducted = true;
+            // Hand the rider's job everything it needs, taken from the CUSTOMER's order record.
+            // The inline accept route hard-codes "Customer Dropoff Point"; the PIN hash and customer phone
+            // never pass through the merchant's own order record.
+            const refs = D.findOrderRefs191 ? D.findOrderRefs191(orderId) : null;
+            const src = refs && refs.active[0] && refs.active[0].order;
+            if (src) {
+                const patch = {
+                    destination: src.destination, destinationCoords: src.destinationCoords, pickupCoords: src.pickupCoords,
+                    vehicleType: src.vehicleType, distanceKm: src.distanceKm, etaMin: src.etaMin, merchantId,
+                    deliveryFee: src.breakdown && src.breakdown.deliveryFee, riderPayout: src.breakdown && src.breakdown.riderShare,
+                    customerPhone: src.customerPhone, pinSalt: src.pinSalt, pinHash: src.pinHash
+                };
+                Object.keys(patch).forEach(k => patch[k] === undefined && delete patch[k]);
+                const touch = (d) => { if (d && d.id === orderId) Object.assign(d, patch); };
+                (global.driverQueue || []).forEach(touch);
+                Object.values(global.activeDispatches || {}).forEach(list => (list || []).forEach(touch));
+            }
         } catch (e) { /* never let a hook break a response */ }
     });
     next();
@@ -77,3 +97,4 @@ function stockOnAccept(req, res, next) {
 module.exports = router;
 module.exports.handoverGuard = handoverGuard;
 module.exports.stockOnAccept = stockOnAccept;
+module.exports.init = init;

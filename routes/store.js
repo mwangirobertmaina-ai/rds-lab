@@ -196,6 +196,16 @@ router.post('/quote', (req, res) => {
     res.json({ success: true, quote: compute(items, km, source) });
 });
 
+// ---------------------------------------------------------------------------
+// STAGE 192: one order path. The old store checkout used a different delivery tariff, no map
+// coordinates and no delivery PIN, and its rider routes could mark a trip settled without a PIN.
+// Customers now order through /api/user/checkout (the RDS app at /user and /store).
+// ---------------------------------------------------------------------------
+const retired = (req, res) => bad(res, 'This endpoint was retired. Place orders in the RDS app (it uses /api/user/checkout).', 410);
+router.post('/checkout', retired);
+router.post('/logistics/rider-action', retired);
+router.post('/logistics/complete-trip', retired);
+
 module.exports = router;
 module.exports.priceGuard = priceGuard;
 module.exports.PRICING = PRICING;

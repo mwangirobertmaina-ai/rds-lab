@@ -1,1057 +1,552 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0b0f19">
-    <title>RDS Sovereign Consumer Super-App</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f19">
+<title>RDS | Shop &amp; Ride</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+:root{--g:#00ff88;--bg:#0b0f19;--panel:#111827;--card:#161f31;--dim:#9ca3af;--cy:#38bdf8;--red:#ff4d6d;--gold:#ffc244;--pu:#a855f7;--line:#222c3d;--r:16px;--safe:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:#fff;max-width:480px;margin:0 auto;min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.hidden{display:none!important}
+h1{font-size:1.5rem}h2{font-size:1.05rem}h3{font-size:.76rem;color:var(--cy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.muted{color:var(--dim);font-size:.78rem}.err{color:var(--red);font-size:.8rem;margin:8px 0}.ok{color:var(--g)}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid #374151;border-radius:12px;padding:13px;margin-bottom:10px;font-size:.92rem;outline:none;transition:border-color .15s}
+input:focus{border-color:var(--pu)}
+label{display:block;font-size:.72rem;color:var(--dim);margin:2px 0 5px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:14px;font-weight:800;font-size:.9rem;cursor:pointer;background:#1f2937;transition:transform .08s,opacity .15s}
+.btn:active{transform:scale(.98)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.pu{background:var(--pu)}.btn.go{background:var(--g);color:#000}.btn.cy{background:var(--cy);color:#000}.btn.danger{background:transparent;border:1px solid var(--red);color:var(--red)}.btn.ghost{background:transparent;border:1px solid #374151}.btn.sm{width:auto;padding:9px 14px;font-size:.78rem;border-radius:11px}
+.spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}.btn.go .spin,.btn.cy .spin{border-color:rgba(0,0,0,.3);border-top-color:#000}
+@keyframes sp{to{transform:rotate(360deg)}}
+.row{display:flex;gap:10px;align-items:center}.between{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
 
-    <script src="/socket.io/socket.io.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+/* auth */
+.auth{padding:56px 22px 30px;text-align:center}
+.logo{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:linear-gradient(135deg,var(--pu),var(--cy));display:grid;place-items:center;font-size:2rem;box-shadow:0 10px 30px rgba(168,85,247,.35)}
+.auth p.lead{color:var(--dim);margin:6px 0 26px;font-size:.88rem}
+.auth .box{text-align:left}
+.phone{display:flex;gap:8px}.phone span{flex:none;background:var(--bg);border:1px solid #374151;border-radius:12px;padding:13px;margin-bottom:10px;font-size:.92rem}.phone input{flex:1}
 
-    <style>
-        :root {
-            --neon-green: #00ff88;
-            --dark-bg: #0b0f19;
-            --panel-bg: #111827;
-            --card-bg: #161f31;
-            --text-dim: #9ca3af;
-            --cyan: #38bdf8;
-            --alert-red: #ff3366;
-            --gold: #ffd700;
-            --stage-purple: #a855f7;
-            --glovo-yellow: #ffc244;
-        }
+/* shell */
+.top{position:sticky;top:0;z-index:30;background:linear-gradient(var(--bg) 82%,transparent);padding:14px 16px 8px}
+.top .between{margin-bottom:2px}
+.brand{font-weight:900;font-size:1.1rem;letter-spacing:.3px}.brand b{color:var(--pu)}
+.live{display:flex;align-items:center;gap:6px;font-size:.66rem;color:var(--dim)}.live i{width:8px;height:8px;border-radius:50%;background:#6b7280}.live.on i{background:var(--g);box-shadow:0 0 8px var(--g)}
+.loc{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:8px;cursor:pointer;font-size:.8rem}
+.loc small{display:block;color:var(--dim);font-size:.62rem;text-transform:uppercase;letter-spacing:.5px}.loc b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+.view{display:none;padding:6px 16px 150px}.view.active{display:block;animation:in .25s}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 16px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 6px;text-align:center;cursor:pointer;transition:transform .1s,border-color .15s}
+.tile:active{transform:scale(.97)}.tile:hover{border-color:var(--pu)}.tile .ic{font-size:1.7rem;display:block;margin-bottom:6px}.tile b{font-size:.8rem}.tile small{display:block;color:var(--dim);font-size:.64rem;margin-top:2px}
+.tile.ride{background:linear-gradient(160deg,rgba(0,255,136,.12),var(--panel))}
+.search{position:relative}.search input{padding-left:40px}.search span{position:absolute;left:14px;top:13px;opacity:.7}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px}.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;background:var(--panel);border:1px solid #374151;color:var(--dim);padding:8px 14px;border-radius:20px;font-size:.74rem;font-weight:700;cursor:pointer}.chip.on{background:var(--pu);border-color:var(--pu);color:#fff}
+.shop{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:14px;cursor:pointer;transition:transform .1s}
+.shop:active{transform:scale(.985)}.shop .ban{height:118px;background:#000 center/cover}.shop .inf{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.shop b{font-size:.95rem}.shop .tag{font-size:.64rem;background:rgba(56,189,248,.15);color:var(--cy);padding:3px 9px;border-radius:8px;font-weight:800;white-space:nowrap}
+.skel{background:linear-gradient(90deg,#111827 25%,#1b2437 50%,#111827 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:var(--r);height:170px;margin-bottom:14px}@keyframes sh{to{background-position:-200% 0}}
+.empty{text-align:center;color:var(--dim);padding:34px 10px;font-size:.88rem}
+nav{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:#0d1322;border-top:1px solid var(--line);display:flex;padding:7px 0 calc(7px + var(--safe));z-index:50}
+nav button{flex:1;background:none;border:0;color:var(--dim);font-size:.66rem;font-weight:700;cursor:pointer;padding:4px;position:relative}nav .ic{display:block;font-size:1.25rem}nav button.on{color:var(--pu)}
+nav .dot{position:absolute;top:0;left:56%;background:var(--red);color:#fff;border-radius:10px;font-size:.58rem;padding:1px 6px;display:none}
+.cartbar{position:fixed;left:14px;right:14px;bottom:calc(68px + var(--safe));max-width:452px;margin:0 auto;background:var(--pu);border-radius:16px;padding:13px 16px;display:none;justify-content:space-between;align-items:center;z-index:45;box-shadow:0 10px 28px rgba(168,85,247,.45);cursor:pointer;animation:in .2s}.cartbar.on{display:flex}
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
-
-        body {
-            background-color: var(--dark-bg);
-            color: #fff;
-            padding: 12px;
-            max-width: 480px;
-            margin: 0 auto;
-            padding-bottom: 95px;
-        }
-
-        .app-view { display: none; }
-        .app-view.active-view { display: block; animation: fadeIn 0.25s ease-out; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes ringPulse {
-            0% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
-            70% { transform: scale(1.02); box-shadow: 0 0 0 20px rgba(0, 255, 136, 0); }
-            100% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
-        }
-
-        .instant-calling-overlay {
-            position: fixed; inset: 0; z-index: 9999;
-            background: rgba(11, 15, 25, 0.92);
-            backdrop-filter: blur(8px);
-            display: flex; align-items: center; justify-content: center;
-            padding: 20px;
-        }
-        .calling-card {
-            background: var(--panel-bg);
-            border: 2px solid var(--neon-green);
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            width: 100%; max-width: 340px;
-            box-shadow: 0 0 40px rgba(0,255,136,0.3);
-            animation: ringPulse 1.2s infinite;
-        }
-
-        .uber-header {
-            background: linear-gradient(135deg, #1f2937, #111827);
-            border: 1px solid #2d3748;
-            border-radius: 16px;
-            padding: 14px 16px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        .delivery-location-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-        .delivery-address-row { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
-        .delivery-address-row h3 { font-size: 0.95rem; color: #fff; display: flex; align-items: center; gap: 6px; }
-        .delivery-address-row h3 i { color: var(--glovo-yellow); }
-
-        .service-bubbles {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            margin-bottom: 18px;
-        }
-        .bubble-btn {
-            background: var(--panel-bg);
-            border: 1px solid #222c3d;
-            border-radius: 12px;
-            padding: 8px 4px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .bubble-btn.active, .bubble-btn:hover {
-            background: rgba(168, 85, 247, 0.2);
-            border-color: var(--stage-purple);
-        }
-        .bubble-btn i { font-size: 1rem; color: var(--cyan); margin-bottom: 4px; display: block; }
-        .bubble-btn span { font-size: 0.6rem; color: #fff; font-weight: 600; display: block; white-space: nowrap; }
-
-        .section-title { font-size: 0.85rem; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        
-        .merchant-vertical-feed {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        .merchant-store-card {
-            background: var(--panel-bg);
-            border: 1px solid #222c3d;
-            border-radius: 14px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        .merchant-store-card:active { transform: scale(0.98); }
-        .store-banner { width: 100%; height: 110px; object-fit: cover; background: #000; position: relative; }
-        .store-meta-badge { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.8); color: var(--glovo-yellow); font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; font-weight: bold; display: flex; align-items: center; gap: 4px; }
-        .store-info-box { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
-        .store-info-box h4 { font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
-        .store-info-box p { font-size: 0.7rem; color: var(--text-dim); }
-        .store-tag { background: rgba(56,189,248,0.15); color: var(--cyan); font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
-
-        .catalog-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .product-card {
-            background: var(--panel-bg);
-            border: 1px solid #222c3d;
-            border-radius: 12px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .image-wrapper { width: 100%; height: 105px; overflow: hidden; background: #000; position: relative; }
-        .merchant-badge { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.8); color: var(--cyan); font-size: 0.55rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
-        .product-img { width: 100%; height: 100%; object-fit: cover; }
-        
-        .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
-        .product-title { font-size: 0.75rem; font-weight: 600; color: #fff; margin-bottom: 2px; line-height: 1.2; }
-        .product-price { font-size: 0.8rem; color: var(--stage-purple); font-weight: 700; margin-bottom: 6px; }
-
-        .quantity-stepper {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--dark-bg);
-            border: 1px solid #374151;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-        .quantity-stepper button { background: #222e3c; color: #fff; border: none; padding: 5px 10px; font-weight: bold; cursor: pointer; font-size: 0.75rem; width: auto; }
-        .quantity-display { font-size: 0.75rem; font-weight: bold; color: var(--neon-green); padding: 0 6px; }
-
-        button {
-            background: var(--stage-purple);
-            color: #fff;
-            border: none;
-            padding: 10px;
-            font-weight: 700;
-            width: 100%;
-            cursor: pointer;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-        }
-        button:hover { background: var(--cyan); color: #000; }
-
-        .floating-cart {
-            position: fixed;
-            bottom: 65px; left: 12px; right: 12px;
-            max-width: 456px;
-            margin: 0 auto;
-            background: linear-gradient(135deg, #111827, #1f2937);
-            border: 1px solid var(--stage-purple);
-            border-radius: 12px;
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 999;
-            display: none;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-        }
-        .floating-cart.active { display: flex; }
-
-        .checkout-panel {
-            background: var(--panel-bg);
-            border: 1px solid #222c3d;
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 15px;
-        }
-        .checkout-panel h3 { font-size: 0.85rem; margin-bottom: 10px; color: var(--cyan); text-transform: uppercase; }
-
-        input, select {
-            width: 100%;
-            background: var(--dark-bg);
-            border: 1px solid #374151;
-            color: #fff;
-            padding: 9px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            outline: none;
-        }
-        input:focus { border-color: var(--stage-purple); }
-
-        .btn-cyan { background: var(--cyan); color: #000; font-weight: bold; }
-        .btn-cyan:hover { background: var(--neon-green); }
-
-        .bottom-nav {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: var(--panel-bg);
-            border-top: 1px solid #222c3d;
-            display: flex;
-            justify-content: space-around;
-            padding: 8px 0;
-            z-index: 1000;
-            max-width: 480px;
-            margin: 0 auto;
-        }
-        .nav-item { text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
-        .nav-item.active { color: var(--stage-purple); }
-        .nav-item svg { width: 18px; height: 18px; fill: currentColor; margin: 0 auto 2px auto; display: block; }
-
-        #mapContainer { width: 100%; height: 180px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #374151; z-index: 1; }
-        .live-order-card { background: rgba(0,0,0,0.4); border: 1px solid #374151; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
-        .live-order-header { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; color: var(--cyan); font-weight: bold; }
-
-        .rider-card { background: rgba(168,85,247,0.1); border: 1px solid var(--stage-purple); border-radius: 10px; padding: 10px; margin-top: 10px; display: flex; align-items: center; gap: 10px; }
-        .rider-avatar { width: 40px; height: 40px; background: var(--stage-purple); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #fff; }
-
-        .rider-live-icon {
-            background: var(--stage-purple);
-            color: #fff;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 34px;
-            font-size: 14px;
-            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.8);
-        }
-    </style>
+/* pages */
+.page{position:fixed;inset:0;max-width:480px;margin:0 auto;background:var(--bg);z-index:70;transform:translateX(102%);transition:transform .28s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+.page.on{transform:none}
+.phead{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
+.phead button{width:40px;height:40px;border-radius:12px;background:var(--panel);border:1px solid var(--line);cursor:pointer;font-size:1.1rem}
+.pbody{flex:1;overflow-y:auto;padding:14px 16px 20px}.pfoot{padding:12px 16px calc(14px + var(--safe));border-top:1px solid var(--line);background:var(--bg)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.prod{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
+.prod .img{height:104px;background:#000 center/cover}.prod .inf{padding:11px;display:flex;flex-direction:column;gap:8px;flex:1;justify-content:space-between}
+.prod .t{font-size:.8rem;font-weight:700;line-height:1.25}.prod .p{color:var(--pu);font-weight:900;font-size:.9rem}.low{color:var(--gold);font-size:.66rem}
+.step{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid #374151;border-radius:11px;overflow:hidden}
+.step button{background:#222e3c;border:0;width:40px;padding:9px 0;font-weight:900;cursor:pointer}.step button:active{background:var(--pu)}.step span{font-weight:900;color:var(--g);font-size:.88rem}
+.soldout{text-align:center;color:var(--red);font-weight:800;font-size:.74rem;padding:9px}
+.line{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.line:last-child{border:0}.line .t{flex:1;font-size:.84rem}.line .t b{display:block}.line .step{width:112px}
+.map{height:210px;border-radius:14px;overflow:hidden;border:1px solid #374151;margin:10px 0;z-index:1}
+.geo{position:relative}.sugg{position:absolute;left:0;right:0;top:100%;margin-top:-6px;z-index:1200;background:#1b2437;border:1px solid #374151;border-radius:12px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.6)}
+.sugg div{padding:11px 13px;font-size:.8rem;border-bottom:1px solid var(--line);cursor:pointer}.sugg div:last-child{border:0}.sugg div:hover{background:#243049}
+.sum div{display:flex;justify-content:space-between;font-size:.86rem;margin-bottom:8px}.sum .big{font-size:1.08rem;font-weight:900;color:var(--g);border-top:1px solid #374151;padding-top:10px;margin-top:6px}
+details summary{cursor:pointer;color:var(--cy);font-size:.76rem;margin-top:6px}
+.tag2{display:inline-block;font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:9px}.tag2.ok{background:rgba(0,255,136,.12)}.tag2.est{background:rgba(255,194,68,.14);color:var(--gold)}
+.note{background:rgba(255,194,68,.1);border:1px solid rgba(255,194,68,.35);color:#fde68a;border-radius:12px;padding:10px 12px;font-size:.76rem;margin-top:10px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.seg button{background:var(--panel);border:1px solid #374151;border-radius:14px;padding:12px;font-weight:800;cursor:pointer}.seg button.on{border-color:var(--g);background:rgba(0,255,136,.1);color:var(--g)}
+.tgl{display:flex;gap:8px;margin:2px 0 8px}.tgl button{flex:1;background:var(--panel);border:1px solid #374151;border-radius:11px;padding:8px;font-size:.74rem;font-weight:800;cursor:pointer}.tgl button.on{background:var(--pu);border-color:var(--pu)}
+.order{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px;cursor:pointer;transition:border-color .15s}.order:hover{border-color:var(--pu)}
+.pill{font-size:.66rem;font-weight:800;padding:4px 10px;border-radius:12px;background:rgba(56,189,248,.14);color:var(--cy);white-space:nowrap}.pill.done{background:rgba(0,255,136,.14);color:var(--g)}.pill.cancelled{background:rgba(255,77,109,.14);color:var(--red)}.pill.driver{background:rgba(168,85,247,.2);color:#d8b4fe}
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90;display:none}.backdrop.on{display:block;animation:fade .2s}@keyframes fade{from{opacity:0}}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;max-height:90vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:22px 22px 0 0;padding:14px 16px calc(20px + var(--safe));z-index:100;transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}.sheet.on{transform:none}
+.grab{width:44px;height:4px;border-radius:2px;background:#374151;margin:0 auto 12px}
+.steps{list-style:none;margin:10px 0 14px}.steps li{display:flex;gap:12px;align-items:center;padding:8px 0;color:var(--dim);font-size:.86rem}
+.steps li i{width:22px;height:22px;border-radius:50%;border:2px solid #374151;display:grid;place-items:center;font-size:.62rem;font-style:normal;flex:none}.steps li.done{color:#fff}.steps li.done i{background:var(--g);border-color:var(--g);color:#000}
+.stars{display:flex;gap:6px;margin:8px 0}.stars button{background:none;border:0;font-size:1.8rem;cursor:pointer;filter:grayscale(1);opacity:.5}.stars button.on{filter:none;opacity:1}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.7);z-index:150;padding:20px}.modal.on{display:grid}
+.modal .box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;max-width:340px;width:100%}.modal p{font-size:.84rem;color:var(--dim);margin:6px 0 16px}
+#toasts{position:fixed;top:12px;left:0;right:0;max-width:480px;margin:0 auto;padding:0 14px;z-index:300;pointer-events:none;display:flex;flex-direction:column;gap:8px}
+.toast{background:#1f2937;border:1px solid #374151;border-left:4px solid var(--cy);border-radius:12px;padding:12px 14px;font-size:.84rem;animation:in .2s;pointer-events:auto}.toast.ok{border-left-color:var(--g)}.toast.err{border-left-color:var(--red)}
+.leaflet-container{background:#1b2437}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+</style>
 </head>
 <body>
 
-    <!-- INSTANT CALLING / MERCHANT RINGER OVERLAY -->
-    <div id="instantCallOverlay" class="instant-calling-overlay" style="display: none;">
-        <div class="calling-card">
-            <div style="background: var(--neon-green); color: #000; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; font-size: 1.5rem;">
-                <i class="fa-solid fa-phone-volume"></i>
-            </div>
-            <h3 style="font-size: 1rem; color: var(--neon-green); margin-bottom: 4px;" id="callStatusTitle">Ringing Store Terminal...</h3>
-            <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 15px;" id="callStatusSub">Merchant alarm ringing loud for incoming order!</p>
-            <div style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; font-size: 0.7rem; color: var(--cyan); margin-bottom: 15px;" id="callOrderIdDisplay">
-                Order ID: --
-            </div>
-            <button onclick="closeCallOverlay()" class="btn-cyan" style="padding: 10px;">Proceed to Live Tracking</button>
-        </div>
-    </div>
-
-    <!-- VIEW 1: AUTHENTICATION / LOGIN WITH SMS OTP -->
-    <div id="viewAuth" class="app-view active-view">
-        <div style="text-align: center; margin: 30px 0 20px 0;">
-            <div style="background: var(--stage-purple); color: #fff; width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px auto; font-size: 1.3rem;">
-                <i class="fa-solid fa-store"></i>
-            </div>
-            <h1 style="font-size: 1.2rem; color: #fff;">RDS Sovereign Super-App</h1>
-            <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">Direct Cab/Boda Dispatch & Merchant Supermarket Orders</p>
-        </div>
-
-        <div class="checkout-panel">
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Email Address</label>
-            <input type="email" id="authEmail" value="robert.maina@rds.com">
-            
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:2px;">Phone Number (M-Pesa Corridor)</label>
-            <input type="text" id="authPhone" value="254721862397">
-            
-            <div id="phoneStep">
-                <button onclick="requestOtp()" class="btn-cyan" style="padding: 12px; margin-top: 6px;">Send Verification OTP</button>
-            </div>
-            
-            <div id="otpStep" style="display: none; margin-top: 10px;">
-                <label style="font-size: 0.75rem; color: var(--neon-green); display:block; margin-bottom:2px;">Enter 4-Digit OTP (Use 1234)</label>
-                <input type="text" id="authOtp" value="1234" style="text-align: center; font-size: 1.1rem; letter-spacing: 2px;" maxlength="4">
-                <button onclick="verifyOtpAndEnter()" style="background: var(--neon-green); color: #000; padding: 12px; font-weight: bold;">Verify & Launch App</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- VIEW 2: HOME STOREFRONT & RIDE CHOICE -->
-    <div id="viewHome" class="app-view">
-        <div class="uber-header">
-            <div class="delivery-location-label">Service & Transport Choice</div>
-            <div class="delivery-address-row">
-                <h3 id="currentSelectedShopTitle"><i class="fa-solid fa-location-dot"></i> Nairobi CBD (Kenyatta Ave)</h3>
-                <span class="user-pill" id="activeShopBadge">Live Feed</span>
-            </div>
-        </div>
-
-        <div class="service-bubbles">
-            <div class="bubble-btn active" onclick="filterServiceType('ALL', this)">
-                <i class="fa-solid fa-bolt"></i>
-                <span>Shops</span>
-            </div>
-            <div class="bubble-btn" onclick="filterServiceType('SUPERMARKET', this)">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span>Market</span>
-            </div>
-            <div class="bubble-btn" onclick="requestRide('BODA', this)">
-                <i class="fa-solid fa-motorcycle"></i>
-                <span>Boda Ride</span>
-            </div>
-            <div class="bubble-btn" onclick="requestRide('CAR', this)">
-                <i class="fa-solid fa-taxi"></i>
-                <span>Cab Ride</span>
-            </div>
-        </div>
-
-        <div id="merchantFeedContainer">
-            <div class="section-title">Select Shop (Rice, Milk, Spare Parts...)</div>
-            <div class="merchant-vertical-feed" id="merchantFeedList">
-                <em style="color:var(--text-dim); text-align:center; padding:15px; font-size:0.75rem;">Loading nearby merchant shops...</em>
-            </div>
-        </div>
-
-        <!-- RIDE BOOKING SECTION (DIRECT TO DRIVER) -->
-        <div id="rideBookingSection" style="display: none;">
-            <div class="checkout-panel" style="border-color: var(--neon-green);">
-                <h3 id="rideBookingHeading" style="color: var(--neon-green);"><i class="fa-solid fa-taxi"></i> Direct Cab / Boda Dispatch</h3>
-                <p style="font-size:0.7rem; color:var(--text-dim); margin-bottom:8px;">🚀 Goes straight to driver radar instantly with zero compromise.</p>
-                
-                <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-top:4px;">Pickup Location</label>
-                <input type="text" id="ridePickupInput" value="Nairobi CBD">
-                
-                <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Drop-off Destination</label>
-                <input type="text" id="rideDestInput" value="Kasarani (Mwiki Rd)">
-                
-                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; font-size: 0.75rem; margin: 8px 0;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Estimated Distance:</span> <strong id="rideDistDisplay">12.5 km</strong></div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Fare Amount:</span> <strong id="rideFareDisplay" style="color:var(--neon-green);">KES 712.50</strong></div>
-                </div>
-
-                <button onclick="confirmDirectRideBooking()" class="btn-cyan" style="background: var(--neon-green); color: #000;">Dispatch Straight to Driver ➔</button>
-                <button onclick="backToMerchantFeed()" style="background:#374151; margin-top:6px; font-size:0.7rem;">← Back to Merchant Shops</button>
-            </div>
-        </div>
-
-        <div id="catalogViewSection" style="display: none;">
-            <div class="section-title">
-                <span id="catalogShopNameHeading">Store Catalog</span>
-                <button onclick="backToMerchantFeed()" style="width: auto; padding: 4px 10px; font-size: 0.65rem; background: #374151;">← Back to Shops</button>
-            </div>
-            <div class="catalog-grid" id="catalogGrid"></div>
-        </div>
-    </div>
-
-    <!-- VIEW 3: DISPATCH, LOGISTICS & RIDER SECTION -->
-    <div id="viewOrders" class="app-view">
-        <div class="uber-header">
-            <div class="delivery-location-label">Logistics & Fleet Dispatch</div>
-            <div class="delivery-address-row">
-                <h3><i class="fa-solid fa-motorcycle"></i> System Escrow & Rider Telemetry</h3>
-            </div>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>1. Interactive Delivery & Ride Map</h3>
-            <div id="mapContainer"></div>
-            
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block; margin-top:4px;">Pickup Location</label>
-            <input type="text" id="pickupInput" value="Nairobi CBD" oninput="updateCoordsFromInputs()">
-            
-            <label style="font-size: 0.75rem; color: var(--cyan); display:block;">Drop-off Destination</label>
-            <input type="text" id="destinationInput" value="Kasarani" oninput="updateCoordsFromInputs()">
-            
-            <input type="hidden" id="pickupLat" value="-1.286389">
-            <input type="hidden" id="pickupLng" value="36.817223">
-            <input type="hidden" id="destLat" value="-1.215000">
-            <input type="hidden" id="destLng" value="36.890000">
-            
-            <div style="font-size: 0.75rem; color: var(--neon-green); margin-top:2px;">Accurate Road Distance: <strong id="calculatedDistanceDisplay">12.5 km</strong></div>
-        </div>
-
-        <div class="checkout-panel" id="riderSectionPanel">
-            <h3>2. Assigned Rider / Driver Telemetry</h3>
-            <div class="rider-card">
-                <div class="rider-avatar"><i class="fa-solid fa-user-astronaut"></i></div>
-                <div>
-                    <strong style="font-size:0.8rem; color:var(--cyan);" id="assignedRiderName">John Kiprop (Boda Rider)</strong>
-                    <div style="font-size:0.7rem; color:var(--text-dim);">Vehicle: Honda Ace (KBX 420Y) • Rating: 4.9★</div>
-                    <div style="font-size:0.7rem; color:var(--neon-green); margin-top:2px;">Status: En route to pickup & delivery (ETA 3 mins)</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>3. Real-Time Tariff & Settlement Split</h3>
-            <div style="background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 8px; font-size: 0.75rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Items Total:</span> <strong id="previewProduct">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Shop Owner Payout (100% on Dispatch):</span> <strong id="previewMerchantPayout" style="color:var(--neon-green);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>System Fee (2% on commodity):</span> <strong id="previewSystemFee" style="color:var(--gold);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Calculated Delivery Fee:</span> <strong id="previewDelivery" style="color:var(--cyan);">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>Rider Payout (95% of Delivery):</span> <strong id="previewDriverPayout">0.00</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>App Delivery Commission (5%):</span> <strong id="previewAppCommission">0.00</strong></div>
-                <hr style="border:0; border-top:1px solid #374151; margin:5px 0;">
-                <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span>Gross Escrow Total:</span> <strong id="previewTotal" style="color:var(--neon-green);">0.00</strong></div>
-            </div>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>4. Pay Gross Total into System Escrow</h3>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display:block; margin-bottom:3px;">M-Pesa Phone</label>
-            <input type="text" id="custPhone" value="254721862397">
-            <button onclick="triggerUnifiedCheckout()" class="btn-cyan">Pay Full Escrow & Alert Merchant Fast</button>
-        </div>
-
-        <div class="checkout-panel">
-            <h3>5. Active Escrow Dispatches</h3>
-            <div id="liveOrderListContainer">
-                <em style="color:var(--text-dim); font-size:0.75rem;">No active dispatch found.</em>
-            </div>
-        </div>
-    </div>
-
-    <!-- VIEW 4: USER PROFILE -->
-    <div id="viewProfile" class="app-view">
-        <div class="uber-header">
-            <div class="delivery-location-label">Account</div>
-            <div class="delivery-address-row">
-                <h3><i class="fa-solid fa-user"></i> Consumer Profile</h3>
-            </div>
-        </div>
-        <div class="checkout-panel">
-            <p style="font-size: 0.8rem;"><strong>Email:</strong> <span id="profileEmail">robert.maina@rds.com</span></p>
-            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Phone:</strong> <span id="profilePhone">254721862397</span></p>
-            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Name:</strong> Robert Maina</p>
-            <p style="font-size: 0.8rem; margin-top: 6px;"><strong>Status:</strong> <span style="color: var(--neon-green);">Sovereign Verified</span></p>
-        </div>
-    </div>
-
-    <div id="floatingCart" class="floating-cart" onclick="switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1])">
-        <div>
-            <strong id="cartItemCount" style="color: var(--neon-green); display: block; font-size: 0.8rem;">0 Items</strong>
-            <span id="cartTotalSum" style="font-size: 0.7rem; color: var(--text-dim);">0</span>
-        </div>
-        <button style="width: auto; padding: 6px 12px; font-size: 0.7rem;">Proceed ➔</button>
-    </div>
-
-    <input type="hidden" id="storeBusinessId" value="MERCH_DEF_172">
-    <input type="hidden" id="storeCurrency" value="KES">
-    <input type="hidden" id="activeRideType" value="BODA">
-
-    <div class="bottom-nav" id="bottomNav" style="display: none;">
-        <a class="nav-item active" onclick="switchTab('viewHome', this)"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Storefront</a>
-        <a class="nav-item" onclick="switchTab('viewOrders', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Dispatch & Rider</a>
-        <a class="nav-item" onclick="switchTab('viewProfile', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>Profile</a>
-    </div>
-
-    <script>
-        const API_BASE = ""; 
-
-        let currentUser = null;
-        let allTenantsCache = [];
-        let activeServiceFilter = 'ALL';
-        let cart = {}; 
-        let map = null;
-        let pickupMarker = null;
-        let destinationMarker = null;
-        let liveRiderMarker = null;
-        let routePolyline = null;
-        let socket = io();
-
-        window.addEventListener('DOMContentLoaded', () => {
-            map = L.map('mapContainer').setView([-1.286389, 36.817223], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-
-            map.on('click', (e) => {
-                document.getElementById('destLat').value = e.latlng.lat.toFixed(6);
-                document.getElementById('destLng').value = e.latlng.lng.toFixed(6);
-                document.getElementById('destinationInput').value = `Pin (${e.latlng.lat.toFixed(3)}, ${e.latlng.lng.toFixed(3)})`;
-                updateMapMarkersAndPolyline();
-                recalculateUnifiedTotal();
-            });
-
-            updateMapMarkersAndPolyline();
-            socket.on('orderListUpdated', () => { fetchLiveOrders(); });
-        });
-
-        // Instant Merchant Ringing & Calling Function
-        function triggerFastMerchantCall(orderId, merchantName) {
-            const overlay = document.getElementById('instantCallOverlay');
-            const titleEl = document.getElementById('callStatusTitle');
-            const subEl = document.getElementById('callStatusSub');
-            const orderEl = document.getElementById('callOrderIdDisplay');
-
-            if(titleEl) titleEl.innerText = `🚨 Ringing ${merchantName} Terminal Fast!`;
-            if(subEl) subEl.innerText = `Store alarm ringing loud for incoming order!`;
-            if(orderEl) orderEl.innerText = `Order ID: ${orderId}`;
-            if(overlay) overlay.style.display = 'flex';
-
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') { audioCtx.resume(); }
-
-                let ringCount = 0;
-                const ringTimer = setInterval(() => {
-                    if (ringCount >= 6) {
-                        clearInterval(ringTimer);
-                        if(subEl) subEl.innerText = `✅ Order transmitted successfully!`;
-                        return;
-                    }
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5 note
-                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15); // A5 note
-                    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.3);
-                    ringCount++;
-                }, 350);
-            } catch (err) {
-                console.log("Audio ringer active");
-            }
-        }
-
-        function closeCallOverlay() {
-            document.getElementById('instantCallOverlay').style.display = 'none';
-            switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
-        }
-
-        async function requestOtp() {
-            const phone = document.getElementById('authPhone').value.trim();
-            const email = document.getElementById('authEmail').value.trim();
-            document.getElementById('phoneStep').style.display = 'none';
-            document.getElementById('otpStep').style.display = 'block';
-            try {
-                await fetch(`${API_BASE}/api/user/send-otp`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, email })
-                });
-            } catch (e) {}
-        }
-
-        async function verifyOtpAndEnter() {
-            const phone = document.getElementById('authPhone').value.trim();
-            const email = document.getElementById('authEmail').value.trim();
-            const otp = document.getElementById('authOtp').value.trim();
-            
-            currentUser = { id: 'USR_' + phone, phone, email, role: 'USER' };
-            document.getElementById('profileEmail').innerText = email;
-            document.getElementById('profilePhone').innerText = phone;
-            document.getElementById('bottomNav').style.display = 'flex';
-            switchTab('viewHome', document.querySelectorAll('.bottom-nav .nav-item')[0]);
-            loadMerchantTenants();
-            fetchLiveOrders();
-            setTimeout(() => { if(map) map.invalidateSize(); }, 300);
-
-            try {
-                await fetch(`${API_BASE}/api/user/verify-otp`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, otp, role: 'USER', email })
-                });
-            } catch (e) {}
-        }
-
-        async function loadMerchantTenants() {
-            try {
-                const res = await fetch(`${API_BASE}/api/user/tenants`);
-                const data = await res.json();
-                if (data.success && data.tenants && data.tenants.length > 0) {
-                    allTenantsCache = data.tenants;
-                    renderMerchantFeed(allTenantsCache);
-                } else {
-                    renderFallbackTenants();
-                }
-            } catch (e) {
-                renderFallbackTenants();
-            }
-        }
-
-        function renderFallbackTenants() {
-            allTenantsCache = [
-                { merchantId: 'MERCH_DEF_172', shopName: 'Sovereign Supermarket', businessType: 'SUPERMARKET', gpsLat: -1.2863, gpsLon: 36.8172, banner: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=500' },
-                { merchantId: 'MERCH_SPARE_10', shopName: 'Sovereign Auto Spare Parts', businessType: 'SPARES', gpsLat: -1.2789, gpsLon: 36.8123, banner: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=500' }
-            ];
-            renderMerchantFeed(allTenantsCache);
-        }
-
-        function filterServiceType(type, el) {
-            document.querySelectorAll('.bubble-btn').forEach(b => b.classList.remove('active'));
-            if(el) el.classList.add('active');
-            activeServiceFilter = type;
-            backToMerchantFeed();
-
-            if (type === 'ALL') {
-                renderMerchantFeed(allTenantsCache);
-            } else {
-                const filtered = allTenantsCache.filter(t => (t.businessType || '').toUpperCase().includes(type));
-                renderMerchantFeed(filtered);
-            }
-        }
-
-        // PROTOCOL: CAB OR BODA GOES STRAIGHT TO DRIVER NO COMPROMISE
-        async function requestRide(rideType, el) {
-            document.querySelectorAll('.bubble-btn').forEach(b => b.classList.remove('active'));
-            if(el) el.classList.add('active');
-            document.getElementById('activeRideType').value = rideType;
-
-            cart = {};
-            recalculateCartSummary();
-
-            document.getElementById('merchantFeedContainer').style.display = 'none';
-            document.getElementById('catalogViewSection').style.display = 'none';
-            document.getElementById('rideBookingSection').style.display = 'block';
-
-            const name = rideType === 'BODA' ? 'Boda Boda Ride' : 'Cab Ride (Car)';
-            document.getElementById('rideBookingHeading').innerHTML = `<i class="fa-solid ${rideType === 'BODA' ? 'fa-motorcycle' : 'fa-taxi'}"></i> Direct ${name}`;
-            document.getElementById('currentSelectedShopTitle').innerHTML = `<i class="fa-solid fa-route" style="color:var(--neon-green)"></i> Direct Standalone ${name}`;
-
-            try {
-                const res = await fetch(`${API_BASE}/api/user/calculate-total`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        itemPriceTotal: 0,
-                        pickupCoords: { lat: -1.286389, lng: 36.817223 },
-                        destinationCoords: { lat: -1.215000, lng: 36.890000 },
-                        vehicleType: rideType
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    const s = data.split;
-                    document.getElementById('rideDistDisplay').innerText = `${data.distanceKm} km`;
-                    document.getElementById('rideFareDisplay').innerText = `KES ${s.userPays.toLocaleString()}`;
-                    
-                    document.getElementById('calculatedDistanceDisplay').innerText = `${data.distanceKm} km`;
-                    document.getElementById('previewProduct').innerText = `KES 0.00`;
-                    document.getElementById('previewMerchantPayout').innerText = `KES 0.00`;
-                    document.getElementById('previewSystemFee').innerText = `KES 0.00`;
-                    document.getElementById('previewDelivery').innerText = `KES ${s.deliveryFee.toLocaleString()}`;
-                    document.getElementById('previewDriverPayout').innerText = `KES ${s.riderShare.toLocaleString()}`;
-                    document.getElementById('previewAppCommission').innerText = `KES ${s.appDeliveryCommission.toLocaleString()}`;
-                    document.getElementById('previewTotal').innerText = `KES ${s.userPays.toLocaleString()}`;
-                }
-            } catch (e) {}
-        }
-
-        async function confirmDirectRideBooking() {
-            const rideType = document.getElementById('activeRideType').value || 'BODA';
-            const pickup = document.getElementById('ridePickupInput').value.trim();
-            const destination = document.getElementById('rideDestInput').value.trim();
-            const phone = currentUser ? currentUser.phone : document.getElementById('custPhone').value.trim();
-
-            try {
-                const resCalc = await fetch(`${API_BASE}/api/user/calculate-total`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        itemPriceTotal: 0,
-                        pickupCoords: { lat: -1.286389, lng: 36.817223 },
-                        destinationCoords: { lat: -1.215000, lng: 36.890000 },
-                        vehicleType: rideType
-                    })
-                });
-                const calcData = await resCalc.json();
-                const deliveryFee = calcData.success ? calcData.split.deliveryFee : (rideType === 'BODA' ? 450 : 850);
-
-                const res = await fetch(`${API_BASE}/api/user/checkout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': 'DIRECT_RIDE' },
-                    body: JSON.stringify({
-                        phone,
-                        itemPriceTotal: 0,
-                        pickupCoords: { lat: -1.286389, lng: 36.817223 },
-                        destinationCoords: { lat: -1.215000, lng: 36.890000 },
-                        vehicleType: rideType,
-                        pickup,
-                        destination,
-                        businessId: 'DIRECT_RIDE',
-                        userId: currentUser ? currentUser.id : 'ANONYMOUS',
-                        items: [{ name: `${rideType === 'BODA' ? 'Boda Boda' : 'Cab'} Direct Ride`, qty: 1, price: deliveryFee }]
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`🚀 ${rideType} requested straight to driver radar with zero compromise!`);
-                    document.getElementById('pickupInput').value = pickup;
-                    document.getElementById('destinationInput').value = destination;
-                    switchTab('viewOrders', document.querySelectorAll('.bottom-nav .nav-item')[1]);
-                    fetchLiveOrders();
-                } else {
-                    alert(data.error || "Failed to dispatch ride.");
-                }
-            } catch (e) {
-                alert("Network error while dispatching ride.");
-            }
-        }
-
-        function renderMerchantFeed(tenants) {
-            const feed = document.getElementById('merchantFeedList');
-            if (!tenants || tenants.length === 0) {
-                feed.innerHTML = '<em style="color:var(--text-dim); text-align:center; padding:20px; font-size:0.75rem;">No merchant shops found.</em>';
-                return;
-            }
-            let html = '';
-            tenants.forEach(t => {
-                const banner = t.banner || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500';
-                html += `
-                    <div class="merchant-store-card" onclick="openStoreCatalog('${t.merchantId}', '${t.shopName}', ${t.gpsLat || -1.2863}, ${t.gpsLon || 36.8172})">
-                        <div class="store-banner">
-                            <img src="${banner}" style="width:100%; height:100%; object-fit:cover;">
-                            <div class="store-meta-badge"><i class="fa-solid fa-bell"></i> Instant Store Ringer Active</div>
-                        </div>
-                        <div class="store-info-box">
-                            <div>
-                                <h4>${t.shopName}</h4>
-                                <p>Order Rice, Milk, Spare Parts • Triggers Store Alarm Fast</p>
-                            </div>
-                            <span class="store-tag">${t.businessType || 'RETAIL'}</span>
-                        </div>
-                    </div>
-                `;
-            });
-            feed.innerHTML = html;
-        }
-
-        async function openStoreCatalog(merchantId, shopName, lat, lon) {
-            document.getElementById('storeBusinessId').value = merchantId;
-            document.getElementById('pickupInput').value = shopName;
-            document.getElementById('pickupLat').value = lat;
-            document.getElementById('pickupLng').value = lon;
-            document.getElementById('currentSelectedShopTitle').innerHTML = `<i class="fa-solid fa-store" style="color:var(--cyan)"></i> ${shopName}`;
-            document.getElementById('activeShopBadge').innerText = shopName.substring(0, 10);
-
-            document.getElementById('merchantFeedContainer').style.display = 'none';
-            document.getElementById('rideBookingSection').style.display = 'none';
-            document.getElementById('catalogViewSection').style.display = 'block';
-            document.getElementById('catalogShopNameHeading').innerText = shopName;
-
-            cart = {};
-            recalculateCartSummary();
-            updateMapMarkersAndPolyline();
-
-            try {
-                const res = await fetch(`${API_BASE}/api/user/products?merchantId=${merchantId}`);
-                const data = await res.json();
-                const products = (data && data.products) ? data.products : [];
-                document.getElementById('storeCurrency').value = data.currency || "KES";
-                renderCatalog(products);
-            } catch (e) {
-                renderCatalog([]);
-            }
-        }
-
-        function backToMerchantFeed() {
-            document.getElementById('catalogViewSection').style.display = 'none';
-            document.getElementById('rideBookingSection').style.display = 'none';
-            document.getElementById('merchantFeedContainer').style.display = 'block';
-            document.getElementById('currentSelectedShopTitle').innerHTML = `<i class="fa-solid fa-location-dot" style="color:var(--glovo-yellow)"></i> Nairobi CBD (Kenyatta Ave)`;
-        }
-
-        function renderCatalog(products) {
-            const grid = document.getElementById('catalogGrid');
-            if (!products || products.length === 0) {
-                grid.innerHTML = '<em style="color:var(--text-dim); grid-column:span 2; padding:20px; text-align:center; font-size:0.75rem;">No items available in this shop.</em>';
-                return;
-            }
-            let html = '';
-            const curr = document.getElementById('storeCurrency').value;
-            products.forEach(p => {
-                const qty = cart[p.id] ? cart[p.id].qty : 0;
-                const unitPrice = Number(p.price) || 0;
-                html += `
-                    <div class="product-card">
-                        <div class="image-wrapper"><span class="merchant-badge">${p.category || 'RETAIL'}</span><img src="${p.image || 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300'}" class="product-img"></div>
-                        <div class="product-info">
-                            <div><div class="product-title">${p.name}</div><div class="product-price">${curr} ${unitPrice.toLocaleString()}</div></div>
-                            <div class="quantity-stepper">
-                                <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, -1)">-</button>
-                                <span class="quantity-display" id="qty-${p.id}">${qty}</span>
-                                <button onclick="updateCart('${p.id}', '${p.name}', ${unitPrice}, 1)">+</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            grid.innerHTML = html;
-        }
-
-        function updateCart(id, name, price, change) {
-            if (!cart[id]) cart[id] = { name, price: Number(price), qty: 0 };
-            cart[id].qty += change;
-            if (cart[id].qty <= 0) delete cart[id];
-            const qEl = document.getElementById(`qty-${id}`);
-            if(qEl) qEl.innerText = cart[id] ? cart[id].qty : 0;
-            recalculateCartSummary();
-        }
-
-        async function recalculateCartSummary() {
-            let totalQty = 0;
-            let totalPrice = 0;
-            const curr = document.getElementById('storeCurrency').value;
-            for (let id in cart) {
-                totalQty += cart[id].qty;
-                totalPrice += (cart[id].price || 0) * cart[id].qty;
-            }
-            const floatingBar = document.getElementById('floatingCart');
-            if (totalQty > 0) {
-                floatingBar.classList.add('active');
-                document.getElementById('cartItemCount').innerText = `${totalQty} Item(s)`;
-                document.getElementById('cartTotalSum').innerText = `${curr} ${totalPrice.toLocaleString()}`;
-            } else {
-                floatingBar.classList.remove('active');
-            }
-            await recalculateUnifiedTotal();
-        }
-
-        async function recalculateUnifiedTotal() {
-            let totalPrice = 0;
-            for (let id in cart) totalPrice += (cart[id].price || 0) * cart[id].qty;
-            const pLat = Number(document.getElementById('pickupLat').value) || -1.286389;
-            const pLng = Number(document.getElementById('pickupLng').value) || 36.817223;
-            const dLat = Number(document.getElementById('destLat').value) || -1.215000;
-            const dLng = Number(document.getElementById('destLng').value) || 36.890000;
-            const merchantId = document.getElementById('storeBusinessId').value;
-            const curr = document.getElementById('storeCurrency').value;
-
-            try {
-                const res = await fetch(`${API_BASE}/api/user/calculate-total`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': merchantId },
-                    body: JSON.stringify({
-                        itemPriceTotal: totalPrice,
-                        pickupCoords: { lat: pLat, lng: pLng },
-                        destinationCoords: { lat: dLat, lng: dLng },
-                        vehicleType: "BODA", businessId: merchantId
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    const s = data.split;
-                    document.getElementById('calculatedDistanceDisplay').innerText = `${data.distanceKm} km`;
-                    document.getElementById('previewProduct').innerText = `${curr} ${s.productAmount.toLocaleString()}`;
-                    document.getElementById('previewMerchantPayout').innerText = `${curr} ${s.shopOwnerPayout.toLocaleString()}`;
-                    document.getElementById('previewSystemFee').innerText = `${curr} ${s.systemCommodityFee.toLocaleString()}`;
-                    document.getElementById('previewDelivery').innerText = `${curr} ${s.deliveryFee.toLocaleString()}`;
-                    document.getElementById('previewDriverPayout').innerText = `${curr} ${s.riderShare.toLocaleString()}`;
-                    document.getElementById('previewAppCommission').innerText = `${curr} ${s.appDeliveryCommission.toLocaleString()}`;
-                    document.getElementById('previewTotal').innerText = `${curr} ${s.userPays.toLocaleString()}`;
-                }
-            } catch (e) {}
-        }
-
-        // PROTOCOL: COMMODITY ORDER (RICE, MILK, SPARE PARTS) GOES TO MERCHANT WITH ALARM RINGER
-        async function triggerUnifiedCheckout() {
-            let totalPrice = 0;
-            let cartItemsArray = [];
-            for (let id in cart) {
-                totalPrice += (cart[id].price || 0) * cart[id].qty;
-                cartItemsArray.push({ name: cart[id].name, qty: cart[id].qty, price: cart[id].price });
-            }
-            
-            if (totalPrice <= 0) {
-                alert("Please select items (rice, milk, spare parts) from a merchant store.");
-                return;
-            }
-
-            const merchantId = document.getElementById('storeBusinessId').value;
-            const phone = currentUser ? currentUser.phone : document.getElementById('custPhone').value.trim();
-            const pickup = document.getElementById('pickupInput').value.trim();
-            const destination = document.getElementById('destinationInput').value.trim();
-            const pLat = Number(document.getElementById('pickupLat').value) || -1.286389;
-            const pLng = Number(document.getElementById('pickupLng').value) || 36.817223;
-            const dLat = Number(document.getElementById('destLat').value) || -1.215000;
-            const dLng = Number(document.getElementById('destLng').value) || 36.890000;
-
-            try {
-                const res = await fetch(`${API_BASE}/api/user/checkout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': merchantId },
-                    body: JSON.stringify({
-                        phone, itemPriceTotal: totalPrice,
-                        pickupCoords: { lat: pLat, lng: pLng },
-                        destinationCoords: { lat: dLat, lng: dLng },
-                        vehicleType: 'BODA', pickup, destination, businessId: merchantId,
-                        userId: currentUser ? currentUser.id : 'ANONYMOUS',
-                        items: cartItemsArray
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    triggerFastMerchantCall(data.orderId, pickup);
-                    fetchLiveOrders();
-                } else { alert(data.error); }
-            } catch (e) { alert("Checkout error."); }
-        }
-
-        async function fetchLiveOrders() {
-            const merchantId = document.getElementById('storeBusinessId').value;
-            try {
-                const res = await fetch(`${API_BASE}/api/user/orders/live`, { headers: { "x-business-id": merchantId } });
-                const data = await res.json();
-                if (data.success && data.orders) {
-                    renderLiveOrderList(data.orders);
-                }
-            } catch (e) {}
-        }
-
-        function renderLiveOrderList(orders) {
-            const container = document.getElementById('liveOrderListContainer');
-            if (!orders || orders.length === 0) {
-                container.innerHTML = '<em style="color:var(--text-dim); font-size:0.75rem;">No active escrow dispatch.</em>';
-                return;
-            }
-            let html = '';
-            orders.slice(-4).reverse().forEach(o => {
-                const isDismissed = o.status === 'ORDERLY_DISMISSED';
-                const statusColor = isDismissed ? 'var(--alert-red)' : 'var(--neon-green)';
-                html += `
-                    <div class="live-order-card">
-                        <div class="live-order-header">
-                            <span>🆔 ${o.id}</span>
-                            <span style="color: ${statusColor};">${o.status}</span>
-                        </div>
-                        <div style="font-size: 0.75rem; color: #fff; margin-bottom: 4px;">
-                            <div>📍 ${o.pickup} ➔ ${o.destination}</div>
-                            <div>💰 Gross Escrow Held: <strong>${o.currency} ${o.total.toLocaleString()}</strong></div>
-                            <div style="color: var(--glovo-yellow);">Shop Payout (100% on Dispatch): KES ${o.breakdown.shopOwnerPayout.toLocaleString()}</div>
-                        </div>
-                        ${!isDismissed ? `<button onclick="dismissOrder('${o.id}')" style="background:var(--alert-red); color:#fff; padding:5px; font-size:0.6rem;">🛑 Cancel & Refund Escrow</button>` : '<em style="color:var(--text-dim); font-size:0.6rem;">Escrow refunded.</em>'}
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
-
-        async function dismissOrder(orderId) {
-            if (!confirm("Dismiss dispatch and refund escrow?")) return;
-            const merchantId = document.getElementById('storeBusinessId').value;
-            try {
-                const res = await fetch(`${API_BASE}/api/user/orders/dismiss`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': merchantId },
-                    body: JSON.stringify({ orderId, businessId: merchantId })
-                });
-                const data = await res.json();
-                if (data.success) { fetchLiveOrders(); }
-            } catch (e) {}
-        }
-
-        async function updateMapMarkersAndPolyline() {
-            const pLat = Number(document.getElementById('pickupLat').value) || -1.286389;
-            const pLng = Number(document.getElementById('pickupLng').value) === 0 ? 36.817223 : Number(document.getElementById('pickupLng').value) || 36.817223;
-            const dLat = Number(document.getElementById('destLat').value) || -1.215000;
-            const dLng = Number(document.getElementById('destLng').value) || 36.890000;
-
-            if (pickupMarker) map.removeLayer(pickupMarker);
-            if (destinationMarker) map.removeLayer(destinationMarker);
-            if (routePolyline) map.removeLayer(routePolyline);
-            if (liveRiderMarker) map.removeLayer(liveRiderMarker);
-
-            const pickupIcon = L.divIcon({
-                className: 'custom-pin',
-                html: '<div style="background:var(--glovo-yellow);width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 10px var(--glovo-yellow);"></div>',
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
-            });
-
-            const destIcon = L.divIcon({
-                className: 'custom-pin',
-                html: '<div style="background:var(--alert-red);width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 10px var(--alert-red);"></div>',
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
-            });
-
-            const riderIcon = L.divIcon({
-                className: 'rider-live-icon',
-                html: '<i class="fa-solid fa-motorcycle"></i>',
-                iconSize: [36, 36],
-                iconAnchor: [18, 18]
-            });
-
-            pickupMarker = L.marker([pLat, pLng], {icon: pickupIcon}).addTo(map).bindPopup("Pickup / Shop Location");
-            destinationMarker = L.marker([dLat, dLng], {icon: destIcon}).addTo(map).bindPopup("Customer Drop-off");
-
-            const riderLat = pLat + (dLat - pLat) * 0.15;
-            const riderLng = pLng + (dLng - pLng) * 0.15;
-            liveRiderMarker = L.marker([riderLat, riderLng], {icon: riderIcon}).addTo(map).bindPopup("Assigned Rider (En Route)");
-
-            try {
-                const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${pLng},${pLat};${dLng},${dLat}?overview=full&geometries=geojson`);
-                const data = await response.json();
-                
-                if (data.routes && data.routes.length > 0) {
-                    const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-                    routePolyline = L.polyline(coords, {
-                        color: '#38bdf8',
-                        weight: 5,
-                        opacity: 0.85,
-                        smoothFactor: 1
-                    }).addTo(map);
-
-                    map.fitBounds(routePolyline.getBounds(), {padding: [40, 40]});
-                } else {
-                    fallbackStraightLine(pLat, pLng, dLat, dLng);
-                }
-            } catch (err) {
-                fallbackStraightLine(pLat, pLng, dLat, dLng);
-            }
-        }
-
-        function fallbackStraightLine(pLat, pLng, dLat, dLng) {
-            routePolyline = L.polyline([[pLat, pLng], [dLat, dLng]], {
-                color: '#38bdf8',
-                weight: 4,
-                dashArray: '8, 8'
-            }).addTo(map);
-            map.fitBounds(routePolyline.getBounds(), {padding: [40, 40]});
-        }
-
-        function updateCoordsFromInputs() {
-            updateMapMarkersAndPolyline();
-            recalculateUnifiedTotal();
-        }
-
-        function switchTab(viewId, el) {
-            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active-view'));
-            document.getElementById(viewId).classList.add('active-view');
-            document.querySelectorAll('.bottom-nav .nav-item').forEach(i => i.classList.remove('active'));
-            if(el) el.classList.add('active');
-            window.scrollTo(0, 0);
-            if (viewId === 'viewOrders' && map) setTimeout(() => { map.invalidateSize(); }, 200);
-        }
-    </script>
+<!-- ============ SIGN IN ============ -->
+<section id="auth" class="auth">
+  <div class="logo">🛵</div><h1>RDS</h1><p class="lead">Shop from nearby stores. Ride anywhere.</p>
+  <div class="box card">
+    <div id="stPhone"><label for="ph">Mobile number</label><div class="phone"><span>🇰🇪 +254</span><input id="ph" type="tel" inputmode="tel" placeholder="7XX XXX XXX" autocomplete="tel-national"></div><button class="btn pu" id="btnSend">Continue</button></div>
+    <div id="stOtp" class="hidden"><p class="muted" id="otpMsg" style="margin-bottom:10px"></p><label for="otp">Verification code</label><input id="otp" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="Enter code" style="text-align:center;letter-spacing:5px;font-size:1.15rem">
+      <button class="btn go" id="btnVerify">Verify &amp; continue</button><div class="between" style="margin-top:12px"><button class="btn ghost sm" id="btnBack">Change number</button><button class="btn ghost sm" id="btnResend">Resend code</button></div></div>
+    <div class="err" id="authErr"></div>
+  </div>
+  <p class="muted">By continuing you agree to the terms of service.</p>
+</section>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <header class="top"><div class="between"><div class="brand">RDS <b>Go</b></div><div class="live" id="live"><i></i><span>Offline</span></div></div>
+    <div class="loc" id="locChip"><span>📍</span><div><small>Your location</small><b id="locText">Tap to set your location</b></div></div></header>
+  <main>
+    <section id="vHome" class="view active">
+      <div class="tiles">
+        <div class="tile" data-act="shops"><span class="ic">🛍️</span><b>Shops</b><small>Delivery</small></div>
+        <div class="tile ride" data-act="ride" data-v="BODA"><span class="ic">🏍️</span><b>Boda</b><small>Ride now</small></div>
+        <div class="tile ride" data-act="ride" data-v="CAR"><span class="ic">🚕</span><b>Cab</b><small>Ride now</small></div>
+      </div>
+      <div class="search"><span>🔎</span><input id="shopQ" type="search" placeholder="Search shops and categories" autocomplete="off"></div>
+      <div class="chips" id="chips"></div>
+      <div id="shops"></div>
+    </section>
+    <section id="vActivity" class="view"><div class="between" style="margin:8px 0 12px"><h2>Your orders</h2><button class="btn ghost sm" id="ordRefresh">Refresh</button></div><div id="orders"></div></section>
+    <section id="vAccount" class="view"><h2 style="margin:8px 0 12px">Account</h2>
+      <div class="card" id="acct"></div>
+      <div class="card"><h3>More</h3><a href="/merchant" style="color:var(--cy);display:block;margin-bottom:10px;font-size:.86rem">🏪 Sell on RDS (vendor console)</a><a href="/driver" style="color:var(--cy);display:block;font-size:.86rem">🏍️ Ride with RDS (driver app)</a></div>
+      <button class="btn danger" id="logout">Sign out</button></section>
+  </main>
+  <div class="cartbar" id="cartbar"><div><b id="cbCount">0 items</b><div style="font-size:.74rem;opacity:.9" id="cbTotal"></div></div><b>View cart ➔</b></div>
+  <nav><button class="on" data-tab="vHome"><span class="ic">🏠</span>Home</button><button data-tab="vActivity"><span class="ic">📦</span>Orders<span class="dot" id="navDot">0</span></button><button data-tab="vAccount"><span class="ic">👤</span>Account</button></nav>
+</div>
+
+<!-- shop page -->
+<div class="page" id="pShop"><div class="phead"><button data-back aria-label="Back">←</button><div style="flex:1;min-width:0"><h2 id="shName" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></h2><div class="muted" id="shMeta"></div></div></div>
+  <div class="pbody"><div class="search"><span>🔎</span><input id="prodQ" type="search" placeholder="Search this shop" autocomplete="off"></div><div class="grid" id="prods"></div></div>
+  <div class="pfoot hidden" id="shFoot"><button class="btn pu" id="shCart">View cart</button></div></div>
+
+<!-- checkout page -->
+<div class="page" id="pCheckout"><div class="phead"><button data-back aria-label="Back">←</button><h2>Checkout</h2></div>
+  <div class="pbody">
+    <div class="card"><h3 id="coShop">Your order</h3><div id="coLines"></div></div>
+    <div class="card"><h3>Deliver to</h3><div class="geo"><input id="coDrop" placeholder="Search address or tap the map" autocomplete="off"><div class="sugg hidden" id="coSugg"></div></div>
+      <button class="btn cy sm" id="coGps" type="button">📍 Use my live location</button><div class="map" id="coMap"></div><div class="muted" id="coDist">Pick your drop-off on the map to see delivery and total.</div></div>
+    <div class="card"><h3>Payment</h3><label for="coPhone">M-Pesa number</label><input id="coPhone" type="tel" inputmode="tel"><div class="note hidden" id="coTest">Test mode: no real money is charged yet.</div></div>
+    <div class="card"><div class="between"><h3 style="margin:0">Total</h3><span class="tag2 est" id="coTag">Estimate</span></div><div class="sum" id="coSum" style="margin-top:12px"></div>
+      <details><summary>How your payment is shared</summary><div class="sum" id="coSplit" style="margin-top:8px"></div></details></div>
+  </div>
+  <div class="pfoot"><button class="btn go" id="coPay" disabled>Place order</button></div></div>
+
+<!-- ride page -->
+<div class="page" id="pRide"><div class="phead"><button data-back aria-label="Back">←</button><h2>Request a ride</h2></div>
+  <div class="pbody">
+    <div class="seg"><button id="vBoda" class="on" data-veh="BODA">🏍️ Boda</button><button id="vCar" data-veh="CAR">🚕 Cab</button></div>
+    <div class="card"><div class="geo"><label for="rPick">Pickup</label><input id="rPick" placeholder="Search pickup or use location" autocomplete="off"><div class="sugg hidden" id="rPickSugg"></div></div>
+      <div class="geo"><label for="rDrop">Drop-off</label><input id="rDrop" placeholder="Where to?" autocomplete="off"><div class="sugg hidden" id="rDropSugg"></div></div>
+      <div class="tgl"><button id="tgPick" data-tg="pick">Tap map = Pickup</button><button id="tgDrop" class="on" data-tg="drop">Tap map = Drop-off</button></div>
+      <button class="btn cy sm" id="rGps" type="button">📍 Use my live location as pickup</button><div class="map" id="rMap"></div><div class="muted" id="rDist">Choose pickup and drop-off to see your fare.</div></div>
+    <div class="card"><div class="between"><h3 style="margin:0">Fare</h3><span class="tag2 est" id="rTag">Estimate</span></div><div class="sum" id="rSum" style="margin-top:12px"></div>
+      <label for="rPhone" style="margin-top:12px">M-Pesa number</label><input id="rPhone" type="tel" inputmode="tel"><div class="note hidden" id="rTest">Test mode: no real money is charged yet.</div></div>
+  </div>
+  <div class="pfoot"><button class="btn go" id="rGo" disabled>Request ride</button></div></div>
+
+<div class="backdrop" id="backdrop"></div>
+<aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Order details"><div class="grab"></div><div id="sheetBody"></div></aside>
+<div class="modal" id="dlg"><div class="box"><h2 id="dlgT"></h2><p id="dlgP"></p><div class="row"><button class="btn ghost" id="dlgNo">Cancel</button><button class="btn pu" id="dlgYes">OK</button></div></div></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="/socket.io/socket.io.js" onerror="void 0"></script>
+<script>
+(() => {
+'use strict';
+/* ===================== helpers ===================== */
+const API = (location.origin && location.origin !== 'null') ? location.origin : 'http://localhost:3000';
+const DEFAULT_CENTER = [-1.286389, 36.817223];
+const PRICING = { BODA: { base: 60, perKm: 25, perMin: 2, min: 120, speed: 30 }, CAR: { base: 100, perKm: 42, perMin: 3, min: 300, speed: 22 }, roundTo: 10, svc: 0.02, driver: 0.95, kra: 0.16, factor: 1.4, minKm: 1 };
+const CANCELLED = new Set(['CANCELLED_BY_CUSTOMER','REJECTED_BY_VENDOR','ORDERLY_DISMISSED','CANCELLED']);
+const PH = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="100%" height="100%" fill="#1b2437"/></svg>');
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => 'KES ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt0 = n => 'KES ' + Number(n || 0).toLocaleString('en-KE', { maximumFractionDigits: 0 });
+const money2 = n => Math.round(Number(n) * 100) / 100;
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(16) + Math.random().toString(16).slice(2)).replace(/-/g, '');
+const when = ms => ms ? new Date(ms).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }, del(k) { try { localStorage.removeItem(k); } catch {} } };
+const hav = (a, b, c, d) => { const r = Math.PI / 180, dl = (c - a) * r, dn = (d - b) * r, x = Math.sin(dl / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin(dn / 2) ** 2; return 6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)); };
+const drivingKm = (a, b, c, d) => Number(Math.max(hav(a, b, c, d) * PRICING.factor, PRICING.minKm).toFixed(1));
+function localPrice(items, km, veh) {
+  const t = PRICING[veh] || PRICING.BODA, eta = Math.max(1, Math.ceil(km / t.speed * 60)), fee = money2(Math.max(t.min, Math.round((t.base + km * t.perKm + eta * t.perMin) / PRICING.roundTo) * PRICING.roundTo)), svc = money2(items * PRICING.svc), rider = money2(fee * PRICING.driver), comm = money2(fee - rider), inc = money2(svc + comm), tax = money2(inc * PRICING.kra);
+  return { currency: 'KES', distanceKm: km, etaMin: eta, itemsTotal: money2(items), serviceFee: svc, deliveryFee: fee, total: money2(items + svc + fee), splits: { shopReceives: money2(items), riderReceives: rider, appCommission: comm, platformIncome: inc, kraTax: tax, netRevenue: money2(inc - tax) } };
+}
+
+const state = {
+  token: LS.get('rds_u_token', null), user: LS.get('rds_u_user', null),
+  tenants: [], filter: 'ALL', q: '', userLoc: LS.get('rds_u_loc', null),
+  shop: null, products: [], prodQ: '', cart: LS.get('rds_u_cart', { merchantId: null, lines: {} }),
+  dest: LS.get('rds_u_dest', { label: '', lat: null, lng: null }),
+  ride: { vehicle: 'BODA', pickup: { label: '', lat: null, lng: null }, drop: { label: '', lat: null, lng: null }, target: 'drop' },
+  quote: null, rquote: null, qSeq: 0, rSeq: 0, idem: null, ridem: null,
+  orders: [], tracking: null, poll: null, socket: null, view: 'vHome', pages: [], rated: LS.get('rds_u_rated', {}), rating: 0, pendingPhone: null, maps: {}
+};
+if (!state.cart || !state.cart.lines) state.cart = { merchantId: null, lines: {} };
+
+function toast(msg, type = 'info', ms = 3600) { const el = document.createElement('div'); el.className = 'toast ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : ''); el.textContent = msg; $('#toasts').appendChild(el); setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, ms); }
+function ask(title, text, ok = 'OK') { return new Promise(res => { $('#dlgT').textContent = title; $('#dlgP').textContent = text; $('#dlgYes').textContent = ok; const m = $('#dlg'); m.classList.add('on'); const done = v => { m.classList.remove('on'); $('#dlgYes').onclick = $('#dlgNo').onclick = null; res(v); }; $('#dlgYes').onclick = () => done(true); $('#dlgNo').onclick = () => done(false); }); }
+function busy(btn, on, label) { if (!btn) return; if (on) { btn.dataset.l = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + (label ? ' ' + esc(label) : ''); } else { btn.disabled = false; if (btn.dataset.l !== undefined) btn.innerHTML = btn.dataset.l; } }
+
+async function api(path, { method = 'GET', body, headers = {}, token = state.token, signal, timeout = 15000 } = {}) {
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), timeout);
+  if (signal) signal.addEventListener('abort', () => ctrl.abort());
+  try {
+    const h = { ...headers }; if (body !== undefined) h['Content-Type'] = 'application/json'; if (token) h.Authorization = 'Bearer ' + token;
+    const res = await fetch(API + path, { method, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined, signal: ctrl.signal });
+    let data = null; try { data = await res.json(); } catch {}
+    if (!res.ok || !data || data.success === false) {
+      const e = new Error((data && data.error) || `Request failed (${res.status})`); e.status = res.status; e.retryAfter = res.headers.get('Retry-After');
+      if (res.status === 401 && token && token === state.token) sessionExpired();
+      if (res.status === 429) e.message = `Too many requests. Try again in ${e.retryAfter || 'a few'} seconds.`;
+      throw e;
+    }
+    return data;
+  } catch (e) {
+    if (e.name === 'AbortError') { if (signal && signal.aborted) { e.aborted = true; throw e; } const t = new Error('The server took too long to respond.'); t.status = 0; throw t; }
+    if (e instanceof TypeError) { const n = new Error('Cannot reach the server. Check your connection.'); n.status = 0; throw n; }
+    throw e;
+  } finally { clearTimeout(timer); }
+}
+
+/* ===================== sign in ===================== */
+const normPhone = v => { const s = String(v || '').replace(/[\s()-]/g, ''); if (/^0[17]\d{8}$/.test(s)) return '+254' + s.slice(1); if (/^[17]\d{8}$/.test(s)) return '+254' + s; if (/^254[17]\d{8}$/.test(s)) return '+' + s; if (/^\+\d{9,15}$/.test(s)) return s; return null; };
+let resendTimer = null;
+function startResend() { const b = $('#btnResend'); let n = 30; b.disabled = true; clearInterval(resendTimer); resendTimer = setInterval(() => { n--; b.textContent = n > 0 ? `Resend in ${n}s` : 'Resend code'; if (n <= 0) { clearInterval(resendTimer); b.disabled = false; } }, 1000); b.textContent = 'Resend in 30s'; }
+async function sendOtp(btn) {
+  const phone = normPhone($('#ph').value); $('#authErr').textContent = '';
+  if (!phone) return void ($('#authErr').textContent = 'Enter a valid Kenyan mobile number.');
+  busy(btn, true);
+  try { const d = await api('/api/user/send-otp', { method: 'POST', body: { phone }, token: null }); state.pendingPhone = phone; const local = /^(localhost|127\.|192\.168\.)/.test(location.hostname); $('#otpMsg').textContent = local ? d.message : `We sent a code to ${phone}.`; $('#stPhone').classList.add('hidden'); $('#stOtp').classList.remove('hidden'); $('#otp').focus(); startResend(); }
+  catch (e) { $('#authErr').textContent = e.message; } finally { busy(btn, false); }
+}
+$('#btnSend').onclick = () => sendOtp($('#btnSend')); $('#btnResend').onclick = () => sendOtp(null);
+$('#ph').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnSend').click(); }); $('#otp').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnVerify').click(); });
+$('#btnBack').onclick = () => { $('#stOtp').classList.add('hidden'); $('#stPhone').classList.remove('hidden'); $('#authErr').textContent = ''; };
+$('#btnVerify').onclick = async () => {
+  const otp = $('#otp').value.trim(); $('#authErr').textContent = ''; if (!otp) return void ($('#authErr').textContent = 'Enter the code.');
+  const b = $('#btnVerify'); busy(b, true);
+  try { const d = await api('/api/user/verify-otp', { method: 'POST', body: { phone: state.pendingPhone, otp, role: 'REGULAR_USER' }, token: null }); state.token = d.token; state.user = d.user; LS.set('rds_u_token', d.token); LS.set('rds_u_user', d.user); $('#otp').value = ''; enterApp(); }
+  catch (e) { $('#authErr').textContent = e.message; } finally { busy(b, false); }
+};
+function sessionExpired() { if (!state.token) return; signOutLocal(); toast('Your session expired. Please sign in again.', 'err'); }
+function signOutLocal() { state.token = null; state.user = null; state.orders = []; LS.del('rds_u_token'); LS.del('rds_u_user'); if (state.socket) { state.socket.auth = {}; state.socket.disconnect(); } setLive(false); closeAll(); $('#app').classList.add('hidden'); $('#auth').classList.remove('hidden'); $('#stOtp').classList.add('hidden'); $('#stPhone').classList.remove('hidden'); }
+$('#logout').onclick = async () => { try { await api('/api/auth/logout', { method: 'POST' }); } catch {} signOutLocal(); toast('Signed out'); };
+async function restore() {
+  if (!state.token) return;
+  try { const d = await api('/api/auth/me'); if (d.identity && d.identity.expiresInSeconds < 3600) { try { const r = await api('/api/auth/refresh', { method: 'POST' }); state.token = r.token; LS.set('rds_u_token', r.token); } catch {} } enterApp(); }
+  catch (e) { if (e.status === 401) return; if (state.token) enterApp(); }
+}
+
+/* ===================== shell ===================== */
+async function loadTariff() { try { const d = await api('/api/user/tariff', { token: null }); ['BODA', 'CAR'].forEach(v => Object.assign(PRICING[v], d.tariff[v])); PRICING.roundTo = d.roundTo; PRICING.factor = d.roadFactor; PRICING.minKm = d.minKm; } catch {} }
+function enterApp() {
+  loadTariff(); $('#auth').classList.add('hidden'); $('#app').classList.remove('hidden'); paintAccount(); paintLoc(); renderShops(); initSocket(); loadTenants(); loadOrders(); paintCart();
+  if (!state.userLoc) $('#locText').textContent = 'Tap to set your location';
+}
+function tab(id) { state.view = id; $$('.view').forEach(v => v.classList.toggle('active', v.id === id)); $$('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === id)); window.scrollTo({ top: 0 }); if (id === 'vActivity') loadOrders(); paintCart(); }
+document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) tab(t.dataset.tab); });
+function openPage(id) { const p = $('#' + id); if (p.classList.contains('on')) return; p.classList.add('on'); state.pages.push(id); history.pushState({ p: id }, ''); }
+function closePage(id, fromPop) { const p = $('#' + id); if (!p.classList.contains('on')) return; p.classList.remove('on'); state.pages = state.pages.filter(x => x !== id); if (!fromPop) { state.skip = (state.skip || 0) + 1; history.back(); } }
+function closeAll() { [...state.pages].forEach(id => $('#' + id).classList.remove('on')); state.pages = []; closeSheet(true); }
+window.addEventListener('popstate', () => { if (state.skip > 0) { state.skip--; return; } if ($('#sheet').classList.contains('on')) return closeSheet(true); const top = state.pages[state.pages.length - 1]; if (top) closePage(top, true); });
+document.addEventListener('click', e => { if (e.target.closest('[data-back]')) { const top = state.pages[state.pages.length - 1]; if (top) closePage(top); } });
+document.addEventListener('error', e => { const t = e.target; if (t && t.tagName === 'IMG' && t.src !== PH) t.src = PH; }, true);
+function setLive(on) { const l = $('#live'); l.classList.toggle('on', on); $('span', l).textContent = on ? 'Live' : 'Offline'; }
+
+/* ===================== location & maps ===================== */
+async function reverse(lat, lng) {
+  try { const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&lat=${lat}&lon=${lng}`, { headers: { 'Accept-Language': 'en' } }); const j = await r.json(); const a = j.address || {}; const parts = [a.road || a.neighbourhood || a.suburb || a.hamlet, a.suburb || a.city_district || a.city || a.town].filter(Boolean); return parts.slice(0, 2).join(', ') || (j.display_name || '').split(',').slice(0, 2).join(','); }
+  catch { return null; }
+}
+const here = (cb, btn) => {
+  if (!navigator.geolocation) return toast('Location is not supported on this device.', 'err');
+  busy(btn, true, 'Locating…');
+  navigator.geolocation.getCurrentPosition(async pos => { busy(btn, false); const lat = pos.coords.latitude, lng = pos.coords.longitude; const label = (await reverse(lat, lng)) || `My location (${lat.toFixed(4)}, ${lng.toFixed(4)})`; cb({ lat, lng, label }); },
+    err => { busy(btn, false); toast(err.code === 1 ? 'Location permission denied. Search an address or tap the map instead.' : 'Could not get your location.', 'err'); }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+};
+$('#locChip').onclick = () => here(p => { state.userLoc = p; LS.set('rds_u_loc', p); paintLoc(); renderShops(); toast('Location updated', 'ok'); }, null);
+function paintLoc() { if (state.userLoc) $('#locText').textContent = state.userLoc.label; }
+
+function makeMap(id) {
+  if (typeof L === 'undefined') return null;
+  const el = $('#' + id); if (state.maps[id]) { setTimeout(() => state.maps[id].invalidateSize(), 320); return state.maps[id]; }
+  const m = L.map(el, { zoomControl: false, attributionControl: true }).setView(DEFAULT_CENTER, 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(m); L.control.zoom({ position: 'bottomright' }).addTo(m);
+  state.maps[id] = m; setTimeout(() => m.invalidateSize(), 320); return m;
+}
+const pin = c => L.divIcon({ className: '', html: `<div style="background:${c};width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.6)"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] });
+function setMarkers(id, pts) {
+  const m = state.maps[id]; if (!m) return; (m._mk || []).forEach(x => m.removeLayer(x)); m._mk = []; if (m._ln) { m.removeLayer(m._ln); m._ln = null; }
+  const ll = []; pts.forEach(p => { if (p && Number.isFinite(p.lat)) { m._mk.push(L.marker([p.lat, p.lng], { icon: pin(p.color) }).addTo(m)); ll.push([p.lat, p.lng]); } });
+  if (ll.length === 2) { m._ln = L.polyline(ll, { color: '#38bdf8', weight: 4, dashArray: '8 8' }).addTo(m); m.fitBounds(m._ln.getBounds(), { padding: [34, 34] }); } else if (ll.length === 1) m.setView(ll[0], 15);
+}
+// address search (OpenStreetMap Nominatim, Kenya only)
+function attachGeo(input, list, onPick) {
+  const run = debounce(async () => {
+    const q = input.value.trim(); if (q.length < 3) return list.classList.add('hidden');
+    try { const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=ke&q=${encodeURIComponent(q)}`, { headers: { 'Accept-Language': 'en' } }); const j = await r.json();
+      list.innerHTML = j.length ? j.map((x, i) => `<div data-i="${i}">${esc(x.display_name.split(',').slice(0, 3).join(','))}</div>`).join('') : '<div>No results. Tap the map instead.</div>'; list.classList.remove('hidden'); list._r = j; }
+    catch { list.innerHTML = '<div>Search is unavailable. Tap the map instead.</div>'; list.classList.remove('hidden'); list._r = []; }
+  }, 700);
+  input.addEventListener('input', run);
+  list.addEventListener('click', e => { const d = e.target.closest('[data-i]'); if (!d || !list._r) return; const x = list._r[Number(d.dataset.i)]; if (!x) return; list.classList.add('hidden'); const label = x.display_name.split(',').slice(0, 2).join(','); input.value = label; onPick({ lat: Number(x.lat), lng: Number(x.lon), label }); });
+  document.addEventListener('click', e => { if (!list.contains(e.target) && e.target !== input) list.classList.add('hidden'); });
+}
+
+/* ===================== shops ===================== */
+async function loadTenants() {
+  try { const d = await api('/api/user/tenants', { token: null }); state.tenants = (d.tenants || []).map(t => ({ merchantId: t.merchantId, shopName: t.shopName, businessType: String(t.businessType || 'RETAIL').toUpperCase(), gpsLat: Number(t.gpsLat), gpsLon: Number(t.gpsLon), banner: t.banner, catalog: t.catalog || [] })); renderShops(); }
+  catch (e) { $('#shops').innerHTML = `<div class="empty">${esc(e.message)}<br><br><button class="btn pu sm" id="retryShops">Try again</button></div>`; }
+}
+function renderShops() {
+  const types = ['ALL', ...new Set(state.tenants.map(t => t.businessType))];
+  $('#chips').innerHTML = types.map(t => `<button class="chip ${state.filter === t ? 'on' : ''}" data-f="${esc(t)}">${t === 'ALL' ? 'All' : esc(t.charAt(0) + t.slice(1).toLowerCase())}</button>`).join('');
+  const q = state.q.toLowerCase();
+  let list = state.tenants.filter(t => (state.filter === 'ALL' || t.businessType === state.filter) && (!q || t.shopName.toLowerCase().includes(q) || t.businessType.toLowerCase().includes(q)));
+  if (state.userLoc) list = list.map(t => ({ ...t, km: Number.isFinite(t.gpsLat) ? hav(state.userLoc.lat, state.userLoc.lng, t.gpsLat, t.gpsLon) : null })).sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9));
+  if (!state.tenants.length && !$('#shops').children.length) { $('#shops').innerHTML = '<div class="skel"></div>'.repeat(2); return; }
+  $('#shops').innerHTML = list.length ? list.map(t => `<div class="shop" data-id="${esc(t.merchantId)}"><div class="ban" style="background-image:url('${esc(t.banner || PH)}')"></div><div class="inf"><div><b>${esc(t.shopName)}</b><div class="muted">${t.km != null ? t.km.toFixed(1) + ' km away · ' : ''}${t.catalog.length} items</div></div><span class="tag">${esc(t.businessType)}</span></div></div>`).join('') : '<div class="empty">No shops match your search.</div>';
+}
+$('#shopQ').addEventListener('input', debounce(e => { state.q = e.target.value.trim(); renderShops(); }, 200));
+$('#chips').addEventListener('click', e => { const c = e.target.closest('[data-f]'); if (c) { state.filter = c.dataset.f; renderShops(); } });
+$('#shops').addEventListener('click', e => { if (e.target.id === 'retryShops') return loadTenants(); const s = e.target.closest('[data-id]'); if (s) openShop(s.dataset.id); });
+document.addEventListener('click', e => { const t = e.target.closest('.tile'); if (!t) return; if (t.dataset.act === 'shops') { $('#shopQ').focus(); window.scrollTo({ top: 260, behavior: 'smooth' }); } else openRide(t.dataset.v); });
+
+async function openShop(id) {
+  const t = state.tenants.find(x => x.merchantId === id); if (!t) return;
+  state.shop = t; state.prodQ = ''; $('#prodQ').value = ''; $('#shName').textContent = t.shopName; $('#shMeta').textContent = t.businessType; state.products = t.catalog; renderProducts(); openPage('pShop');
+  try { const d = await api('/api/user/products?merchantId=' + encodeURIComponent(id), { token: null }); if (state.shop && state.shop.merchantId === id) { state.products = d.products || []; renderProducts(); } } catch {}
+}
+function renderProducts() {
+  const q = state.prodQ.toLowerCase(), list = state.products.filter(p => !q || String(p.name).toLowerCase().includes(q));
+  $('#prods').innerHTML = list.length ? list.map(p => { const l = state.cart.lines[p.id], qty = l ? l.qty : 0, out = p.stock !== undefined && p.stock !== null && Number(p.stock) <= 0, low = !out && p.stock !== undefined && p.stock !== null && Number(p.stock) <= 5;
+    return `<div class="prod" data-pid="${esc(p.id)}"><div class="img" style="background-image:url('${esc(p.image || PH)}')"></div><div class="inf"><div><div class="t">${esc(p.name)}</div><div class="p">${fmt0(p.price)}</div>${low ? `<div class="low">Only ${p.stock} left</div>` : ''}</div>${out ? '<div class="soldout">Out of stock</div>' : `<div class="step"><button data-d="-1" aria-label="Remove one">−</button><span data-q="${esc(p.id)}">${qty}</span><button data-d="1" aria-label="Add one">+</button></div>`}</div></div>`; }).join('') : '<div class="empty" style="grid-column:span 2">No items found.</div>';
+  paintCart();
+}
+$('#prodQ').addEventListener('input', debounce(e => { state.prodQ = e.target.value.trim(); renderProducts(); }, 200));
+$('#prods').addEventListener('click', e => { const b = e.target.closest('[data-d]'), c = e.target.closest('[data-pid]'); if (b && c) changeQty(c.dataset.pid, Number(b.dataset.d)); });
+
+/* ===================== cart ===================== */
+const cartCount = () => Object.values(state.cart.lines).reduce((s, l) => s + l.qty, 0);
+const cartTotal = () => money2(Object.values(state.cart.lines).reduce((s, l) => s + l.price * l.qty, 0));
+const persistCart = () => { LS.set('rds_u_cart', state.cart); state.idem = null; };
+async function changeQty(id, delta) {
+  const p = state.products.find(x => x.id === id) || state.cart.lines[id]; if (!p) return;
+  const line = state.cart.lines[id], mid = line ? state.cart.merchantId : (state.shop ? state.shop.merchantId : state.cart.merchantId);
+  if (delta > 0 && !line && state.cart.merchantId && state.cart.merchantId !== mid && cartCount() > 0) { if (!(await ask('Start a new cart?', 'Your cart has items from another shop. One order can only contain one shop’s items.', 'Clear & add'))) return; state.cart = { merchantId: null, lines: {} }; }
+  const max = (p.stock !== undefined && p.stock !== null) ? Math.min(99, Number(p.stock)) : 99; let qty = (state.cart.lines[id] ? state.cart.lines[id].qty : 0) + delta;
+  if (qty > max) { toast(max <= 0 ? 'Out of stock' : `Only ${max} available`); qty = max; }
+  if (qty <= 0) delete state.cart.lines[id]; else { state.cart.merchantId = mid; state.cart.lines[id] = { id, name: p.name, price: Number(p.price), qty, image: p.image, stock: p.stock ?? null }; }
+  if (!Object.keys(state.cart.lines).length) state.cart.merchantId = null;
+  persistCart(); $$(`[data-q="${CSS.escape(id)}"]`).forEach(el => el.textContent = state.cart.lines[id] ? state.cart.lines[id].qty : 0); paintCart(); if ($('#pCheckout').classList.contains('on')) { renderCheckout(); scheduleQuote(); }
+}
+function paintCart() {
+  const n = cartCount(); $('#cbCount').textContent = `${n} item${n === 1 ? '' : 's'}`; $('#cbTotal').textContent = fmt0(cartTotal()) + ' + fees';
+  $('#cartbar').classList.toggle('on', n > 0 && state.view === 'vHome' && !state.pages.length);
+  const f = $('#shFoot'); f.classList.toggle('hidden', !(n > 0)); $('#shCart').textContent = `View cart · ${n} item${n === 1 ? '' : 's'} · ${fmt0(cartTotal())}`;
+}
+$('#cartbar').onclick = () => openCheckout(); $('#shCart').onclick = () => openCheckout();
+
+/* ===================== checkout ===================== */
+function shopOf(id) { return state.tenants.find(t => t.merchantId === id); }
+function openCheckout() {
+  if (!cartCount()) return; $('#coPhone').value = $('#coPhone').value || (state.user && state.user.phone) || '';
+  if (state.dest.lat === null && state.userLoc) state.dest = { ...state.userLoc };
+  openPage('pCheckout'); renderCheckout(); const m = makeMap('coMap');
+  if (m && !m._bound) { m._bound = true; m.on('click', async e => { state.dest = { lat: e.latlng.lat, lng: e.latlng.lng, label: 'Pinned location' }; LS.set('rds_u_dest', state.dest); paintDest(); scheduleQuote(); const l = await reverse(e.latlng.lat, e.latlng.lng); if (l) { state.dest.label = l; LS.set('rds_u_dest', state.dest); $('#coDrop').value = l; } }); }
+  paintDest(); scheduleQuote();
+}
+function renderCheckout() {
+  const t = shopOf(state.cart.merchantId); $('#coShop').textContent = t ? t.shopName : 'Your order';
+  $('#coLines').innerHTML = Object.values(state.cart.lines).map(l => `<div class="line" data-id="${esc(l.id)}"><div class="t"><b>${esc(l.name)}</b><span class="muted">${fmt0(l.price)} each</span></div><div class="step"><button data-d="-1" aria-label="Remove one">−</button><span>${l.qty}</span><button data-d="1" aria-label="Add one">+</button></div></div>`).join('');
+  if (!cartCount()) closePage('pCheckout');
+}
+$('#coLines').addEventListener('click', e => { const b = e.target.closest('[data-d]'), l = e.target.closest('[data-id]'); if (b && l) changeQty(l.dataset.id, Number(b.dataset.d)); });
+function paintDest() { const t = shopOf(state.cart.merchantId); if (document.activeElement !== $('#coDrop')) $('#coDrop').value = state.dest.label || ''; setMarkers('coMap', [t && Number.isFinite(t.gpsLat) ? { lat: t.gpsLat, lng: t.gpsLon, color: '#ffc244' } : null, state.dest.lat !== null ? { lat: state.dest.lat, lng: state.dest.lng, color: '#ff4d6d' } : null]); }
+$('#coGps').onclick = () => here(p => { state.dest = p; LS.set('rds_u_dest', p); paintDest(); scheduleQuote(); }, $('#coGps'));
+attachGeo($('#coDrop'), $('#coSugg'), p => { state.dest = p; LS.set('rds_u_dest', p); paintDest(); scheduleQuote(); });
+$('#coDrop').addEventListener('input', e => { state.dest.label = e.target.value; });
+const scheduleQuote = debounce(refreshQuote, 250);
+async function refreshQuote() {
+  const items = cartTotal(), seq = ++state.qSeq, t = shopOf(state.cart.merchantId);
+  if (!items || state.dest.lat === null) { state.quote = null; return paintQuote(); }
+  const pk = t && Number.isFinite(t.gpsLat) ? { lat: t.gpsLat, lng: t.gpsLon } : { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] };
+  state.quote = { ...localPrice(items, drivingKm(pk.lat, pk.lng, state.dest.lat, state.dest.lng), 'BODA'), source: 'estimate' }; paintQuote();
+  try { const d = await api('/api/user/quote', { method: 'POST', token: null, body: { businessId: state.cart.merchantId, items: Object.values(state.cart.lines).map(l => ({ id: l.id, qty: l.qty })), destinationCoords: { lat: state.dest.lat, lng: state.dest.lng } } }); if (seq === state.qSeq) state.quote = { ...d.quote, source: 'server' }; }
+  catch (e) { if (seq === state.qSeq && e.status && e.status !== 404) state.quote = { ...state.quote, source: 'error', error: e.message }; }
+  if (seq === state.qSeq) paintQuote();
+}
+function sumHtml(q, shop) { return `<div><span>${shop ? 'Items' : 'Ride'}</span><b>${fmt(shop ? q.itemsTotal : q.deliveryFee)}</b></div>${shop ? `<div><span>Service fee (2%)</span><b>${fmt(q.serviceFee)}</b></div><div><span>Delivery · ${q.distanceKm} km${q.etaMin ? ' · ~' + q.etaMin + ' min' : ''}</span><b>${fmt(q.deliveryFee)}</b></div>` : `<div><span>Distance</span><b>${q.distanceKm} km${q.etaMin ? ' · ~' + q.etaMin + ' min' : ''}</b></div>`}<div class="big"><span>Total</span><span>${fmt(q.total)}</span></div>${q.error ? `<div class="err">${esc(q.error)}</div>` : ''}`; }
+function paintQuote() {
+  const q = state.quote, tag = $('#coTag'), pay = $('#coPay');
+  if (!q) { $('#coSum').innerHTML = `<div><span>Items</span><b>${fmt(cartTotal())}</b></div><div class="muted">Choose your drop-off to see delivery and total.</div>`; $('#coSplit').innerHTML = ''; $('#coDist').textContent = 'Pick your drop-off on the map to see delivery and total.'; tag.className = 'tag2 est'; tag.textContent = 'Estimate'; pay.disabled = true; pay.textContent = 'Choose drop-off to continue'; return; }
+  tag.className = 'tag2 ' + (q.source === 'server' ? 'ok' : 'est'); tag.textContent = q.source === 'server' ? '✓ Confirmed price' : q.source === 'error' ? 'Unavailable' : 'Estimate';
+  $('#coSum').innerHTML = sumHtml(q, true); $('#coDist').textContent = `Road distance used for delivery: ${q.distanceKm} km`;
+  const s = q.splits; $('#coSplit').innerHTML = `<div><span>Shop receives</span><b>${fmt(s.shopReceives)}</b></div><div><span>Rider receives</span><b>${fmt(s.riderReceives)}</b></div><div><span>Platform</span><b>${fmt(s.platformIncome)}</b></div>`;
+  $('#coTest').classList.toggle('hidden', !(q.payment && q.payment.mode === 'SIMULATED'));
+  pay.disabled = q.source === 'error'; pay.textContent = state.token ? `Pay ${fmt(q.total)} & place order` : 'Sign in to order';
+}
+$('#coPay').onclick = placeShopOrder;
+async function placeShopOrder() {
+  if (!state.token) return void toast('Please sign in first.', 'err');
+  const label = ($('#coDrop').value || state.dest.label || '').trim(); if (state.dest.lat === null) return void toast('Choose your drop-off location.', 'err');
+  const phone = normPhone($('#coPhone').value); if (!phone) return void toast('Enter a valid M-Pesa number.', 'err');
+  if (!state.idem) state.idem = 'co_' + uuid(); const b = $('#coPay'); busy(b, true, 'Placing order…');
+  try {
+    const mid = state.cart.merchantId, d = await api('/api/user/checkout', { method: 'POST', headers: { 'x-business-id': mid, 'Idempotency-Key': state.idem }, body: { businessId: mid, items: Object.values(state.cart.lines).map(l => ({ id: l.id, qty: l.qty })), destinationCoords: { lat: state.dest.lat, lng: state.dest.lng }, destination: label || 'Pinned location', mpesaPhone: phone } });
+    state.cart = { merchantId: null, lines: {} }; persistCart(); state.idem = null; state.quote = null; $$('[data-q]').forEach(el => el.textContent = 0); paintCart();
+    toast(d.message, 'ok', 4500); closeAll(); history.replaceState(null, ''); tab('vActivity'); joinRoom(d.orderId); await loadOrders(); openTracking(d.orderId);
+  } catch (e) { toast(e.message, 'err', 5200); } finally { busy(b, false); if ($('#pCheckout').classList.contains('on')) paintQuote(); }
+}
+
+/* ===================== ride ===================== */
+function openRide(veh) {
+  state.ride.vehicle = veh || 'BODA'; paintVeh(); if (!state.ride.pickup.lat && state.userLoc) { state.ride.pickup = { ...state.userLoc }; $('#rPick').value = state.userLoc.label; }
+  $('#rPhone').value = $('#rPhone').value || (state.user && state.user.phone) || ''; openPage('pRide');
+  const m = makeMap('rMap'); if (m && !m._bound) { m._bound = true; m.on('click', async e => { const key = state.ride.target === 'pick' ? 'pickup' : 'drop'; state.ride[key] = { lat: e.latlng.lat, lng: e.latlng.lng, label: 'Pinned location' }; paintRide(); scheduleRQuote(); const l = await reverse(e.latlng.lat, e.latlng.lng); if (l) { state.ride[key].label = l; (key === 'pickup' ? $('#rPick') : $('#rDrop')).value = l; } }); }
+  paintRide(); scheduleRQuote();
+}
+function paintVeh() { $('#vBoda').classList.toggle('on', state.ride.vehicle === 'BODA'); $('#vCar').classList.toggle('on', state.ride.vehicle === 'CAR'); }
+document.addEventListener('click', e => { const v = e.target.closest('[data-veh]'); if (v) { state.ride.vehicle = v.dataset.veh; paintVeh(); scheduleRQuote(); } const g = e.target.closest('[data-tg]'); if (g) { state.ride.target = g.dataset.tg; $('#tgPick').classList.toggle('on', g.dataset.tg === 'pick'); $('#tgDrop').classList.toggle('on', g.dataset.tg === 'drop'); } });
+function paintRide() { const r = state.ride; setMarkers('rMap', [r.pickup.lat !== null ? { lat: r.pickup.lat, lng: r.pickup.lng, color: '#00ff88' } : null, r.drop.lat !== null ? { lat: r.drop.lat, lng: r.drop.lng, color: '#ff4d6d' } : null]); }
+$('#rGps').onclick = () => here(p => { state.ride.pickup = p; $('#rPick').value = p.label; paintRide(); scheduleRQuote(); }, $('#rGps'));
+attachGeo($('#rPick'), $('#rPickSugg'), p => { state.ride.pickup = p; paintRide(); scheduleRQuote(); });
+attachGeo($('#rDrop'), $('#rDropSugg'), p => { state.ride.drop = p; paintRide(); scheduleRQuote(); });
+const scheduleRQuote = debounce(refreshRQuote, 250);
+async function refreshRQuote() {
+  const r = state.ride, seq = ++state.rSeq, tag = $('#rTag'), go = $('#rGo'); state.ridem = null;
+  if (r.pickup.lat === null || r.drop.lat === null) { state.rquote = null; $('#rSum').innerHTML = '<div class="muted">Choose pickup and drop-off to see your fare.</div>'; $('#rDist').textContent = 'Choose pickup and drop-off to see your fare.'; go.disabled = true; return; }
+  state.rquote = { ...localPrice(0, drivingKm(r.pickup.lat, r.pickup.lng, r.drop.lat, r.drop.lng), r.vehicle), source: 'estimate' }; paintRQuote();
+  try { const d = await api('/api/user/quote', { method: 'POST', token: null, body: { businessId: 'DIRECT_RIDE', vehicleType: r.vehicle, pickupCoords: { lat: r.pickup.lat, lng: r.pickup.lng }, destinationCoords: { lat: r.drop.lat, lng: r.drop.lng } } }); if (seq === state.rSeq) state.rquote = { ...d.quote, source: 'server' }; } catch (e) { if (seq === state.rSeq && e.status && e.status !== 404) state.rquote = { ...state.rquote, source: 'error', error: e.message }; }
+  if (seq === state.rSeq) paintRQuote();
+}
+function paintRQuote() { const q = state.rquote, tag = $('#rTag'); tag.className = 'tag2 ' + (q.source === 'server' ? 'ok' : 'est'); tag.textContent = q.source === 'server' ? '✓ Confirmed fare' : q.source === 'error' ? 'Unavailable' : 'Estimate'; $('#rSum').innerHTML = sumHtml(q, false); $('#rDist').textContent = `Road distance used for your fare: ${q.distanceKm} km`; $('#rTest').classList.toggle('hidden', !(q.payment && q.payment.mode === 'SIMULATED')); const go = $('#rGo'); go.disabled = q.source === 'error'; go.textContent = state.token ? `Request ${state.ride.vehicle === 'CAR' ? 'cab' : 'boda'} · ${fmt(q.total)}` : 'Sign in to ride'; }
+$('#rGo').onclick = async () => {
+  if (!state.token) return void toast('Please sign in first.', 'err'); const r = state.ride, phone = normPhone($('#rPhone').value); if (!phone) return void toast('Enter a valid M-Pesa number.', 'err');
+  if (!state.ridem) state.ridem = 'rd_' + uuid(); const b = $('#rGo'); busy(b, true, 'Requesting…');
+  try { const d = await api('/api/user/checkout', { method: 'POST', headers: { 'x-business-id': 'DIRECT_RIDE', 'Idempotency-Key': state.ridem }, body: { businessId: 'DIRECT_RIDE', vehicleType: r.vehicle, pickupCoords: { lat: r.pickup.lat, lng: r.pickup.lng }, destinationCoords: { lat: r.drop.lat, lng: r.drop.lng }, pickup: $('#rPick').value || r.pickup.label, destination: $('#rDrop').value || r.drop.label, mpesaPhone: phone } });
+    state.ridem = null; toast(d.message, 'ok', 4500); closeAll(); history.replaceState(null, ''); tab('vActivity'); joinRoom(d.orderId); await loadOrders(); openTracking(d.orderId); }
+  catch (e) { toast(e.message, 'err', 5200); } finally { busy(b, false); if ($('#pRide').classList.contains('on')) paintRQuote(); }
+};
+
+/* ===================== orders & tracking ===================== */
+function stageOf(o) {
+  const st = o.status || '', v = o.vendorStatus, d = o.deliveryStatus, ride = !o.merchantId;
+  if (CANCELLED.has(st)) return { key: 'cancelled', step: -1, label: st === 'REJECTED_BY_VENDOR' ? 'Shop declined' : 'Cancelled' };
+  if (d === 'DELIVERED' || /COMPLETED/.test(st) || v === 'COMPLETED & PAID OUT') return { key: 'done', step: ride ? 2 : 3, label: ride ? 'Trip completed' : 'Delivered' };
+  if (d === 'DRIVER_ASSIGNED') return { key: 'driver', step: ride ? 1 : 2, label: ride ? 'Rider on the way' : 'Rider heading to the shop' };
+  if (d === 'ARRIVED_AT_PICKUP') return { key: 'driver', step: ride ? 1 : 2, label: ride ? 'Rider has arrived' : 'Rider is at the shop' };
+  if (d === 'PICKED_UP') return { key: 'driver', step: ride ? 1 : 2, label: ride ? 'Trip in progress' : 'On the way to you' };
+  if (!ride && v && v !== 'PENDING_VENDOR_ACCEPTANCE') return { key: 'confirmed', step: 1, label: 'Shop is preparing' };
+  return { key: 'placed', step: 0, label: ride ? 'Finding a rider' : 'Waiting for shop' };
+}
+const isFinal = o => ['cancelled', 'done'].includes(stageOf(o).key);
+let ordersCtrl = null;
+async function loadOrders() {
+  if (!state.token) return; if (ordersCtrl) ordersCtrl.abort(); ordersCtrl = new AbortController();
+  try { const d = await api('/api/user/orders/history?limit=30', { signal: ordersCtrl.signal }); state.orders = d.orders || []; renderOrders(); refreshRooms(); } catch (e) { if (!e.aborted) $('#orders').innerHTML = `<div class="card err">${esc(e.message)}</div>`; }
+}
+function renderOrders() {
+  const act = state.orders.filter(o => !isFinal(o)).length; const d = $('#navDot'); d.style.display = act ? 'block' : 'none'; d.textContent = act;
+  $('#orders').innerHTML = state.orders.length ? state.orders.map(o => { const s = stageOf(o), ride = !o.merchantId; return `<div class="order" data-oid="${esc(o.orderId)}"><div class="between"><b>${ride ? '🏍️ Ride' : '🛍️ Order'} ${esc(o.orderId)}</b><span class="pill ${s.key}">${esc(s.label)}</span></div><div class="between" style="margin-top:8px"><span class="muted">${when(o.createdAt)}</span><b style="color:var(--g)">${fmt(o.total)}</b></div></div>`; }).join('') : '<div class="empty">No orders yet.<br>Your shop orders and rides appear here.</div>';
+}
+$('#orders').addEventListener('click', e => { const o = e.target.closest('[data-oid]'); if (o) openTracking(o.dataset.oid); });
+$('#ordRefresh').onclick = loadOrders; const loadOrdersSoft = debounce(() => { if (state.view === 'vActivity') loadOrders(); else if (state.token) loadOrders(); }, 700);
+
+async function openTracking(id) {
+  state.tracking = { id, order: null, live: null, error: null }; state.rating = 0; $('#backdrop').classList.add('on'); $('#sheet').classList.add('on'); history.pushState({ s: 1 }, ''); renderTracking(); joinRoom(id);
+  await refreshTracking(); clearInterval(state.poll); state.poll = setInterval(() => { if (!document.hidden && state.tracking) refreshTracking(); }, 8000);
+}
+async function refreshTracking() {
+  const t = state.tracking; if (!t) return;
+  try { const [o, l, p] = await Promise.all([api('/api/user/orders/track/' + encodeURIComponent(t.id)), api('/api/user/orders/' + encodeURIComponent(t.id) + '/live').catch(() => null), api('/api/user/orders/' + encodeURIComponent(t.id) + '/pin').catch(() => null)]); if (state.tracking && state.tracking.id === t.id) { state.tracking.order = o.order; state.tracking.live = l; state.tracking.pin = p && p.pin; state.tracking.error = null; } }
+  catch (e) { if (state.tracking) state.tracking.error = e.message; }
+  if (state.tracking) { renderTracking(); if (state.tracking.order && isFinal(state.tracking.order)) clearInterval(state.poll); }
+}
+function closeSheet(fromPop) { if (!$('#sheet').classList.contains('on')) return; $('#sheet').classList.remove('on'); $('#backdrop').classList.remove('on'); clearInterval(state.poll); state.tracking = null; if (state.maps.trk) { try { state.maps.trk.remove(); } catch {} delete state.maps.trk; } if (!fromPop) { state.skip = (state.skip || 0) + 1; history.back(); } loadOrdersSoft(); }
+$('#backdrop').onclick = () => closeSheet(false);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('#dlg').classList.contains('on')) $('#dlgNo').click(); else if (state.tracking) closeSheet(false); } });
+function renderTracking() {
+  const t = state.tracking, body = $('#sheetBody'); if (!t) return;
+  if (!t.order) { body.innerHTML = t.error ? `<p class="err">${esc(t.error)}</p><button class="btn ghost" data-act="retry">Retry</button><button class="btn ghost" data-act="close" style="margin-top:8px">Close</button>` : '<div class="skel" style="height:180px"></div>'; return; }
+  const o = t.order, s = stageOf(o), owner = Array.isArray(o.items), ride = !o.merchantId, live = t.live;
+  const names = ride ? ['Ride requested', 'Rider on the way', 'Trip completed'] : ['Order placed', 'Shop confirmed', 'Rider on the way', 'Delivered'];
+  let h = `<div class="between"><h2>${ride ? 'Ride' : 'Order'} ${esc(o.orderId)}</h2><span class="pill ${s.key}">${esc(s.label)}</span></div><div class="muted">${when(o.createdAt)}</div>`;
+  if (s.key === 'cancelled') h += `<div class="card err" style="margin-top:12px">This ${ride ? 'ride' : 'order'} was cancelled.${o.refundStatus ? ' Refund: ' + esc(String(o.refundStatus).replace(/_/g, ' ').toLowerCase()) + '.' : ''}</div>`;
+  else h += `<ul class="steps">${names.map((n, i) => `<li class="${i <= s.step ? 'done' : ''}"><i>${i <= s.step ? '✓' : ''}</i>${n}</li>`).join('')}</ul>`;
+  const showMap = live && live.route && (live.route.pickup || live.route.destination) && s.key !== 'cancelled'; if (showMap) h += '<div class="map" id="trkMap" style="height:190px"></div>';
+  if (live && live.driver && s.key !== 'cancelled') h += `<div class="card"><h3>Your rider</h3><b>${esc(live.driver.name || 'Rider')}</b>${live.driver.vehicleType || live.driver.plate ? `<div class="muted">${esc([live.driver.vehicleType, live.driver.plate].filter(Boolean).join(' · '))}</div>` : ''}${live.driver.phone ? `<a class="btn cy sm" style="margin-top:10px;text-decoration:none" href="tel:${esc(String(live.driver.phone).replace(/\s/g, ''))}">📞 Call rider</a>` : ''}${live.driverLocation ? `<div class="muted" style="margin-top:8px">Live location updated ${Math.max(0, Math.round((Date.now() - live.driverLocation.at) / 1000))}s ago</div>` : ''}</div>`;
+  if (owner) h += `<div class="card"><h3>${ride ? 'Fare' : 'Items'}</h3>${ride ? '' : o.items.map(i => `<div class="between muted" style="margin-bottom:5px"><span>${i.qty || 1} × ${esc(i.name)}</span><span>${i.price ? fmt0((i.qty || 1) * i.price) : ''}</span></div>`).join('')}${o.pickup ? `<div class="muted" style="margin-bottom:4px">From: ${esc(o.pickup)}</div>` : ''}${o.destination ? `<div class="muted" style="margin-bottom:6px">To: ${esc(o.destination)}</div>` : ''}<div class="between" style="margin-top:6px"><b>Total paid</b><b style="color:var(--g)">${fmt(o.total)}</b></div></div>`;
+  if (owner && t.pin && s.key !== 'cancelled' && s.key !== 'done') h += `<div class="card" style="border-color:var(--g);text-align:center"><h3>Your delivery PIN</h3><div style="font-size:2.2rem;font-weight:900;letter-spacing:10px;color:var(--g)">${esc(t.pin)}</div><div class="muted" style="margin-top:6px">${ride ? 'Tell your rider this PIN when you arrive.' : 'Tell your rider this PIN when you receive your order.'} Never share it before.</div></div>`;
+  if (owner && s.key !== 'cancelled' && s.key !== 'done' && s.step <= (ride ? 0 : 0)) h += `<button class="btn danger" data-act="cancel">Cancel ${ride ? 'ride' : 'order'}</button>`;
+  else if (owner && ['driver', 'confirmed'].includes(s.key)) h += `<p class="muted" style="margin-bottom:8px">${s.key === 'confirmed' ? 'The shop has started preparing your order, so it can no longer be cancelled here.' : 'A rider is on the way. Call your rider if you need to change something.'}</p>`;
+  if (owner && s.key === 'done') h += state.rated[o.orderId] ? `<div class="tag2 ok">Thanks for rating (${state.rated[o.orderId]}★)</div>` : `<div class="card"><h3>Rate your ${ride ? 'trip' : 'delivery'}</h3><div class="stars">${[1, 2, 3, 4, 5].map(n => `<button data-star="${n}" class="${n <= state.rating ? 'on' : ''}" aria-label="${n} stars">⭐</button>`).join('')}</div><input id="rateNote" placeholder="Optional comment" maxlength="300"><button class="btn go" data-act="rate">Submit rating</button></div>`;
+  if (t.error) h += `<div class="err">${esc(t.error)}</div>`;
+  h += '<button class="btn ghost" data-act="close" style="margin-top:10px">Close</button>'; body.innerHTML = h;
+  if (showMap) setTimeout(() => drawTrackMap(live), 60);
+}
+function drawTrackMap(live) {
+  const el = $('#trkMap'); if (!el || typeof L === 'undefined') return; if (state.maps.trk) { try { state.maps.trk.remove(); } catch {} delete state.maps.trk; }
+  const m = L.map(el, { zoomControl: false, attributionControl: false }).setView(DEFAULT_CENTER, 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(m); state.maps.trk = m;
+  const pts = []; const r = live.route; if (r.pickup) { L.marker([r.pickup.lat, r.pickup.lng], { icon: pin('#ffc244') }).addTo(m); pts.push([r.pickup.lat, r.pickup.lng]); } if (r.destination) { L.marker([r.destination.lat, r.destination.lng], { icon: pin('#ff4d6d') }).addTo(m); pts.push([r.destination.lat, r.destination.lng]); }
+  if (live.driverLocation) { L.marker([live.driverLocation.lat, live.driverLocation.lng], { icon: pin('#a855f7') }).addTo(m); pts.push([live.driverLocation.lat, live.driverLocation.lng]); }
+  if (pts.length > 1) m.fitBounds(pts, { padding: [30, 30] }); else if (pts.length) m.setView(pts[0], 15); setTimeout(() => m.invalidateSize(), 300);
+}
+$('#sheetBody').addEventListener('click', async e => {
+  const st = e.target.closest('[data-star]'); if (st) { state.rating = Number(st.dataset.star); return renderTracking(); }
+  const b = e.target.closest('[data-act]'); if (!b || !state.tracking) return; const id = state.tracking.id;
+  if (b.dataset.act === 'close') return closeSheet(false);
+  if (b.dataset.act === 'retry') { state.tracking.error = null; renderTracking(); return refreshTracking(); }
+  if (b.dataset.act === 'cancel') { if (!(await ask('Cancel this order?', 'A refund will be marked as due.', 'Cancel order'))) return; busy(b, true); try { await api('/api/user/orders/cancel', { method: 'POST', body: { orderId: id, reason: 'Cancelled by customer' } }); toast('Cancelled', 'ok'); await refreshTracking(); loadOrdersSoft(); } catch (err) { toast(err.message, 'err', 5000); busy(b, false); refreshTracking(); } }
+  if (b.dataset.act === 'rate') { if (!state.rating) return toast('Pick a star rating first.', 'err'); busy(b, true); try { await api('/api/user/orders/rate', { method: 'POST', body: { orderId: id, rating: state.rating, comment: ($('#rateNote') || {}).value || '' } }); state.rated[id] = state.rating; LS.set('rds_u_rated', state.rated); toast('Thanks for your feedback!', 'ok'); renderTracking(); } catch (err) { toast(err.message, 'err'); busy(b, false); } }
+});
+
+/* ===================== live updates ===================== */
+function joinRoom(id) { if (state.socket && state.socket.connected) state.socket.emit('join_order', id); }
+function refreshRooms() { state.orders.filter(o => !isFinal(o)).forEach(o => joinRoom(o.orderId)); if (state.tracking) joinRoom(state.tracking.id); }
+function initSocket() {
+  if (typeof io !== 'function') return; if (state.socket) { state.socket.auth = { token: state.token || undefined }; state.socket.disconnect().connect(); return; }
+  const s = io({ auth: { token: state.token || undefined }, reconnection: true }); state.socket = s;
+  s.on('connect', () => { setLive(true); refreshRooms(); }); s.on('disconnect', () => setLive(false));
+  s.on('connect_error', err => { setLive(false); if (err && err.message === 'unauthorized' && state.token) sessionExpired(); });
+  s.on('order_status_update', p => { if (state.tracking && p && p.orderId === state.tracking.id) refreshTracking(); loadOrdersSoft(); });
+  s.on('orderListUpdated', () => loadOrdersSoft());
+}
+
+/* ===================== account ===================== */
+function paintAccount() { $('#acct').innerHTML = state.user ? `<div class="between"><div><b>${esc(state.user.phone || '')}</b><div class="muted">Customer ID ${esc(state.user.id || '')}</div></div><span class="tag2 ok">Verified</span></div>` : ''; }
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.token) loadOrdersSoft(); });
+restore();
+})();
+</script>
 </body>
 </html>

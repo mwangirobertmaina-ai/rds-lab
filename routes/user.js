@@ -1,300 +1,359 @@
+'use strict';
+// ============================================================================
+// routes/user.js — STAGE 191 USER EXTENSION (additive; loaded by server.js)
+//
+// Mounted BEFORE the inline /api/user routes, so these handlers take over:
+//   POST /quote            authoritative price (items 100% + 2% service fee + delivery)
+//   POST /calculate-total  same math, old response shape (now includes the 2%)
+//   POST /checkout         the real order: prices rebuilt from the shop catalogue,
+//                          shop orders ring the merchant, cab/boda go straight to
+//                          the driver radar; login required; the 2% is charged on top
+//   GET  /orders/live      caller's own orders only (the inline one listed everyone's)
+//   POST /orders/dismiss   retired (it let anyone cancel anyone's order)
+//   GET  /tariff, GET /orders/:id/pin   rate card; the customer's delivery PIN
+//   (rider details + live location come from the existing GET /orders/:id/live route)
+// Guards run before inline handlers: cancelGuard, rateGuard.
+//
+// Server state is injected by server.js through init(deps). Nothing here talks
+// to a database or payment provider. Payments are SIMULATED and labelled as such
+// in every response until a real provider (M-Pesa Daraja) is wired in.
+// ============================================================================
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 
-let otps = {};
-let users = {};
-let activeOrders = {};
+let D = {};
+function init(deps) { D = deps || {}; }
 
-function calculateAccurateDrivingDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a = 
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const straightLineKm = R * c;
-    const adjustedKm = Math.max(straightLineKm * 1.4, 4.0);
-    return Number(adjustedKm.toFixed(1));
+const CANCELLED = new Set(['CANCELLED_BY_CUSTOMER', 'REJECTED_BY_VENDOR', 'ORDERLY_DISMISSED', 'CANCELLED']);
+// ---------------------------------------------------------------------------
+// TARIFF (Nairobi). Ride-hailing in Kenya prices by base + distance + time, with a minimum fare.
+//  CAR  : Uber's published Nairobi rate card (base 100, KES 42/km, KES 3/min, minimum 300).
+//         Bolt Private publishes base 100, 35/km, 3/min, minimum 200 (so this is the higher of the two).
+//  BODA : no current public rate card exists for motorbike fares, so these defaults are an estimate
+//         positioned below the cab rate. Review them against the market before launch.
+// Real Uber/Bolt fares also move with demand and traffic (dynamic pricing); this engine is fixed-rate.
+// Override any value without code: set TARIFF_JSON, e.g. {"BODA":{"base":60,"perKm":25,"perMin":2,"min":120}}
+// ---------------------------------------------------------------------------
+function loadTariff() {
+    const t = {
+        BODA: { base: 60, perKm: 25, perMin: 2, min: 120, speed: 30 },    // speed = assumed km/h, used to estimate trip minutes
+        CAR:  { base: 100, perKm: 42, perMin: 3, min: 300, speed: 22 }
+    };
+    try {
+        const o = process.env.TARIFF_JSON ? JSON.parse(process.env.TARIFF_JSON) : null;
+        if (o && typeof o === 'object') for (const v of ['BODA', 'CAR']) {
+            if (!o[v] || typeof o[v] !== 'object') continue;
+            for (const k of ['base', 'perKm', 'perMin', 'min', 'speed']) {
+                const n = Number(o[v][k]);
+                if (o[v][k] !== undefined && Number.isFinite(n) && n >= 0 && n <= 5000 && !(k === 'speed' && n < 5)) t[v][k] = n;
+            }
+        }
+    } catch (e) { console.error('[TARIFF] Ignoring invalid TARIFF_JSON:', e.message); }
+    return t;
+}
+const TARIFF = loadTariff();
+const PRICING = Object.freeze({
+    currency: 'KES', tariff: TARIFF, roundTo: 10,
+    serviceFeeRate: 0.02, driverShare: 0.95, kraRate: 0.16,
+    roadFactor: 1.4, minKm: 1, maxKm: 300, maxAmount: 10000000, maxQty: 99, maxLines: 100
+});
+const PROTO_KEYS = ['__proto__', 'constructor', 'prototype', 'hasOwnProperty', 'toString', 'valueOf'];
+const isSafeKey = (v) => typeof v === 'string' && /^[A-Za-z0-9_.:+-]{1,80}$/.test(v) && !PROTO_KEYS.includes(v);
+const has = (o, k) => Object.prototype.hasOwnProperty.call(o || {}, k);
+const money2 = (n) => Number(Number(n).toFixed(2));
+const bad = (res, msg, code = 400, extra) => res.status(code).json({ success: false, error: msg, ...(extra || {}) });
+const clean = (v, max) => (D.cleanText ? D.cleanText(v, max) : String(v == null ? '' : v).replace(/[<>\u0000-\u001f]/g, '').trim().substring(0, max));
+const phoneOk = (v) => (D.isPhone ? D.isPhone(v) : typeof v === 'string' && /^\+?[0-9 ()-]{7,20}$/.test(v));
+const validCoord = (c) => !!c && typeof c === 'object' && c.lat !== undefined && c.lng !== undefined &&
+    Number.isFinite(Number(c.lat)) && Number.isFinite(Number(c.lng)) && Math.abs(Number(c.lat)) <= 90 && Math.abs(Number(c.lng)) <= 180 &&
+    !(Number(c.lat) === 0 && Number(c.lng) === 0);
+
+// Same distance formula as the server (x1.4 road factor, 4 km minimum).
+function drivingKm(lat1, lon1, lat2, lon2) {
+    const R = 6371, rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
+    return Number(Math.max(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * PRICING.roadFactor, PRICING.minKm).toFixed(1));
 }
 
-router.post('/send-otp', (req, res) => {
-    const { phone, email } = req.body;
-    if (!phone) {
-        return res.status(400).json({ success: false, error: "Phone number is required." });
-    }
-    const otp = "1234";
-    otps[phone] = { otp, email, createdAt: Date.now() };
-    res.json({ success: true, message: `Verification OTP sent to ${phone} (Use 1234 for test).` });
-});
-
-router.post('/verify-otp', (req, res) => {
-    const { phone, otp, role, email } = req.body;
-    if (!phone || !otp) {
-        return res.status(400).json({ success: false, error: "Phone and OTP are required." });
-    }
-    if (otp !== "1234" && (!otps[phone] || otps[phone].otp !== otp)) {
-        return res.status(401).json({ success: false, error: "Invalid or expired OTP code." });
-    }
-    const userId = `USR_${phone.replace(/[^0-9]/g, '')}`;
-    const userProfile = { id: userId, phone, email: email || 'robert.maina@rds.com', role: role || 'USER', verifiedAt: Date.now() };
-    users[userId] = userProfile;
-    res.json({ success: true, message: "Authentication successful!", user: userProfile });
-});
-
-router.get('/tenants', (req, res) => {
-    try {
-        const defaultProfiles = {
-            'MERCH_DEF_172': {
-                merchantId: 'MERCH_DEF_172',
-                shopName: "Sovereign Supermarket",
-                businessType: "SUPERMARKET",
-                phone: "+254712345678",
-                gpsLat: -1.2863,
-                gpsLon: 36.8172,
-                banner: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=500'
-            },
-            'MERCH_SPARE_10': {
-                merchantId: 'MERCH_SPARE_10',
-                shopName: "Sovereign Auto Spare Parts",
-                businessType: "SPARES",
-                phone: "+254722334455",
-                gpsLat: -1.2789,
-                gpsLon: 36.8123,
-                banner: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=500'
-            }
-        };
-        const merchantProfiles = (global.merchantProfiles && Object.keys(global.merchantProfiles).length > 0) ? global.merchantProfiles : defaultProfiles;
-        const defaultCatalogs = {
-            'MERCH_DEF_172': [
-                { id: 'K_1', name: 'Sovereign Organic Milk (1L)', category: 'SUPERMARKET', price: 180, merchant: 'Sovereign Supermarket', image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300' },
-                { id: 'K_2', name: 'Premium Grade Rice (2kg)', category: 'SUPERMARKET', price: 320, merchant: 'Sovereign Supermarket', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300' }
-            ],
-            'MERCH_SPARE_10': [
-                { id: 'S_1', name: 'Heavy Duty Boda Brake Pads', category: 'SPARES', price: 650, merchant: 'Sovereign Auto Spare Parts', image: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=300' }
-            ]
-        };
-        const merchantCatalogs = (global.merchantCatalogs && Object.keys(global.merchantCatalogs).length > 0) ? global.merchantCatalogs : defaultCatalogs;
-        const tenants = Object.keys(merchantProfiles).map(id => ({
-            merchantId: id,
-            shopName: merchantProfiles[id].shopName,
-            businessType: merchantProfiles[id].businessType || 'GENERAL_RETAIL',
-            gpsLat: merchantProfiles[id].gpsLat || -1.2863,
-            gpsLon: merchantProfiles[id].gpsLon || 36.8172,
-            banner: merchantProfiles[id].banner || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500',
-            catalog: merchantCatalogs[id] || []
-        }));
-        res.json({ success: true, tenants });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-router.get('/products', (req, res) => {
-    const merchantId = req.headers['x-business-id'] || req.query.merchantId || 'MERCH_DEF_172';
-    const currency = 'KES';
-    const defaultCatalogs = {
-        'MERCH_DEF_172': [
-            { id: 'K_1', name: 'Sovereign Organic Milk (1L)', category: 'SUPERMARKET', price: 180, merchant: 'Sovereign Supermarket', image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300' },
-            { id: 'K_2', name: 'Premium Grade Rice (2kg)', category: 'SUPERMARKET', price: 320, merchant: 'Sovereign Supermarket', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300' }
-        ],
-        'MERCH_SPARE_10': [
-            { id: 'S_1', name: 'Heavy Duty Boda Brake Pads', category: 'SPARES', price: 650, merchant: 'Sovereign Auto Spare Parts', image: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=300' }
-        ]
+// Customer pays: items (100%) + 2% service fee on top + delivery fee.
+// Delivery/fare = base + km rate + minute rate, rounded to KES 10, never below the minimum fare.
+// Shop receives 100% of items. Rider receives 95% of the delivery fee. Platform keeps 2% of items + 5% of the
+// delivery fee, less 16% KRA on that income.
+function priceOf(items, km, vehicle) {
+    const t = PRICING.tariff[vehicle] || PRICING.tariff.BODA;
+    const etaMin = Math.max(1, Math.ceil(km / t.speed * 60));
+    const deliveryFee = money2(Math.max(t.min, Math.round((t.base + km * t.perKm + etaMin * t.perMin) / PRICING.roundTo) * PRICING.roundTo));
+    const serviceFee = money2(items * PRICING.serviceFeeRate);
+    const riderShare = money2(deliveryFee * PRICING.driverShare);
+    const appCommission = money2(deliveryFee - riderShare);              // keeps the split exact to the cent
+    const systemIncome = money2(serviceFee + appCommission);
+    const kraTax = money2(systemIncome * PRICING.kraRate);
+    return {
+        itemsTotal: money2(items), serviceFee, deliveryFee, total: money2(items + serviceFee + deliveryFee),
+        riderShare, appCommission, systemIncome, kraTax, netRevenue: money2(systemIncome - kraTax), etaMin, km
     };
-    const sourceCatalogs = (global.merchantCatalogs && Object.keys(global.merchantCatalogs).length > 0) ? global.merchantCatalogs : defaultCatalogs;
-    let products = sourceCatalogs[merchantId] || defaultCatalogs['MERCH_DEF_172'];
-    const { category } = req.query;
-    if (category && category !== 'ALL') {
-        products = products.filter(p => p.category.toUpperCase() === category.toUpperCase());
+}
+
+function resolveCart(merchantId, rawItems) {
+    const catalogs = global.merchantCatalogs || {};
+    const catalog = has(catalogs, merchantId) ? catalogs[merchantId] : null;
+    if (!Array.isArray(catalog)) return { err: ['This shop has no catalogue.', 404] };
+    if (!Array.isArray(rawItems) || rawItems.length === 0) return { err: ['Your cart is empty.', 400] };
+    if (rawItems.length > PRICING.maxLines) return { err: [`Too many cart lines (max ${PRICING.maxLines}).`, 400] };
+    const wanted = new Map();
+    for (const raw of rawItems) {
+        if (!raw || !isSafeKey(raw.id)) return { err: ['Invalid item in cart.', 400] };
+        const qty = Number(raw.qty);
+        if (!Number.isInteger(qty) || qty < 1) return { err: [`Invalid quantity for ${raw.id}.`, 400] };
+        const merged = (wanted.get(raw.id) || 0) + qty;
+        if (merged > PRICING.maxQty) return { err: [`Maximum ${PRICING.maxQty} per item.`, 400] };
+        wanted.set(raw.id, merged);
     }
-    res.json({ success: true, currency, products });
+    const lines = []; let subtotal = 0;
+    for (const [id, qty] of wanted) {
+        const item = catalog.find(i => i && i.id === id);
+        const price = item ? Number(item.price) : NaN;
+        if (!item || !Number.isFinite(price) || price < 0) return { err: [`"${id}" is no longer available.`, 400] };
+        const stock = item.stock === undefined || item.stock === null ? null : Number(item.stock);
+        if (stock !== null && Number.isFinite(stock) && qty > stock) {
+            return { err: [stock <= 0 ? `${item.name} is out of stock.` : `Only ${stock} of ${item.name} left.`, 409] };
+        }
+        subtotal += price * qty;
+        lines.push({ id: item.id, name: String(item.name || 'Item').slice(0, 120), price, qty });
+    }
+    subtotal = money2(subtotal);
+    if (!(subtotal > 0)) return { err: ['Invalid cart total.', 400] };
+    if (subtotal > PRICING.maxAmount) return { err: ['Order total is above the allowed limit.', 400] };
+    return { lines, subtotal };
+}
+
+// Shared validation + pricing for /quote and /checkout.
+function prepare(b) {
+    if (!b || typeof b !== 'object') return { err: ['Invalid request.', 400] };
+    if (!validCoord(b.destinationCoords)) return { err: ['Choose your drop-off location on the map.', 400] };
+    const dest = { lat: Number(b.destinationCoords.lat), lng: Number(b.destinationCoords.lng) };
+    const isRide = b.businessId === 'DIRECT_RIDE';
+    let vehicle = 'BODA', merchantId = null, profile = null, lines = [], items = 0, pickup;
+
+    if (isRide) {
+        const v = String(b.vehicleType || 'BODA').toUpperCase();
+        if (!['BODA', 'CAR'].includes(v)) return { err: ['vehicleType must be BODA or CAR.', 400] };
+        vehicle = v;
+        if (!validCoord(b.pickupCoords)) return { err: ['Choose your pickup location.', 400] };
+        pickup = { lat: Number(b.pickupCoords.lat), lng: Number(b.pickupCoords.lng) };
+    } else {
+        if (!isSafeKey(b.businessId)) return { err: ['Choose a shop.', 400] };
+        merchantId = b.businessId;
+        const profiles = global.merchantProfiles || {};
+        if (!has(profiles, merchantId)) return { err: ['Shop not found.', 404] };
+        if (!D.isTenantActive(merchantId)) return { err: ['This shop is currently unavailable.', 403] };
+        profile = profiles[merchantId];
+        const cart = resolveCart(merchantId, b.items);
+        if (cart.err) return { err: cart.err };
+        lines = cart.lines; items = cart.subtotal;
+        // Pickup is always the shop's own location, never what the browser says.
+        pickup = Number.isFinite(Number(profile.gpsLat)) && Number.isFinite(Number(profile.gpsLon))
+            ? { lat: Number(profile.gpsLat), lng: Number(profile.gpsLon) } : { lat: -1.2863, lng: 36.8172 };
+    }
+    const km = drivingKm(pickup.lat, pickup.lng, dest.lat, dest.lng);
+    if (km > PRICING.maxKm) return { err: [`That destination is too far (maximum ${PRICING.maxKm} km).`, 400] };
+    return { isRide, merchantId, profile, lines, vehicle, pickup, dest, km, price: priceOf(items, km, vehicle) };
+}
+
+function quoteView(p) {
+    return {
+        mode: p.isRide ? 'RIDE' : 'SHOP', currency: PRICING.currency, vehicle: p.vehicle, distanceKm: p.km, etaMin: p.price.etaMin,
+        itemsTotal: p.price.itemsTotal, serviceFee: p.price.serviceFee, deliveryFee: p.price.deliveryFee, total: p.price.total,
+        splits: { shopReceives: p.price.itemsTotal, riderReceives: p.price.riderShare, appCommission: p.price.appCommission, platformIncome: p.price.systemIncome, kraTax: p.price.kraTax, netRevenue: p.price.netRevenue },
+        lines: p.lines, shop: p.profile ? { merchantId: p.merchantId, shopName: p.profile.shopName } : null,
+        payment: { mode: 'SIMULATED' }
+    };
+}
+
+const auth = (req, res, next) => {
+    if (!D.softAuth) return bad(res, 'User service is starting. Try again shortly.', 503);
+    return D.softAuth(D.ROLES.REGULAR_USER)(req, res, next);
+};
+
+// ---------------------------------------------------------------------------
+router.post('/quote', (req, res) => {
+    const p = prepare(req.body);
+    if (p.err) return bad(res, p.err[0], p.err[1]);
+    res.json({ success: true, quote: quoteView(p) });
 });
 
-router.post('/calculate-total', (req, res) => {
-    const { itemPriceTotal, pickupCoords, destinationCoords, vehicleType } = req.body;
-    const commodityCost = Number(itemPriceTotal) || 0;
-    const pLat = (pickupCoords && pickupCoords.lat) || -1.286389;
-    const pLng = (pickupCoords && pickupCoords.lng) || 36.817223;
-    const dLat = (destinationCoords && destinationCoords.lat) || -1.215000;
-    const dLng = (destinationCoords && destinationCoords.lng) || 36.890000;
-    
-    const distanceKm = calculateAccurateDrivingDistance(pLat, pLng, dLat, dLng);
-    const isCar = (vehicleType || '').toUpperCase() === 'CAR';
-    const baseDeliveryFee = isCar ? 350 : 200;
-    const perKmRate = isCar ? 65 : 40;
-    const deliveryFee = Number((baseDeliveryFee + (distanceKm * perKmRate)).toFixed(2));
+router.post('/calculate-total', (req, res) => {          // old shape, corrected total
+    const b = req.body || {};
+    const items = b.itemPriceTotal === undefined ? 0 : Number(b.itemPriceTotal);
+    if (!Number.isFinite(items) || items < 0 || items > PRICING.maxAmount) return bad(res, 'itemPriceTotal must be a non-negative number within limits.');
+    if ((b.pickupCoords && !validCoord(b.pickupCoords)) || (b.destinationCoords && !validCoord(b.destinationCoords))) return bad(res, 'Invalid coordinates.');
+    const pk = validCoord(b.pickupCoords) ? b.pickupCoords : { lat: -1.286389, lng: 36.817223 };
+    const ds = validCoord(b.destinationCoords) ? b.destinationCoords : { lat: -1.215, lng: 36.89 };
+    const vehicle = String(b.vehicleType || 'BODA').toUpperCase() === 'CAR' ? 'CAR' : 'BODA';
+    const km = drivingKm(Number(pk.lat), Number(pk.lng), Number(ds.lat), Number(ds.lng));
+    const pr = priceOf(items, km, vehicle);
+    res.json({ success: true, distanceKm: km, split: {
+        productAmount: pr.itemsTotal, shopOwnerPayout: pr.itemsTotal, systemCommodityFee: pr.serviceFee, deliveryFee: pr.deliveryFee,
+        riderShare: pr.riderShare, appDeliveryCommission: pr.appCommission, systemFee: pr.systemIncome, tax: pr.kraTax,
+        netSystemRevenue: pr.netRevenue, userPays: pr.total } });
+});
 
-    const shopOwnerPayout = Number((commodityCost * 1.00).toFixed(2)); 
-    const systemCommodityFee = Number((commodityCost * 0.02).toFixed(2)); 
-    const riderShare = Number((deliveryFee * 0.95).toFixed(2));               
-    const appDeliveryCommission = Number((deliveryFee * 0.05).toFixed(2));  
+// ---------------------------------------------------------------------------
+const burst = new Map();      // userId -> timestamps of recent orders
+function newOrderId() {
+    for (let i = 0; i < 8; i++) {
+        const id = 'ORD_' + crypto.randomInt(100000, 1000000);
+        const r = D.findOrderRefs191(id);
+        if (!r.merchant.length && !r.store.length && !r.active.length) return id;
+    }
+    return 'ORD_' + Date.now();
+}
 
-    const totalSystemIncome = Number((systemCommodityFee + appDeliveryCommission).toFixed(2));
-    const kraTax = Number((totalSystemIncome * 0.16).toFixed(2)); 
-    const netSystemRevenue = Number((totalSystemIncome - kraTax).toFixed(2));
-    const userPays = Number((commodityCost + deliveryFee).toFixed(2));
+router.post('/checkout', auth, (req, res) => {
+    if (!req.user || !req.user.userId) return bad(res, 'Please sign in to place an order.', 401);
+    const uid = req.user.userId, b = req.body || {};
+    const now = Date.now();
+    const recent = (burst.get(uid) || []).filter(t => now - t < 10 * 60 * 1000);
+    if (recent.length >= 10) return bad(res, 'Too many orders in a short time. Please wait a few minutes.', 429);
+
+    const p = prepare(b);
+    if (p.err) return bad(res, p.err[0], p.err[1]);
+
+    const profileUser = (D.getUsers && D.getUsers()[uid]) || null;
+    if (b.mpesaPhone !== undefined && !phoneOk(b.mpesaPhone)) return bad(res, 'Invalid M-Pesa phone number.');
+    const phone = b.mpesaPhone || (profileUser && profileUser.phone) || null;
+    if (!phone) return bad(res, 'An M-Pesa phone number is required.');
+
+    const active = D.getActiveOrders();
+    if (p.isRide) {
+        const open = (active.DIRECT_RIDES || []).filter(o => o.userId === uid && o.status === 'DISPATCHED_STRAIGHT_TO_DRIVER' && !o.deliveryStatus);
+        if (open.length >= 2) return bad(res, 'You already have ride requests waiting for a rider.', 409);
+    }
+
+    const orderId = newOrderId();
+    const destLabel = clean(b.destination, 200) || 'Pinned location';
+    const pickupLabel = p.isRide ? (clean(b.pickup, 200) || 'Pickup point') : p.profile.shopName;
+    const pr = p.price;
+    const breakdown = {
+        commodityCost: pr.itemsTotal, shopOwnerPayout: pr.itemsTotal, deliveryFee: pr.deliveryFee, riderShare: pr.riderShare,
+        systemFee: pr.systemIncome, tax: pr.kraTax, serviceFee: pr.serviceFee, appCommission: pr.appCommission, netRevenue: pr.netRevenue
+    };
+    const payment = { method: 'MPESA', phone, amount: pr.total, mode: 'SIMULATED', status: 'SIMULATED_PAID', at: now };
+    // Delivery PIN: the customer reads it to the rider at hand-over. The rider cannot be paid without it.
+    const deliveryPin = String(crypto.randomInt(1000, 10000));
+    const pinSalt = crypto.randomBytes(8).toString('hex');
+    const pinHash = crypto.createHash('sha256').update(pinSalt + deliveryPin).digest('hex');
+    const customerPhone = (profileUser && profileUser.phone) || phone;
+    const order = {
+        id: orderId, userId: uid, phone, customerPhone, pickup: pickupLabel, destination: destLabel, pickupCoords: p.pickup, destinationCoords: p.dest,
+        vehicleType: p.vehicle, currency: PRICING.currency, total: pr.total, breakdown, payment, items: p.lines,
+        distanceKm: p.km, etaMin: pr.etaMin, deliveryPin, pinSalt, pinHash,
+        status: p.isRide ? 'DISPATCHED_STRAIGHT_TO_DRIVER' : 'HELD_IN_ESCROW_PENDING_PACKAGING', createdAt: now
+    };
+
+    if (p.isRide) {
+        // CAB / BODA: user -> rider directly, no merchant involved.
+        const dispatch = {
+            id: orderId, orderId, isDirectRide: true, pickup: pickupLabel, destination: destLabel,
+            pickupCoords: p.pickup, destinationCoords: p.dest, vehicleType: p.vehicle, currency: PRICING.currency,
+            total: pr.total, totalAmount: pr.total, deliveryFee: pr.deliveryFee, riderPayout: pr.riderShare,
+            distanceKm: p.km, etaMin: pr.etaMin, customerPhone, pinSalt, pinHash, merchantId: null,
+            status: 'PENDING_DRIVER_ACCEPTANCE', dispatchedAt: now
+        };
+        if (!global.driverQueue) global.driverQueue = [];
+        global.driverQueue.push(dispatch);
+        if (!active.DIRECT_RIDES) active.DIRECT_RIDES = [];
+        active.DIRECT_RIDES.push(order);
+        if (global.io) { global.io.emit('new_driver_dispatch', dispatch); global.io.emit('orderListUpdated', { orderId }); }
+    } else {
+        // SHOP ORDER: user -> merchant (rings the merchant console) -> rider after the shop accepts.
+        if (!active[p.merchantId]) active[p.merchantId] = [];
+        active[p.merchantId].push(order);
+        if (!global.merchantOrders) global.merchantOrders = {};
+        if (!global.merchantOrders[p.merchantId]) global.merchantOrders[p.merchantId] = [];
+        // The merchant only sees what it needs. PIN, rider payout and customer phone stay on the customer's order record.
+        const merchantOrder = {
+            orderId, userId: uid, items: p.lines, totalAmount: pr.total, shopOwnerPayout: pr.itemsTotal,
+            status: 'PENDING_VENDOR_ACCEPTANCE', createdAt: now
+        };
+        global.merchantOrders[p.merchantId].push(merchantOrder);
+        if (global.io) {
+            global.io.to(p.merchantId).emit('new_customer_order', { orderId, items: p.lines, totalAmount: pr.total, shopOwnerPayout: pr.itemsTotal });
+            global.io.emit('orderListUpdated', { orderId });
+        }
+    }
+    recent.push(now); burst.set(uid, recent);
+    if (D.appendAudit) D.appendAudit('USER_ORDER_PLACED', { orderId, mode: p.isRide ? 'RIDE' : 'SHOP', merchantId: p.merchantId, total: pr.total });
 
     res.json({
-        success: true,
-        distanceKm,
-        split: {
-            productAmount: commodityCost,
-            shopOwnerPayout,
-            systemCommodityFee,
-            deliveryFee,
-            riderShare,
-            appDeliveryCommission,
-            systemFee: totalSystemIncome,
-            tax: kraTax,
-            netSystemRevenue,
-            userPays
-        }
+        success: true, orderId, mode: p.isRide ? 'RIDE' : 'SHOP', total: pr.total, deliveryPin, etaMin: pr.etaMin, quote: quoteView(p), payment: { mode: 'SIMULATED', status: 'SIMULATED_PAID' },
+        message: p.isRide ? 'Ride requested. Looking for a rider.' : `Order sent to ${p.profile.shopName}. The shop has been alerted.`
     });
 });
 
-router.post('/checkout', (req, res) => {
-    const { phone, itemPriceTotal, pickupCoords, destinationCoords, vehicleType, pickup, destination, businessId, userId, items } = req.body;
-    const commodityCost = Number(itemPriceTotal) || 0;
-    const pLat = (pickupCoords && pickupCoords.lat) || -1.286389;
-    const pLng = (pickupCoords && pickupCoords.lng) || 36.817223;
-    const dLat = (destinationCoords && destinationCoords.lat) || -1.215000;
-    const dLng = (destinationCoords && destinationCoords.lng) || 36.890000;
-    
-    const distanceKm = calculateAccurateDrivingDistance(pLat, pLng, dLat, dLng);
-    const isCar = (vehicleType || '').toUpperCase() === 'CAR';
-    const baseDeliveryFee = isCar ? 350 : 200;
-    const perKmRate = isCar ? 65 : 40;
-    const deliveryFee = Number((baseDeliveryFee + (distanceKm * perKmRate)).toFixed(2));
-    
-    const shopOwnerPayout = Number((commodityCost * 1.00).toFixed(2));
-    const systemCommodityFee = Number((commodityCost * 0.02).toFixed(2));
-    const riderShare = Number((deliveryFee * 0.95).toFixed(2));
-    const appDeliveryCommission = Number((deliveryFee * 0.05).toFixed(2));
-    const totalSystemIncome = Number((systemCommodityFee + appDeliveryCommission).toFixed(2));
-    const kraTax = Number((totalSystemIncome * 0.16).toFixed(2));
-    
-    const total = Number((commodityCost + deliveryFee).toFixed(2));
-    const currency = 'KES';
-    const orderId = `ORD_${Math.floor(100000 + Math.random() * 900000)}`;
-
-    const assignedDrivers = [
-        { name: "John Kiprop", vehicle: "Honda Ace (KBX 420Y)", phone: "+254711223344", payout: riderShare },
-        { name: "David Ochieng", vehicle: "Toyota Vitz (KDD 910Z)", phone: "+254722334455", payout: riderShare }
-    ];
-    const assignedDriver = assignedDrivers[Math.floor(Math.random() * assignedDrivers.length)];
-
-    const resolvedItems = (items && items.length > 0) ? items : [{ name: `${isCar ? 'Cab' : 'Boda'} Ride`, qty: 1, price: total }];
-
-    const isDirectRide = (businessId === 'DIRECT_RIDE' || commodityCost <= 0);
-
-    const newOrder = {
-        id: orderId,
-        userId: userId || 'ANONYMOUS',
-        phone,
-        pickup: pickup || 'Nairobi CBD',
-        destination: destination || 'Kasarani',
-        currency,
-        total,
-        breakdown: {
-            commodityCost,
-            shopOwnerPayout,
-            deliveryFee,
-            riderShare,
-            systemFee: totalSystemIncome,
-            tax: kraTax
-        },
-        assignedDriver,
-        status: isDirectRide ? 'DISPATCHED_STRAIGHT_TO_DRIVER' : 'HELD_IN_ESCROW_PENDING_PACKAGING',
-        createdAt: Date.now()
-    };
-
-    if (isDirectRide) {
-        // PROTOCOL 1: CAB / BODA GOES STRAIGHT TO DRIVER RADAR WITH ZERO COMPROMISE
-        if (!global.driverQueue) global.driverQueue = [];
-        const directDispatch = {
-            id: orderId,
-            orderId: orderId,
-            isDirectRide: true,
-            pickup: pickup || 'Nairobi CBD',
-            destination: destination || 'Kasarani',
-            currency,
-            total,
-            totalAmount: total,
-            assignedDriver,
-            status: 'PENDING_DRIVER_ACCEPTANCE',
-            dispatchedAt: Date.now()
-        };
-        global.driverQueue.push(directDispatch);
-
-        if (!activeOrders['DIRECT_RIDES']) activeOrders['DIRECT_RIDES'] = [];
-        activeOrders['DIRECT_RIDES'].push(newOrder);
-
-        if (global.io) {
-            global.io.emit('new_driver_dispatch', directDispatch);
-            global.io.emit('orderListUpdated', directDispatch);
-        }
-
-        return res.json({ success: true, message: "Ride dispatched straight to driver radar with zero compromise.", orderId, total, assignedDriver });
-    }
-
-    // PROTOCOL 2: COMMODITY ORDERS (RICE, MILK, SPARE PARTS) GO TO MERCHANT FAST WITH ALARM RINGER
-    const targetMerchant = businessId || 'MERCH_DEF_172';
-    if (!activeOrders[targetMerchant]) activeOrders[targetMerchant] = [];
-    activeOrders[targetMerchant].push(newOrder);
-
-    if (!global.merchantOrders) global.merchantOrders = {};
-    if (!global.merchantOrders[targetMerchant]) global.merchantOrders[targetMerchant] = [];
-    global.merchantOrders[targetMerchant].push({
-        orderId,
-        items: resolvedItems,
-        totalAmount: total,
-        shopOwnerPayout,
-        assignedDriver,
-        status: 'PENDING_VENDOR_ACCEPTANCE',
-        createdAt: Date.now()
-    });
-
-    // INSTANT SOCKET EMIT TO RING MERCHANT TERMINAL LOUD & FAST
-    if (global.io) {
-        global.io.to(targetMerchant).emit('new_customer_order', { orderId, items: resolvedItems, totalAmount: total, shopOwnerPayout, assignedDriver });
-        global.io.emit('orderListUpdated', { orderId });
-    }
-
-    res.json({ success: true, message: "Order sent to merchant store with instant ringer alarm.", orderId, total, assignedDriver });
+// ---------------------------------------------------------------------------
+router.get('/tariff', (req, res) => {
+    res.json({ success: true, tariff: PRICING.tariff, roundTo: PRICING.roundTo, roadFactor: PRICING.roadFactor, minKm: PRICING.minKm,
+        serviceFeeRate: PRICING.serviceFeeRate, riderShare: PRICING.driverShare, currency: PRICING.currency });
 });
 
-router.get('/orders/live', (req, res) => {
-    const merchantId = req.headers['x-business-id'] || 'MERCH_DEF_172';
-    const orders = (activeOrders[merchantId] || []).concat(activeOrders['DIRECT_RIDES'] || []);
-    res.json({ success: true, orders });
+// The customer's delivery PIN (owner only, while the order is open).
+router.get('/orders/:orderId/pin', auth, (req, res) => {
+    const id = req.params.orderId;
+    if (!isSafeKey(id)) return bad(res, 'Invalid orderId.');
+    if (!req.user || !req.user.userId) return bad(res, 'Please sign in.', 401);
+    const refs = D.findOrderRefs191(id);
+    const base = refs.active[0] && refs.active[0].order;
+    if (!base) return bad(res, 'Order not found.', 404);
+    if (req.user.role !== D.ROLES.SOVEREIGN_ADMIN && base.userId !== req.user.userId) return bad(res, 'Forbidden.', 403);
+    if (CANCELLED.has(base.status) || base.deliveryStatus === 'DELIVERED' || /COMPLETED/.test(String(base.status))) return res.json({ success: true, pin: null });
+    res.json({ success: true, pin: base.deliveryPin || null });
 });
 
-router.post('/orders/dismiss', (req, res) => {
-    const { orderId, businessId } = req.body;
-    const bizKey = businessId || 'MERCH_DEF_172';
-    
-    let found = false;
-    for (let key in activeOrders) {
-        const order = activeOrders[key].find(o => o.id === orderId);
-        if (order) {
-            order.status = 'ORDERLY_DISMISSED';
-            found = true;
-        }
-    }
-    if (!found && activeOrders[bizKey]) {
-        const order = activeOrders[bizKey].find(o => o.id === orderId);
-        if (order) {
-            order.status = 'ORDERLY_DISMISSED';
-            found = true;
-        }
-    }
-
-    if (!found) return res.status(404).json({ success: false, error: "Order ID not found." });
-
-    if (global.io) global.io.emit('orderListUpdated', { orderId });
-    res.json({ success: true, message: `Order ${orderId} dismissed and escrow rolled back.` });
+router.get('/orders/live', auth, (req, res) => {
+    if (!req.user || !req.user.userId) return bad(res, 'Please sign in.', 401);
+    res.json({ success: true, orders: D.normalizedOrders191().filter(o => o.userId === req.user.userId) });
 });
+
+router.post('/orders/dismiss', (req, res) => bad(res, 'This action was retired. Use /api/user/orders/cancel.', 410));
+
+// ---------------------------------------------------------------------------
+// Guards that run before the inline handlers
+// ---------------------------------------------------------------------------
+function cancelGuard(req, res, next) {
+    const id = req.body && req.body.orderId;
+    if (!isSafeKey(id) || !D.orderView191) return next();
+    const v = D.orderView191(id, false);
+    if (!v || CANCELLED.has(v.status)) return next();                        // inline handler answers 404 / 409
+    if (v.deliveryStatus === 'DELIVERED' || /COMPLETED/.test(String(v.status)) || v.vendorStatus === 'COMPLETED & PAID OUT') {
+        return bad(res, 'This order is already complete and cannot be cancelled.', 409);
+    }
+    if (v.merchantId) {
+        if (v.vendorStatus && v.vendorStatus !== 'PENDING_VENDOR_ACCEPTANCE') return bad(res, 'The shop has already accepted this order. Please contact support to cancel.', 409);
+    } else if (v.deliveryStatus && v.deliveryStatus !== 'DELIVERED') {
+        return bad(res, 'A rider is already on the way. Please contact the rider or support.', 409);
+    }
+    next();
+}
+
+function rateGuard(req, res, next) {
+    const id = req.body && req.body.orderId;
+    if (!isSafeKey(id) || !D.orderView191) return next();
+    const v = D.orderView191(id, false);
+    if (!v) return next();
+    const done = v.deliveryStatus === 'DELIVERED' || /COMPLETED/.test(String(v.status)) || v.vendorStatus === 'COMPLETED & PAID OUT';
+    if (!done) return bad(res, 'You can rate an order once it has been delivered.', 409);
+    const ratings = D.getRatings ? D.getRatings() : [];
+    if (ratings.some(r => r.orderId === id)) return bad(res, 'This order was already rated.', 409);
+    next();
+}
 
 module.exports = router;
+module.exports.init = init;
+module.exports.cancelGuard = cancelGuard;
+module.exports.rateGuard = rateGuard;
+module.exports.PRICING = PRICING;
+module.exports.priceOf = priceOf;
+module.exports.TARIFF = TARIFF;
