@@ -397,7 +397,8 @@ if (userExt191) {
         userExt191.init({
             softAuth, ROLES, isTenantActive, cleanText, isPhone, appendAudit,
             findOrderRefs191, orderView191, normalizedOrders191,
-            getActiveOrders: () => activeOrders, getDrivers: () => drivers, getUsers: () => users, getRatings: () => orderRatings191
+            getActiveOrders: () => activeOrders, getDrivers: () => drivers, getUsers: () => users, getRatings: () => orderRatings191,
+            orderEvents: () => orderEvents192()
         });
     }
     if (typeof userExt191.cancelGuard === 'function') app.post('/api/user/orders/cancel', userExt191.cancelGuard);
@@ -428,7 +429,25 @@ app.get('/user', (req, res, next) => {
 const STAGE_192 = STAGE_191, VERSION_192 = VERSION_191;
 const driverDocs192 = {};        // driverId -> { selfie, licence, goodConduct, vehicle, insurance, inspection, submittedAt }
 const driverPayouts192 = [];     // simulated M-Pesa B2C payouts
-const switches192 = { panels: {}, users: {} };   // MASTER CONTROL: panel on/off + switched-off customers (saved across restarts)
+const LEDGER_SINGLE_OPERATOR_192 = process.env.LEDGER_SINGLE_OPERATOR === 'true';   // true = the one owner may approve their own large journals (recorded as self-approved)
+const MARKETPLACE_TENANT_192 = process.env.MARKETPLACE_TENANT || 'BIZ-KE';
+const ledgerState192 = {}, complianceState192 = {};                                  // saved with the rest of the state (see the snapshot wrapper)
+// routes/admin.js holds the ledger engine, the compliance engine and the admin API in ONE file
+const adminModule = safeRequire191('./routes/admin', 'admin');
+const ledger192 = adminModule && typeof adminModule.createLedger === 'function' ? adminModule.createLedger({ state: ledgerState192, appendAudit, singleOperator: LEDGER_SINGLE_OPERATOR_192, manualAlwaysApproved: process.env.LEDGER_MANUAL_APPROVAL === 'true' }) : null;
+const compliance192 = adminModule && typeof adminModule.createCompliance === 'function' ? adminModule.createCompliance({
+    state: complianceState192, appendAudit, singleOperator: LEDGER_SINGLE_OPERATOR_192, ctrUsd: Number(process.env.CTR_USD) || 15000,
+    fxPerUsd: { KES: Number(process.env.FX_KES_PER_USD) || 129 }, ctrOverrides: Number(process.env.CTR_KES_THRESHOLD) > 0 ? { KES: Number(process.env.CTR_KES_THRESHOLD) } : {}
+}) : null;
+let adminReady192 = false;
+const ledgerHooks192 = () => { try { return (adminReady192 && adminModule && adminModule.hooks) || null; } catch (e) { return null; } };
+// THE GLUE: the customer and rider modules only announce neutral order events. This is the one place that connects them to the
+// admin side (ledger, client registry). Remove this and both modules still work exactly as before.
+const orderEvents192 = () => {
+    const H = ledgerHooks192(); if (!H) return null;
+    return { beforeOrder: (x) => H.checkOrder(x), afterOrder: (o) => H.onPayment(o), afterDelivery: (o) => H.onSettlement(o), afterPayout: (r) => H.onPayout(r) };
+};
+const switches192 = { panels: {}, users: {}, compliance: {} };   // MASTER CONTROL: panel on/off + switched-off customers (saved across restarts)
 const PAYMENTS_MODE_192 = (process.env.PAYMENTS_MODE || 'simulated').toLowerCase();
 const DRIVER_APPROVAL_REQUIRED_192 = process.env.DRIVER_APPROVAL_REQUIRED
     ? process.env.DRIVER_APPROVAL_REQUIRED === 'true'
@@ -440,12 +459,12 @@ app.get('/api/meta/version', (req, res) => res.json({ success: true, stage: STAG
 app.get('/readyz', (req, res) => {
     const audit = verifyAuditChain();
     const persistOk = !PERSIST_STATE_191 || lastSnapshot191.ok !== false;
-    const missing = ['store', 'merchants', 'user', 'driver'].filter(k => !(MODULE_STATUS_191[k] && MODULE_STATUS_191[k].loaded));
+    const missing = ['store', 'merchants', 'user', 'driver', 'admin'].filter(k => !(MODULE_STATUS_191[k] && MODULE_STATUS_191[k].loaded));
     const ready = audit.valid && persistOk && missing.length === 0;
     res.status(ready ? 200 : 503).json({
         ready, stage: STAGE_192, version: VERSION_192, auditChainValid: audit.valid, persistenceOk: persistOk, missingModules: missing,
         modules: MODULE_STATUS_191, paymentsMode: PAYMENTS_MODE_192, driverApprovalRequired: DRIVER_APPROVAL_REQUIRED_192,
-        testCredentials: ALLOW_TEST_CREDENTIALS, adminLoginConfigured: !adminSetupRequired192(), adminSetupRequired: adminSetupRequired192(), uptimeSeconds: Math.floor(process.uptime())
+        testCredentials: ALLOW_TEST_CREDENTIALS, ledger: ledger192 ? { chainValid: ledger192.verifyAll().valid, tenants: ledger192.tenants().length } : null, clients: compliance192 ? compliance192.clients.count() : null, adminModuleReady: adminReady192, adminLoginConfigured: !adminSetupRequired192(), adminSetupRequired: adminSetupRequired192(), uptimeSeconds: Math.floor(process.uptime())
     });
 });
 
@@ -453,7 +472,7 @@ app.get('/readyz', (req, res) => {
 const _snapshotPayload191 = snapshotPayload191;
 snapshotPayload191 = function () {
     const p = _snapshotPayload191();
-    p.version = 192; p.driverDocs192 = driverDocs192; p.driverPayouts192 = driverPayouts192; p.switches192 = switches192;
+    p.version = 192; p.driverDocs192 = driverDocs192; p.driverPayouts192 = driverPayouts192; p.switches192 = switches192; p.ledger192 = ledgerState192; p.compliance192 = complianceState192;
     return p;
 };
 const _restoreSnapshot191 = restoreSnapshot191;
@@ -465,8 +484,22 @@ restoreSnapshot191 = function () {
         for (const f of [SNAPSHOT_FILE_191, SNAPSHOT_FILE_191 + '.bak']) { try { raw = JSON.parse(fs.readFileSync(f, 'utf8')); break; } catch (e) {} }
         if (raw) {
             replaceObject191(driverDocs192, raw.driverDocs192); replaceArray191(driverPayouts192, raw.driverPayouts192);
+            if (raw.ledger192 && typeof raw.ledger192 === 'object') {
+                for (const k of Object.keys(ledgerState192)) delete ledgerState192[k];
+                Object.assign(ledgerState192, raw.ledger192);
+                for (const k of ['accounts', 'journals', 'idem', 'periods', 'pending', 'reversals']) if (!ledgerState192[k] || typeof ledgerState192[k] !== 'object') ledgerState192[k] = {};
+                if (!Array.isArray(ledgerState192.failures)) ledgerState192.failures = [];
+                if (ledger192) ledger192.freezeLoaded();
+            }
+            if (raw.compliance192 && typeof raw.compliance192 === 'object') {
+                for (const k of Object.keys(complianceState192)) delete complianceState192[k];
+                Object.assign(complianceState192, raw.compliance192);
+                for (const k of ['kyc', 'alerts', 'ctr', 'str', 'txns', 'log']) if (!Array.isArray(complianceState192[k])) complianceState192[k] = [];
+                if (!complianceState192.sanctions || typeof complianceState192.sanctions !== 'object') complianceState192.sanctions = { entries: [], source: null, listDate: null, loadedAt: null, loadedBy: null };
+            }
             const sw = raw.switches192 || {};
             switches192.panels = {}; switches192.users = {};
+            switches192.compliance = (sw.compliance && typeof sw.compliance.enforceLimits === 'boolean') ? { enforceLimits: sw.compliance.enforceLimits } : {};
             for (const k of Object.keys(sw.panels || {})) if (isSafeKey(k) && sw.panels[k] && typeof sw.panels[k] === 'object') switches192.panels[k] = sw.panels[k];
             for (const k of Object.keys(sw.users || {})) if (isSafeKey(k) && sw.users[k] && typeof sw.users[k] === 'object') switches192.users[k] = sw.users[k];
         }
@@ -496,6 +529,7 @@ app.post('/api/driver/register-and-send-otp', (req, res, next) => {
             drivers[id].vehicleType = veh; drivers[id].docsOnFile = true;
             if (isTestPhone191(b.phone)) { drivers[id].standing = 'APPROVED'; drivers[id].documentsReviewed = true; drivers[id].reviewedBy = 'TEST_ACCOUNT'; }
         }
+        try { const H = ledgerHooks192(); if (H && H.onRiderRegistered && drivers[id]) H.onRiderRegistered(drivers[id]); } catch (e) {}
         stateDirty191 = true;
     });
     next();
@@ -561,7 +595,11 @@ if (storeExt191 && typeof storeExt191.init === 'function') {
         verifyJwt, normalizePhone: normalizeMsisdn191,
         vatRate: (userExt191 && userExt191.VAT_RATE) || 0.16, stage: STAGE_192, version: VERSION_192,
         paymentsMode: PAYMENTS_MODE_192, approvalRequired: DRIVER_APPROVAL_REQUIRED_192, testCreds: ALLOW_TEST_CREDENTIALS, smsConfigured: SMS_CONFIGURED_191,
-        getSwitches: () => switches192, resetTestData: resetTestData192, getCorridor: () => corridorStatus, getDriverDocs: () => driverDocs192, emitSafe: emitSafe191, appendAudit, markDirty: () => { stateDirty191 = true; },
+        getSwitches: () => switches192, resetTestData: resetTestData192,
+        getLedgerView: () => (ledger192 ? { engine: ledger192, tenant: MARKETPLACE_TENANT_192 } : null),
+        // the admin side (ledger, compliance, client registry) reports into this one master control
+        getComplianceView: () => { const H = ledgerHooks192(); return H && H.monitor ? H.monitor() : null; },
+        setEnforcement: (on) => { switches192.compliance = { enforceLimits: !!on }; const H = ledgerHooks192(); if (H && H.setEnforcement) H.setEnforcement(on); return !!on; }, getCorridor: () => corridorStatus, getDriverDocs: () => driverDocs192, emitSafe: emitSafe191, appendAudit, markDirty: () => { stateDirty191 = true; },
         getActiveOrders: () => activeOrders, getStoreOrders: () => storeOrders, getDrivers: () => drivers, getWallets: () => driverWallets, getLedger: () => driverLedger191,
         getPayouts: () => driverPayouts192, getPresence: () => driverPresence191, getUsers: () => users, getRatings: () => orderRatings191, getPendingMerchants: () => pendingMerchants,
         getMetrics: () => METRICS_191, getModuleStatus: () => MODULE_STATUS_191,
@@ -577,6 +615,14 @@ if (storeExt191 && typeof storeExt191.init === 'function') {
     });
 }
 
+// a cancelled order that was paid owes the customer a refund: record it in the ledger
+const _cancelOrderEverywhere191 = cancelOrderEverywhere191;
+cancelOrderEverywhere191 = function (orderId, status, reason) {
+    const refs = _cancelOrderEverywhere191(orderId, status, reason);
+    try { const LH = ledgerHooks192(); if (LH && refs && refs.active && refs.active[0]) LH.onRefund(refs.active[0].order); } catch (e) {}
+    return refs;
+};
+
 // TEST MODE ONLY: wipe test orders and money so the books start clean. Keeps customers, riders, shops, products and switches.
 // The master control refuses this unless payments are simulated, and writes a backup of the saved state first.
 function resetTestData192() {
@@ -591,6 +637,7 @@ function resetTestData192() {
     replaceArray191(driverPayouts192, []);
     replaceArray191(orderRatings191, []);
     for (const k of Object.keys(driverWallets)) driverWallets[k] = 0;
+    try { if (adminReady192 && adminModule.resetMarketplaceLedger) adminModule.resetMarketplaceLedger(); } catch (e) {}
     stateDirty191 = true;
     try { saveSnapshotSync191(); } catch (e) {}
     return { backup: backup ? path.basename(backup) : null };
@@ -605,6 +652,7 @@ if (driverExt192) {
             getDrivers: () => drivers, getWallets: () => driverWallets, getLedger: () => driverLedger191, getPresence: () => driverPresence191,
             getLocations: () => driverLocations191, getPayouts: () => driverPayouts192,
             isPhone, sendOtp: (phone) => issueOtp(otps, phone, {}), ensureTestRider: ensureTestRider192,
+            orderEvents: () => orderEvents192(),
             requireApproval: () => DRIVER_APPROVAL_REQUIRED_192, paymentsMode: () => PAYMENTS_MODE_192, markDirty: () => { stateDirty191 = true; }
         });
     }
@@ -2072,17 +2120,20 @@ adminRouter.post('/request-tenant-corridor', verifySovereignTokenStrict, (req, r
     res.json({ success: true, message: `Tenant corridor request for "${reqRec.businessName}" submitted successfully for owner approval.` });
 });
 
-const adminModule = safeRequire191('./routes/admin', 'admin');
-if (adminModule) {
-    if (typeof adminModule.init === 'function') {
+if (adminModule && ledger192 && compliance192) {
+    try {
         adminModule.init({
             verifyToken: verifySovereignTokenStrict,
             requireAdmin: requireAdminRoleStrict,
             requireSuperAdmin: requireSovereignAdminOnly,
+            requireRoles,
             appendAudit,
             verifyAuditChain,
             corridorStatus,
             corridorRequests,
+            ledger: ledger192, compliance: compliance192,
+            vatRate: (userExt191 && userExt191.VAT_RATE) || 0.16, marketplaceTenant: MARKETPLACE_TENANT_192,
+            platform: () => ({ users, drivers, merchantProfiles: global.merchantProfiles, orders: activeOrders, payouts: driverPayouts192 }),
             state: () => ({
                 verifications: sovereignVerifications,
                 transactions: sovereignTransactions,
@@ -2090,8 +2141,22 @@ if (adminModule) {
                 auditStream: sovereignAuditStream
             })
         });
+        app.use('/api/cashier', adminModule.cashier);      // before the inline versions below
+        app.use('/api/kyc', adminModule.kyc);
+        if (typeof adminModule === 'function') app.use('/api/admin', adminModule);
+        adminReady192 = true;
+        // always-on: scan every customer, rider, merchant, order and payout into the client registry now and every 5 minutes
+        setTimeout(() => { try { adminModule.hooks.rescan(); } catch (e) {} }, 3000).unref();
+        setInterval(() => { try { adminModule.hooks.rescan(); } catch (e) {} }, 5 * 60 * 1000).unref();
+    } catch (e) {
+        // an old routes/admin.js (without the new ledger API) lands here and is NOT mounted: it had an authentication bypass
+        console.error('\u274C [STAGE192] routes/admin.js was not started: ' + e.message + ' (replace it with the Stage 192 version).');
+        if (MODULE_STATUS_191.admin) MODULE_STATUS_191.admin = { loaded: false, error: e.message };
     }
-    if (typeof adminModule === 'function') app.use('/api/admin', adminModule);
+} else if (adminModule) {
+    // an OLD routes/admin.js (no built-in ledger or compliance) lands here and is NOT mounted: it had an authentication bypass
+    console.error('\u274C [STAGE192] routes/admin.js was not started: it is the OLD version (no built-in ledger/compliance). Replace it with the Stage 192 routes/admin.js.');
+    if (MODULE_STATUS_191.admin) MODULE_STATUS_191.admin = { loaded: false, error: 'old routes/admin.js: replace it with the Stage 192 file' };
 }
 app.use('/api/admin', adminRouter);
 
@@ -2103,14 +2168,14 @@ app.get('/api/compliance/generate-regulatory-package', verifySovereignTokenStric
         institution: tenantId,
         generatedAt: new Date().toISOString(),
         framework: `RDS Sovereign Financial OS v${VERSION_191} ULTIMATE`,
-        complianceStatus: integrity.valid ? "VERIFIED_COMPLIANT" : "AUDIT_INTEGRITY_FAILURE",
+        auditChainStatus: integrity.valid ? "INTACT" : "BROKEN",
         metrics: {
             tierEcKYC: sovereignVerifications.length,
             cddEddLinked: true,
             auditTrailBlocks: sovereignAuditStream.length
         },
         auditChain: integrity,
-        certificationNotice: "This document certifies that all transactions and tenant ledgers comply with mathematical audit standards and Central Bank regulatory frameworks."
+        statement: "Data extract only. This is not an audit opinion and it does not certify compliance with any law or regulator rule. Use /api/admin/reports/pack for the full ledger and compliance data pack."
     };
     res.json({ success: true, regulatoryPackage });
 });
@@ -2255,7 +2320,8 @@ adminExtras.use(verifySovereignTokenStrict);
 
 adminExtras.post('/issue-token', requireSovereignAdminOnly, (req, res) => {
     const { email, role, ttlHours } = req.body;
-    const allowed = [ROLES.CENTRAL_BANK_AUDITOR, ROLES.COMMERCIAL_CASHIER];
+    // a second administrator (for maker-checker) can be issued a token only when the owner opts in with ALLOW_SECOND_ADMIN_TOKENS=true
+    const allowed = [ROLES.CENTRAL_BANK_AUDITOR, ROLES.COMMERCIAL_CASHIER, ...(process.env.ALLOW_SECOND_ADMIN_TOKENS === 'true' ? [ROLES.SOVEREIGN_ADMIN] : [])];
     if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return bad(res, "Valid email required.");
     if (!allowed.includes(role)) return bad(res, `role must be one of ${allowed.join(", ")}.`);
     const hours = Math.min(Math.max(Number(ttlHours) || 8, 1), 24);
@@ -3290,6 +3356,7 @@ setInterval(() => {
 
 restoreSnapshot191();
 applyTestAccounts191();
+try { if (compliance192 && switches192.compliance && typeof switches192.compliance.enforceLimits === 'boolean') compliance192.clients.cfg.enforceLimits = switches192.compliance.enforceLimits; } catch (e) {}   // the owner's KYC-limits switch survives restarts
 
 // test riders (TEST_PHONES) exist and are pre-approved after every start, so the test account works without an admin
 (function applyTestDrivers192() {

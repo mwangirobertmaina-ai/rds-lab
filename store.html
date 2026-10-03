@@ -65,10 +65,11 @@ table{width:100%;border-collapse:collapse;font-size:.82rem}th{font-size:.68rem;c
     <div class="row"><span class="pillb wait" id="books">Checking the books…</span><span class="muted" id="upd"></span><button class="btn ghost sm" id="pause">⏸ Pause</button><button class="btn ghost sm" id="logout">Sign out</button></div>
   </div></header>
   <main class="wrap">
-    <div class="tabs"><button class="tab on" data-tab="tLive">Live</button><button class="tab" data-tab="tPanels">Switches</button><button class="tab" data-tab="tPeople">People</button><button class="tab" data-tab="tMoney">Money &amp; KRA</button><button class="tab" data-tab="tApps">Apps</button><button class="tab" data-tab="tAlerts">Alerts <span class="n hidden" id="alN">0</span></button></div>
+    <div class="tabs"><button class="tab on" data-tab="tLive">Live</button><button class="tab" data-tab="tPanels">Switches</button><button class="tab" data-tab="tPeople">People</button><button class="tab" data-tab="tComp">Compliance <span class="n hidden" id="compN">0</span></button><button class="tab" data-tab="tMoney">Money &amp; KRA</button><button class="tab" data-tab="tApps">Apps</button><button class="tab" data-tab="tAlerts">Alerts <span class="n hidden" id="alN">0</span></button></div>
 
     <section id="tLive">
       <div class="kpis" id="kpis"><div class="skel"></div></div>
+      <div class="note hidden" id="booksNote" role="button" tabindex="0" style="cursor:pointer;border-color:var(--red);background:rgba(255,77,109,.08);color:#fecdd3"></div>
       <div class="card"><div class="between"><h3 style="margin:0">How everything is connected, right now</h3><span class="muted">Click any circle for details</span></div><svg id="graph" viewBox="0 0 960 560" role="img" aria-label="System map"></svg>
         <div class="legend"><span><i style="background:var(--g)"></i>Healthy</span><span><i style="background:var(--gold)"></i>Needs attention</span><span><i style="background:var(--red)"></i>Down or not deployed</span><span>Moving dashes = traffic · line thickness = volume</span></div></div>
       <div class="card hidden" id="detail"></div>
@@ -82,6 +83,14 @@ table{width:100%;border-collapse:collapse;font-size:.82rem}th{font-size:.68rem;c
     <section id="tPanels" class="hidden">
       <div class="card"><div class="between"><div><h2 style="margin:0">Panel switches</h2><div class="muted">Switch any app on or off for everyone, instantly. This master control and sign-in for admins always stay on.</div></div><div class="row"><button class="btn red sm" id="stopAll">⛔ Emergency stop</button><button class="btn go sm" id="resumeAll">▶ Resume all</button></div></div></div>
       <div class="apps" id="panelCards"></div>
+    </section>
+
+    <section id="tComp" class="hidden">
+      <div class="note" id="compNone" style="margin-bottom:14px">The compliance engine is not running on this server (routes/admin.js was not started). Check /readyz.</div>
+      <div class="apps" id="compCards"></div>
+      <div class="card" id="compPolicy"></div>
+      <div class="g2"><div class="card"><h3>Highest-risk clients</h3><div id="compTop"></div></div><div class="card"><h3>Open compliance alerts</h3><div id="compAlerts"></div></div></div>
+      <div class="card"><div class="between"><div><h3 style="margin:0">Full compliance console</h3><div class="muted">Post journals, approve KYC, correct client details, file reports.</div></div><a class="btn go sm" href="/admin" target="_blank" rel="noopener" style="text-decoration:none">Open /admin ➜</a></div></div>
     </section>
 
     <section id="tPeople" class="hidden">
@@ -199,7 +208,7 @@ function appRows(k, a) {
 function drawDetail() { const box = $('#detail'); if (!S.sel || S.sel === 'pay' || S.sel === 'sms') { box.classList.add('hidden'); if (S.sel === 'pay' || S.sel === 'sms') { const n = S.ov.graph.nodes.find(x => x.id === S.sel); box.classList.remove('hidden'); box.innerHTML = `<h2><span class="dot ${n.health}"></span>${esc(n.label)}</h2><p class="muted">${S.sel === 'pay' ? 'Payments are simulated: orders are marked paid and rider withdrawals “send”, but no real M-Pesa money moves until Daraja is connected.' : (n.sub === 'connected' ? 'An SMS provider is connected, so real login codes are sent.' : 'No SMS provider is set up. Only the test number can sign in. Set SMS_PROVIDER and its keys in the environment.')}</p>`; } return; } const a = S.ov.apps[APPKEY[S.sel]]; box.classList.remove('hidden'); box.innerHTML = `<h2><span class="dot ${a.health}"></span>${esc(a.title)}</h2>${kv(appRows(S.sel, a))}`; }
 function drawLive() {
   const o = S.ov, k = o.kpis;
-  $('#kpis').innerHTML = [['Orders today', num(k.ordersToday)], ['Delivered today', num(k.deliveredToday)], ['Customers paid today', money0(k.gmvToday)], ['Platform income today', money(k.platformToday)], ['KRA VAT today', money(k.vatToday)], ['Open orders now', num(k.openOrders)], ['Riders online', num(k.ridersOnline)], ['Shops open', num(k.shopsActive)], ['Requests / min', num(k.reqPerMin)]].map(([l, v]) => `<div class="kpi"><small>${l}</small><b>${v}</b></div>`).join('');
+  $('#kpis').innerHTML = [['Orders today', num(k.ordersToday)], ['Delivered today', num(k.deliveredToday)], ['Customers paid today', money0(k.gmvToday)], ['Platform income today', money(k.platformToday)], ['KRA VAT today', money(k.vatToday)], ['Open orders now', num(k.openOrders)], ['Compliance alerts', num(k.complianceAlerts)], ['High-risk clients', num(k.highRiskClients)], ['Clients on file', num(k.clientsTotal)], ['Riders online', num(k.ridersOnline)], ['Shops open', num(k.shopsActive)], ['Requests / min', num(k.reqPerMin)]].map(([l, v]) => `<div class="kpi"><small>${l}</small><b>${v}</b></div>`).join('');
   drawGraph(); drawDetail();
   barChart($('#chHour'), o.hourly.map(h => ({ label: hhmm(h.t).slice(0, 2), parts: [{ v: h.orders, c: '#a855f7' }] })), { every: 3 });
   lineChart($('#chReq'), o.samples.map(s => ({ v: s.req, l: hhmm(s.t) })), '#38bdf8');
@@ -228,6 +237,11 @@ function drawChecks() {
   const r = S.rec; if (!r) return; const hard = r.checks.filter(c => c.hard), bad = hard.filter(c => !c.ok).length;
   const pill = (el, big) => { el.className = 'pillb ' + (r.ok ? 'ok' : 'bad'); el.textContent = r.ok ? (big ? '✓ Books balance to the cent' : '✓ Books balance') : `✗ ${bad} problem${bad === 1 ? '' : 's'} in the books`; };
   pill($('#books'), false); pill($('#booksBig'), true);
+  // say WHICH checks fail, right on the live view, and make the red pill a link to the details
+  const failing = hard.filter(c => !c.ok), note = $('#booksNote');
+  $('#books').style.cursor = 'pointer'; $('#books').title = failing.length ? failing.map(c => c.label).join('\n') : 'Books balance. Click for the checks.';
+  note.classList.toggle('hidden', !failing.length);
+  if (failing.length) note.innerHTML = `<b>${failing.length} problem${failing.length === 1 ? '' : 's'} in the books:</b> ` + failing.map(c => `${esc(c.label)}${c.failures && c.failures.length ? ' <span class="muted">(' + esc(String(c.failures[0].message || c.failures[0].detail || c.failures[0].reason || c.failures[0].id || '').slice(0, 90)) + ')</span>' : ''}`).join(' · ') + ' <u>Click for details</u>';
   const I = r.identity;
   $('#checks').innerHTML = `<div class="eq">Across ${num(I.orders)} delivered orders: customers paid <b>${money(I.customerPaid)}</b>. Shops <b>${money(I.shop)}</b> + riders <b>${money(I.rider)}</b> + platform <b>${money(I.platform)}</b> = <b>${money(I.shop + I.rider + I.platform)}</b>. ${I.balanced ? '<b>Exact match.</b>' : '<span class="bad">Mismatch.</span>'}</div>` +
     r.checks.map(c => `<div class="chk"><span class="m">${c.ok ? '<span class="ok">✓</span>' : c.hard ? '<span class="bad">✗</span>' : '<span class="warn">ℹ</span>'}</span><div><b>${esc(c.label)}</b> <span class="muted">· ${num(c.checked)} checked${c.hard ? '' : ' · information only'}</span><code>${esc(c.formula)}</code>${c.failures.slice(0, 4).map(f => `<div class="f">${esc(f.ref)}: ${esc(f.detail)}</div>`).join('')}</div></div>`).join('') +
@@ -240,11 +254,11 @@ function drawApps() { const o = S.ov; $('#apps').innerHTML = ['customer', 'merch
 function drawAlerts() { const a = S.al.alerts; const n = a.filter(x => ['CRITICAL', 'HIGH'].includes(x.severity)).length; $('#alN').textContent = n; $('#alN').classList.toggle('hidden', !n); $('#alerts').innerHTML = a.length ? a.map(x => `<div class="al ${x.severity}"><b class="${x.severity === 'CRITICAL' ? 'bad' : x.severity === 'HIGH' ? 'warn' : 'muted'}">${x.severity}</b>${esc(x.message)}</div>`).join('') : '<div class="card muted" style="text-align:center">✓ Nothing needs attention.</div>'; }
 
 /* ---------- loading ---------- */
-async function loadOv() { if (S.paused && S.ov) return; try { S.ov = await api('/api/store/master/overview'); $('#upd').textContent = 'Updated ' + hhmm(S.ov.generatedAt); if (S.tab === 'tLive') drawLive(); if (S.tab === 'tApps') drawApps(); if (S.tab === 'tPanels') drawPanels(); } catch (e) { $('#upd').textContent = e.message; } }
+async function loadOv() { if (S.paused && S.ov) return; try { S.ov = await api('/api/store/master/overview'); $('#upd').textContent = 'Updated ' + hhmm(S.ov.generatedAt); if (S.tab === 'tLive') drawLive(); if (S.tab === 'tApps') drawApps(); if (S.tab === 'tPanels') drawPanels(); if (S.tab === 'tComp') drawComp(); } catch (e) { $('#upd').textContent = e.message; } }
 async function loadFin() { try { S.fin = await api('/api/store/master/finance'); if (S.tab === 'tMoney') drawMoney(); } catch (e) {} }
 async function loadRec() { try { S.rec = await api('/api/store/master/reconcile'); drawChecks(); } catch (e) {} }
 async function loadAl() { try { S.al = await api('/api/store/master/alerts'); drawAlerts(); } catch (e) {} }
-function tab(id) { S.tab = id; $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === id)); ['tLive', 'tPanels', 'tPeople', 'tMoney', 'tApps', 'tAlerts'].forEach(s => $('#' + s).classList.toggle('hidden', s !== id)); if (id === 'tPanels' && S.ov) drawPanels(); if (id === 'tPeople') loadPeople(); if (id === 'tLive' && S.ov) drawLive(); if (id === 'tApps' && S.ov) drawApps(); if (id === 'tMoney') { loadMaint(); loadFin(); loadRec(); if (S.fin) drawMoney(); } if (id === 'tAlerts') loadAl(); }
+function tab(id) { S.tab = id; $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === id)); ['tLive', 'tPanels', 'tPeople', 'tComp', 'tMoney', 'tApps', 'tAlerts'].forEach(s => $('#' + s).classList.toggle('hidden', s !== id)); if (id === 'tComp' && S.ov) drawComp(); if (id === 'tPanels' && S.ov) drawPanels(); if (id === 'tPeople') loadPeople(); if (id === 'tLive' && S.ov) drawLive(); if (id === 'tApps' && S.ov) drawApps(); if (id === 'tMoney') { loadMaint(); loadFin(); loadRec(); if (S.fin) drawMoney(); } if (id === 'tAlerts') loadAl(); }
 document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) tab(t.dataset.tab); const w = e.target.closest('[data-w]'); if (w) { S.win = w.dataset.w; $$('#win button').forEach(b => b.classList.toggle('on', b === w)); if (S.fin) drawMoney(); } });
 $('#chk').onclick = async () => { const b = $('#chk'); b.disabled = true; await loadRec(); b.disabled = false; };
 
@@ -302,6 +316,27 @@ $('#maintBody').addEventListener('click', async e => {
   if (!r) return; if (r.value !== d.phrase) return toast(`You must type exactly: ${d.phrase}`, 'err');
   const out = await post('/api/store/master/maintenance/reset-test-data', { confirm: r.value }); if (out) { loadOv(); loadFin(); loadRec(); loadAl(); loadMaint(); }
 });
+/* ---------- compliance (the admin side reports here) ---------- */
+function drawComp() {
+  const c = S.ov && S.ov.compliance; $('#compNone').classList.toggle('hidden', !!c); if (!c) { $('#compCards').innerHTML = ''; $('#compPolicy').innerHTML = ''; return; }
+  const L = c.ledger, P = c.compliance, K = c.clients, ok = (v, yes, no) => v ? `<span class="ok">${yes}</span>` : `<span class="bad">${no}</span>`, sev = P.alertsBySeverity || {};
+  $('#compCards').innerHTML = [
+    ['Ledger', ok(L.chainValid && L.trialBalanced, '✓ intact and balanced', '✗ PROBLEM'), kv([['Journals posted', num(L.journals)], ['Accounts', num(L.accounts)], ['Hash chain', ok(L.chainValid, 'intact', 'BROKEN')], ['Trial balance', ok(L.trialBalanced && L.equationHolds, 'balanced to the cent', 'OUT OF BALANCE')], ['Waiting for a second person', L.pending ? `<span class="warn">${L.pending}</span>` : '0'], ['Period closed through', esc(L.closedThrough || 'none yet')], ['Posting failures', L.failures ? `<span class="bad">${L.failures}</span>` : '0'], ['Last posting', ago(L.lastPostingAt)]])],
+    ['Compliance engine', ok(!(sev.CRITICAL) && !(P.overdueCtr + P.overdueStr), '✓ nothing overdue', '✗ needs attention'), kv([['Open alerts', num(P.alertsOpen)], ['Critical / High', `${sev.CRITICAL || 0} / ${sev.HIGH || 0}`], ['Cash reports (CTR) open', `${num(P.ctrOpen)}${P.overdueCtr ? ` <span class="bad">(${P.overdueCtr} overdue)</span>` : ''}`], ['Suspicious reports (STR) open', `${num(P.strOpen)}${P.overdueStr ? ` <span class="bad">(${P.overdueStr} overdue)</span>` : ''}`], ['KYC cases waiting', num(P.kycPending)], ['Active rules', num(P.rulesActive)], ['Sanctions list', P.sanctionsListLoaded ? `<span class="ok">${num(P.sanctionsEntries)} name${P.sanctionsEntries === 1 ? '' : 's'} (${esc(P.sanctionsListDate || 'date unknown')})</span>` : '<span class="bad">NOT loaded: screening is not effective</span>']])],
+    ['Client registry (always on)', ok(!K.failures && K.lastScan && Date.now() - K.lastScan.at < 15 * 60000, '✓ scanning', '✗ check'), kv([['Clients on file', num(K.total)], ['Opened today', num(K.openedToday)], ['Tier 0 / 1 / 2 / 3', esc((K.tiers || []).join(' / '))], ['Rated HIGH / MEDIUM', `${K.high} / ${K.medium}`], ['Active but not verified', K.unverifiedActive ? `<span class="warn">${K.unverifiedActive}</span>` : '0'], ['Identity conflicts', K.conflicts ? `<span class="bad">${K.conflicts}</span>` : '0'], ['Blocked / PEP / multi-account', `${K.blocked} / ${K.pep} / ${K.multiAccount}`], ['Last platform scan', K.lastScan ? ago(K.lastScan.at) + ` (${K.lastScan.scanned} checked, ${K.lastScan.skipped} skipped)` : '<span class="bad">never</span>'], ['Registry errors', K.failures ? `<span class="bad">${K.failures}</span>` : '0']])]
+  ].map(([t, st, body]) => `<div class="card"><div class="between"><h2 style="margin:0">${esc(t)}</h2><span>${st}</span></div><div style="margin-top:10px">${body}</div></div>`).join('');
+  $('#compPolicy').innerHTML = `<div class="between"><div><h3 style="margin:0">KYC limits at checkout</h3><div class="muted" style="max-width:640px">When ON, a customer who is not verified cannot place orders above their tier's limit (Tier 0: KES 50,000 per order), and blocked clients cannot order at all. Switch OFF only if you must let everyone order freely.</div></div><div class="row"><span class="stat ${c.enforcement ? 'on' : 'off'}">${c.enforcement ? 'ON' : 'OFF'}</span><button class="sw ${c.enforcement ? 'on' : ''}" role="switch" aria-checked="${c.enforcement}" aria-label="KYC limits at checkout" data-enf="${c.enforcement ? '0' : '1'}"></button></div></div>`;
+  $('#compTop').innerHTML = c.topRisk.length ? `<table><thead><tr><th>Client</th><th>Kind</th><th class="r">Tier</th><th class="r">Score</th></tr></thead><tbody>${c.topRisk.map(x => `<tr><td><b>${esc(x.name)}</b><div class="muted">${esc(x.clientId)} · ${esc((x.why || []).join('; '))}${x.blocked ? ' · <span class="bad">BLOCKED</span>' : ''}</div></td><td>${esc(x.segment)}</td><td class="r">${x.tier}</td><td class="r bad">${x.score}</td></tr>`).join('')}</tbody></table>` : '<div class="muted">No client is rated HIGH risk.</div>';
+  $('#compAlerts').innerHTML = c.openAlerts.length ? c.openAlerts.map(a => `<div class="al ${a.severity}"><b class="${a.severity === 'CRITICAL' ? 'bad' : a.severity === 'HIGH' ? 'warn' : 'muted'}">${esc(a.severity)}</b> ${esc(a.rule)} · ${esc(a.customer || '')}<div class="muted">${esc(a.detail)}</div></div>`).join('') : '<div class="muted">No open alerts.</div>';
+  const n = P.alertsOpen + (L.chainValid && L.trialBalanced ? 0 : 1); $('#compN').textContent = n; $('#compN').classList.toggle('hidden', !n);
+}
+$('#compPolicy').addEventListener('click', async e => {
+  const b = e.target.closest('[data-enf]'); if (!b) return; const on = b.dataset.enf === '1';
+  if (!on) { const r = await ask('Switch OFF KYC limits?', 'Unverified and blocked clients will be able to order without any limit. The change is recorded in the audit chain.', { ok: 'Switch OFF', danger: true }); if (!r) return; }
+  b.disabled = true; const d = await post('/api/store/master/compliance/enforcement', { on }); b.disabled = false; if (d) loadOv();
+});
+$('#booksNote').addEventListener('click', () => { tab('tMoney'); setTimeout(() => { const el = $('#checks'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 400); });
+$('#books').addEventListener('click', () => { tab('tMoney'); setTimeout(() => { const el = $('#checks'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 400); });
 function start() {
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); S.timers.forEach(clearInterval);
   loadOv(); loadRec(); loadAl(); loadFin();

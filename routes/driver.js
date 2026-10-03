@@ -247,6 +247,7 @@ router.post('/complete-dispatch', auth, (req, res) => {
     refs.active.forEach(x => { x.order.status = 'COMPLETED_SETTLED'; x.order.completedAt = now; });
     refs.merchant.forEach(x => { x.order.status = 'COMPLETED & PAID OUT'; x.order.completedAt = now; });
     D.appendAudit('DRIVER_EARNING', { dispatchId: id, driverId: me, earned: earn, platformFee });
+    try { const EV = D.orderEvents && D.orderEvents(); if (EV && EV.afterDelivery && refs.active[0]) EV.afterDelivery(refs.active[0].order); } catch (e) { /* a failing listener never blocks the rider's payment */ }
     notify(id, 'DELIVERED');
     D.emitSafe191('admins', 'dispatch_completed', { dispatchId: id, driverId: me });
     res.json({ success: true, message: `Job complete. KES ${earn.toFixed(2)} added to your wallet.`, earned: earn, platformFee, balance: wallets[me] });
@@ -288,6 +289,7 @@ router.post('/payout', auth, (req, res) => {
     const rec = { payoutId: `PAY_${now}_${crypto.randomInt(1000, 10000)}`, driverId: me, phone: d.phone, amount: money2(amt), status: 'SIMULATED_SENT', mode: 'SIMULATED', at: now };
     payouts.push(rec); if (payouts.length > 50000) payouts.shift();
     D.appendAudit('DRIVER_PAYOUT', { payoutId: rec.payoutId, driverId: me, amount: rec.amount });
+    try { const EV = D.orderEvents && D.orderEvents(); if (EV && EV.afterPayout) EV.afterPayout(rec); } catch (e) {}
     if (D.markDirty) D.markDirty();
     const ph = String(d.phone || ''); const masked = ph.length > 6 ? ph.slice(0, 4) + '***' + ph.slice(-3) : ph;
     res.json({ success: true, message: `KES ${rec.amount.toFixed(2)} sent to ${masked} (test mode: no real money moved).`, payoutId: rec.payoutId, amount: rec.amount, to: masked, mode: 'SIMULATED', remainingBalance: wallets[me] });

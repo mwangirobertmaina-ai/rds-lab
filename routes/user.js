@@ -53,9 +53,13 @@ function loadTariff() {
     return t;
 }
 const TARIFF = loadTariff();
+// VAT (KRA): 16% standard rate. Customers pay a fixed total (items + 2% + delivery) with no separate VAT line, so the
+// platform's fee income is VAT-INCLUSIVE and the VAT inside it is income x rate / (1 + rate), not income x rate.
+// Override the rate with VAT_RATE (e.g. 0.16) if the law changes. Confirm the VAT basis with your accountant.
+const VAT_RATE = (() => { const n = Number(process.env.VAT_RATE); return Number.isFinite(n) && n >= 0 && n < 1 ? n : 0.16; })();
 const PRICING = Object.freeze({
     currency: 'KES', tariff: TARIFF, roundTo: 10,
-    serviceFeeRate: 0.02, driverShare: 0.95, kraRate: 0.16,
+    serviceFeeRate: 0.02, driverShare: 0.95, kraRate: VAT_RATE,
     roadFactor: 1.4, minKm: 1, maxKm: 300, maxAmount: 10000000, maxQty: 99, maxLines: 100
 });
 const PROTO_KEYS = ['__proto__', 'constructor', 'prototype', 'hasOwnProperty', 'toString', 'valueOf'];
@@ -89,7 +93,7 @@ function priceOf(items, km, vehicle) {
     const riderShare = money2(deliveryFee * PRICING.driverShare);
     const appCommission = money2(deliveryFee - riderShare);              // keeps the split exact to the cent
     const systemIncome = money2(serviceFee + appCommission);
-    const kraTax = money2(systemIncome * PRICING.kraRate);
+    const kraTax = money2(systemIncome * PRICING.kraRate / (1 + PRICING.kraRate));      // VAT contained in the platform income
     return {
         itemsTotal: money2(items), serviceFee, deliveryFee, total: money2(items + serviceFee + deliveryFee),
         riderShare, appCommission, systemIncome, kraTax, netRevenue: money2(systemIncome - kraTax), etaMin, km
@@ -236,6 +240,12 @@ router.post('/checkout', auth, (req, res) => {
     const destLabel = clean(b.destination, 200) || 'Pinned location';
     const pickupLabel = p.isRide ? (clean(b.pickup, 200) || 'Pickup point') : p.profile.shopName;
     const pr = p.price;
+    // EXTENSION POINT (optional): whoever runs the server may subscribe to order events and veto an order here.
+    // This module knows nothing about who listens. If nobody does, or the listener fails, the order simply goes ahead.
+    try {
+        const EV = D.orderEvents && D.orderEvents();
+        if (EV && EV.beforeOrder) { const g = EV.beforeOrder({ userId: uid, phones: [phone, profileUser && profileUser.phone], totalMinor: Math.round(pr.total * 100) }); if (g && g.ok === false) return res.status(403).json({ success: false, error: g.message, code: g.code }); }
+    } catch (e) { /* a failing listener must never stop an order */ }
     const breakdown = {
         commodityCost: pr.itemsTotal, shopOwnerPayout: pr.itemsTotal, deliveryFee: pr.deliveryFee, riderShare: pr.riderShare,
         systemFee: pr.systemIncome, tax: pr.kraTax, serviceFee: pr.serviceFee, appCommission: pr.appCommission, netRevenue: pr.netRevenue
@@ -286,6 +296,7 @@ router.post('/checkout', auth, (req, res) => {
     }
     recent.push(now); burst.set(uid, recent);
     if (D.appendAudit) D.appendAudit('USER_ORDER_PLACED', { orderId, mode: p.isRide ? 'RIDE' : 'SHOP', merchantId: p.merchantId, total: pr.total });
+    try { const EV = D.orderEvents && D.orderEvents(); if (EV && EV.afterOrder) EV.afterOrder(order); } catch (e) { /* listeners record their own failures; an order must never fail because of them */ }
 
     res.json({
         success: true, orderId, mode: p.isRide ? 'RIDE' : 'SHOP', total: pr.total, deliveryPin, etaMin: pr.etaMin, quote: quoteView(p), payment: { mode: 'SIMULATED', status: 'SIMULATED_PAID' },
@@ -357,3 +368,4 @@ module.exports.rateGuard = rateGuard;
 module.exports.PRICING = PRICING;
 module.exports.priceOf = priceOf;
 module.exports.TARIFF = TARIFF;
+module.exports.VAT_RATE = VAT_RATE;

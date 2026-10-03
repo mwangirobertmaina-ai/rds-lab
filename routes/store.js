@@ -376,6 +376,30 @@ function reconcile() {
     }
     const a = auditInfo(); c10.checked = a.length || 0; if (!a.valid) fail(c10, 'chain', 'a block does not match the one before it');
 
+    // ----- the ledger must agree with the orders (only orders whose payment was posted to the ledger are compared) -----
+    const LV = D.getLedgerView ? D.getLedgerView() : null;
+    if (LV && LV.engine) {
+        const L = LV.engine, ten = LV.tenant, idem = (L.state.idem && L.state.idem[ten]) || {};
+        const l1 = mk('LEDGER_CHAIN', 'The ledger is tamper-proof and balanced', 'every journal links to the one before, and debits = credits', true);
+        const l2 = mk('LEDGER_ESCROW', "Customers' money held in the ledger equals open orders", 'ledger 2000 = sum of unpaid-out order totals', true);
+        const l3 = mk('LEDGER_SHOPS', 'Shop payables in the ledger equal delivered shop sales', 'ledger 2010 = sum of items on delivered orders', true);
+        const l4 = mk('LEDGER_RIDERS', 'Rider payables in the ledger equal rider wallets', 'ledger 2020 = rider earnings - withdrawals', true);
+        const l5 = mk('LEDGER_VAT', 'VAT payable (KRA) in the ledger equals the VAT on delivered orders', 'ledger 2030 = sum of income x 16/116', true);
+        const l6 = mk('LEDGER_REFUNDS', 'Refunds owed in the ledger equal cancelled paid orders', 'ledger 2050 = sum of cancelled order totals', true);
+        const l7 = mk('LEDGER_COVERAGE', 'Every delivered order was settled in the ledger, and no posting failed', 'delivered => settlement journal; failures = 0', true);
+        checks.push(l1, l2, l3, l4, l5, l6, l7);
+        const v = L.verifyChain(ten), tbl = L.trialBalance(ten); l1.checked = v.entries;
+        if (!v.valid) fail(l1, v.brokenAt || 'chain', v.reason); if (!tbl.balanced) fail(l1, 'trial balance', 'debits do not equal credits');
+        const bal = (code) => { const a = L.listAccounts(ten).find(x => x.code === code); if (!a) return 0; const b = L.balanceOf(ten, code); return a.normal === 'D' ? b.debit - b.credit : b.credit - b.debit; };
+        const covered = all.filter(o => o.source === 'APP' && idem[`ORDER:${o.id}:PAY`]);
+        const open = covered.filter(o => o.state === 'OPEN'), done = covered.filter(o => o.state === 'DONE'), canc = covered.filter(o => o.state === 'CANCELLED' && idem[`ORDER:${o.id}:REFUND`]);
+        const paidOut = (L.state.journals[ten] || []).filter(e => e.source === 'RIDER_PAYOUT').reduce((s, e) => s + e.totalMinor, 0);
+        const exp = { escrow: sumC(open, o => o.totalC), shops: sumC(done, o => o.itemsC), riders: sumC(done, o => o.riderC) - paidOut, vat: sumC(done, o => vatOfC(o.platformC)), refunds: sumC(canc, o => o.totalC) };
+        [[l2, '2000', exp.escrow], [l3, '2010', exp.shops], [l4, '2020', exp.riders], [l5, '2030', exp.vat], [l6, '2050', exp.refunds]].forEach(([c, code, e]) => { c.checked = covered.length; const g = bal(code); if (g !== e) fail(c, code, `ledger ${fromC(g)} vs orders ${fromC(e)}`); });
+        for (const o of done) { l7.checked++; if (!idem[`ORDER:${o.id}:SETTLE`]) fail(l7, o.id, 'delivered but no settlement journal in the ledger'); }
+        const fl = L.state.failures || []; if (fl.length) fail(l7, 'posting', `${fl.length} ledger posting failure(s), e.g. ${fl[fl.length - 1].kind} ${fl[fl.length - 1].ref}: ${fl[fl.length - 1].message}`);
+    }
+
     const done = all.filter(o => o.state === 'DONE' && o.source === 'APP' && !o.legacy);
     const eq = { orders: done.length, customerPaid: fromC(sumC(done, o => o.totalC)), shop: fromC(sumC(done, o => o.itemsC)), rider: fromC(sumC(done, o => o.riderC)), platform: fromC(sumC(done, o => o.platformC)) };
     eq.balanced = Math.abs(cents(eq.customerPaid) - cents(eq.shop) - cents(eq.rider) - cents(eq.platform)) <= T * Math.max(1, done.length);
@@ -492,6 +516,13 @@ function overview() {
     for (const k of ['customer', 'merchant', 'driver', 'ads', 'printer', 'admin']) { const a = apps[k]; a.health = healthOf(true, a.module, a.deployed, rr(k === 'customer' ? 'user' : k)); }
     apps.core.health = (audit.valid && snap.ok !== false && errRate < 0.05) ? 'ok' : 'warn';
     for (const def of PANEL_DEFS) { const a = apps[def.key]; if (!a) continue; const st = panelState(def.key); a.switch = st; if (!st.on) a.health = 'off'; }
+    // ---- the admin side (ledger, compliance engine, client registry) reports into this one control room ----
+    let comp = null; try { comp = D.getComplianceView ? D.getComplianceView() : null; } catch (e) { comp = null; }
+    if (comp) {
+        const cs = comp.compliance, lg = comp.ledger, cl = comp.clients, crit = (cs.alertsBySeverity && cs.alertsBySeverity.CRITICAL) || 0;
+        Object.assign(apps.admin.stats, { ledgerJournals: lg.journals, ledgerBalanced: lg.trialBalanced && lg.chainValid, pendingApprovals: lg.pending, complianceAlertsOpen: cs.alertsOpen, overdueFilings: cs.overdueCtr + cs.overdueStr, clients: cl.total, highRiskClients: cl.high, unverifiedActive: cl.unverifiedActive });
+        if (apps.admin.health !== 'off') apps.admin.health = (!lg.chainValid || !lg.trialBalanced) ? 'down' : (cs.overdueCtr + cs.overdueStr > 0 || crit > 0 || lg.failures > 0 || cl.failures > 0) ? 'warn' : apps.admin.health;
+    }
 
     const sk = tr, rideReq = ordersToday.filter(o => o.kind === 'RIDE').length, shopReq = ordersToday.filter(o => o.kind === 'SHOP').length, deliveredToday = all.filter(o => o.state === 'DONE' && o.completedAt >= today).length;
     const graph = {
@@ -500,7 +531,7 @@ function overview() {
             { id: 'merchant', label: 'Shops', sub: `${activeShops} active`, health: apps.merchant.health },
             { id: 'driver', label: 'Riders', sub: `${onlineN} online`, health: apps.driver.health },
             { id: 'core', label: 'RDS server', sub: `${last.req} req/min`, health: apps.core.health },
-            { id: 'admin', label: 'Admin', sub: `${Math.max(socks.admins, 1)} online`, health: apps.admin.health },
+            { id: 'admin', label: 'Admin & Compliance', sub: `${Math.max(socks.admins, 1)} online${comp ? ' · ' + comp.compliance.alertsOpen + ' alerts · ' + comp.clients.total + ' clients' : ''}`, health: apps.admin.health },
             { id: 'ads', label: 'Ads', sub: `${sk.ads.requests} requests`, health: apps.ads.health },
             { id: 'printer', label: 'Printer', sub: `${sk.printer.requests} requests`, health: apps.printer.health },
             { id: 'pay', label: 'M-Pesa', sub: D.paymentsMode === 'simulated' ? 'simulated' : 'live', health: D.paymentsMode === 'simulated' ? 'warn' : 'ok' },
@@ -522,8 +553,8 @@ function overview() {
     const hourly = [];
     for (let i = 23; i >= 0; i--) { const e = Math.floor(now / HOUR) * HOUR - i * HOUR, d = all.filter(o => o.createdAt >= e && o.createdAt < e + HOUR); hourly.push({ t: e, orders: d.length, gmv: fromC(sumC(d, o => o.totalC)) }); }
     return { success: true, generatedAt: now, currency: 'KES', stage: D.stage, version: D.version,
-        kpis: { ordersToday: ordersToday.length, deliveredToday, gmvToday: fin.customerPaid, platformToday: fin.platform, vatToday: fin.vat, netToday: fin.net, openOrders: apps.customer.stats.openOrders, ridersOnline: onlineN, shopsActive: activeShops, reqPerMin: last.req },
-        apps, graph, hourly, samples, traffic: tr, activity: activity(40), panels: panels.map(p => ({ ...p, hits: (hits[p.url] || { n: 0 }).n, last: (hits[p.url] || {}).last || null })) };
+        kpis: { ordersToday: ordersToday.length, deliveredToday, gmvToday: fin.customerPaid, platformToday: fin.platform, vatToday: fin.vat, netToday: fin.net, openOrders: apps.customer.stats.openOrders, ridersOnline: onlineN, shopsActive: activeShops, reqPerMin: last.req, complianceAlerts: comp ? comp.compliance.alertsOpen : 0, highRiskClients: comp ? comp.clients.high : 0, clientsTotal: comp ? comp.clients.total : 0 },
+        compliance: comp, apps, graph, hourly, samples, traffic: tr, activity: activity(40), panels: panels.map(p => ({ ...p, hits: (hits[p.url] || { n: 0 }).n, last: (hits[p.url] || {}).last || null })) };
 }
 
 function activity(n) {
@@ -551,6 +582,23 @@ function alerts() {
     try { (D.getPosture().findings || []).filter(f => ['CRITICAL', 'HIGH'].includes(f.severity)).forEach(f => add(f.severity, 'CFG_' + f.id, f.message)); } catch (e) {}
     PANEL_DEFS.forEach(def => { const st = panelState(def.key); if (!st.on) add('HIGH', 'OFF_' + def.key, `${def.title} is switched OFF${st.message ? ': ' + st.message : ''}. Users cannot use it until you switch it on.`); });
     const nOff = Object.keys(S().users || {}).length; if (nOff) add('INFO', 'USERS_OFF', `${nOff} customer account(s) are switched off.`);
+    let cv = null; try { cv = D.getComplianceView ? D.getComplianceView() : null; } catch (e) {}
+    if (cv) {
+        const cs = cv.compliance, lg = cv.ledger, cl = cv.clients, crit = (cs.alertsBySeverity && cs.alertsBySeverity.CRITICAL) || 0, hi = (cs.alertsBySeverity && cs.alertsBySeverity.HIGH) || 0;
+        if (crit) add('CRITICAL', 'COMP_CRITICAL', `${crit} CRITICAL compliance alert(s) are open (for example a sanctions match). Open the admin console and decide on each one.`);
+        if (cs.overdueCtr) add('HIGH', 'COMP_CTR_OVERDUE', `${cs.overdueCtr} cash transaction report(s) are past their filing deadline.`);
+        if (cs.overdueStr) add('CRITICAL', 'COMP_STR_OVERDUE', `${cs.overdueStr} suspicious transaction report(s) are past the 2-day deadline.`);
+        if (hi) add('HIGH', 'COMP_HIGH', `${hi} HIGH-severity compliance alert(s) are open.`);
+        if (lg.failures) add('HIGH', 'LEDGER_FAILURES', `${lg.failures} ledger posting failure(s) recorded${lg.lastFailure ? ': ' + lg.lastFailure.kind + ' ' + lg.lastFailure.ref + ' (' + lg.lastFailure.message + ')' : ''}.`);
+        if (cl.failures) add('HIGH', 'REGISTRY_FAILURES', `${cl.failures} client-registry error(s) recorded, for example: ${(cl.failuresRecent[0] || {}).message || 'see the admin console'}.`);
+        if (!cl.lastScan || Date.now() - cl.lastScan.at > 15 * 60000) add('HIGH', 'REGISTRY_STALE', cl.lastScan ? 'The client registry has not scanned the platform for over 15 minutes.' : 'The client registry has not scanned the platform yet.');
+        if (cl.high) add('INFO', 'CLIENTS_HIGH', `${cl.high} client(s) are rated HIGH risk.`);
+        if (cl.unverifiedActive) add('INFO', 'CLIENTS_UNVERIFIED', `${cl.unverifiedActive} active client(s) have not had their ID verified.`);
+        if (cl.conflicts) add('INFO', 'CLIENTS_CONFLICT', `${cl.conflicts} client(s) have conflicting identity details for an officer to resolve.`);
+        if (cs.kycPending || lg.pending) add('INFO', 'APPROVALS_WAITING', `${cs.kycPending} KYC case(s) and ${lg.pending} journal(s) are waiting for a second person to approve.`);
+        if (!cs.sanctionsListLoaded) add('INFO', 'SANCTIONS_NOT_LOADED', 'No sanctions list is loaded, so sanctions screening is NOT effective.');
+        if (!cv.enforcement) add('HIGH', 'LIMITS_OFF', 'KYC limits at checkout are switched OFF: unverified clients can place orders of any size.');
+    }
     const order = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, INFO: 3 };
     return out.filter((x, i, arr) => arr.findIndex(y => y.id === x.id) === i).sort((x, y) => (order[x.severity] ?? 9) - (order[y.severity] ?? 9));
 }
@@ -612,6 +660,13 @@ router.get('/finance', (req, res) => res.json(finance()));
 router.get('/reconcile', (req, res) => res.json({ success: true, ...reconcile() }));
 router.get('/alerts', (req, res) => res.json({ success: true, generatedAt: Date.now(), alerts: alerts() }));
 router.get('/switches', (req, res) => res.json({ success: true, ...switchesView() }));
+router.get('/compliance', (req, res) => { let v = null; try { v = D.getComplianceView ? D.getComplianceView() : null; } catch (e) {} res.json({ success: true, available: !!v, compliance: v }); });
+router.post('/compliance/enforcement', ownerOnly, (req, res) => {
+    const b = req.body || {}; if (typeof b.on !== 'boolean') return fail(res, 'on must be true or false.');
+    if (!D.setEnforcement) return fail(res, 'The compliance engine is not running on this server.', 501);
+    D.setEnforcement(b.on); if (D.appendAudit) D.appendAudit('MASTER_KYC_LIMITS_SWITCH', { on: b.on, by: by(req) }); dirty();
+    res.json({ success: true, message: `KYC limits at checkout are now ${b.on ? 'ON' : 'OFF'}.`, enforcement: b.on });
+});
 router.get('/people/customers', (req, res) => res.json({ success: true, customers: customers(req.query.q) }));
 router.get('/people/riders', (req, res) => res.json({ success: true, riders: riders(req.query.q) }));
 router.get('/people/shops', (req, res) => res.json({ success: true, shops: shops(req.query.q) }));
