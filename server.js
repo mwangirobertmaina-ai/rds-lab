@@ -616,6 +616,7 @@ if (storeExt191 && typeof storeExt191.init === 'function') {
         paymentsMode: PAYMENTS_MODE_192, approvalRequired: DRIVER_APPROVAL_REQUIRED_192, testCreds: ALLOW_TEST_CREDENTIALS, smsConfigured: SMS_CONFIGURED_191,
         getSwitches: () => switches192, resetTestData: resetTestData192,
         getLedgerView: () => (ledger192 ? { engine: ledger192, tenant: MARKETPLACE_TENANT_192 } : null),
+        getPrintStats: () => { try { return printRouter && typeof printRouter.stats === 'function' && doseColorReady192 ? printRouter.stats() : null; } catch (e) { return null; } },
         getAdsStats: () => { try { return adsRouter && typeof adsRouter.stats === 'function' ? adsRouter.stats() : null; } catch (e) { return null; } },
         getMerchantWallets: () => merchantWallets192, getMerchantEarnings: () => merchantEarnings192, getMerchantPayouts: () => merchantPayouts192,
         // the admin side (ledger, compliance, client registry) reports into this one master control
@@ -1102,7 +1103,26 @@ app.get("/ads", (req, res) => { res.sendFile(path.join(__dirname, "ads.html")); 
 app.get("/user", (req, res) => { res.sendFile(path.join(__dirname, "store.html")); });
 
 const printRouter = safeRequire191('./routes/print', 'print');
-if (printRouter) app.use('/api', printRouter);
+const printOtps192 = {};
+let doseColorReady192 = false;
+if (printRouter && typeof printRouter.init === 'function') {
+    // STAGE 192: DoseColor for many hospitals, clinics and pharmacies: staff sign in with the server's OTP system (SMS in production,
+    // 1234 in test mode), data in DATA_DIR, owner-only facility verification. Mounted at /api/print.
+    try {
+        printRouter.init({ dataDir: process.env.DATA_DIR || path.join(os.homedir(), '.rds-lab'), normalizePhone: normalizeMsisdn191,
+            issueOtp: (phone) => issueOtp(printOtps192, phone, {}), checkOtp: (phone, code) => checkOtp(printOtps192, phone, code),
+            testMode: ALLOW_TEST_CREDENTIALS, appendAudit, adminAuth: [verifySovereignTokenStrict, requireSovereignAdminOnly] });
+        app.use('/api/print', printRouter); doseColorReady192 = true;
+    } catch (e) {
+        console.error('\u274C [STAGE192] DoseColor (routes/print.js) did not start: ' + e.message);
+        if (MODULE_STATUS_191.print) MODULE_STATUS_191.print = { loaded: false, error: e.message };
+    }
+} else if (printRouter) app.use('/api', printRouter);          // an older routes/print.js keeps working the old way
+// the print agent that intercepts a facility's label printer (downloaded from the DoseColor page)
+app.get('/tools/dosecolor-agent.js', (req, res) => {
+    res.set({ 'Content-Type': 'application/javascript; charset=utf-8', 'Content-Disposition': 'attachment; filename="dosecolor-agent.js"', 'X-Content-Type-Options': 'nosniff' });
+    res.sendFile(path.join(__dirname, 'tools', 'dosecolor-agent.js'), (err) => { if (err && !res.headersSent) res.status(404).end(); });
+});
 
 app.get('/print', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/print.html'));
@@ -1112,6 +1132,7 @@ const printInterceptorModule = safeRequire191('./middleware/printInterceptor', '
 const interceptAndProcessPrintJob = printInterceptorModule && printInterceptorModule.interceptAndProcessPrintJob;
 
 app.post('/api/middleware/intercept-print', (req, res) => {
+    if (doseColorReady192) return res.status(410).json({ success: false, error: 'Printer interception now runs through the DoseColor print agent (download it from /print -> Facility -> Print agents).' });
     try {
         if (typeof interceptAndProcessPrintJob !== 'function') {
             return res.status(503).json({ success: false, error: "Print interceptor is not available on this server." });
