@@ -1,395 +1,671 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS Sovereign Immersive Feed</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="/socket.io/socket.io.js"></script>
-    <style>
-        .reel-container {
-            scroll-snap-type: y mandatory;
-            overflow-y: scroll;
-            height: 100vh;
-        }
-        .reel-item {
-            scroll-snap-align: start;
-            scroll-snap-stop: always;
-            height: 100vh;
-        }
-        ::-webkit-scrollbar { display: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>RDS Social</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="/socket.io/socket.io.js"></script>
+<style>*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.pointer-events-none{pointer-events:none}.pointer-events-auto{pointer-events:auto}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0}.inset-x-0{left:0;right:0}.inset-y-0{top:0;bottom:0}.-bottom-2{bottom:-.5rem}.-right-0\.5{right:-.125rem}.-top-0\.5{top:-.125rem}.bottom-0{bottom:0}.bottom-1{bottom:.25rem}.bottom-14{bottom:3.5rem}.bottom-20{bottom:5rem}.bottom-24{bottom:6rem}.left-0{left:0}.left-1\.5{left:.375rem}.left-1\/2{left:50%}.left-4{left:1rem}.right-0{right:0}.right-1\.5{right:.375rem}.right-16{right:4rem}.right-2{right:.5rem}.right-5{right:1.25rem}.top-0{top:0}.top-1\.5{top:.375rem}.z-10{z-index:10}.z-20{z-index:20}.z-30{z-index:30}.z-40{z-index:40}.z-50{z-index:50}.z-\[55\]{z-index:55}.z-\[60\]{z-index:60}.z-\[70\]{z-index:70}.mx-auto{margin-left:auto;margin-right:auto}.my-1{margin-top:.25rem;margin-bottom:.25rem}.my-3{margin-top:.75rem;margin-bottom:.75rem}.mb-0\.5{margin-bottom:.125rem}.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.ml-1{margin-left:.25rem}.ml-2{margin-left:.5rem}.ml-auto{margin-left:auto}.mr-1{margin-right:.25rem}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-5{margin-top:1.25rem}.mt-6{margin-top:1.5rem}.block{display:block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.hidden{display:none}.aspect-\[3\/4\]{aspect-ratio:3/4}.aspect-\[9\/16\]{aspect-ratio:9/16}.h-0\.5{height:.125rem}.h-1{height:.25rem}.h-1\.5{height:.375rem}.h-10{height:2.5rem}.h-11{height:2.75rem}.h-12{height:3rem}.h-14{height:3.5rem}.h-16{height:4rem}.h-2{height:.5rem}.h-20{height:5rem}.h-24{height:6rem}.h-3{height:.75rem}.h-4{height:1rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-8{height:2rem}.h-9{height:2.25rem}.h-full{height:100%}.max-h-72{max-height:18rem}.max-h-\[44vh\]{max-height:44vh}.max-h-\[85\%\]{max-height:85%}.min-h-0{min-height:0}.min-h-\[120px\]{min-height:120px}.min-h-\[80px\]{min-height:80px}.min-h-full{min-height:100%}.w-0{width:0}.w-1\/3{width:33.333333%}.w-10{width:2.5rem}.w-11{width:2.75rem}.w-12{width:3rem}.w-2\/3{width:66.666667%}.w-20{width:5rem}.w-24{width:6rem}.w-3{width:.75rem}.w-5{width:1.25rem}.w-6{width:1.5rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-full{width:100%}.min-w-0{min-width:0}.min-w-\[120px\]{min-width:120px}.min-w-\[16px\]{min-width:16px}.min-w-\[20px\]{min-width:20px}.max-w-\[78\%\]{max-width:78%}.max-w-\[90\%\]{max-width:90%}.max-w-full{max-width:100%}.max-w-md{max-width:28rem}.max-w-xs{max-width:20rem}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.grid-cols-5{grid-template-columns:repeat(5,minmax(0,1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-start{justify-content:flex-start}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:.125rem}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-5{gap:1.25rem}.gap-8{gap:2rem}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem*var(--tw-space-y-reverse))}.self-center{align-self:center}.overflow-hidden{overflow:hidden}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.whitespace-pre-wrap{white-space:pre-wrap}.break-words{overflow-wrap:break-word}.rounded{border-radius:.25rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-xl{border-radius:.75rem}.rounded-t-3xl{border-top-left-radius:1.5rem;border-top-right-radius:1.5rem}.rounded-bl-md{border-bottom-left-radius:.375rem}.rounded-br-md{border-bottom-right-radius:.375rem}.border{border-width:1px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-b-2{border-bottom-width:2px}.border-t{border-top-width:1px}.border-black{--tw-border-opacity:1;border-color:rgb(0 0 0/var(--tw-border-opacity,1))}.border-slate-800{--tw-border-opacity:1;border-color:rgb(30 41 59/var(--tw-border-opacity,1))}.border-transparent{border-color:transparent}.border-white{--tw-border-opacity:1;border-color:rgb(255 255 255/var(--tw-border-opacity,1))}.border-white\/10{border-color:hsla(0,0%,100%,.1)}.border-white\/20{border-color:hsla(0,0%,100%,.2)}.border-white\/25{border-color:hsla(0,0%,100%,.25)}.border-white\/5{border-color:hsla(0,0%,100%,.05)}.bg-amber-400{--tw-bg-opacity:1;background-color:rgb(251 191 36/var(--tw-bg-opacity,1))}.bg-amber-600{--tw-bg-opacity:1;background-color:rgb(217 119 6/var(--tw-bg-opacity,1))}.bg-black{--tw-bg-opacity:1;background-color:rgb(0 0 0/var(--tw-bg-opacity,1))}.bg-black\/40{background-color:rgba(0,0,0,.4)}.bg-black\/50{background-color:rgba(0,0,0,.5)}.bg-black\/60{background-color:rgba(0,0,0,.6)}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.bg-emerald-700{--tw-bg-opacity:1;background-color:rgb(4 120 87/var(--tw-bg-opacity,1))}.bg-pink-500{--tw-bg-opacity:1;background-color:rgb(236 72 153/var(--tw-bg-opacity,1))}.bg-pink-600{--tw-bg-opacity:1;background-color:rgb(219 39 119/var(--tw-bg-opacity,1))}.bg-pink-600\/30{background-color:rgba(219,39,119,.3)}.bg-rose-600{--tw-bg-opacity:1;background-color:rgb(225 29 72/var(--tw-bg-opacity,1))}.bg-rose-700{--tw-bg-opacity:1;background-color:rgb(190 18 60/var(--tw-bg-opacity,1))}.bg-sky-700{--tw-bg-opacity:1;background-color:rgb(3 105 161/var(--tw-bg-opacity,1))}.bg-slate-600{--tw-bg-opacity:1;background-color:rgb(71 85 105/var(--tw-bg-opacity,1))}.bg-slate-700{--tw-bg-opacity:1;background-color:rgb(51 65 85/var(--tw-bg-opacity,1))}.bg-slate-800{--tw-bg-opacity:1;background-color:rgb(30 41 59/var(--tw-bg-opacity,1))}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42/var(--tw-bg-opacity,1))}.bg-slate-950{--tw-bg-opacity:1;background-color:rgb(2 6 23/var(--tw-bg-opacity,1))}.bg-transparent{background-color:transparent}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1))}.bg-white\/10{background-color:hsla(0,0%,100%,.1)}.bg-white\/15{background-color:hsla(0,0%,100%,.15)}.bg-white\/20{background-color:hsla(0,0%,100%,.2)}.bg-white\/30{background-color:hsla(0,0%,100%,.3)}.bg-white\/5{background-color:hsla(0,0%,100%,.05)}.bg-gradient-to-b{background-image:linear-gradient(to bottom,var(--tw-gradient-stops))}.bg-gradient-to-r{background-image:linear-gradient(to right,var(--tw-gradient-stops))}.bg-gradient-to-t{background-image:linear-gradient(to top,var(--tw-gradient-stops))}.bg-gradient-to-tr{background-image:linear-gradient(to top right,var(--tw-gradient-stops))}.from-amber-400{--tw-gradient-from:#fbbf24 var(--tw-gradient-from-position);--tw-gradient-to:rgba(251,191,36,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.from-black\/70{--tw-gradient-from:rgba(0,0,0,.7) var(--tw-gradient-from-position);--tw-gradient-to:transparent var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.from-black\/80{--tw-gradient-from:rgba(0,0,0,.8) var(--tw-gradient-from-position);--tw-gradient-to:transparent var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.from-cyan-400{--tw-gradient-from:#22d3ee var(--tw-gradient-from-position);--tw-gradient-to:rgba(34,211,238,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.from-pink-600{--tw-gradient-from:#db2777 var(--tw-gradient-from-position);--tw-gradient-to:rgba(219,39,119,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.via-black\/30{--tw-gradient-to:transparent var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),rgba(0,0,0,.3) var(--tw-gradient-via-position),var(--tw-gradient-to)}.via-pink-500{--tw-gradient-to:rgba(236,72,153,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),#ec4899 var(--tw-gradient-via-position),var(--tw-gradient-to)}.via-white{--tw-gradient-to:hsla(0,0%,100%,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),#fff var(--tw-gradient-via-position),var(--tw-gradient-to)}.to-pink-500{--tw-gradient-to:#ec4899 var(--tw-gradient-to-position)}.to-purple-600{--tw-gradient-to:#9333ea var(--tw-gradient-to-position)}.to-transparent{--tw-gradient-to:transparent var(--tw-gradient-to-position)}.object-contain{-o-object-fit:contain;object-fit:contain}.object-cover{-o-object-fit:cover;object-fit:cover}.p-0\.5{padding:.125rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-1{padding-left:.25rem;padding-right:.25rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-3\.5{padding-left:.875rem;padding-right:.875rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.px-8{padding-left:2rem;padding-right:2rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-10{padding-top:2.5rem;padding-bottom:2.5rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-2\.5{padding-top:.625rem;padding-bottom:.625rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-3\.5{padding-top:.875rem;padding-bottom:.875rem}.pb-1{padding-bottom:.25rem}.pb-2{padding-bottom:.5rem}.pb-24{padding-bottom:6rem}.pb-3{padding-bottom:.75rem}.pb-4{padding-bottom:1rem}.pb-5{padding-bottom:1.25rem}.pb-6{padding-bottom:1.5rem}.pt-10{padding-top:2.5rem}.pt-16{padding-top:4rem}.pt-24{padding-top:6rem}.pt-3{padding-top:.75rem}.pt-32{padding-top:8rem}.pt-4{padding-top:1rem}.pt-6{padding-top:1.5rem}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.font-sans{font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-5xl{font-size:3rem;line-height:1}.text-8xl{font-size:6rem;line-height:1}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-\[15px\]{font-size:15px}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-normal{font-weight:400}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.leading-4{line-height:1rem}.leading-5{line-height:1.25rem}.leading-snug{line-height:1.375}.tracking-\[0\.5em\]{letter-spacing:.5em}.tracking-wider{letter-spacing:.05em}.text-amber-300{--tw-text-opacity:1;color:rgb(252 211 77/var(--tw-text-opacity,1))}.text-black{--tw-text-opacity:1;color:rgb(0 0 0/var(--tw-text-opacity,1))}.text-cyan-400{--tw-text-opacity:1;color:rgb(34 211 238/var(--tw-text-opacity,1))}.text-emerald-300{--tw-text-opacity:1;color:rgb(110 231 183/var(--tw-text-opacity,1))}.text-emerald-400{--tw-text-opacity:1;color:rgb(52 211 153/var(--tw-text-opacity,1))}.text-pink-100{--tw-text-opacity:1;color:rgb(252 231 243/var(--tw-text-opacity,1))}.text-pink-300{--tw-text-opacity:1;color:rgb(249 168 212/var(--tw-text-opacity,1))}.text-pink-400{--tw-text-opacity:1;color:rgb(244 114 182/var(--tw-text-opacity,1))}.text-pink-500{--tw-text-opacity:1;color:rgb(236 72 153/var(--tw-text-opacity,1))}.text-rose-300{--tw-text-opacity:1;color:rgb(253 164 175/var(--tw-text-opacity,1))}.text-rose-400{--tw-text-opacity:1;color:rgb(251 113 133/var(--tw-text-opacity,1))}.text-slate-100{--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}.text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.text-white\/20{color:hsla(0,0%,100%,.2)}.text-white\/50{color:hsla(0,0%,100%,.5)}.text-white\/60{color:hsla(0,0%,100%,.6)}.text-white\/70{color:hsla(0,0%,100%,.7)}.text-white\/80{color:hsla(0,0%,100%,.8)}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.placeholder-slate-500::-moz-placeholder{--tw-placeholder-opacity:1;color:rgb(100 116 139/var(--tw-placeholder-opacity,1))}.placeholder-slate-500::placeholder{--tw-placeholder-opacity:1;color:rgb(100 116 139/var(--tw-placeholder-opacity,1))}.accent-pink-600{accent-color:#db2777}.shadow-xl{--tw-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color),0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.outline-none{outline:2px solid transparent;outline-offset:2px}.drop-shadow{--tw-drop-shadow:drop-shadow(0 1px 2px rgba(0,0,0,.1)) drop-shadow(0 1px 1px rgba(0,0,0,.06))}.drop-shadow,.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.ease-out{transition-timing-function:cubic-bezier(0,0,.2,1)}.selection\:bg-pink-500 ::-moz-selection{--tw-bg-opacity:1;background-color:rgb(236 72 153/var(--tw-bg-opacity,1))}.selection\:bg-pink-500 ::selection{--tw-bg-opacity:1;background-color:rgb(236 72 153/var(--tw-bg-opacity,1))}.selection\:text-white ::-moz-selection{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.selection\:text-white ::selection{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.selection\:bg-pink-500::-moz-selection{--tw-bg-opacity:1;background-color:rgb(236 72 153/var(--tw-bg-opacity,1))}.selection\:bg-pink-500::selection{--tw-bg-opacity:1;background-color:rgb(236 72 153/var(--tw-bg-opacity,1))}.selection\:text-white::-moz-selection{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.selection\:text-white::selection{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.focus\:border-pink-500:focus{--tw-border-opacity:1;border-color:rgb(236 72 153/var(--tw-border-opacity,1))}</style>
+<style>
+  html,body{height:100%;background:#000}
+  .feed{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none}
+  .feed::-webkit-scrollbar{display:none}
+  .reel{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;overflow:hidden}
+  .heart-burst{animation:burst .8s ease-out forwards;pointer-events:none}
+  @keyframes burst{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}20%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}100%{transform:translate(-50%,-60%) scale(1);opacity:0}}
+  @media (prefers-reduced-motion: reduce){.heart-burst{animation:none;opacity:0}}
+  .sheet{transition:transform .25s ease}
+  .safe-b{padding-bottom:max(env(safe-area-inset-bottom),0px)}
+  .safe-t{padding-top:max(env(safe-area-inset-top),12px)}
+  .clamp3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .clamp3.open{-webkit-line-clamp:unset}
+  .style-sunset{background:linear-gradient(160deg,#f97316,#db2777)}.style-ocean{background:linear-gradient(160deg,#0ea5e9,#4f46e5)}.style-forest{background:linear-gradient(160deg,#10b981,#065f46)}.style-night{background:linear-gradient(160deg,#4c1d95,#0f172a)}.style-candy{background:linear-gradient(160deg,#ec4899,#8b5cf6)}
+</style>
 </head>
-<body class="bg-black text-slate-100 font-sans overflow-hidden selection:bg-purple-500 selection:text-white">
+<body class="text-slate-100 font-sans antialiased overflow-hidden selection:bg-pink-500 selection:text-white">
+<div id="app" class="relative mx-auto h-full w-full max-w-md bg-black flex flex-col">
 
-    <!-- SECURE AUTH MODAL -->
-    <div id="secureAuthModal" class="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
-            <div class="text-center space-y-1">
-                <div class="bg-gradient-to-tr from-purple-600 to-pink-600 text-white w-12 h-12 mx-auto rounded-2xl flex items-center justify-center text-xl font-bold shadow-lg shadow-purple-600/30">
-                    <i class="fa-solid fa-bolt"></i>
-                </div>
-                <h3 class="text-base font-bold text-white">RDS Sovereign Account</h3>
-                <p class="text-xs text-slate-400">Sign in or register to publish and interact with the feed.</p>
-            </div>
-
-            <div id="authStep1" class="space-y-3">
-                <div>
-                    <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Your Full Name</label>
-                    <input type="text" id="regFullName" placeholder="e.g. Robert Maina" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500">
-                </div>
-                <div>
-                    <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Username (@handle)</label>
-                    <input type="text" id="regHandle" placeholder="e.g. @robert_maina" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500 font-mono">
-                </div>
-                <div>
-                    <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Email or Phone Number</label>
-                    <input type="text" id="loginContactInput" placeholder="mwangirobertmaina@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500 font-mono">
-                </div>
-                <button onclick="requestSecurityOtp()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg cursor-pointer">
-                    ✨ Send Verification Code
-                </button>
-            </div>
-
-            <div id="authStep2" class="space-y-3 hidden">
-                <div>
-                    <label class="block text-[10px] uppercase tracking-wider text-emerald-400 mb-1 font-semibold">Enter 6-Digit Code</label>
-                    <input type="text" id="loginOtpInput" maxlength="6" placeholder="------" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-center tracking-widest text-white font-mono text-base outline-none focus:border-emerald-500">
-                </div>
-                <button onclick="verifyAndCompleteLogin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg cursor-pointer">
-                    🚀 Complete Sign In
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- CREATE POST STUDIO MODAL -->
-    <div id="createPostModal" class="fixed inset-0 bg-black/9oidal backdrop-blur-md z-50 hidden flex items-center justify-center p-4 bg-black/80">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-circle-plus text-purple-400"></i> Create New Reel / Post</h3>
-                <button onclick="closeCreateModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2">
-                <label class="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 py-3 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-upload"></i> Upload Media File
-                    <input type="file" id="localMediaFile" accept="video/*,image/*" onchange="handleLocalFileUpload(event)" class="hidden">
-                </label>
-                <button type="button" onclick="openCameraStudio()" class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 py-3 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-camera"></i> Live Camera
-                </button>
-            </div>
-
-            <form onsubmit="publishPost(event)" class="space-y-3">
-                <div>
-                    <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Caption / Title</label>
-                    <input type="text" id="postTitle" required placeholder="What's on your mind? #fyp" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-purple-500">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Category</label>
-                        <select id="postVertical" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2.5 text-xs text-white outline-none">
-                            <option value="MOTIVATION">🔥 Motivation</option>
-                            <option value="MUSIC">🎵 Music</option>
-                            <option value="COMEDY">😂 Comedy</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Media Type</label>
-                        <select id="postMediaType" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2.5 text-xs text-white outline-none">
-                            <option value="Video Clip">🎬 Video Reel (9:16)</option>
-                            <option value="Photo">📸 Photo Snap</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Media URL (Auto-filled on Upload)</label>
-                    <input type="url" id="postMediaUrl" required placeholder="https://..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white font-mono outline-none">
-                </div>
-                <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg cursor-pointer">
-                    🚀 Post to Feed
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- TOP FLOATING NAVBAR (TikTok Style) -->
-    <header class="absolute top-0 left-0 right-0 z-40 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-        <div class="flex items-center space-x-4 pointer-events-auto">
-            <button onclick="setFeedView('PUBLIC')" id="tabPublic" class="text-sm font-bold text-white drop-shadow cursor-pointer pb-1 border-b-2 border-white">For You</button>
-            <button onclick="setFeedView('MINE')" id="tabMine" class="text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer pb-1 border-b-2 border-transparent">Following / My Posts</button>
-        </div>
-        <div class="flex items-center space-x-3 pointer-events-auto">
-            <button onclick="openCreateModal()" class="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
-                <i class="fa-solid fa-plus"></i> Create
-            </button>
-            <button onclick="openAccountManager()" class="bg-black/40 border border-white/20 backdrop-blur-md text-emerald-400 px-3 py-1.5 rounded-full text-xs font-mono flex items-center gap-1.5 cursor-pointer">
-                <i class="fa-solid fa-user-check"></i> <span id="displayUserHandle">@robert_maina</span>
-            </button>
-        </div>
+  <!-- ===================== HOME ===================== -->
+  <section id="vHome" class="view relative flex-1 min-h-0">
+    <header class="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-4 pt-3 pb-6 bg-gradient-to-b from-black/70 to-transparent pointer-events-none">
+      <button id="btnStories" data-act="stories" aria-label="Stories" class="pointer-events-auto relative w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center"><i class="fa-solid fa-circle-notch"></i><span id="storyDot" class="hidden absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-pink-500 border-2 border-black"></span></button>
+      <div class="flex items-center gap-5 pointer-events-auto" role="tablist">
+        <button id="tabFollowing" role="tab" class="text-[15px] font-semibold text-white/60 pb-1 border-b-2 border-transparent">Following</button>
+        <button id="tabForYou" role="tab" class="text-[15px] font-bold text-white pb-1 border-b-2 border-white">For You</button>
+      </div>
+      <button id="btnSound" aria-label="Sound on or off" class="pointer-events-auto w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center"><i class="fa-solid fa-volume-xmark"></i></button>
     </header>
+    <main id="feed" class="feed" aria-label="Posts"></main>
+  </section>
 
-    <!-- FULLSCREEN VERTICAL REELS SCROLL CONTAINER -->
-    <main id="reelsScrollContainer" class="reel-container w-full relative bg-black">
-        <!-- Dynamically injected full-screen vertical posts -->
-    </main>
+  <!-- ===================== DISCOVER ===================== -->
+  <section id="vDiscover" class="view hidden flex-1 min-h-0 overflow-y-auto pb-24">
+    <div class="sticky top-0 z-20 bg-black px-4 pt-4 pb-3">
+      <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-4 py-2.5">
+        <i class="fa-solid fa-magnifying-glass text-slate-500"></i>
+        <input id="q" type="search" autocomplete="off" placeholder="Search people or #hashtags" class="flex-1 bg-transparent outline-none text-sm text-white placeholder-slate-500">
+      </div>
+    </div>
+    <div id="discover" class="px-4"></div>
+  </section>
 
-    <script>
-        let socket = io();
-        let allPostsData = [];
-        let activePostsPool = [];
-        let currentFeedView = 'PUBLIC';
-        
-        let currentUser = { 
-            name: localStorage.getItem('sov_user_name') || 'Robert Maina', 
-            handle: localStorage.getItem('sov_user_handle') || '@robert_maina' 
-        };
-        let activeContactId = localStorage.getItem('sov_contact_id') || 'mwangirobertmaina@gmail.com';
-        let sessionToken = localStorage.getItem('sov_session_token') || null;
+  <!-- ===================== INBOX ===================== -->
+  <section id="vInbox" class="view hidden flex-1 min-h-0 overflow-y-auto pb-24">
+    <div class="sticky top-0 z-20 bg-black px-4 pt-4 pb-2 flex gap-2">
+      <button id="ibNotif" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-black">Activity</button>
+      <button id="ibMsgs" class="px-4 py-2 rounded-full text-sm font-bold bg-slate-900 text-slate-300">Messages <span id="msgBadge" class="hidden ml-1 text-[10px] bg-pink-600 text-white rounded-full px-1.5 py-0.5"></span></button>
+    </div>
+    <div id="inbox" class="px-2"></div>
+  </section>
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            await fetchPosts();
-            await validateSavedSession();
-        });
+  <!-- ===================== PROFILE (mine) ===================== -->
+  <section id="vMe" class="view hidden flex-1 min-h-0 overflow-y-auto pb-24"><div id="me"></div></section>
 
-        async function validateSavedSession() {
-            if (sessionToken && activeContactId) {
-                try {
-                    const res = await fetch('/api/ads/auth/session-validate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contactId: activeContactId, sessionToken })
-                    });
-                    const data = await res.json();
-                    if (data.success && data.user) {
-                        currentUser.name = data.user.fullName;
-                        currentUser.handle = data.user.handle;
-                        document.getElementById('displayUserHandle').innerText = currentUser.handle;
-                        document.getElementById('secureAuthModal').classList.add('hidden');
-                        applyFeedFilters();
-                        return;
-                    }
-                } catch (e) {}
-            }
-            document.getElementById('secureAuthModal').classList.remove('hidden');
-        }
+  <!-- ===================== BOTTOM NAV ===================== -->
+  <nav class="absolute bottom-0 inset-x-0 z-40 bg-black border-t border-white/10 safe-b">
+    <div class="grid grid-cols-5 items-center h-14 text-[10px]">
+      <button data-nav="vHome" class="nav flex flex-col items-center gap-0.5 text-white" aria-label="Home"><i class="fa-solid fa-house text-lg"></i>Home</button>
+      <button data-nav="vDiscover" class="nav flex flex-col items-center gap-0.5 text-white/50" aria-label="Discover"><i class="fa-solid fa-compass text-lg"></i>Discover</button>
+      <button id="navCreate" class="flex items-center justify-center" aria-label="Create a post"><span class="w-12 h-8 rounded-xl bg-gradient-to-r from-cyan-400 via-white to-pink-500 flex items-center justify-center"><span class="w-10 h-8 rounded-lg bg-white text-black flex items-center justify-center"><i class="fa-solid fa-plus"></i></span></span></button>
+      <button data-nav="vInbox" class="nav relative flex flex-col items-center gap-0.5 text-white/50" aria-label="Inbox"><i class="fa-solid fa-inbox text-lg"></i>Inbox<span id="inboxBadge" class="hidden absolute top-0 right-5 min-w-[16px] h-4 px-1 rounded-full bg-pink-600 text-white text-[10px] leading-4 text-center"></span></button>
+      <button data-nav="vMe" class="nav flex flex-col items-center gap-0.5 text-white/50" aria-label="Profile"><i class="fa-solid fa-user text-lg"></i>Me</button>
+    </div>
+  </nav>
 
-        async function fetchPosts() {
-            try {
-                const res = await fetch('/api/ads/list');
-                const data = await res.json();
-                if (data.success && data.advertisements) allPostsData = data.advertisements;
-            } catch (e) {}
-            applyFeedFilters();
-        }
+  <!-- ===================== OVERLAYS ===================== -->
+  <div id="scrim" class="hidden absolute inset-0 z-50 bg-black/60"></div>
+  <!-- generic bottom sheet -->
+  <div id="sheet" class="sheet hidden absolute inset-x-0 bottom-0 z-[60] max-h-[85%] flex flex-col bg-slate-950 border-t border-slate-800 rounded-t-3xl safe-b" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-between px-5 pt-4 pb-2"><h2 id="sheetTitle" class="text-base font-bold text-white"></h2><button id="sheetClose" aria-label="Close" class="w-8 h-8 rounded-full bg-slate-900 text-slate-300"><i class="fa-solid fa-xmark"></i></button></div>
+    <div id="sheetBody" class="flex-1 min-h-0 overflow-y-auto px-5 pb-5"></div>
+  </div>
+  <!-- full-screen page (other profile, chat, single post) -->
+  <div id="page" class="hidden absolute inset-0 z-[55] bg-black flex flex-col">
+    <div class="flex items-center gap-3 px-3 pt-3 pb-2 border-b border-white/10"><button id="pageBack" aria-label="Back" class="w-9 h-9 rounded-full bg-slate-900 text-white"><i class="fa-solid fa-chevron-left"></i></button><div id="pageTitle" class="flex-1 min-w-0 font-bold text-white truncate"></div><div id="pageAction"></div></div>
+    <div id="pageBody" class="flex-1 min-h-0 overflow-y-auto"></div>
+  </div>
+  <div id="toast" class="hidden absolute left-1/2 -translate-x-1/2 bottom-20 z-[70] max-w-[90%] px-4 py-2.5 rounded-full bg-white text-black text-sm font-semibold shadow-xl" role="status" aria-live="polite"></div>
+</div>
 
-        function setFeedView(view) {
-            currentFeedView = view;
-            const btnPub = document.getElementById('tabPublic');
-            const btnMine = document.getElementById('tabMine');
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const safeMedia = (u) => (typeof u === 'string' && /^\/api\/ads\/media\/M_[a-z0-9]+$/.test(u) ? u : '');
+const safeCta = (u) => { const s = String(u || ''); if (/^\/(user|store|merchant|ads)(\/|\?|$)/.test(s)) return s; try { const x = new URL(s); return x.protocol === 'https:' ? x.toString() : ''; } catch (e) { return ''; } };
+const fmtN = (n) => { n = Number(n) || 0; return n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : String(n); };
+const ago = (t) => { const s = Math.max(1, (Date.now() - t) / 1000); return s < 60 ? 'now' : s < 3600 ? Math.floor(s / 60) + 'm' : s < 86400 ? Math.floor(s / 3600) + 'h' : s < 604800 ? Math.floor(s / 86400) + 'd' : new Date(t).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' }); };
+const avatar = (u, size = 'w-10 h-10 text-sm') => { const a = u && safeMedia(u.avatar); return a ? `<img src="${a}" alt="" class="${size} rounded-full object-cover bg-slate-800">` : `<span class="${size} rounded-full bg-gradient-to-tr from-pink-600 to-purple-600 inline-flex items-center justify-center font-bold text-white">${esc(((u && (u.name || u.handle)) || '?').trim()[0] || '?').toUpperCase()}</span>`; };
+const richText = (t) => esc(t).replace(/(^|\s)#([\p{L}\p{N}_]{2,40})/gu, (m, sp, tag) => `${sp}<button data-act="tag" data-tag="${tag}" class="font-bold text-white">#${tag}</button>`).replace(/(^|\s)@([a-z0-9_.]{3,24})/gi, (m, sp, h) => `${sp}<button data-act="profile" data-handle="${h}" class="font-bold text-white">@${h}</button>`);
 
-            if (view === 'PUBLIC') {
-                btnPub.className = "text-sm font-bold text-white drop-shadow cursor-pointer pb-1 border-b-2 border-white";
-                btnMine.className = "text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer pb-1 border-b-2 border-transparent";
-            } else {
-                btnMine.className = "text-sm font-bold text-white drop-shadow cursor-pointer pb-1 border-b-2 border-white";
-                btnPub.className = "text-sm font-semibold text-slate-400 hover:text-white transition cursor-pointer pb-1 border-b-2 border-transparent";
-            }
-            applyFeedFilters();
-        }
+let token = localStorage.getItem('rds_social_token') || null, me = null, socket = null, sound = false, tab = 'foryou', cursor = 0, loading = false, done = false, chatWith = null;
+const posts = new Map();
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 2600); }
+async function api(path, opts = {}) {
+  const h = { ...(opts.headers || {}) }; if (token) h.Authorization = 'Bearer ' + token; if (opts.body !== undefined && !(opts.raw)) h['Content-Type'] = 'application/json';
+  const res = await fetch('/api/ads' + path, { method: opts.method || 'GET', headers: h, body: opts.raw ? opts.raw : opts.body !== undefined ? JSON.stringify(opts.body) : undefined });
+  let d = null; try { d = await res.json(); } catch (e) {}
+  if (res.status === 401 && token && !opts.quiet401) { signOutLocal(); }
+  if (!res.ok || !d || d.success === false) { const e = new Error((d && d.error) || 'Something went wrong (' + res.status + ').'); e.status = res.status; throw e; }
+  return d;
+}
+function signOutLocal() { token = null; me = null; localStorage.removeItem('rds_social_token'); if (socket) { try { socket.disconnect(); } catch (e) {} socket = null; } paintBadges(); }
+const need = (fn) => (...a) => (token ? fn(...a) : openAuth(() => fn(...a)));
 
-        function applyFeedFilters() {
-            let pool = allPostsData;
-            if (currentFeedView === 'MINE') {
-                pool = pool.filter(p => p.authorHandle === currentUser.handle);
-            }
-            activePostsPool = pool;
-            renderFeed();
-        }
+/* ---------------- sheets & pages ---------------- */
+let sheetOnClose = null;
+function openSheet(title, html, onClose) { $('#sheetTitle').textContent = title; $('#sheetBody').innerHTML = html; $('#scrim').classList.remove('hidden'); $('#sheet').classList.remove('hidden'); sheetOnClose = onClose || null; }
+function closeSheet() { $('#sheet').classList.add('hidden'); $('#scrim').classList.add('hidden'); const f = sheetOnClose; sheetOnClose = null; if (f) f(); }
+$('#sheetClose').onclick = closeSheet; $('#scrim').onclick = closeSheet;
+let pageStack = [];
+function openPage(title, html, actionHtml, onShow) { pageStack.push({ title, html, actionHtml, onShow }); showPage(); }
+function showPage() { const p = pageStack[pageStack.length - 1]; if (!p) { $('#page').classList.add('hidden'); chatWith = null; resumeFeed(); return; } pauseAll(); $('#pageTitle').textContent = p.title; $('#pageAction').innerHTML = p.actionHtml || ''; $('#pageBody').innerHTML = p.html; $('#page').classList.remove('hidden'); if (p.onShow) p.onShow(); }
+$('#pageBack').onclick = () => { pageStack.pop(); chatWith = null; showPage(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!$('#sheet').classList.contains('hidden')) closeSheet(); else if (pageStack.length) $('#pageBack').click(); } });
 
-        function renderFeed() {
-            const container = document.getElementById('reelsScrollContainer');
-            if (!container) return;
-            if (activePostsPool.length === 0) {
-                container.innerHTML = `
-                    <div class="reel-item flex flex-col items-center justify-center text-center p-6 space-y-3">
-                        <div class="text-slate-500 text-base">No reels or posts found in this view.</div>
-                        <button onclick="openCreateModal()" class="bg-purple-600 text-white font-bold px-5 py-2.5 rounded-xl text-xs">Create First Post</button>
-                    </div>`;
-                return;
-            }
+/* ---------------- auth ---------------- */
+function openAuth(after) {
+  const step1 = `<p class="text-sm text-slate-400 mb-4">Sign in with your phone number to post, like, comment and message.</p>
+    <label class="block text-xs text-slate-400 mb-1" for="aPhone">Phone number</label><input id="aPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0712 345 678" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-pink-500">
+    <button id="aSend" class="mt-4 w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600">Send code</button><div id="aErr" class="mt-3 text-sm text-rose-400"></div>`;
+  openSheet('Sign in', step1);
+  const err = (m) => { $('#aErr').textContent = m; };
+  $('#aSend').onclick = async () => {
+    const phone = $('#aPhone').value.trim(); if (!phone) return err('Enter your phone number.');
+    try { const d = await api('/auth/request-code', { method: 'POST', body: { phone } }); codeStep(d.phone, d.message); } catch (e) { err(e.message); }
+  };
+  function codeStep(phone, msg) {
+    $('#sheetBody').innerHTML = `<p class="text-sm text-slate-400 mb-4">${esc(msg)}</p><label class="block text-xs text-slate-400 mb-1" for="aCode">Code</label>
+      <input id="aCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-white outline-none focus:border-pink-500">
+      <button id="aVerify" class="mt-4 w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600">Continue</button><div id="aErr" class="mt-3 text-sm text-rose-400"></div>`;
+    $('#aCode').focus();
+    $('#aVerify').onclick = async () => {
+      try { const d = await api('/auth/verify', { method: 'POST', body: { phone, code: $('#aCode').value.trim() } }); token = d.token; localStorage.setItem('rds_social_token', token); me = d.user; connectSocket(); paintBadges();
+        if (d.isNew) profileStep(after); else { closeSheet(); toast('Welcome back, ' + me.name); if (after) after(); refreshFeed(); } } catch (e) { err(e.message); }
+    };
+  }
+  function profileStep(after2) {
+    $('#sheetTitle').textContent = 'Create your profile';
+    $('#sheetBody').innerHTML = `<label class="block text-xs text-slate-400 mb-1" for="pName">Your name</label><input id="pName" maxlength="50" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-pink-500">
+      <label class="block text-xs text-slate-400 mt-3 mb-1" for="pHandle">Username</label><div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl px-4"><span class="text-slate-500">@</span><input id="pHandle" maxlength="24" value="${esc(me.handle)}" class="flex-1 bg-transparent py-3 text-white outline-none"></div>
+      <p class="text-xs text-slate-500 mt-1">3 to 24 letters, numbers, dots or underscores.</p><button id="pSave" class="mt-4 w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600">Save</button><div id="aErr" class="mt-3 text-sm text-rose-400"></div>`;
+    $('#pSave').onclick = async () => { try { const d = await api('/me', { method: 'PATCH', body: { name: $('#pName').value, handle: $('#pHandle').value } }); me = d.user; closeSheet(); toast('Welcome to RDS Social, ' + me.name + '!'); if (after2) after2(); refreshFeed(); } catch (e) { err(e.message); } };
+  }
+}
 
-            container.innerHTML = activePostsPool.map(post => {
-                const mediaSrc = post.mediaUrl || '';
-                const isImage = post.mediaType === 'Photo' || 
-                                mediaSrc.includes('/uploads/') || 
-                                mediaSrc.includes('SNAP_') ||
-                                mediaSrc.endsWith('.jpg') || 
-                                mediaSrc.endsWith('.png') || 
-                                mediaSrc.endsWith('.jpeg') || 
-                                mediaSrc.endsWith('.webp') ||
-                                mediaSrc.startsWith('data:image');
+/* ---------------- feed ---------------- */
+function mediaHtml(p) {
+  if (p.media && p.media.kind === 'video') { const u = safeMedia(p.media.url); return u ? `<video data-vid src="${u}" class="absolute inset-0 w-full h-full object-cover bg-black" playsinline loop preload="metadata" ${sound ? '' : 'muted'}></video>` : ''; }
+  if (p.media && p.media.kind === 'image') { const u = safeMedia(p.media.url); return u ? `<img src="${u}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover bg-slate-900">` : ''; }
+  const st = ['sunset', 'ocean', 'forest', 'night', 'candy'].includes(p.style) ? p.style : 'night';
+  return `<div class="absolute inset-0 style-${st} flex items-center justify-center p-8"><p class="text-white text-2xl font-extrabold text-center leading-snug whitespace-pre-wrap break-words drop-shadow">${richText(p.caption)}</p></div>`;
+}
+function reelHtml(p) {
+  const a = p.author || {};
+  return `<article class="reel" data-pid="${esc(p.id)}">${mediaHtml(p)}
+    <div data-act="tap" data-id="${esc(p.id)}" class="absolute inset-0 z-10"></div>
+    <div class="absolute right-2 bottom-24 z-20 flex flex-col items-center gap-4">
+      <div class="relative mb-2"><button data-act="profile" data-handle="${esc(a.handle)}" aria-label="Open ${esc(a.name)}'s profile">${avatar(a, 'w-12 h-12 text-base border-2 border-white')}</button>
+        ${!p.mine && !p.followingAuthor ? `<button data-act="follow" data-uid="${esc(a.id)}" aria-label="Follow" class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-pink-600 text-white text-xs"><i class="fa-solid fa-plus"></i></button>` : ''}</div>
+      <button data-act="like" data-id="${esc(p.id)}" aria-label="Like" aria-pressed="${p.liked}" class="flex flex-col items-center text-white"><i class="fa-solid fa-heart text-3xl drop-shadow ${p.liked ? 'text-pink-500' : ''}"></i><span class="text-xs font-bold mt-1" data-likes>${fmtN(p.counts.likes)}</span></button>
+      <button data-act="comments" data-id="${esc(p.id)}" aria-label="Comments" class="flex flex-col items-center text-white"><i class="fa-solid fa-comment-dots text-3xl drop-shadow"></i><span class="text-xs font-bold mt-1" data-comments>${fmtN(p.counts.comments)}</span></button>
+      <button data-act="share" data-id="${esc(p.id)}" aria-label="Share" class="flex flex-col items-center text-white"><i class="fa-solid fa-share text-3xl drop-shadow"></i><span class="text-xs font-bold mt-1" data-shares>${fmtN(p.counts.shares)}</span></button>
+      <button data-act="repost" data-id="${esc(p.id)}" aria-label="Repost or quote" aria-pressed="${!!p.reposted}" class="flex flex-col items-center text-white"><i class="fa-solid fa-retweet text-3xl drop-shadow ${p.reposted ? 'text-emerald-400' : ''}"></i><span class="text-xs font-bold mt-1" data-reposts>${fmtN((p.counts && p.counts.reposts) || 0)}</span></button>
+      <button data-act="more" data-id="${esc(p.id)}" aria-label="More options" class="w-10 h-10 flex items-center justify-center text-white"><i class="fa-solid fa-ellipsis text-2xl drop-shadow"></i></button>
+    </div>
+    <div class="absolute left-0 right-16 bottom-14 z-20 p-4 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+      ${p.repostedBy ? `<div class="text-xs text-white/80 mb-1"><i class="fa-solid fa-retweet"></i> @${esc(p.repostedBy.handle)} reposted</div>` : ''}<button data-act="profile" data-handle="${esc(a.handle)}" class="font-bold text-white">@${esc(a.handle)}</button>${a.verified ? ' <i class="fa-solid fa-circle-check text-cyan-400 text-xs"></i>' : ''}
+      ${p.sponsored ? `<span class="ml-2 text-[10px] uppercase tracking-wider bg-white/20 text-white px-1.5 py-0.5 rounded">${esc(p.sponsored.label)}</span>` : `<span class="ml-2 text-xs text-white/60">${ago(p.createdAt)}</span>`}
+      ${p.media && p.caption ? `<p data-act="expand" class="clamp3 mt-1 text-sm text-white whitespace-pre-wrap break-words">${richText(p.caption)}</p>` : ''}
+      ${p.quote ? quoteHtml(p.quote) : ''}
+      ${p.sponsored && safeCta(p.sponsored.ctaUrl) ? `<button data-act="cta" data-id="${esc(p.id)}" class="mt-3 w-full py-2.5 rounded-lg bg-pink-600 text-white text-sm font-bold">${esc(p.sponsored.ctaText)} <i class="fa-solid fa-chevron-right text-xs"></i></button>` : ''}
+    </div></article>`;
+}
+function emptyHtml() {
+  return `<div class="reel flex flex-col items-center justify-center text-center p-8 gap-3"><i class="fa-solid fa-film text-5xl text-white/20"></i>
+    <p class="text-white font-bold">${tab === 'following' ? 'Posts from people you follow appear here.' : 'No posts yet. Be the first!'}</p>
+    <button data-act="create" class="px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-bold">Create a post</button></div>`;
+}
+async function loadFeed(reset) {
+  if (loading || (done && !reset)) return; loading = true;
+  if (reset) { cursor = 0; done = false; }
+  try {
+    const d = await api(`/feed?tab=${tab}&cursor=${cursor}&limit=8`);
+    d.posts.forEach(p => posts.set(p.id, p));
+    const html = d.posts.map(reelHtml).join('');
+    if (reset) $('#feed').innerHTML = html || emptyHtml(); else $('#feed').insertAdjacentHTML('beforeend', html);
+    cursor = d.nextCursor || cursor; done = d.nextCursor == null; observe();
+  } catch (e) { if (reset) $('#feed').innerHTML = `<div class="reel flex flex-col items-center justify-center text-center p-8 gap-3"><p class="text-white">${esc(e.message)}</p>${e.status === 401 ? '<button data-act="signin" class="px-5 py-2.5 rounded-full bg-pink-600 text-white text-sm font-bold">Sign in</button>' : '<button data-act="retry" class="px-5 py-2.5 rounded-full bg-white/10 text-white text-sm font-bold">Try again</button>'}</div>`; }
+  finally { loading = false; }
+}
+const refreshFeed = () => loadFeed(true);
+function setTab(t) { tab = t; $('#tabForYou').className = 'text-[15px] pb-1 border-b-2 ' + (t === 'foryou' ? 'font-bold text-white border-white' : 'font-semibold text-white/60 border-transparent'); $('#tabFollowing').className = 'text-[15px] pb-1 border-b-2 ' + (t === 'following' ? 'font-bold text-white border-white' : 'font-semibold text-white/60 border-transparent'); $('#feed').scrollTop = 0; refreshFeed(); }
+$('#tabForYou').onclick = () => setTab('foryou'); $('#tabFollowing').onclick = need(() => setTab('following'));
 
-                return `
-                    <div class="reel-item relative w-full h-full flex items-center justify-center bg-black">
-                        <!-- Media View (9:16 Immersive) -->
-                        ${isImage 
-                            ? `<img src="${mediaSrc}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1550583724-b2692b85b150?w=800';">` 
-                            : `<video src="${mediaSrc}" class="w-full h-full object-cover cursor-pointer" autoplay loop playsinline muted onclick="this.paused ? this.play() : this.pause()"></video>`
-                        }
+/* autoplay only the post on screen; count a view after 1.5 s */
+let io2 = null; const viewTimers = new Map(), viewed = new Set();
+function observe() {
+  if (!io2) io2 = new IntersectionObserver(entries => entries.forEach(en => {
+    const el = en.target, v = el.querySelector('video'), id = el.dataset.pid;
+    if (en.isIntersecting && en.intersectionRatio > 0.6) {
+      if (v && $('#page').classList.contains('hidden') && !$('#vHome').classList.contains('hidden')) { v.muted = !sound; v.play().catch(() => {}); }
+      if (id && !viewed.has(id)) viewTimers.set(id, setTimeout(() => { viewed.add(id); api(`/posts/${id}/view`, { method: 'POST', body: {} }).catch(() => {}); }, 1500));
+      const all = $$('#feed .reel'); if (all.indexOf(el) >= all.length - 3) loadFeed(false);
+    } else { if (v) v.pause(); clearTimeout(viewTimers.get(id)); }
+  }), { root: $('#feed'), threshold: [0, 0.6] });
+  $$('#feed .reel[data-pid]').forEach(el => { if (!el.dataset.obs) { el.dataset.obs = 1; io2.observe(el); } });
+}
+const pauseAll = () => $$('video').forEach(v => v.pause());
+function resumeFeed() { if ($('#vHome').classList.contains('hidden')) return; const r = $$('#feed .reel').find(el => { const b = el.getBoundingClientRect(); return b.top >= -10 && b.top < 50; }); const v = r && r.querySelector('video'); if (v) { v.muted = !sound; v.play().catch(() => {}); } }
+$('#btnSound').onclick = () => { sound = !sound; $('#btnSound').innerHTML = `<i class="fa-solid ${sound ? 'fa-volume-high' : 'fa-volume-xmark'}"></i>`; $$('video').forEach(v => { v.muted = !sound; }); resumeFeed(); };
 
-                        <!-- Right Floating Action Bar (TikTok Style) -->
-                        <div class="absolute right-4 bottom-24 flex flex-col items-center space-y-5 z-30">
-                            <div class="relative">
-                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 border border-white flex items-center justify-center text-xs font-bold text-white shadow-lg">
-                                    ${(post.authorName || 'R')[0]}
-                                </div>
-                            </div>
-                            <button onclick="sendLike('${post.id}')" class="flex flex-col items-center group cursor-pointer">
-                                <div class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-rose-500 group-hover:bg-rose-500/20 transition">
-                                    <i class="fa-solid fa-heart text-xl"></i>
-                                </div>
-                                <span id="likes_${post.id}" class="text-[11px] font-bold text-white mt-1 drop-shadow">${post.likes || 0}</span>
-                            </button>
-                            <button class="flex flex-col items-center group cursor-pointer">
-                                <div class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white/20 transition">
-                                    <i class="fa-solid fa-comment-dots text-lg"></i>
-                                </div>
-                                <span class="text-[11px] font-bold text-white mt-1 drop-shadow">0</span>
-                            </button>
-                            <button class="flex flex-col items-center group cursor-pointer">
-                                <div class="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-white/20 transition">
-                                    <i class="fa-solid fa-share text-lg"></i>
-                                </div>
-                                <span class="text-[11px] font-bold text-white mt-1 drop-shadow">Share</span>
-                            </button>
-                        </div>
+/* ---------------- actions on posts ---------------- */
+function updateCounts(id, p) { $$(`[data-pid="${CSS.escape(id)}"]`).forEach(el => { const l = el.querySelector('[data-likes]'); if (l) l.textContent = fmtN(p.counts.likes); const c = el.querySelector('[data-comments]'); if (c) c.textContent = fmtN(p.counts.comments); const s = el.querySelector('[data-shares]'); if (s) s.textContent = fmtN(p.counts.shares); const h = el.querySelector('[data-act="like"] i'); if (h) h.classList.toggle('text-pink-500', p.liked); const b = el.querySelector('[data-act="like"]'); if (b) b.setAttribute('aria-pressed', p.liked); }); }
+const like = need(async (id, force) => {
+  const p = posts.get(id); if (!p) return; const want = force === true ? true : !p.liked;
+  p.liked = want; p.counts.likes += want ? 1 : -1; updateCounts(id, p);
+  try { const d = await api(`/posts/${id}/like`, { method: 'POST', body: { like: want } }); p.liked = d.liked; p.counts.likes = d.likes; updateCounts(id, p); } catch (e) { p.liked = !want; p.counts.likes += want ? -1 : 1; updateCounts(id, p); toast(e.message); }
+});
+let lastTap = { id: null, t: 0 };
+function tap(id, ev) {
+  const now = Date.now();
+  if (lastTap.id === id && now - lastTap.t < 320) { lastTap = { id: null, t: 0 }; const el = ev.target.closest('.reel'); const h = document.createElement('i'); h.className = 'fa-solid fa-heart heart-burst absolute text-pink-500 text-8xl z-30'; const r = el.getBoundingClientRect(); h.style.left = (ev.clientX - r.left) + 'px'; h.style.top = (ev.clientY - r.top) + 'px'; el.appendChild(h); setTimeout(() => h.remove(), 900); like(id, true); return; }
+  lastTap = { id, t: now };
+  setTimeout(() => { if (lastTap.id === id && lastTap.t === now) { const v = ev.target.closest('.reel').querySelector('video'); if (v) { if (v.paused) v.play().catch(() => {}); else v.pause(); } } }, 330);
+}
+async function share(id) {
+  const url = location.origin + '/ads?post=' + encodeURIComponent(id), p = posts.get(id);
+  try { if (navigator.share) await navigator.share({ title: 'RDS Social', text: p && p.caption ? p.caption.slice(0, 100) : 'Look at this on RDS Social', url }); else { await navigator.clipboard.writeText(url); toast('Link copied'); } }
+  catch (e) { if (e && e.name === 'AbortError') return; try { await navigator.clipboard.writeText(url); toast('Link copied'); } catch (x) { toast(url); } }
+  try { const d = await api(`/posts/${id}/share`, { method: 'POST', body: {} }); if (p) { p.counts.shares = d.shares; updateCounts(id, p); } } catch (e) {}
+}
+async function openComments(id) {
+  openSheet('Comments', `<div id="cList" class="space-y-4 min-h-[120px]"><p class="text-slate-500 text-sm">Loading…</p></div>
+    <div class="sticky bottom-0 bg-slate-950 pt-3 flex gap-2"><input id="cText" maxlength="500" placeholder="${token ? 'Add a comment…' : 'Sign in to comment'}" class="flex-1 bg-slate-900 border border-slate-800 rounded-full px-4 py-2.5 text-sm text-white outline-none focus:border-pink-500"><button id="cSend" aria-label="Send" class="w-11 h-11 rounded-full bg-pink-600 text-white"><i class="fa-solid fa-paper-plane"></i></button></div>`);
+  const load = async () => { try { const d = await api(`/posts/${id}/comments`); $('#cList').innerHTML = d.comments.length ? d.comments.map(c => `<div class="flex gap-3" data-cid="${esc(c.id)}"><button data-act="profile" data-handle="${esc(c.author.handle)}">${avatar(c.author, 'w-9 h-9 text-sm')}</button><div class="flex-1 min-w-0"><div class="text-xs text-slate-400"><b class="text-slate-200">@${esc(c.author.handle)}</b> · ${ago(c.at)}</div><p class="text-sm text-white whitespace-pre-wrap break-words">${richText(c.text)}</p></div>${c.canDelete ? `<button data-act="delcomment" data-id="${esc(id)}" data-cid="${esc(c.id)}" aria-label="Delete comment" class="w-8 h-8 flex items-center justify-center text-slate-500 text-xs"><i class="fa-solid fa-trash"></i></button>` : ''}</div>`).join('') : '<p class="text-slate-500 text-sm">No comments yet. Start the conversation.</p>'; const p = posts.get(id); if (p) { p.counts.comments = d.comments.length; updateCounts(id, p); } } catch (e) { $('#cList').innerHTML = `<p class="text-rose-400 text-sm">${esc(e.message)}</p>`; } };
+  await load();
+  const send = need(async () => { const t = $('#cText').value.trim(); if (!t) return; $('#cSend').disabled = true; try { await api(`/posts/${id}/comments`, { method: 'POST', body: { text: t } }); $('#cText').value = ''; await load(); } catch (e) { toast(e.message); } finally { $('#cSend').disabled = false; } });
+  $('#cSend').onclick = send; $('#cText').onkeydown = (e) => { if (e.key === 'Enter') send(); };
+  openComments.reload = load;
+}
+function openMore(id) {
+  const p = posts.get(id); if (!p) return;
+  const row = (act, icon, label, cls = 'text-white') => `<button data-act="${act}" data-id="${esc(id)}" class="w-full flex items-center gap-4 py-3.5 border-b border-white/5 ${cls}"><i class="fa-solid ${icon} w-5"></i><span class="font-semibold">${label}</span></button>`;
+  openSheet('', [row('copylink', 'fa-link', 'Copy link'), row('save', 'fa-bookmark', p.saved ? 'Remove from saved' : 'Save'), p.mine ? row('promote', 'fa-bullhorn', 'Promote this post (ad)', 'text-amber-300') : '', p.mine ? row('editpost', 'fa-pen', 'Edit caption') : '', !p.mine && p.author ? row('message', 'fa-paper-plane', 'Message @' + esc(p.author.handle)) : '', !p.mine ? row('report', 'fa-flag', 'Report', 'text-rose-400') : '', p.mine ? row('deletepost', 'fa-trash', 'Delete post', 'text-rose-400') : ''].join(''));
+}
+const REASONS = [['spam', 'Spam'], ['scam', 'Scam or fraud'], ['nudity', 'Nudity or sexual content'], ['violence', 'Violence'], ['hate', 'Hate speech'], ['harassment', 'Bullying or harassment'], ['false_information', 'False information'], ['other', 'Something else']];
+const report = need((kind, id) => {
+  openSheet('Report', `<p class="text-sm text-slate-400 mb-2">Why are you reporting this ${kind === 'user' ? 'account' : 'post'}? Reports are private.</p>${REASONS.map(([k, l]) => `<button data-act="doreport" data-kind="${kind}" data-id="${esc(id)}" data-reason="${k}" class="w-full text-left py-3 border-b border-white/5 text-white">${l}</button>`).join('')}`);
+});
+const editPost = need((id) => {
+  const p = posts.get(id);
+  openSheet('Edit caption', `<textarea id="eCap" rows="5" maxlength="2200" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-pink-500">${esc(p.caption)}</textarea><button id="eSave" class="mt-3 w-full py-3 rounded-xl font-bold text-white bg-pink-600">Save</button>`);
+  $('#eSave').onclick = async () => { try { const d = await api(`/posts/${id}`, { method: 'PATCH', body: { caption: $('#eCap').value } }); posts.set(id, d.post); $$(`[data-pid="${CSS.escape(id)}"]`).forEach(el => { el.outerHTML = reelHtml(d.post); }); observe(); closeSheet(); toast('Saved'); } catch (e) { toast(e.message); } };
+});
+async function deletePost(id) {
+  openSheet('Delete this post?', `<p class="text-sm text-slate-400 mb-4">This cannot be undone.</p><button id="dYes" class="w-full py-3 rounded-xl font-bold text-white bg-rose-600">Delete</button>`);
+  $('#dYes').onclick = async () => { try { await api(`/posts/${id}`, { method: 'DELETE' }); $$(`[data-pid="${CSS.escape(id)}"]`).forEach(el => el.remove()); posts.delete(id); closeSheet(); toast('Post deleted'); if (pageStack.length) $('#pageBack').click(); } catch (e) { toast(e.message); } };
+}
+const follow = need(async (uid, btn) => {
+  try { const d = await api(`/users/${uid}/follow`, { method: 'POST', body: {} }); toast(d.following ? 'Following' : 'Unfollowed'); posts.forEach(p => { if (p.author && p.author.id === uid) p.followingAuthor = d.following; }); $$(`[data-act="follow"][data-uid="${CSS.escape(uid)}"]`).forEach(b => { if (b.closest('.reel')) b.remove(); else { b.textContent = d.following ? 'Following' : 'Follow'; b.className = b.className.replace(/bg-pink-600|bg-slate-800/g, d.following ? 'bg-slate-800' : 'bg-pink-600'); } }); if (me) me.counts.following += d.following ? 1 : -1; } catch (e) { toast(e.message); }
+});
+async function cta(id) { try { const d = await api(`/posts/${id}/cta`, { method: 'POST', body: {} }); const u = safeCta(d.url); if (!u) return; if (u.startsWith('/')) location.href = u; else window.open(u, '_blank', 'noopener'); } catch (e) { toast(e.message); } }
 
-                        <!-- Bottom Left Overlay Details (TikTok/Reels Style) -->
-                        <div class="absolute bottom-0 left-0 right-16 p-5 bg-gradient-to-t from-black/90 via-black/40 to-transparent space-y-2 z-20 pointer-events-none">
-                            <div class="flex items-center space-x-2 pointer-events-auto">
-                                <span class="text-sm font-bold text-white drop-shadow">${post.authorName || 'Robert Maina'}</span>
-                                <span class="text-xs text-purple-400 font-mono">${post.authorHandle || '@robert_maina'}</span>
-                            </div>
-                            <p class="text-xs text-slate-100 font-medium drop-shadow leading-relaxed">${post.title || post.caption || ''}</p>
-                            <div class="flex items-center space-x-2 text-[11px] text-slate-300">
-                                <i class="fa-solid fa-music animate-spin text-purple-400"></i>
-                                <span class="truncate">Original Audio - RDS Sovereign Sound</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
+/* ---------------- one post (deep link or from a grid) ---------------- */
+async function openPost(id) {
+  try { const d = await api(`/posts/${id}`); posts.set(d.post.id, d.post);
+    openPage('', `<div class="feed" id="single">${reelHtml(d.post)}</div>`, '', () => { const v = $('#single video'); if (v) { v.muted = !sound; v.play().catch(() => {}); } });
+  } catch (e) { toast(e.message); }
+}
 
-        async function sendLike(postId) {
-            try {
-                const res = await fetch('/api/ads/telemetry', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adId: postId, action: 'like' })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    const post = allPostsData.find(p => p.id === postId);
-                    if (post) post.likes = data.ad.likes;
-                    const lk = document.getElementById(`likes_${postId}`);
-                    if (lk) lk.innerText = data.ad.likes;
-                }
-            } catch (e) {}
-        }
+/* ---------------- create ---------------- */
+const openCreate = need(() => {
+  let file = null, style = 'night';
+  openSheet('New post', `<div id="crPrev" class="relative aspect-[9/16] max-h-[44vh] mx-auto rounded-2xl overflow-hidden style-night flex items-center justify-center"><p class="text-white/70 text-sm text-center px-6">Add a photo or video, or just write something.</p></div>
+    <div class="grid grid-cols-2 gap-2 mt-3">
+      <label class="py-3 rounded-xl bg-slate-900 border border-slate-800 text-sm font-semibold text-white flex items-center justify-center gap-2 cursor-pointer"><i class="fa-solid fa-images text-pink-400"></i> Gallery<input id="crFile" type="file" accept="image/*,video/*" class="hidden"></label>
+      <label class="py-3 rounded-xl bg-slate-900 border border-slate-800 text-sm font-semibold text-white flex items-center justify-center gap-2 cursor-pointer"><i class="fa-solid fa-camera text-cyan-400"></i> Camera<input id="crCam" type="file" accept="image/*,video/*" capture="environment" class="hidden"></label>
+    </div>
+    <div id="crStyles" class="flex gap-2 mt-3">${['night', 'sunset', 'ocean', 'forest', 'candy'].map(s => `<button data-style="${s}" aria-label="Background ${s}" class="w-8 h-8 rounded-full style-${s} border-2 ${s === 'night' ? 'border-white' : 'border-transparent'}"></button>`).join('')}<span class="text-xs text-slate-500 self-center ml-1">for text posts</span></div>
+    <textarea id="crCap" rows="3" maxlength="2200" placeholder="Write a caption… #hashtags @mentions" class="mt-3 w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none focus:border-pink-500"></textarea>
+    <div class="flex justify-between text-xs text-slate-500"><span id="crInfo"></span><span id="crCount">0 / 2200</span></div>
+    <div id="crBar" class="hidden mt-3 h-2 rounded-full bg-slate-800 overflow-hidden"><div id="crFill" class="h-full w-0 bg-gradient-to-r from-pink-600 to-purple-600"></div></div>
+    <button id="crPost" class="mt-3 w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600">Post</button><div id="crErr" class="mt-2 text-sm text-rose-400"></div>`);
+  const pick = (f) => {
+    if (!f) return; const isV = f.type.startsWith('video/'), isI = f.type.startsWith('image/');
+    if (!isV && !isI) return $('#crErr').textContent = 'Choose a photo or a video.';
+    if (f.size > (isV ? 150 : 15) * 1048576) return $('#crErr').textContent = isV ? 'Videos can be up to 150 MB.' : 'Photos can be up to 15 MB.';
+    file = f; $('#crErr').textContent = ''; const url = URL.createObjectURL(f);
+    $('#crPrev').className = 'relative aspect-[9/16] max-h-[44vh] mx-auto rounded-2xl overflow-hidden bg-black';
+    $('#crPrev').innerHTML = isV ? `<video src="${url}" class="w-full h-full object-cover" playsinline muted loop autoplay></video>` : `<img src="${url}" alt="" class="w-full h-full object-cover">`;
+    $('#crInfo').textContent = `${isV ? 'Video' : 'Photo'} · ${(f.size / 1048576).toFixed(1)} MB`; $('#crStyles').classList.add('hidden');
+  };
+  $('#crFile').onchange = (e) => pick(e.target.files[0]); $('#crCam').onchange = (e) => pick(e.target.files[0]);
+  $('#crStyles').onclick = (e) => { const b = e.target.closest('[data-style]'); if (!b) return; style = b.dataset.style; $$('#crStyles [data-style]').forEach(x => x.classList.toggle('border-white', x === b)); $$('#crStyles [data-style]').forEach(x => x.classList.toggle('border-transparent', x !== b)); if (!file) $('#crPrev').className = `relative aspect-[9/16] max-h-[44vh] mx-auto rounded-2xl overflow-hidden style-${style} flex items-center justify-center`; };
+  $('#crCap').oninput = () => { $('#crCount').textContent = `${$('#crCap').value.length} / 2200`; if (!file) $('#crPrev').innerHTML = `<p class="text-white text-xl font-extrabold text-center px-6 whitespace-pre-wrap break-words">${esc($('#crCap').value) || '<span class="text-white/60 text-sm font-normal">Add a photo or video, or just write something.</span>'}</p>`; };
+  $('#crPost').onclick = async () => {
+    const caption = $('#crCap').value.trim(); if (!file && !caption) return $('#crErr').textContent = 'Write something or add a photo or video.';
+    $('#crPost').disabled = true; $('#crErr').textContent = '';
+    try {
+      let mediaId = null;
+      if (file) { $('#crBar').classList.remove('hidden'); mediaId = await upload(file, (p) => { $('#crFill').style.width = Math.round(p * 100) + '%'; }); }
+      const d = await api('/posts', { method: 'POST', body: { caption, mediaId, style } });
+      closeSheet(); toast('Posted!'); go('vHome'); if (tab !== 'foryou') setTab('foryou'); posts.set(d.post.id, d.post);
+      $('#feed').insertAdjacentHTML('afterbegin', reelHtml(d.post)); $$('#feed .reel:not([data-pid])').forEach(x => x.remove()); $('#feed').scrollTop = 0; observe();
+    } catch (e) { $('#crErr').textContent = e.message; } finally { $('#crPost').disabled = false; }
+  };
+});
+function upload(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest(); x.open('POST', '/api/ads/media'); x.setRequestHeader('Authorization', 'Bearer ' + token); x.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    x.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    x.onload = () => { let d = null; try { d = JSON.parse(x.responseText); } catch (e) {} if (x.status === 200 && d && d.success) resolve(d.mediaId); else reject(new Error((d && d.error) || 'Upload failed.')); };
+    x.onerror = () => reject(new Error('Upload failed. Check your connection.')); x.send(file);
+  });
+}
+$('#navCreate').onclick = () => openCreate();
 
-        function openCreateModal() { document.getElementById('createPostModal').classList.remove('hidden'); }
-        function closeCreateModal() { document.getElementById('createPostModal').classList.add('hidden'); }
-        function openAccountManager() { alert(`Logged in as ${currentUser.name} (${currentUser.handle})`); }
+/* ---------------- profiles ---------------- */
+function gridHtml(list) {
+  if (!list.length) return '<p class="text-center text-slate-500 text-sm py-10">No posts yet.</p>';
+  return `<div class="grid grid-cols-3 gap-0.5">${list.map(p => { posts.set(p.id, p); const u = p.media && safeMedia(p.media.url); return `<button data-act="openpost" data-id="${esc(p.id)}" class="relative aspect-[3/4] overflow-hidden ${p.media ? 'bg-slate-900' : 'style-' + (['sunset', 'ocean', 'forest', 'night', 'candy'].includes(p.style) ? p.style : 'night')}">${p.media && p.media.kind === 'image' ? `<img src="${u}" alt="" loading="lazy" class="w-full h-full object-cover">` : p.media && p.media.kind === 'video' ? `<video src="${u}#t=0.1" preload="metadata" muted playsinline class="w-full h-full object-cover"></video><i class="fa-solid fa-play absolute top-1.5 right-1.5 text-white text-xs drop-shadow"></i>` : `<span class="absolute inset-0 p-2 text-[11px] font-bold text-white text-left break-words overflow-hidden">${esc(p.caption.slice(0, 80))}</span>`}<span class="absolute bottom-1 left-1.5 text-[11px] text-white font-semibold drop-shadow"><i class="fa-solid fa-heart"></i> ${fmtN(p.counts.likes)}</span></button>`; }).join('')}</div>`;
+}
+function profileHeader(u, mine) {
+  return `<div class="flex flex-col items-center text-center px-6 pt-6 pb-4">${avatar(u, 'w-24 h-24 text-3xl')}
+    <h1 class="mt-3 text-lg font-bold text-white">${esc(u.name)}${u.verified ? ' <i class="fa-solid fa-circle-check text-cyan-400 text-sm"></i>' : ''}</h1><p class="text-sm text-slate-400">@${esc(u.handle)}</p>
+    <div class="flex gap-8 mt-4 text-center"><div><b class="text-white">${fmtN(u.counts.following)}</b><div class="text-xs text-slate-400">Following</div></div><div><b class="text-white">${fmtN(u.counts.followers)}</b><div class="text-xs text-slate-400">Followers</div></div><div><b class="text-white">${fmtN(u.counts.likes != null ? u.counts.likes : u.counts.posts)}</b><div class="text-xs text-slate-400">${u.counts.likes != null ? 'Likes' : 'Posts'}</div></div></div>
+    ${u.bio ? `<p class="mt-3 text-sm text-slate-200 whitespace-pre-wrap break-words">${esc(u.bio)}</p>` : ''}
+    <div class="flex gap-2 mt-4 w-full max-w-xs">${mine ? `<button data-act="editprofile" class="flex-1 py-2.5 rounded-lg bg-slate-800 text-white text-sm font-semibold">Edit profile</button><button data-act="settings" aria-label="Settings" class="px-4 py-2.5 rounded-lg bg-slate-800 text-white"><i class="fa-solid fa-gear"></i></button>`
+      : `<button data-act="follow" data-uid="${esc(u.id)}" class="flex-1 py-2.5 rounded-lg ${u.isFollowing ? 'bg-slate-800' : 'bg-pink-600'} text-white text-sm font-semibold">${u.isFollowing ? 'Following' : 'Follow'}</button><button data-act="messageuser" data-uid="${esc(u.id)}" class="flex-1 py-2.5 rounded-lg bg-slate-800 text-white text-sm font-semibold">Message</button><button data-act="usermore" data-uid="${esc(u.id)}" data-blocked="${u.blocked ? 1 : 0}" aria-label="More" class="px-4 py-2.5 rounded-lg bg-slate-800 text-white"><i class="fa-solid fa-ellipsis"></i></button>`}</div></div>`;
+}
+async function openProfile(handle) {
+  try { const d = await api(`/users/${encodeURIComponent(handle)}`);
+    if (d.user.isMe) { closeSheet(); while (pageStack.length) pageStack.pop(); showPage(); return go('vMe'); }
+    closeSheet(); openPage('@' + d.user.handle, profileHeader(d.user, false) + gridHtml(d.posts));
+  } catch (e) { toast(e.message); }
+}
+async function renderMe() {
+  if (!token) { $('#me').innerHTML = `<div class="flex flex-col items-center justify-center text-center gap-3 px-8 pt-32"><i class="fa-solid fa-user text-5xl text-white/20"></i><p class="text-white font-bold">Sign in to see your profile</p><button data-act="signin" class="px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-bold">Sign in</button></div>`; return; }
+  try { const m = await api('/me'); me = m.user; const d = await api(`/users/${encodeURIComponent(me.handle)}`); $('#me').innerHTML = profileHeader(d.user, true) + myToolsHtml() + gridHtml(d.posts); paintBadges(); } catch (e) { $('#me').innerHTML = `<p class="p-6 text-rose-400">${esc(e.message)}</p>`; }
+}
+function editProfile() {
+  let avatarId;
+  openSheet('Edit profile', `<div class="flex flex-col items-center"><div id="epAv">${avatar(me, 'w-20 h-20 text-2xl')}</div><label class="mt-2 text-sm text-pink-400 font-semibold cursor-pointer">Change photo<input id="epFile" type="file" accept="image/*" class="hidden"></label></div>
+    <label class="block text-xs text-slate-400 mt-4 mb-1" for="epName">Name</label><input id="epName" maxlength="50" value="${esc(me.name)}" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-pink-500">
+    <label class="block text-xs text-slate-400 mt-3 mb-1" for="epHandle">Username</label><div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl px-4"><span class="text-slate-500">@</span><input id="epHandle" maxlength="24" value="${esc(me.handle)}" class="flex-1 bg-transparent py-3 text-white outline-none"></div>
+    <label class="block text-xs text-slate-400 mt-3 mb-1" for="epBio">Bio</label><textarea id="epBio" rows="3" maxlength="160" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-pink-500">${esc(me.bio || '')}</textarea>
+    <button id="epSave" class="mt-4 w-full py-3 rounded-xl font-bold text-white bg-pink-600">Save</button><div id="epErr" class="mt-2 text-sm text-rose-400"></div>`);
+  $('#epFile').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; try { $('#epErr').textContent = 'Uploading…'; avatarId = await upload(f, () => {}); $('#epAv').innerHTML = `<img src="${URL.createObjectURL(f)}" alt="" class="w-20 h-20 rounded-full object-cover">`; $('#epErr').textContent = ''; } catch (x) { $('#epErr').textContent = x.message; } };
+  $('#epSave').onclick = async () => { try { const body = { name: $('#epName').value, handle: $('#epHandle').value, bio: $('#epBio').value }; if (avatarId) body.avatarMediaId = avatarId; const d = await api('/me', { method: 'PATCH', body }); me = d.user; closeSheet(); toast('Profile saved'); renderMe(); } catch (x) { $('#epErr').textContent = x.message; } };
+}
+function settings() {
+  openSheet('Settings', `<button data-act="signout" class="w-full text-left py-3.5 border-b border-white/5 text-white"><i class="fa-solid fa-right-from-bracket w-6"></i> Sign out</button>
+    <button data-act="deleteaccount" class="w-full text-left py-3.5 text-rose-400"><i class="fa-solid fa-user-xmark w-6"></i> Delete my account</button>`);
+}
 
-        async function requestSecurityOtp() {
-            const contact = document.getElementById('loginContactInput').value.trim();
-            const name = document.getElementById('regFullName').value.trim();
-            const handle = document.getElementById('regHandle').value.trim();
-            if (!contact) { alert("Enter email or phone."); return; }
-            if (name) currentUser.name = name;
-            if (handle) currentUser.handle = handle;
-            activeContactId = contact;
+/* ---------------- discover ---------------- */
+async function renderDiscover() {
+  const q = $('#q').value.trim();
+  if (!q) {
+    try { const d = await api('/trending'); $('#discover').innerHTML = `<h3 class="text-sm font-bold text-white mt-2 mb-2">Trending</h3><div class="flex flex-wrap gap-2">${d.tags.length ? d.tags.map(t => `<button data-act="tag" data-tag="${esc(t.tag)}" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-sm text-white">#${esc(t.tag)} <span class="text-slate-500 text-xs">${t.posts}</span></button>`).join('') : '<p class="text-slate-500 text-sm">Hashtags appear here as people post.</p>'}</div>
+      <h3 class="text-sm font-bold text-white mt-6 mb-2">People to follow</h3>${peopleHtml(d.people)}`; } catch (e) { $('#discover').innerHTML = `<p class="text-rose-400 text-sm">${esc(e.message)}</p>`; }
+    return;
+  }
+  try { const d = await api('/search?q=' + encodeURIComponent(q)); $('#discover').innerHTML = (d.users.length ? `<h3 class="text-sm font-bold text-white mt-2 mb-2">People</h3>${peopleHtml(d.users)}` : '') + `<h3 class="text-sm font-bold text-white mt-5 mb-2">Posts</h3>` + gridHtml(d.posts); } catch (e) { $('#discover').innerHTML = `<p class="text-rose-400 text-sm">${esc(e.message)}</p>`; }
+}
+function peopleHtml(list) { return list.length ? list.map(u => `<div class="flex items-center gap-3 py-2"><button data-act="profile" data-handle="${esc(u.handle)}" class="flex items-center gap-3 flex-1 min-w-0 text-left">${avatar(u)}<div class="min-w-0"><div class="font-semibold text-white truncate">${esc(u.name)}</div><div class="text-xs text-slate-400 truncate">@${esc(u.handle)} · ${fmtN(u.followers)} followers</div></div></button>${u.isMe ? '' : `<button data-act="follow" data-uid="${esc(u.id)}" class="px-4 py-1.5 rounded-lg ${u.isFollowing ? 'bg-slate-800' : 'bg-pink-600'} text-white text-sm font-semibold">${u.isFollowing ? 'Following' : 'Follow'}</button>`}</div>`).join('') : '<p class="text-slate-500 text-sm">No people found.</p>'; }
+let qT = null; $('#q').addEventListener('input', () => { clearTimeout(qT); qT = setTimeout(renderDiscover, 300); });
 
-            const res = await fetch('/api/ads/auth/dispatch-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contactId: contact })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(`🔐 OTP Code: [ ${data.otpCode} ]`);
-                document.getElementById('authStep1').classList.add('hidden');
-                document.getElementById('authStep2').classList.remove('hidden');
-            }
-        }
+/* ---------------- inbox: activity + messages ---------------- */
+let inboxTab = 'notif';
+const NOTE = { like: 'liked your post', comment: 'commented:', follow: 'started following you', mention: 'mentioned you:' };
+async function renderInbox() {
+  $('#ibNotif').className = 'px-4 py-2 rounded-full text-sm font-bold ' + (inboxTab === 'notif' ? 'bg-white text-black' : 'bg-slate-900 text-slate-300');
+  $('#ibMsgs').className = 'px-4 py-2 rounded-full text-sm font-bold ' + (inboxTab === 'msgs' ? 'bg-white text-black' : 'bg-slate-900 text-slate-300');
+  if (!token) { $('#inbox').innerHTML = `<div class="text-center pt-24 px-8"><i class="fa-solid fa-inbox text-5xl text-white/20"></i><p class="text-white font-bold mt-3">Sign in to see your activity and messages</p><button data-act="signin" class="mt-3 px-6 py-2.5 rounded-full bg-pink-600 text-white text-sm font-bold">Sign in</button></div>`; return; }
+  try {
+    if (inboxTab === 'notif') {
+      const d = await api('/notifications');
+      $('#inbox').innerHTML = d.notifications.length ? d.notifications.map(n => `<div class="flex items-center gap-3 px-2 py-3 ${n.read ? '' : 'bg-white/5'} rounded-xl"><button data-act="profile" data-handle="${esc(n.fromUser.handle)}">${avatar(n.fromUser)}</button><button ${n.post ? `data-act="openpost" data-id="${esc(n.post.id)}"` : `data-act="profile" data-handle="${esc(n.fromUser.handle)}"`} class="flex-1 min-w-0 text-left text-sm"><b class="text-white">@${esc(n.fromUser.handle)}</b> <span class="text-slate-300">${NOTE[n.type] || ''} ${esc(n.text)}</span> <span class="text-slate-500 text-xs">${ago(n.at)}</span></button>${n.post && safeMedia(n.post.thumb) ? `<img src="${safeMedia(n.post.thumb)}" alt="" class="w-10 h-14 object-cover rounded">` : ''}</div>`).join('') : '<p class="text-center text-slate-500 text-sm pt-16">No activity yet.</p>';
+      if (d.unread) { await api('/notifications/read', { method: 'POST', body: {} }); if (me) me.unread.notifications = 0; paintBadges(); }
+    } else {
+      const d = await api('/conversations');
+      $('#inbox').innerHTML = `<button data-act="newgroup" class="w-full flex items-center gap-3 px-2 py-3 text-left"><span class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center"><i class="fa-solid fa-user-group"></i></span><b class="text-white">New group</b></button>` + (d.conversations.length ? d.conversations.map(c => `<button data-act="openchat" data-cid="${esc(c.id)}" class="w-full flex items-center gap-3 px-2 py-3 text-left">${c.type === 'group' ? '<span class="w-12 h-12 shrink-0 rounded-full bg-slate-700 text-white flex items-center justify-center"><i class="fa-solid fa-users"></i></span>' : avatar(c.with, 'w-12 h-12 text-base')}<div class="flex-1 min-w-0"><div class="flex justify-between"><b class="text-white truncate">${esc(c.type === 'group' ? c.name : c.with.name)}</b><span class="text-xs text-slate-500">${c.last ? ago(c.last.at) : ''}</span></div><div class="text-sm truncate ${c.unread ? 'text-white font-semibold' : 'text-slate-400'}">${c.last ? (c.last.mine ? 'You: ' : (c.type === 'group' && c.last.from ? esc(c.last.from.split(' ')[0]) + ': ' : '')) + esc(c.last.text) : ''}</div></div>${c.unread ? `<span class="min-w-[20px] h-5 px-1.5 rounded-full bg-pink-600 text-white text-xs leading-5 text-center">${c.unread}</span>` : ''}</button>`).join('') : '<p class="text-center text-slate-500 text-sm pt-16">No messages yet. Open someone\'s profile and tap Message, or start a group.</p>');
+    }
+  } catch (e) { $('#inbox').innerHTML = `<p class="text-rose-400 text-sm p-4">${esc(e.message)}</p>`; }
+}
+$('#ibNotif').onclick = () => { inboxTab = 'notif'; renderInbox(); }; $('#ibMsgs').onclick = () => { inboxTab = 'msgs'; renderInbox(); };
+const startChat = need(async (uid) => { try { const d = await api('/conversations', { method: 'POST', body: { userId: uid } }); closeSheet(); openChat(d.conversation.id); } catch (e) { toast(e.message); } });
+async function openChat(cid) {
+  try { const d = await api(`/conversations/${cid}/messages`); chatWith = cid; const c = d.conversation;
+    openPage(c.type === 'group' ? c.name : c.with.name, `<div id="msgs" class="flex flex-col gap-1.5 p-3 min-h-full justify-end">${d.messages.map(msgHtml).join('')}</div>`, c.type === 'group' ? `<button data-act="groupinfo" data-cid="${esc(cid)}" aria-label="Group info" class="w-9 h-9 rounded-full bg-slate-800 text-white"><i class="fa-solid fa-users"></i></button>` : '', () => {
+      const body = $('#pageBody'); body.scrollTop = body.scrollHeight;
+      $('#page').insertAdjacentHTML('beforeend', `<div id="composer" class="flex gap-2 p-3 border-t border-white/10 safe-b"><label aria-label="Send a photo" class="w-11 h-11 shrink-0 rounded-full bg-slate-800 text-white flex items-center justify-center cursor-pointer ${c.blocked ? 'hidden' : ''}"><i class="fa-solid fa-image"></i><input id="mPhoto" type="file" accept="image/*" class="hidden"></label><input id="mText" maxlength="2000" autocomplete="off" placeholder="${c.blocked ? 'You cannot message this account' : 'Message…'}" ${c.blocked ? 'disabled' : ''} class="flex-1 bg-slate-900 border border-slate-800 rounded-full px-4 py-2.5 text-sm text-white outline-none focus:border-pink-500"><button id="mSend" aria-label="Send" class="w-11 h-11 rounded-full bg-pink-600 text-white" ${c.blocked ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i></button></div><div id="typing" class="hidden absolute bottom-20 left-4 text-xs text-slate-400">typing…</div>`);
+      const send = async () => { const t = $('#mText').value.trim(); if (!t) return; $('#mText').value = ''; try { const r = await api(`/conversations/${cid}/messages`, { method: 'POST', body: { text: t } }); $('#msgs').insertAdjacentHTML('beforeend', msgHtml(r.message)); body.scrollTop = body.scrollHeight; } catch (e) { toast(e.message); $('#mText').value = t; } };
+      $('#mSend').onclick = send; $('#mPhoto').onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) sendPhoto(cid, f); }; loadPrivateImages($('#msgs')); $('#mText').onkeydown = (e) => { if (e.key === 'Enter') send(); else if (socket) socket.emit('social:typing', { conversationId: cid }); };
+    });
+    api(`/conversations/${cid}/read`, { method: 'POST', body: {} }).then(() => api('/me').then(m => { me = m.user; paintBadges(); })).catch(() => {});
+  } catch (e) { toast(e.message); }
+}
+const msgHtml = (m) => {
+  if (m.system) return `<div class="text-center text-[11px] text-slate-400 my-1" data-mid="${esc(m.id)}">${esc(m.text)}</div>`;
+  const img = m.media && /^\/api\/ads\/conversations\/K_[a-z0-9]+\/media\/M_[a-z0-9]+$/.test(m.media.url) ? `<img data-private="${esc(m.media.url)}" alt="Photo" class="block rounded-xl max-w-full max-h-72 mb-1 bg-slate-700 min-h-[80px] min-w-[120px]">` : '';
+  const seen = m.mine ? ` <span data-seen>${m.seen ? '✓✓ Seen' : (m.seenBy ? '✓ Seen by ' + m.seenBy : '✓')}</span>` : '';
+  return `<div class="flex ${m.mine ? 'justify-end' : 'justify-start'}" data-mid="${esc(m.id)}"><div class="max-w-[78%] px-3.5 py-2 rounded-2xl text-sm whitespace-pre-wrap break-words ${m.mine ? 'bg-pink-600 text-white rounded-br-md' : 'bg-slate-800 text-white rounded-bl-md'}">${!m.mine && m.from ? `<div class="text-[11px] font-bold text-pink-300 mb-0.5">${esc(m.from.name)}</div>` : ''}${img}${m.text ? esc(m.text) : ''}<div class="text-[10px] mt-0.5 ${m.mine ? 'text-white/70 text-right' : 'text-slate-400'}">${new Date(m.at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}${seen}</div></div></div>`;
+};
+// close the composer when leaving a chat
+new MutationObserver(() => { if ($('#page').classList.contains('hidden') || !chatWith) { const c = $('#composer'); if (c) c.remove(); const ty = $('#typing'); if (ty) ty.remove(); } }).observe($('#page'), { attributes: true, childList: true, subtree: false });
 
-        async function verifyAndCompleteLogin() {
-            const otpCode = document.getElementById('loginOtpInput').value.trim();
-            const res = await fetch('/api/ads/auth/verify-security-challenge', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contactId: activeContactId, otpCode, fullName: currentUser.name, handle: currentUser.handle })
-            });
-            const data = await res.json();
-            if (data.success) {
-                sessionToken = data.sessionToken;
-                currentUser = { name: data.user.fullName, handle: data.user.handle };
-                localStorage.setItem('sov_contact_id', activeContactId);
-                localStorage.setItem('sov_session_token', sessionToken);
-                localStorage.setItem('sov_user_name', currentUser.name);
-                localStorage.setItem('sov_user_handle', currentUser.handle);
+/* ---------------- realtime ---------------- */
+function connectSocket() {
+  if (!token || typeof io !== 'function') return; try { if (socket) socket.disconnect(); } catch (e) {}
+  socket = io({ auth: { socialToken: token } });
+  socket.on('social:notification', () => { if (me) { me.unread.notifications++; paintBadges(); } if (!$('#vInbox').classList.contains('hidden') && inboxTab === 'notif') renderInbox(); });
+  socket.on('social:message', (p) => {
+    if (chatWith === p.conversationId && $('#msgs')) { $('#msgs').insertAdjacentHTML('beforeend', msgHtml(p.message)); loadPrivateImages($('#msgs')); $('#pageBody').scrollTop = $('#pageBody').scrollHeight; api(`/conversations/${p.conversationId}/read`, { method: 'POST', body: {} }).catch(() => {}); }
+    else { if (me) { me.unread.messages++; paintBadges(); } toast(`💬 ${p.from && p.from.name ? p.from.name : 'New message'}: ${String(p.message.text || (p.message.media ? '📷 Photo' : '')).slice(0, 40)}`); if (!$('#vInbox').classList.contains('hidden') && inboxTab === 'msgs') renderInbox(); }
+  });
+  socket.on('social:read', (p) => { if (chatWith === p.conversationId) $$('#msgs [data-seen]').forEach(s => { s.textContent = '✓✓ Seen'; }); });
+  socket.on('social:typing', (p) => { if (chatWith === p.conversationId && $('#typing')) { $('#typing').classList.remove('hidden'); clearTimeout(connectSocket.t); connectSocket.t = setTimeout(() => { const t = $('#typing'); if (t) t.classList.add('hidden'); }, 2000); } });
+}
+function paintBadges() {
+  const n = me ? (me.unread.notifications || 0) + (me.unread.messages || 0) : 0, b = $('#inboxBadge'); b.textContent = n > 99 ? '99+' : String(n); b.classList.toggle('hidden', !n);
+  const m = me ? me.unread.messages : 0, mb = $('#msgBadge'); mb.textContent = String(m); mb.classList.toggle('hidden', !m);
+}
 
-                document.getElementById('displayUserHandle').innerText = currentUser.handle;
-                document.getElementById('secureAuthModal').classList.add('hidden');
-                applyFeedFilters();
-            } else { alert("❌ " + data.error); }
-        }
+/* ---------------- navigation ---------------- */
+function go(view) {
+  $$('.view').forEach(v => v.classList.toggle('hidden', v.id !== view)); $$('.nav').forEach(b => b.classList.toggle('text-white', b.dataset.nav === view)); $$('.nav').forEach(b => b.classList.toggle('text-white/50', b.dataset.nav !== view));
+  if (view === 'vHome') resumeFeed(); else pauseAll();
+  if (view === 'vDiscover') renderDiscover(); if (view === 'vInbox') renderInbox(); if (view === 'vMe') renderMe();
+}
+$$('.nav').forEach(b => b.onclick = () => go(b.dataset.nav));
 
-        async function handleLocalFileUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const fd = new FormData();
-            fd.append('mediaFile', file);
-            const res = await fetch('/api/ads/media/upload-file', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data.success) {
-                document.getElementById('postMediaUrl').value = window.location.origin + data.fileUrl;
-                document.getElementById('postMediaType').value = file.type.startsWith('image/') ? 'Photo' : 'Video Clip';
-                alert("✅ File uploaded successfully!");
-            }
-        }
+/* ---------------- one click handler for everything ---------------- */
 
-        async function publishPost(e) {
-            e.preventDefault();
-            const payload = {
-                title: document.getElementById('postTitle').value,
-                subtitle: '',
-                targetVertical: document.getElementById('postVertical').value,
-                mediaType: document.getElementById('postMediaType').value,
-                rawMediaUrl: document.getElementById('postMediaUrl').value,
-                authorName: currentUser.name,
-                authorHandle: currentUser.handle,
-                otpCode: "1234"
-            };
+/* =====================================================================================
+   STAGE 192.3: stories, reposts & quotes, saves, groups, chat photos, self-serve ads
+   ===================================================================================== */
+function quoteHtml(q) {
+  if (!q) return '';
+  if (q.unavailable) return `<div class="mt-2 rounded-xl border border-white/20 bg-black/40 p-3 text-xs text-white/60">This post is no longer available.</div>`;
+  const u = q.media && q.media.kind === 'image' && safeMedia(q.media.url);
+  return `<button data-act="openpost" data-id="${esc(q.id)}" class="mt-2 w-full text-left rounded-xl border border-white/25 bg-black/50 p-3 flex gap-3 items-start">${u ? `<img src="${u}" alt="" class="w-12 h-16 object-cover rounded">` : ''}<span class="min-w-0 block"><span class="block text-xs font-bold text-white">@${esc(q.author.handle)}</span><span class="block text-xs text-white/80 clamp3 break-words whitespace-pre-wrap">${esc(q.caption)}</span></span></button>`;
+}
+function myToolsHtml() {
+  const b = (act, icon, label) => `<button data-act="${act}" class="flex-1 py-2.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs font-semibold"><i class="fa-solid ${icon} mr-1"></i>${label}</button>`;
+  return `<div class="flex gap-2 px-4 pb-4">${b('addstory', 'fa-circle-plus', 'Story')}${b('saved', 'fa-bookmark', 'Saved')}${b('adsmanager', 'fa-bullhorn', 'Ads manager')}</div>`;
+}
+async function loadPrivateImages(root) {
+  for (const im of (root || document).querySelectorAll('img[data-private]:not([src])')) {
+    im.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAAAAACw=');
+    try { const r = await fetch(im.dataset.private, { headers: { Authorization: 'Bearer ' + token } }); if (!r.ok) throw new Error(); im.src = URL.createObjectURL(await r.blob()); }
+    catch (e) { im.alt = 'Photo unavailable'; }
+  }
+}
+async function sendPhoto(cid, f) {
+  if (!/^image\//.test(f.type)) return toast('Choose a photo.');
+  try { toast('Sending photo…'); const mid = await upload(f, () => {}); const r = await api(`/conversations/${cid}/messages`, { method: 'POST', body: { mediaId: mid, text: ($('#mText') && $('#mText').value.trim()) || '' } });
+    if ($('#mText')) $('#mText').value = ''; $('#msgs').insertAdjacentHTML('beforeend', msgHtml(r.message)); loadPrivateImages($('#msgs')); $('#pageBody').scrollTop = $('#pageBody').scrollHeight; }
+  catch (e) { toast(e.message); }
+}
+function updatePostCounts(id, fn) { const p = posts.get(id); if (p) fn(p); }
 
-            const res = await fetch('/api/ads/media/ingest', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (data.success) {
-                allPostsData.unshift(data.ad);
-                applyFeedFilters();
-                closeCreateModal();
-                alert("🎉 Successfully posted to feed!");
-                document.querySelector('form').reset();
-            } else { alert("❌ " + data.error); }
-        }
-    </script>
+/* ---------- STORIES ---------- */
+let storyTimer = null, story = null;
+async function refreshStoryDot() { if (!token) { $('#storyDot').classList.add('hidden'); return; } try { const d = await api('/stories'); $('#storyDot').classList.toggle('hidden', !d.stories.some(s => !s.isMe && !s.allSeen)); } catch (e) {} }
+async function openStories() {
+  try {
+    const d = await api('/stories'), mine = d.stories.find(s => s.isMe), others = d.stories.filter(s => !s.isMe);
+    const row = (s, i) => `<button data-act="storyopen" data-i="${i}" class="w-full flex items-center gap-3 px-2 py-3 text-left"><span class="p-0.5 rounded-full ${s.allSeen ? 'bg-slate-600' : 'bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600'}"><span class="block p-0.5 rounded-full bg-black">${avatar(s.user, 'w-12 h-12 text-base')}</span></span><span class="flex-1 min-w-0"><b class="block text-white truncate">${s.isMe ? 'My story' : esc(s.user.name)}</b><span class="text-xs text-slate-400">${s.items.length} update${s.items.length === 1 ? '' : 's'} · ${ago(s.latest)}</span></span></button>`;
+    story = { groups: d.stories };
+    const html = (token ? `<button data-act="addstory" class="w-full flex items-center gap-3 px-2 py-3 text-left"><span class="w-12 h-12 rounded-full bg-pink-600 text-white flex items-center justify-center"><i class="fa-solid fa-plus"></i></span><span><b class="block text-white">Add to my story</b><span class="text-xs text-slate-400">Photo, video or text. Disappears after 24 hours.</span></span></button>` : '')
+      + d.stories.map(row).join('') + (others.length ? '' : `<p class="text-center text-slate-500 text-sm pt-10 px-6">${token ? 'Stories from people you follow appear here.' : 'Sign in to see stories from people you follow.'}</p>`);
+    openPage('Stories', html, '');
+  } catch (e) { toast(e.message); }
+}
+function storyShow() {
+  clearTimeout(storyTimer); const g = story.groups[story.gi], it = g && g.items[story.ii]; if (!it) return storyClose();
+  pauseAll();
+  let v = $('#storyView'); if (!v) { document.body.insertAdjacentHTML('beforeend', '<div id="storyView" class="fixed inset-0 z-[60] bg-black flex flex-col"></div>'); v = $('#storyView'); }
+  const bars = g.items.map((x, i) => `<span class="flex-1 h-0.5 rounded bg-white/30 overflow-hidden"><span class="block h-full bg-white ${i < story.ii ? 'w-full' : 'w-0'}" ${i === story.ii ? 'data-bar' : ''}></span></span>`).join('');
+  const u = it.media && safeMedia(it.media.url);
+  const body = it.media && it.media.kind === 'video' && u ? `<video src="${u}" autoplay playsinline class="w-full h-full object-contain" data-sv></video>`
+    : it.media && u ? `<img src="${u}" alt="" class="w-full h-full object-contain">`
+    : `<div class="w-full h-full flex items-center justify-center p-8 style-${['sunset', 'ocean', 'forest', 'night', 'candy'].includes(it.style) ? it.style : 'sunset'}"><p class="text-2xl font-bold text-white text-center whitespace-pre-wrap break-words">${esc(it.text)}</p></div>`;
+  v.innerHTML = `<div class="absolute top-0 inset-x-0 z-10 p-3 safe-t"><div class="flex gap-1">${bars}</div><div class="flex items-center gap-2 mt-3">${avatar(g.user, 'w-9 h-9 text-sm')}<b class="text-white text-sm">${g.isMe ? 'My story' : esc(g.user.name)}</b><span class="text-white/60 text-xs">${ago(it.createdAt)}</span><button data-act="storyclose" aria-label="Close" class="ml-auto w-9 h-9 text-white text-xl"><i class="fa-solid fa-xmark"></i></button></div></div>
+    <div class="flex-1 min-h-0 relative">${body}<button data-act="storyprev" aria-label="Previous" class="absolute inset-y-0 left-0 w-1/3"></button><button data-act="storynext" aria-label="Next" class="absolute inset-y-0 right-0 w-2/3"></button></div>
+    ${it.text && it.media ? `<p class="absolute bottom-20 inset-x-0 px-6 text-center text-white text-base drop-shadow whitespace-pre-wrap break-words">${esc(it.text)}</p>` : ''}
+    ${g.isMe ? `<div class="absolute bottom-0 inset-x-0 p-4 safe-b flex justify-between"><button data-act="storyviewers" data-id="${esc(it.id)}" class="px-4 py-2 rounded-full bg-white/15 text-white text-sm"><i class="fa-solid fa-eye mr-1"></i>${it.viewers || 0} viewer${it.viewers === 1 ? '' : 's'}</button><button data-act="storydelete" data-id="${esc(it.id)}" class="px-4 py-2 rounded-full bg-white/15 text-rose-300 text-sm"><i class="fa-solid fa-trash mr-1"></i>Delete</button></div>` : ''}`;
+  const bar = v.querySelector('[data-bar]'), vid = v.querySelector('[data-sv]'), ms = 5000;
+  if (token && !g.isMe && !it.seen) { it.seen = true; api(`/stories/${it.id}/view`, { method: 'POST', body: {} }).catch(() => {}); }
+  if (vid) { vid.muted = !sound; vid.onended = storyNext; vid.ontimeupdate = () => { if (vid.duration && bar) bar.style.width = (vid.currentTime / vid.duration * 100) + '%'; }; }
+  else if (bar) { bar.style.transition = `width ${ms}ms linear`; requestAnimationFrame(() => { bar.style.width = '100%'; }); storyTimer = setTimeout(storyNext, ms); }
+}
+function storyNext() { const g = story.groups[story.gi]; if (story.ii + 1 < g.items.length) story.ii++; else if (story.gi + 1 < story.groups.length) { story.gi++; story.ii = 0; } else return storyClose(); storyShow(); }
+function storyPrev() { if (story.ii > 0) story.ii--; else if (story.gi > 0) { story.gi--; story.ii = 0; } storyShow(); }
+function storyClose() { clearTimeout(storyTimer); const v = $('#storyView'); if (v) v.remove(); refreshStoryDot(); if (pageStack.length && pageStack[pageStack.length - 1].title === 'Stories') { pageStack.pop(); openStories(); } else resumeFeed(); }
+const addStory = need(() => {
+  openSheet('Add to my story', `<p class="text-sm text-slate-400 mb-3">Visible to your followers for 24 hours.</p>
+    <label class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-800 text-white font-semibold cursor-pointer"><i class="fa-solid fa-image"></i> Photo or video<input id="stFile" type="file" accept="image/*,video/*" class="hidden"></label>
+    <div class="text-center text-xs text-slate-500 my-3">or write something</div>
+    <textarea id="stText" maxlength="300" rows="3" placeholder="What's happening?" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-pink-500"></textarea>
+    <div id="stBar" class="hidden h-1 mt-2 rounded bg-slate-800 overflow-hidden"><div id="stFill" class="h-full w-0 bg-pink-500"></div></div>
+    <button id="stPost" class="mt-3 w-full py-3 rounded-xl font-bold text-white bg-pink-600">Share to my story</button>`);
+  let file = null; $('#stFile').onchange = (e) => { file = e.target.files[0] || null; if (file) toast(file.name + ' selected'); };
+  $('#stPost').onclick = async () => {
+    const text = $('#stText').value.trim(); if (!file && !text) return toast('Add a photo, a video or some text.');
+    $('#stPost').disabled = true;
+    try { let mediaId; if (file) { $('#stBar').classList.remove('hidden'); mediaId = await upload(file, (f) => { $('#stFill').style.width = Math.round(f * 100) + '%'; }); }
+      await api('/stories', { method: 'POST', body: mediaId ? { mediaId, text } : { text, style: ['sunset', 'ocean', 'forest', 'night', 'candy'][Math.floor(Math.random() * 5)] } });
+      closeSheet(); toast('Added to your story'); refreshStoryDot(); if (pageStack.length && pageStack[pageStack.length - 1].title === 'Stories') { pageStack.pop(); openStories(); } }
+    catch (e) { toast(e.message); $('#stPost').disabled = false; }
+  };
+});
+
+/* ---------- REPOST / QUOTE / SAVE ---------- */
+const repostMenu = need((id) => { const p = posts.get(id); if (!p) return;
+  openSheet('', `<button data-act="dorepost" data-id="${esc(id)}" class="w-full flex items-center gap-4 py-3.5 border-b border-white/5 text-white"><i class="fa-solid fa-retweet w-5"></i><span class="font-semibold">${p.reposted ? 'Undo repost' : 'Repost'}</span></button><button data-act="quote" data-id="${esc(id)}" class="w-full flex items-center gap-4 py-3.5 text-white"><i class="fa-solid fa-pen-to-square w-5"></i><span class="font-semibold">Quote</span></button>`); });
+async function doRepost(id) { try { const d = await api(`/posts/${id}/repost`, { method: 'POST', body: {} }); closeSheet(); updatePostCounts(id, p => { p.reposted = d.reposted; p.counts.reposts = d.reposts; });
+  $$(`.reel[data-pid="${id}"] [data-act="repost"]`).forEach(b => { b.querySelector('i').classList.toggle('text-emerald-400', d.reposted); b.querySelector('[data-reposts]').textContent = fmtN(d.reposts); b.setAttribute('aria-pressed', d.reposted); });
+  toast(d.reposted ? 'Reposted to your followers' : 'Repost removed'); } catch (e) { toast(e.message); } }
+function quoteComposer(id) { const p = posts.get(id); if (!p) return; closeSheet();
+  openPage('Quote', `<div class="p-4"><textarea id="qText" maxlength="2200" rows="4" placeholder="Add your comment…" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-pink-500"></textarea>${quoteHtml({ id: p.id, author: p.author, caption: p.caption, media: p.media })}<button id="qPost" class="mt-4 w-full py-3 rounded-xl font-bold text-white bg-pink-600">Post</button></div>`, '', () => {
+    $('#qPost').onclick = async () => { const c = $('#qText').value.trim(); if (!c) return toast('Add your comment.'); $('#qPost').disabled = true;
+      try { await api(`/posts/${id}/quote`, { method: 'POST', body: { caption: c } }); pageStack.pop(); showPage(); toast('Posted'); refreshFeed(); } catch (e) { toast(e.message); $('#qPost').disabled = false; } }; }); }
+const toggleSave = need(async (id) => { try { const d = await api(`/posts/${id}/save`, { method: 'POST', body: {} }); updatePostCounts(id, p => { p.saved = d.saved; }); closeSheet(); toast(d.saved ? 'Saved. Find it in your profile under Saved.' : 'Removed from saved'); } catch (e) { toast(e.message); } });
+async function openSaved() { try { const d = await api('/saved'); openPage('Saved', gridHtml(d.posts), ''); } catch (e) { toast(e.message); } }
+
+/* ---------- GROUPS ---------- */
+function peoplePicker(selected, onDone, title, cta) {
+  openPage(title, `<div class="p-4"><div id="gpChips" class="flex flex-wrap gap-2 mb-3"></div><input id="gpQ" type="search" autocomplete="off" placeholder="Search people" class="w-full bg-slate-900 border border-slate-800 rounded-full px-4 py-2.5 text-sm text-white outline-none focus:border-pink-500"><div id="gpRes" class="mt-2"></div><button id="gpGo" class="mt-4 w-full py-3 rounded-xl font-bold text-white bg-pink-600">${esc(cta)}</button></div>`, '', () => {
+    const chips = () => { $('#gpChips').innerHTML = [...selected.values()].map(u => `<span class="px-3 py-1 rounded-full bg-pink-600/30 text-pink-100 text-xs">@${esc(u.handle)}</span>`).join(''); };
+    const search = async () => { const q = $('#gpQ').value.trim(); if (!q) { $('#gpRes').innerHTML = ''; return; }
+      try { const d = await api('/search?q=' + encodeURIComponent(q)); $('#gpRes').innerHTML = d.users.filter(u => !u.isMe).map(u => `<label class="flex items-center gap-3 py-2"><input type="checkbox" data-pick='${esc(JSON.stringify({ id: u.id, handle: u.handle, name: u.name }))}' ${selected.has(u.id) ? 'checked' : ''} class="w-5 h-5 accent-pink-600">${avatar(u, 'w-9 h-9 text-sm')}<span class="text-white text-sm">${esc(u.name)} <span class="text-slate-400">@${esc(u.handle)}</span></span></label>`).join('') || '<p class="text-slate-500 text-sm py-3">No one found.</p>'; } catch (e) { toast(e.message); } };
+    let tmr; $('#gpQ').oninput = () => { clearTimeout(tmr); tmr = setTimeout(search, 250); };
+    $('#gpRes').onchange = (e) => { const x = e.target.closest('[data-pick]'); if (!x) return; const u = JSON.parse(x.dataset.pick); if (x.checked) selected.set(u.id, u); else selected.delete(u.id); chips(); };
+    chips(); $('#gpGo').onclick = () => onDone([...selected.keys()]);
+  });
+}
+const newGroup = need(() => {
+  openSheet('New group', `<input id="gName" maxlength="50" placeholder="Group name" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-pink-500"><button id="gNext" class="mt-3 w-full py-3 rounded-xl font-bold text-white bg-pink-600">Next: add people</button>`);
+  $('#gNext').onclick = () => { const name = $('#gName').value.trim(); if (name.length < 2) return toast('Give the group a name.'); closeSheet();
+    peoplePicker(new Map(), async (ids) => { if (!ids.length) return toast('Add at least one person.');
+      try { const d = await api('/groups', { method: 'POST', body: { name, userIds: ids } }); pageStack.pop(); showPage(); openChat(d.conversation.id); } catch (e) { toast(e.message); } }, 'Add people to "' + name + '"', 'Create group'); };
+});
+async function groupInfo(cid) {
+  try { const d = await api(`/conversations/${cid}/messages`), c = d.conversation;
+    openPage(c.name, `<div class="p-4"><p class="text-xs text-slate-400 mb-2">${c.members.length} members</p>${c.members.map(m => `<div class="flex items-center gap-3 py-2">${avatar(m, 'w-10 h-10 text-sm')}<span class="flex-1 text-white text-sm">${esc(m.name)} <span class="text-slate-400">@${esc(m.handle)}</span>${m.admin ? ' <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-700 text-white">admin</span>' : ''}</span>${c.isAdmin && me && m.id !== me.id ? `<button data-act="groupremove" data-cid="${esc(cid)}" data-uid="${esc(m.id)}" class="text-xs text-rose-400">Remove</button>` : ''}</div>`).join('')}
+      ${c.isAdmin ? `<button data-act="groupadd" data-cid="${esc(cid)}" class="mt-3 w-full py-3 rounded-xl font-bold text-white bg-slate-800"><i class="fa-solid fa-user-plus mr-1"></i>Add people</button>` : ''}
+      <button data-act="groupleave" data-cid="${esc(cid)}" class="mt-3 w-full py-3 rounded-xl font-bold text-rose-300 bg-slate-900">Leave group</button></div>`, ''); }
+  catch (e) { toast(e.message); }
+}
+
+/* ---------- SELF-SERVE ADS ---------- */
+const promote = need(async (id) => { const p = posts.get(id); if (!p) return; let cpm = 50; try { cpm = (await api('/campaigns')).cpm || 50; } catch (e) {}
+  const est = (b) => Math.floor((Number(b) || 0) / cpm * 1000).toLocaleString('en-KE');
+  openSheet('Promote this post', `<p class="text-sm text-slate-400 mb-3">Your post is shown as <b class="text-white">Sponsored</b> in the For You feed. You pay KES ${cpm} per 1,000 people who see it.</p>
+    <label class="block text-xs text-slate-400 mb-1" for="adBudget">Budget (KES, 100 to 500,000)</label><input id="adBudget" type="number" inputmode="numeric" min="100" max="500000" step="50" value="500" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-pink-500">
+    <p class="text-xs text-emerald-300 mt-1" id="adEst">About ${est(500)} views</p>
+    <label class="block text-xs text-slate-400 mt-3 mb-1" for="adDays">Run for (days)</label><input id="adDays" type="number" min="1" max="30" value="7" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none">
+    <label class="block text-xs text-slate-400 mt-3 mb-1" for="adCta">Button text</label><input id="adCta" maxlength="30" value="Learn more" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none">
+    <label class="block text-xs text-slate-400 mt-3 mb-1" for="adUrl">Where the button goes (https link, or a page on RDS such as /user?shop=…)</label><input id="adUrl" value="/ads?post=${esc(id)}" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none">
+    <p class="text-[11px] text-amber-300 mt-3">Test mode: no real money moves until M-Pesa is connected.</p>
+    <button id="adGo" class="mt-3 w-full py-3 rounded-xl font-bold text-black bg-amber-400">Start ad</button>`);
+  $('#adBudget').oninput = () => { $('#adEst').textContent = 'About ' + est($('#adBudget').value) + ' views'; };
+  $('#adGo').onclick = async () => { $('#adGo').disabled = true;
+    try { const d = await api('/campaigns', { method: 'POST', body: { postId: id, budget: Number($('#adBudget').value), days: Number($('#adDays').value), ctaText: $('#adCta').value.trim(), ctaUrl: $('#adUrl').value.trim() } }); closeSheet(); toast(d.message); }
+    catch (e) { toast(e.message); $('#adGo').disabled = false; } };
+});
+const STATUS_TXT = { ACTIVE: ['Running', 'bg-emerald-600'], PAUSED: ['Paused', 'bg-amber-600'], PENDING_REVIEW: ['In review', 'bg-sky-700'], COMPLETED: ['Finished', 'bg-slate-600'], STOPPED: ['Stopped', 'bg-slate-600'], REJECTED: ['Not approved', 'bg-rose-700'] };
+async function adsManager() {
+  try { const d = await api('/campaigns'), T = d.totals;
+    const card = (c) => { const st = STATUS_TXT[c.status] || [c.status, 'bg-slate-600'], pct = c.budget ? Math.min(100, Math.round(c.spent / c.budget * 100)) : 0, thumb = c.post && safeMedia(c.post.thumb);
+      return `<div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 mb-3"><div class="flex gap-3">${thumb ? `<img src="${thumb}" alt="" class="w-12 h-16 object-cover rounded">` : ''}<div class="min-w-0 flex-1"><div class="flex items-center justify-between gap-2"><span class="text-[11px] px-2 py-0.5 rounded-full text-white ${st[1]}">${st[0]}</span><span class="text-[11px] text-slate-400">ends ${new Date(c.endsAt).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })}</span></div><p class="text-sm text-white mt-1 clamp3 break-words">${esc(c.post ? c.post.caption : '')}</p></div></div>
+        <div class="mt-3 h-1.5 rounded bg-slate-800 overflow-hidden"><div class="h-full bg-amber-400" style="width:${pct}%"></div></div>
+        <div class="grid grid-cols-4 gap-2 mt-3 text-center"><div><b class="text-white text-sm">KES ${c.spent.toFixed(2)}</b><div class="text-[10px] text-slate-400">of ${c.budget.toLocaleString('en-KE')}</div></div><div><b class="text-white text-sm">${fmtN(c.impressions)}</b><div class="text-[10px] text-slate-400">views</div></div><div><b class="text-white text-sm">${fmtN(c.clicks)}</b><div class="text-[10px] text-slate-400">clicks</div></div><div><b class="text-white text-sm">${c.ctr}%</b><div class="text-[10px] text-slate-400">click rate</div></div></div>
+        ${['ACTIVE', 'PAUSED', 'PENDING_REVIEW'].includes(c.status) ? `<div class="flex gap-2 mt-3">${c.status === 'ACTIVE' ? `<button data-act="camp" data-do="pause" data-id="${esc(c.id)}" class="flex-1 py-2 rounded-lg bg-slate-800 text-white text-xs font-semibold">Pause</button>` : c.status === 'PAUSED' ? `<button data-act="camp" data-do="resume" data-id="${esc(c.id)}" class="flex-1 py-2 rounded-lg bg-emerald-700 text-white text-xs font-semibold">Resume</button>` : ''}<button data-act="camp" data-do="stop" data-id="${esc(c.id)}" class="flex-1 py-2 rounded-lg bg-slate-800 text-rose-300 text-xs font-semibold">Stop</button></div>` : c.refund ? `<p class="text-[11px] text-slate-400 mt-2">Unspent: KES ${c.refund.toFixed(2)}</p>` : ''}</div>`; };
+    openPage('Ads manager', `<div class="p-4"><div class="grid grid-cols-3 gap-2 mb-4 text-center"><div class="rounded-xl bg-slate-900 p-3"><b class="text-white">KES ${T.spent.toFixed(2)}</b><div class="text-[10px] text-slate-400">spent</div></div><div class="rounded-xl bg-slate-900 p-3"><b class="text-white">${fmtN(T.impressions)}</b><div class="text-[10px] text-slate-400">views</div></div><div class="rounded-xl bg-slate-900 p-3"><b class="text-white">${T.ctr}%</b><div class="text-[10px] text-slate-400">click rate</div></div></div>
+      ${d.campaigns.length ? d.campaigns.map(card).join('') : '<p class="text-center text-slate-500 text-sm pt-10">No ads yet. Open one of your posts, tap ••• and choose "Promote this post".</p>'}
+      <p class="text-[11px] text-slate-500 mt-2">Price: KES ${d.cpm} per 1,000 views. Each person counts once every 6 hours. Test mode: no real money moves.</p></div>`, ''); }
+  catch (e) { toast(e.message); }
+}
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act, id = b.dataset.id;
+  try {
+    if (a === 'stories') return openStories();
+    if (a === 'storyopen') { story.gi = Number(b.dataset.i); story.ii = Math.max(0, story.groups[story.gi].items.findIndex(x => !x.seen)); return storyShow(); }
+    if (a === 'storynext') return storyNext();
+    if (a === 'storyprev') return storyPrev();
+    if (a === 'storyclose') return storyClose();
+    if (a === 'storyviewers') { clearTimeout(storyTimer); const d = await api(`/stories/${id}/viewers`); return openSheet('Viewed by', d.viewers.length ? d.viewers.map(v => `<div class="flex items-center gap-3 py-2">${avatar(v, 'w-9 h-9 text-sm')}<span class="text-white text-sm flex-1">${esc(v.name)}</span><span class="text-xs text-slate-500">${ago(v.at)}</span></div>`).join('') : '<p class="text-slate-500 text-sm">No one yet.</p>', () => storyShow()); }
+    if (a === 'storydelete') { clearTimeout(storyTimer); await api(`/stories/${id}`, { method: 'DELETE' }); toast('Story deleted'); return storyClose(); }
+    if (a === 'addstory') return addStory();
+    if (a === 'repost') return repostMenu(id);
+    if (a === 'dorepost') return doRepost(id);
+    if (a === 'quote') return quoteComposer(id);
+    if (a === 'save') return toggleSave(id);
+    if (a === 'saved') return openSaved();
+    if (a === 'promote') { closeSheet(); return promote(id); }
+    if (a === 'adsmanager') return adsManager();
+    if (a === 'camp') { const d = await api(`/campaigns/${id}`, { method: 'POST', body: { action: b.dataset.do } }); toast(d.message); pageStack.pop(); return adsManager(); }
+    if (a === 'newgroup') return newGroup();
+    if (a === 'groupinfo') return groupInfo(b.dataset.cid);
+    if (a === 'groupadd') { const cid = b.dataset.cid; return peoplePicker(new Map(), async (ids) => { if (!ids.length) return toast('Choose someone.'); await api(`/groups/${cid}/members`, { method: 'POST', body: { add: ids } }); pageStack.pop(); pageStack.pop(); showPage(); toast('Added'); groupInfo(cid); }, 'Add people', 'Add to group'); }
+    if (a === 'groupremove') { await api(`/groups/${b.dataset.cid}/members`, { method: 'POST', body: { remove: [b.dataset.uid] } }); toast('Removed'); pageStack.pop(); return groupInfo(b.dataset.cid); }
+    if (a === 'groupleave') { await api(`/groups/${b.dataset.cid}/leave`, { method: 'POST', body: {} }); toast('You left the group'); while (pageStack.length) pageStack.pop(); showPage(); return go('vInbox'); }
+  } catch (x) { toast(x.message); }
+});
+setTimeout(refreshStoryDot, 1500); document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStoryDot(); });
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act, id = b.dataset.id;
+  if (a === 'tap') return tap(id, e);
+  if (a === 'like') return like(id);
+  if (a === 'comments') return openComments(id);
+  if (a === 'share') return share(id);
+  if (a === 'more') return openMore(id);
+  if (a === 'cta') return cta(id);
+  if (a === 'expand') return b.classList.toggle('open');
+  if (a === 'follow') return follow(b.dataset.uid, b);
+  if (a === 'profile') return openProfile(b.dataset.handle);
+  if (a === 'tag') { closeSheet(); while (pageStack.length) pageStack.pop(); showPage(); $('#q').value = '#' + b.dataset.tag; return go('vDiscover'); }
+  if (a === 'openpost') { closeSheet(); return openPost(id); }
+  if (a === 'create') return openCreate();
+  if (a === 'signin') return openAuth(() => { go($$('.view').find(v => !v.classList.contains('hidden')).id); });
+  if (a === 'retry') return refreshFeed();
+  if (a === 'copylink') { try { await navigator.clipboard.writeText(location.origin + '/ads?post=' + encodeURIComponent(id)); toast('Link copied'); } catch (x) { toast(location.origin + '/ads?post=' + id); } return closeSheet(); }
+  if (a === 'editpost') return editPost(id);
+  if (a === 'deletepost') return deletePost(id);
+  if (a === 'report') return report('post', id);
+  if (a === 'message') { const p = posts.get(id); return startChat(p.author.id); }
+  if (a === 'messageuser') return startChat(b.dataset.uid);
+  if (a === 'doreport') { try { const d = await api(b.dataset.kind === 'user' ? `/users/${id}/report` : `/posts/${id}/report`, { method: 'POST', body: { reason: b.dataset.reason } }); closeSheet(); toast(d.message); } catch (x) { toast(x.message); } return; }
+  if (a === 'usermore') { const uid = b.dataset.uid, bl = b.dataset.blocked === '1'; return openSheet('', `<button data-act="block" data-uid="${esc(uid)}" data-on="${bl ? 0 : 1}" class="w-full text-left py-3.5 border-b border-white/5 text-white"><i class="fa-solid fa-ban w-6"></i> ${bl ? 'Unblock' : 'Block'}</button><button data-act="report" data-kind="user" data-id="${esc(uid)}" class="w-full text-left py-3.5 text-rose-400"><i class="fa-solid fa-flag w-6"></i> Report account</button>`); }
+  if (a === 'block') { try { const d = await api(`/users/${b.dataset.uid}/block`, { method: 'POST', body: { block: b.dataset.on === '1' } }); closeSheet(); toast(d.blocked ? 'Blocked. They can no longer see your posts or message you.' : 'Unblocked'); pageStack.pop(); showPage(); refreshFeed(); } catch (x) { toast(x.message); } return; }
+  if (a === 'delcomment') { try { await api(`/posts/${id}/comments/${b.dataset.cid}`, { method: 'DELETE' }); if (openComments.reload) openComments.reload(); } catch (x) { toast(x.message); } return; }
+  if (a === 'openchat') return openChat(b.dataset.cid);
+  if (a === 'editprofile') return editProfile();
+  if (a === 'settings') return settings();
+  if (a === 'signout') { try { await api('/auth/logout', { method: 'POST', body: {} }); } catch (x) {} signOutLocal(); closeSheet(); toast('Signed out'); go('vHome'); return refreshFeed(); }
+  if (a === 'deleteaccount') { openSheet('Delete your account?', `<p class="text-sm text-slate-400">Your profile, posts, likes, comments and messages will be deleted. This cannot be undone. Type <b class="text-white">DELETE</b> to confirm.</p><input id="delTxt" class="mt-3 w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none"><button id="delGo" class="mt-3 w-full py-3 rounded-xl font-bold text-white bg-rose-600">Delete my account</button>`); $('#delGo').onclick = async () => { try { await api('/auth/delete-account', { method: 'POST', body: { confirm: $('#delTxt').value.trim() } }); signOutLocal(); closeSheet(); toast('Your account was deleted.'); go('vHome'); refreshFeed(); } catch (x) { toast(x.message); } }; return; }
+});
+// Report on a user from usermore uses kind=user
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-act="report"][data-kind="user"]'); if (b) { e.stopImmediatePropagation(); report('user', b.dataset.id); } }, true);
+
+/* ---------------- start ---------------- */
+(async () => {
+  if (token) { try { const d = await api('/me', { quiet401: true }); me = d.user; connectSocket(); paintBadges(); } catch (e) { signOutLocal(); } }
+  const deep = new URLSearchParams(location.search).get('post');
+  await loadFeed(true);
+  if (deep && /^P_[a-z0-9]{8,40}$/.test(deep)) openPost(deep);
+})();
+window.__social = { get state() { return { token, me, tab, cursor, done, posts: [...posts.keys()] }; } };
+})();
+</script>
 </body>
 </html>

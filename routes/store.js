@@ -546,6 +546,9 @@ function overview() {
     for (const k of ['customer', 'merchant', 'driver', 'ads', 'printer', 'admin']) { const a = apps[k]; a.health = healthOf(true, a.module, a.deployed, rr(k === 'customer' ? 'user' : k)); }
     apps.core.health = (audit.valid && snap.ok !== false && errRate < 0.05) ? 'ok' : 'warn';
     for (const def of PANEL_DEFS) { const a = apps[def.key]; if (!a) continue; const st = panelState(def.key); a.switch = st; if (!st.on) a.health = 'off'; }
+    // ---- the social feed reports its own numbers ----
+    let social = null; try { social = D.getAdsStats ? D.getAdsStats() : null; } catch (e) { social = null; }
+    if (social) { Object.assign(apps.ads.stats || (apps.ads.stats = {}), social); if (apps.ads.health === 'ok' && (social.reportsOpen > 0 || social.hidden > 0)) apps.ads.health = 'warn'; }
     // ---- the admin side (ledger, compliance engine, client registry) reports into this one control room ----
     let comp = null; try { comp = D.getComplianceView ? D.getComplianceView() : null; } catch (e) { comp = null; }
     if (comp) {
@@ -562,7 +565,7 @@ function overview() {
             { id: 'driver', label: 'Riders', sub: `${onlineN} online`, health: apps.driver.health },
             { id: 'core', label: 'RDS server', sub: `${last.req} req/min`, health: apps.core.health },
             { id: 'admin', label: 'Admin & Compliance', sub: `${Math.max(socks.admins, 1)} online${comp ? ' · ' + comp.compliance.alertsOpen + ' alerts · ' + comp.clients.total + ' clients' : ''}`, health: apps.admin.health },
-            { id: 'ads', label: 'Ads', sub: `${sk.ads.requests} requests`, health: apps.ads.health },
+            { id: 'ads', label: 'Social & Ads', sub: social ? `${social.users} people · ${social.posts} posts${social.campaignsActive ? ' · ' + social.campaignsActive + ' ads running' : ''}${social.reportsOpen ? ' · ' + social.reportsOpen + ' reported' : ''}` : `${sk.ads.requests} requests`, health: apps.ads.health },
             { id: 'printer', label: 'Printer', sub: `${sk.printer.requests} requests`, health: apps.printer.health },
             { id: 'pay', label: 'M-Pesa', sub: D.paymentsMode === 'simulated' ? 'simulated' : 'live', health: D.paymentsMode === 'simulated' ? 'warn' : 'ok' },
             { id: 'sms', label: 'SMS codes', sub: D.smsConfigured ? 'connected' : 'not set up', health: D.smsConfigured ? 'ok' : 'warn' }
@@ -584,7 +587,7 @@ function overview() {
     for (let i = 23; i >= 0; i--) { const e = Math.floor(now / HOUR) * HOUR - i * HOUR, d = all.filter(o => o.createdAt >= e && o.createdAt < e + HOUR); hourly.push({ t: e, orders: d.length, gmv: fromC(sumC(d, o => o.totalC)) }); }
     return { success: true, generatedAt: now, currency: 'KES', stage: D.stage, version: D.version,
         kpis: { ordersToday: ordersToday.length, deliveredToday, gmvToday: fin.customerPaid, platformToday: fin.platform, vatToday: fin.vat, netToday: fin.net, openOrders: apps.customer.stats.openOrders, ridersOnline: onlineN, shopsActive: activeShops, reqPerMin: last.req, complianceAlerts: comp ? comp.compliance.alertsOpen : 0, highRiskClients: comp ? comp.clients.high : 0, clientsTotal: comp ? comp.clients.total : 0 },
-        compliance: comp, apps, graph, hourly, samples, traffic: tr, activity: activity(40), panels: panels.map(p => ({ ...p, hits: (hits[p.url] || { n: 0 }).n, last: (hits[p.url] || {}).last || null })) };
+        compliance: comp, social, apps, graph, hourly, samples, traffic: tr, activity: activity(40), panels: panels.map(p => ({ ...p, hits: (hits[p.url] || { n: 0 }).n, last: (hits[p.url] || {}).last || null })) };
 }
 
 function activity(n) {
@@ -612,6 +615,9 @@ function alerts() {
     try { (D.getPosture().findings || []).filter(f => ['CRITICAL', 'HIGH'].includes(f.severity)).forEach(f => add(f.severity, 'CFG_' + f.id, f.message)); } catch (e) {}
     PANEL_DEFS.forEach(def => { const st = panelState(def.key); if (!st.on) add('HIGH', 'OFF_' + def.key, `${def.title} is switched OFF${st.message ? ': ' + st.message : ''}. Users cannot use it until you switch it on.`); });
     const nOff = Object.keys(S().users || {}).length; if (nOff) add('INFO', 'USERS_OFF', `${nOff} customer account(s) are switched off.`);
+    let sv = null; try { sv = D.getAdsStats ? D.getAdsStats() : null; } catch (e) {}
+    if (sv && sv.campaignsInReview) add('INFO', 'ADS_REVIEW', `${sv.campaignsInReview} ad(s) waiting for your review before they can run (ADS_REQUIRE_REVIEW is on).`);
+    if (sv && sv.reportsOpen) add('HIGH', 'SOCIAL_REPORTS', `${sv.reportsOpen} social post / account report(s) waiting for a moderator${sv.hidden ? ` (${sv.hidden} post(s) hidden until reviewed)` : ''}.`);
     let cv = null; try { cv = D.getComplianceView ? D.getComplianceView() : null; } catch (e) {}
     if (cv) {
         const cs = cv.compliance, lg = cv.ledger, cl = cv.clients, crit = (cs.alertsBySeverity && cs.alertsBySeverity.CRITICAL) || 0, hi = (cs.alertsBySeverity && cs.alertsBySeverity.HIGH) || 0;

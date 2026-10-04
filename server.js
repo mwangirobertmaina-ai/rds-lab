@@ -141,7 +141,7 @@ if (JWT_SECRET_INFO_192.source === 'file' || JWT_SECRET_INFO_192.source === 'fil
     console.warn(`⚠️  JWT_SECRET not set and the secret could not be saved (${JWT_SECRET_INFO_192.error}): sign-ins will end on restart. Set JWT_SECRET.`);
 }
 if (ALLOW_TEST_CREDENTIALS) {
-    console.warn("⚠️  TEST MODE: code 1234 works for the test phone numbers. This is expected while you test. On Render set NODE_ENV=production to switch it off.");
+    console.warn("⚠️  TEST MODE: code 1234 signs in ANY phone number. Fine while you test. On Render set NODE_ENV=production: real customers then get SMS codes and 1234 works only for the numbers in TEST_PHONES.");
 }
 
 // ============================================================================
@@ -616,6 +616,7 @@ if (storeExt191 && typeof storeExt191.init === 'function') {
         paymentsMode: PAYMENTS_MODE_192, approvalRequired: DRIVER_APPROVAL_REQUIRED_192, testCreds: ALLOW_TEST_CREDENTIALS, smsConfigured: SMS_CONFIGURED_191,
         getSwitches: () => switches192, resetTestData: resetTestData192,
         getLedgerView: () => (ledger192 ? { engine: ledger192, tenant: MARKETPLACE_TENANT_192 } : null),
+        getAdsStats: () => { try { return adsRouter && typeof adsRouter.stats === 'function' ? adsRouter.stats() : null; } catch (e) { return null; } },
         getMerchantWallets: () => merchantWallets192, getMerchantEarnings: () => merchantEarnings192, getMerchantPayouts: () => merchantPayouts192,
         // the admin side (ledger, compliance, client registry) reports into this one master control
         getComplianceView: () => { const H = ledgerHooks192(); return H && H.monitor ? H.monitor() : null; },
@@ -3430,10 +3431,24 @@ try { if (compliance192 && switches192.compliance && typeof switches192.complian
 })();
 
 const adsRouter = safeRequire191('./routes/ads', 'ads');
+const socialOtps192 = {};
 if (adsRouter) {
-    if (typeof adsRouter.setSocketIo === 'function') adsRouter.setSocketIo(io);
-    if (typeof adsRouter === 'function') app.use('/api/ads', adsRouter);
-    else if (typeof adsRouter.router === 'function') app.use('/api/ads', adsRouter.router);
+    try {
+        // STAGE 192: the social app signs people in with the SAME OTP system as the other apps (SMS in production, 1234 in test mode),
+        // keeps its data and uploads in DATA_DIR (never in the web folder) and uses owner-only moderation.
+        if (typeof adsRouter.init === 'function') adsRouter.init({
+            dataDir: process.env.DATA_DIR || path.join(os.homedir(), '.rds-lab'), normalizePhone: normalizeMsisdn191,
+            issueOtp: (phone) => issueOtp(socialOtps192, phone, {}), checkOtp: (phone, code) => checkOtp(socialOtps192, phone, code),
+            testMode: ALLOW_TEST_CREDENTIALS, appendAudit, adminAuth: [verifySovereignTokenStrict, requireSovereignAdminOnly],
+            paymentsMode: () => PAYMENTS_MODE_192     // ads are paid in test mode only until M-Pesa is connected
+        });
+        if (typeof adsRouter.setSocketIo === 'function') adsRouter.setSocketIo(io);
+        if (typeof adsRouter === 'function') app.use('/api/ads', adsRouter);
+        else if (typeof adsRouter.router === 'function') app.use('/api/ads', adsRouter.router);
+    } catch (e) {
+        console.error('\u274C [STAGE192] The social feed (routes/ads.js) did not start: ' + e.message);
+        if (MODULE_STATUS_191.ads) MODULE_STATUS_191.ads = { loaded: false, error: e.message };
+    }
 }
 
 app.use('/api', (req, res) => res.status(404).json({ success: false, error: "Not found." }));
