@@ -1,143 +1,294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DoseColor™ – Multi-Facility Clinical Prescription Hub</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @media print {
-            body * { visibility: hidden; }
-            #formattedOutput, #formattedOutput * { visibility: visible; }
-            #formattedOutput { 
-                position: absolute; 
-                left: 0; 
-                top: 0; 
-                width: 100%; 
-                /* Force solid black borders and text for thermal receipt printers */
-                border: 3px solid #000000 !important; 
-                background: #ffffff !important;
-                color: #000000 !important;
-                box-shadow: none !important;
-            }
-            /* Make all banner backgrounds solid or high contrast for thermal print heads */
-            #formattedOutput div {
-                background-color: transparent !important;
-                color: #000000 !important;
-                border-color: #000000 !important;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DoseColor – prescription frequency labels</title>
+<style>
+:root{--bg:#020617;--card:#0f172a;--line:#1e293b;--muted:#94a3b8;--txt:#f1f5f9;--pk:#db2777;--pu:#7c3aed;--ok:#10b981;--warn:#f59e0b;--bad:#f43f5e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px}
+h1{font-size:17px;margin:0}h2{font-size:15px;margin:0 0 10px}.muted{color:var(--muted)}.small{font-size:12px}.tiny{font-size:11px}
+.between{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;margin:10px 0 4px}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--txt);font:inherit;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--pu)}textarea{min-height:64px;resize:vertical}
+.btn{border:0;border-radius:12px;padding:11px 16px;font-weight:700;cursor:pointer;color:#fff;background:#1e293b;font-size:13px}
+.btn.go{background:linear-gradient(90deg,var(--pu),var(--pk))}.btn.ok{background:var(--ok)}.btn.ghost{background:transparent;border:1px solid var(--line)}.btn.sm{padding:7px 11px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.tabs{display:flex;gap:6px;margin:12px 0}.tab{padding:8px 14px;border-radius:999px;background:#0b1224;border:1px solid var(--line);color:var(--muted);cursor:pointer;font-weight:700;font-size:13px}.tab.on{background:#fff;color:#000}
+.hidden{display:none!important}
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700}
+.med{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:#0b1224}
+.read{margin-top:8px;border-radius:12px;padding:10px 12px;border:2px solid var(--line)}
+.read b.big{font-size:15px}.ev{font-size:12px;color:var(--muted)}.warnbox{margin-top:6px;padding:8px 10px;border-radius:10px;background:rgba(245,158,11,.12);color:#fcd34d;font-size:12px}
+.badbox{margin-top:6px;padding:8px 10px;border-radius:10px;background:rgba(244,63,94,.12);color:#fda4af;font-size:12px}
+.err{color:#fda4af;font-size:13px;margin-top:8px}.oktxt{color:#6ee7b7}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:600}
+.keybox{font-family:ui-monospace,Consolas,monospace;font-size:12px;background:#000;border:1px solid var(--ok);border-radius:10px;padding:10px;word-break:break-all;color:#a7f3d0;white-space:pre-wrap}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#111827;border:1px solid var(--line);color:#fff;padding:10px 16px;border-radius:12px;max-width:90vw;z-index:50}
+/* ---------------- the label (works in black and white) ---------------- */
+#printArea{display:none}
+.lbl{background:#fff;color:#000;border:3px solid #000;border-radius:8px;padding:10px 12px;margin:0 auto 12px;font-family:Arial,Helvetica,sans-serif;page-break-inside:avoid;break-inside:avoid}
+.lbl .top{display:flex;justify-content:space-between;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #000;padding-bottom:5px}
+.lbl .band{margin:7px 0;padding:7px 9px;border:2px solid #000;border-left:12px solid var(--c);font-weight:900;font-size:18px;text-transform:uppercase;line-height:1.15}
+.lbl .band small{display:block;font-size:11px;font-weight:700;letter-spacing:.04em}
+.lbl .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:6px 0}
+.lbl .slot{border:1.5px solid #000;border-radius:5px;text-align:center;font-size:10px;font-weight:700;padding:4px 2px}
+.lbl .slot .box{display:block;margin:3px auto 0;width:16px;height:16px;border:2px solid #000}
+.lbl .slot.on{background:#000;color:#fff}.lbl .slot.on .box{background:#fff}.lbl .slot.off{opacity:.35}
+.lbl .ins{font-size:14px;font-weight:700;white-space:pre-wrap;word-break:break-word;margin:6px 0}
+.lbl .meta{font-size:11px}.lbl .foot{display:flex;justify-content:space-between;gap:6px;font-size:9.5px;border-top:1px solid #000;padding-top:4px;margin-top:6px}
+.preview .lbl{max-width:80mm}
+body.s58 .lbl{width:54mm}body.s80 .lbl{width:76mm}body.sA6 .lbl{width:100mm}
+@media print{
+  body{background:#fff}.wrap,#toast{display:none!important}#printArea{display:block!important}
+  .lbl{-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0 0 4mm}
+}
+</style>
+<style id="pageSize">@page{size:80mm auto;margin:2mm}</style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex items-center justify-center p-4">
+<body class="s80">
+<div class="wrap">
+  <div class="card between">
+    <div><h1>💊 DoseColor</h1><div class="muted small">Frequency labels for hospitals, clinics and pharmacies</div></div>
+    <div class="row"><span id="who" class="muted small"></span><select id="facPick" class="hidden" style="width:auto"></select><button id="btnOut" class="btn ghost sm hidden">Sign out</button></div>
+  </div>
 
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-            <h2 class="text-base font-bold text-white flex items-center gap-2">💊 DoseColor™ Enterprise</h2>
-            <span class="text-xs font-mono bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">Multi-Clinic Ready</span>
+  <!-- sign in -->
+  <div id="vAuth" class="card hidden">
+    <h2>Sign in</h2><p class="muted small">Sign in with your phone number. Each pharmacist or clinician has their own sign-in, so every label shows who checked it.</p>
+    <div id="a1"><label for="aPhone">Phone number</label><input id="aPhone" type="tel" placeholder="0712 345 678" autocomplete="tel"><div class="row" style="margin-top:12px"><button id="aSend" class="btn go">Send code</button></div></div>
+    <div id="a2" class="hidden"><p id="aMsg" class="muted small"></p><label for="aCode">Code</label><input id="aCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code"><label for="aName">Your full name (shown on labels)</label><input id="aName" maxlength="60" placeholder="e.g. Dr. Jane Wanjiru"><div class="row" style="margin-top:12px"><button id="aVerify" class="btn go">Continue</button></div></div>
+    <div id="aErr" class="err"></div>
+  </div>
+
+  <!-- register a facility -->
+  <div id="vReg" class="card hidden">
+    <h2>Set up your facility</h2><p class="muted small">Your hospital, clinic or pharmacy gets its own labels, staff and print agents. You become its administrator.</p>
+    <label for="rName">Facility name</label><input id="rName" maxlength="80" placeholder="e.g. Nairobi Metropolitan Hospital Pharmacy">
+    <div class="row"><div style="flex:1;min-width:180px"><label for="rType">Type</label><select id="rType"><option value="PHARMACY">Pharmacy</option><option value="HOSPITAL">Hospital</option><option value="CLINIC">Clinic</option><option value="HEALTH_CENTRE">Health centre</option><option value="OTHER">Other</option></select></div>
+      <div style="flex:1;min-width:180px"><label for="rCounty">County</label><input id="rCounty" maxlength="40" placeholder="e.g. Nairobi"></div></div>
+    <label for="rLic">PPB / KMPDC licence number (RDS verifies it)</label><input id="rLic" maxlength="40">
+    <div class="row" style="margin-top:12px"><button id="rGo" class="btn go">Create facility</button></div><div id="rErr" class="err"></div>
+  </div>
+
+  <!-- main -->
+  <div id="vMain" class="hidden">
+    <div class="tabs"><button class="tab on" data-tab="tLabels">Labels</button><button class="tab" data-tab="tHistory">History</button><button class="tab" data-tab="tFacility">Facility</button></div>
+
+    <section id="tLabels">
+      <div class="card">
+        <div class="row"><div style="flex:2;min-width:200px"><label for="pName">Patient name (optional)</label><input id="pName" maxlength="60"></div><div style="flex:2;min-width:200px"><label for="cName">Prescriber</label><input id="cName" maxlength="60"></div>
+          <div style="flex:1;min-width:120px"><label for="size">Label size</label><select id="size"><option value="s80">80 mm thermal</option><option value="s58">58 mm thermal</option><option value="sA6">A6 / A4 sheet</option></select></div></div>
+        <label>Medicines (one instruction per box, exactly as prescribed)</label>
+        <div id="meds"></div>
+        <button id="addMed" class="btn ghost sm">+ Add another medicine</button>
+        <div class="card" style="margin:14px 0 0;background:#0b1224">
+          <label class="row" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--txt);margin:0"><input id="checked" type="checkbox" style="width:18px;height:18px"> I have checked every label against the prescription.</label>
+          <div class="row" style="margin-top:12px"><button id="printGo" class="btn go">🖨️ Print labels</button><span class="muted tiny">Labels print in black and white too: words, symbols and tick boxes, not colour alone.</span></div>
+          <div id="printErr" class="err"></div>
         </div>
-        
-        <div class="space-y-4">
-            <div class="space-y-1.5">
-                <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold">Hospital / Clinic / Pharmacy Name</label>
-                <input type="text" id="facilityName" placeholder="e.g., Nairobi Metropolitan Hospital" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500" />
-            </div>
+      </div>
+      <div class="card preview"><div class="between"><h2>Preview</h2><span class="muted tiny">What will print</span></div><div id="preview" class="muted small">Type an instruction above.</div></div>
+    </section>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div class="space-y-1.5">
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold">Attending Clinician</label>
-                    <input type="text" id="clinician" placeholder="e.g., Dr. Jane Doe" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500" />
-                </div>
-            </div>
+    <section id="tHistory" class="hidden"><div class="card"><div class="between"><h2>Recent labels</h2><button id="histReload" class="btn ghost sm">Refresh</button></div><div id="hist" class="muted small">Loading…</div></div></section>
 
-            <div class="space-y-1.5">
-                <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold">Prescription Instructions</label>
-                <textarea id="text" placeholder="e.g., Amoxicillin 500mg 2 by 2 (2 tablets, 2 times daily)" class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm text-white outline-none focus:border-purple-500 h-28 resize-none shadow-inner"></textarea>
-            </div>
-        </div>
+    <section id="tFacility" class="hidden"><div id="fac"></div></section>
+  </div>
 
-        <button onclick="send()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-95 text-white font-bold py-3.5 rounded-xl transition text-xs shadow-lg cursor-pointer tracking-wider uppercase">
-            🖨️ Process & Print Color-Coded Label
-        </button>
+  <p class="muted tiny" style="text-align:center;margin-top:18px">DoseColor supports, and does not replace, the pharmacist's check. The colours are RDS's own convention, not a national standard. Approve its use through your pharmacy &amp; therapeutics committee before clinical use.</p>
+</div>
+<div id="printArea"></div>
+<div id="toast" class="hidden" role="status"></div>
 
-        <div id="statusBox" class="hidden p-5 rounded-2xl text-xs font-mono space-y-3 bg-slate-950 border border-slate-800 shadow-md">
-            <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <span id="statusLabel" class="font-bold text-sm tracking-wide"></span>
-                <div id="colorPreview" class="px-3 py-1.5 rounded-lg text-white font-bold text-[11px] uppercase shadow" style="background-color: #000;"></div>
-            </div>
-            <div id="statusFreq" class="text-slate-400 text-xs"></div>
-            <div id="statusColorDetails" class="text-slate-300 text-xs font-semibold"></div>
-            
-            <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                <div class="text-[10px] text-slate-500 uppercase tracking-wider">Dynamic Print Preview:</div>
-                <button onclick="window.print()" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[11px] font-bold cursor-pointer">Direct Print</button>
-            </div>
-            <div id="formattedOutput" class="p-3 bg-white rounded-xl text-slate-900 text-xs border border-slate-800 font-sans shadow-inner"></div>
-        </div>
-    </div>
+<script>
+(() => {
+'use strict';
+const $ = (s) => document.querySelector(s), esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let token = localStorage.getItem('dosecolor_token') || null, me = null, fac = null, CATS = [], phone = null;
+const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 4500); };
+async function api(path, opt = {}) {
+  const h = { 'Content-Type': 'application/json' }; if (token) h.Authorization = 'Bearer ' + token;
+  const r = await fetch('/api/print' + path, { method: opt.method || 'GET', headers: h, body: opt.body ? JSON.stringify(opt.body) : undefined });
+  let d = null; try { d = await r.json(); } catch (e) {}
+  if (r.status === 401 && token && !opt.anon) { signOutLocal(); }
+  if (!r.ok || !d || d.success === false) { const e = new Error((d && d.error) || ('Request failed (' + r.status + ')')); e.status = r.status; e.data = d; throw e; }
+  return d;
+}
+const show = (id) => ['#vAuth', '#vReg', '#vMain'].forEach(v => $(v).classList.toggle('hidden', v !== id));
+function signOutLocal() { token = null; me = null; fac = null; localStorage.removeItem('dosecolor_token'); $('#who').textContent = ''; $('#facPick').classList.add('hidden'); $('#btnOut').classList.add('hidden'); show('#vAuth'); }
 
-    <script>
-        // Load saved facility name on startup
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedFacility = localStorage.getItem('dosecolor_facility_name');
-            if (savedFacility) {
-                document.getElementById("facilityName").value = savedFacility;
-            }
-        });
+/* ---------------- sign in ---------------- */
+$('#aSend').onclick = async () => { $('#aErr').textContent = ''; try { const d = await api('/auth/request-code', { method: 'POST', body: { phone: $('#aPhone').value.trim() }, anon: true }); phone = d.phone; $('#aMsg').textContent = d.message; $('#a1').classList.add('hidden'); $('#a2').classList.remove('hidden'); $('#aCode').focus(); } catch (e) { $('#aErr').textContent = e.message; } };
+$('#aVerify').onclick = async () => {
+  $('#aErr').textContent = '';
+  try { const d = await api('/auth/verify', { method: 'POST', body: { phone, code: $('#aCode').value.trim(), name: $('#aName').value.trim() }, anon: true });
+    token = d.token; localStorage.setItem('dosecolor_token', token); me = d.me;
+    if (!me.name && $('#aName').value.trim().length >= 2) me = (await api('/me', { method: 'PATCH', body: { name: $('#aName').value.trim() } })).me;
+    boot(); } catch (e) { $('#aErr').textContent = e.message; }
+};
+$('#btnOut').onclick = async () => { try { await api('/auth/logout', { method: 'POST', body: {} }); } catch (e) {} signOutLocal(); };
 
-        async function send() {
-            const text = document.getElementById("text").value;
-            const clinician = document.getElementById("clinician").value;
-            const facilityName = document.getElementById("facilityName").value;
-            
-            if (!text) { alert("Please enter prescription text."); return; }
-            if (!facilityName) { alert("Please enter the Clinic or Pharmacy name."); return; }
+/* ---------------- facility set-up ---------------- */
+$('#rGo').onclick = async () => {
+  $('#rErr').textContent = '';
+  try { const d = await api('/facilities', { method: 'POST', body: { name: $('#rName').value.trim(), type: $('#rType').value, county: $('#rCounty').value.trim(), licence: $('#rLic').value.trim() } }); toast(d.message); localStorage.setItem('dosecolor_facility', d.facility.id); boot(); }
+  catch (e) { $('#rErr').textContent = e.message; }
+};
 
-            // Save facility name locally for this station so they don't re-type it
-            localStorage.setItem('dosecolor_facility_name', facilityName);
+async function boot() {
+  if (!token) return show('#vAuth');
+  try { me = (await api('/me')).me; } catch (e) { return; }
+  $('#who').textContent = me.name || me.phone; $('#btnOut').classList.remove('hidden');
+  if (!me.facilities.length) return show('#vReg');
+  const saved = localStorage.getItem('dosecolor_facility'), f = me.facilities.find(x => x.id === saved) || me.facilities[0];
+  const pick = $('#facPick'); pick.innerHTML = me.facilities.map(x => `<option value="${esc(x.id)}">${esc(x.name)}${x.status === 'SUSPENDED' ? ' (suspended)' : ''}</option>`).join(''); pick.value = f.id; pick.classList.toggle('hidden', me.facilities.length < 2);
+  await selectFacility(f.id); show('#vMain');
+  if (!$('#cName').value) $('#cName').value = me.name || '';
+  if (!$('#meds').children.length) addMed();
+}
+$('#facPick').onchange = (e) => selectFacility(e.target.value);
+async function selectFacility(id) { localStorage.setItem('dosecolor_facility', id); try { fac = (await api('/facilities/' + id)).facility; } catch (e) { toast(e.message); } if (!$('#tFacility').classList.contains('hidden')) renderFacility(); if (!$('#tHistory').classList.contains('hidden')) renderHistory(); }
 
-            const res = await fetch("/api/print", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text, clinician, facilityName })
-            });
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b)); ['tLabels', 'tHistory', 'tFacility'].forEach(s => $('#' + s).classList.toggle('hidden', s !== b.dataset.tab)); if (b.dataset.tab === 'tHistory') renderHistory(); if (b.dataset.tab === 'tFacility') renderFacility(); });
 
-            const data = await res.json();
-            const box = document.getElementById("statusBox");
-            box.classList.remove("hidden");
+/* ---------------- medicines + live reading ---------------- */
+let medSeq = 0;
+function addMed() {
+  const id = 'm' + (++medSeq), el = document.createElement('div'); el.className = 'med'; el.dataset.id = id;
+  el.innerHTML = `<div class="between"><b class="small">Medicine ${document.querySelectorAll('.med').length + 1}</b><button class="btn ghost sm" data-del>Remove</button></div>
+    <textarea data-text maxlength="1000" placeholder="e.g. Amoxicillin 500mg 1x3 x 5/7   or   Paracetamol 1g TDS PRN"></textarea>
+    <div data-read class="read hidden"></div>
+    <div data-choose class="hidden"><label>How often is it taken? (you decide)</label><select data-cat></select>
+      <div data-maxwrap class="hidden"><label>At most how many times a day? (only when needed)</label><input data-max type="number" min="1" max="12"></div>
+      <label>Reason for your choice</label><input data-reason maxlength="200" placeholder="e.g. confirmed with the prescriber"></div>`;
+  $('#meds').appendChild(el);
+  el.querySelector('[data-del]').onclick = () => { if (document.querySelectorAll('.med').length > 1) { el.remove(); renderPreview(); } };
+  let tmr; el.querySelector('[data-text]').oninput = () => { clearTimeout(tmr); tmr = setTimeout(() => readMed(el), 350); };
+  el.querySelector('[data-cat]').onchange = () => { onChoose(el); renderPreview(); }; el.querySelector('[data-max]').oninput = renderPreview;
+  return el;
+}
+$('#addMed').onclick = () => addMed().querySelector('textarea').focus();
+const catOf = (k) => CATS.find(c => c.key === k);
+async function readMed(el) {
+  const text = el.querySelector('[data-text]').value.trim(), box = el.querySelector('[data-read]'), ch = el.querySelector('[data-choose]');
+  el._a = null; if (!text) { box.classList.add('hidden'); ch.classList.add('hidden'); return renderPreview(); }
+  try {
+    const d = await api('/analyze', { method: 'POST', body: { text } }); CATS = d.categories; const a = d.analysis; el._a = a;
+    const sel = el.querySelector('[data-cat]'); if (!sel.options.length) sel.innerHTML = '<option value="">— choose —</option>' + CATS.map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('');
+    const sure = a.confidence === 'HIGH', c = sure ? catOf(a.category) : null;
+    box.style.borderColor = c ? c.color : (a.confidence === 'AMBIGUOUS' ? '#f43f5e' : '#475569');
+    box.innerHTML = (c ? `<b class="big" style="color:${esc(c.color)}">${esc(c.symbol)} ${esc(c.label)}</b>${a.maxPerDay ? ` <span class="pill" style="background:#334155">max ${esc(a.maxPerDay)} a day</span>` : ''}${a.durationDays ? ` <span class="pill" style="background:#334155">for ${esc(a.durationDays)} days</span>` : ''}`
+        : a.confidence === 'AMBIGUOUS' ? `<b class="big" style="color:#fda4af">⚠ Unclear: you must choose</b>` : `<b class="big muted">No frequency found: you must choose</b>`)
+      + (a.evidence.length ? `<div class="ev">Read from: ${a.evidence.map(e => `“${esc(e.match)}” = ${esc(e.meaning)}`).join(' · ')}</div>` : '')
+      + (a.conflicts.length ? `<div class="badbox">These disagree: ${a.conflicts.map(k => esc((catOf(k) || {}).label || k)).join(' vs ')}. Check with the prescriber.</div>` : '')
+      + a.warnings.map(w => `<div class="warnbox">⚠ ${esc(w.text)}</div>`).join('')
+      + (sure ? '<div class="ev" style="margin-top:6px"><a href="#" data-change style="color:#c4b5fd">Change</a></div>' : '');
+    box.classList.remove('hidden');
+    ch.classList.toggle('hidden', sure); if (!sure) sel.value = ''; else sel.value = a.category;
+    const chg = box.querySelector('[data-change]'); if (chg) chg.onclick = (e) => { e.preventDefault(); ch.classList.remove('hidden'); };
+    onChoose(el);
+  } catch (e) { box.classList.remove('hidden'); box.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  renderPreview();
+}
+function onChoose(el) { const v = el.querySelector('[data-cat]').value; el.querySelector('[data-maxwrap]').classList.toggle('hidden', v !== 'AS_NEEDED'); }
+function chosen(el) { const a = el._a, ch = !el.querySelector('[data-choose]').classList.contains('hidden'); const cat = ch ? el.querySelector('[data-cat]').value : (a && a.category); return { cat, overridden: !!a && (a.confidence !== 'HIGH' || cat !== a.category), reason: el.querySelector('[data-reason]').value.trim(), max: Number(el.querySelector('[data-max]').value) || null }; }
 
-            if (data.success) {
-                if (data.failSafeTriggered) {
-                    document.getElementById("statusLabel").innerText = `⚠️ PASSED THROUGH (FAIL-SAFE)`;
-                    document.getElementById("statusLabel").style.color = "#6c757d";
-                    document.getElementById("statusFreq").innerText = data.warning;
-                    document.getElementById("statusColorDetails").innerText = "Standard Routing Enabled";
-                    document.getElementById("colorPreview").style.backgroundColor = "#6c757d";
-                    document.getElementById("colorPreview").innerText = "DEFAULT";
-                    document.getElementById("formattedOutput").innerHTML = `<div class="font-bold text-black">${data.prescription}</div>`;
-                    return;
-                }
+/* ---------------- the label (text only: nothing typed is ever treated as HTML) ---------------- */
+const SLOTS = [['MORNING', ['MORNING']], ['MIDDAY', ['NOON', 'AFTERNOON']], ['EVENING', ['EVENING']], ['NIGHT', ['NIGHT']]];
+function labelHtml(L) {
+  const c = L.category, slots = L.slots || [];
+  const showSlots = slots.length > 0;
+  const extra = c.key === 'AS_NEEDED' ? `Only when needed${L.maxPerDay ? ` · at most ${L.maxPerDay} times a day` : ''}` : c.key === 'FREQUENT' ? 'More than 4 times a day: follow the times on the prescription' : c.key === 'WEEKLY' ? 'ONCE A WEEK. Do NOT take every day.' : c.key === 'ONCE_ONLY' ? 'One dose only' : '';
+  return `<div class="lbl" style="--c:${esc(c.color)}"><div class="top"><span>${esc(L.facility.name)}</span><span>${esc(L.ref || 'PREVIEW')}</span></div>
+    <div class="band">${esc(c.symbol)}&nbsp; ${esc(c.label)}<small>${esc(c.name)} label${L.durationDays ? ` · for ${esc(L.durationDays)} days` : ''}</small></div>
+    ${showSlots ? `<div class="slots">${SLOTS.map(([t, keys]) => { const on = slots.some(s => keys.includes(s)); return `<div class="slot ${on ? 'on' : 'off'}">${t}<span class="box"></span></div>`; }).join('')}</div>` : ''}
+    ${extra ? `<div class="meta"><b>${esc(extra)}</b></div>` : ''}
+    <div class="ins">${esc(L.instruction)}</div>
+    ${L.patientName ? `<div class="meta">Patient: <b>${esc(L.patientName)}</b></div>` : ''}
+    <div class="foot"><span>${L.clinician ? 'Prescriber: ' + esc(L.clinician) : ''}</span><span>${esc(new Date(L.printedAt || Date.now()).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }))}${L.printedBy ? ' · checked by ' + esc(L.printedBy) : ''}</span></div></div>`;
+}
+function renderPreview() {
+  const items = [...document.querySelectorAll('.med')].map(el => ({ el, text: el.querySelector('[data-text]').value.trim(), ch: chosen(el) })).filter(x => x.text && x.ch.cat && catOf(x.ch.cat));
+  $('#preview').innerHTML = items.length && fac ? items.map(x => labelHtml({ category: catOf(x.ch.cat), slots: x.el._a && x.ch.cat === x.el._a.category ? x.el._a.slots : catOf(x.ch.cat).slots, maxPerDay: x.ch.cat === 'AS_NEEDED' ? (x.ch.max || (x.el._a && x.el._a.maxPerDay)) : null, durationDays: x.el._a && x.el._a.durationDays, instruction: x.text, facility: fac, patientName: $('#pName').value.trim(), clinician: $('#cName').value.trim(), printedBy: me && me.name })).join('') : 'Type an instruction above.';
+}
+['#pName', '#cName'].forEach(s => $(s).addEventListener('input', renderPreview));
+$('#size').onchange = () => { document.body.className = $('#size').value; $('#pageSize').textContent = $('#size').value === 's58' ? '@page{size:58mm auto;margin:2mm}' : $('#size').value === 's80' ? '@page{size:80mm auto;margin:2mm}' : '@page{size:A4;margin:10mm}'; };
 
-                document.getElementById("statusLabel").innerText = `${data.symbol} ${data.colorName.toUpperCase()} – ${data.label}`;
-                document.getElementById("statusLabel").style.color = data.colorCode;
-                document.getElementById("statusFreq").innerText = `Facility: ${data.facility} | Frequency: ${data.frequency}x`;
-                document.getElementById("statusColorDetails").innerText = `Assigned Color Standard: ${data.colorName} (${data.colorCode})`;
-                
-                const preview = document.getElementById("colorPreview");
-                preview.style.backgroundColor = data.colorCode;
-                preview.innerText = data.colorName;
+/* ---------------- print: every label is checked and recorded first ---------------- */
+$('#printGo').onclick = async () => {
+  $('#printErr').textContent = '';
+  const items = [...document.querySelectorAll('.med')].map(el => ({ el, text: el.querySelector('[data-text]').value.trim(), ch: chosen(el) })).filter(x => x.text);
+  if (!items.length) return $('#printErr').textContent = 'Type at least one instruction.';
+  for (const [i, x] of items.entries()) {
+    if (!x.el._a) return $('#printErr').textContent = `Medicine ${i + 1}: wait for the reading to finish.`;
+    if (!x.ch.cat) return $('#printErr').textContent = `Medicine ${i + 1}: choose how often it is taken.`;
+    if (x.ch.overridden && x.ch.reason.length < 5) return $('#printErr').textContent = `Medicine ${i + 1}: give a reason for the frequency you chose.`;
+  }
+  if (!$('#checked').checked) return $('#printErr').textContent = 'Tick "I have checked every label" first.';
+  $('#printGo').disabled = true; const out = [];
+  try {
+    for (const x of items) {
+      const d = await api('/labels', { method: 'POST', body: { facilityId: fac.id, text: x.text, category: x.ch.cat, overrideReason: x.ch.reason, maxPerDay: x.ch.max, checked: true, patientName: $('#pName').value.trim(), clinician: $('#cName').value.trim() } });
+      out.push(d.label);
+    }
+    $('#printArea').innerHTML = out.map(labelHtml).join('');
+    toast(`${out.length} label${out.length === 1 ? '' : 's'} recorded: ${out.map(l => l.ref).join(', ')}`);
+    setTimeout(() => window.print(), 150);
+    $('#checked').checked = false;
+  } catch (e) { $('#printErr').textContent = e.message + (out.length ? ` (${out.length} label(s) were recorded before this.)` : ''); }
+  finally { $('#printGo').disabled = false; }
+};
 
-                document.getElementById("formattedOutput").innerHTML = data.formattedBlock;
-            } else {
-                document.getElementById("statusLabel").innerText = `Error: ${data.error}`;
-                document.getElementById("statusLabel").style.color = "#dc3545";
-                document.getElementById("statusFreq").innerText = "";
-                document.getElementById("statusColorDetails").innerText = "";
-                document.getElementById("formattedOutput").innerText = "";
-                document.getElementById("colorPreview").style.backgroundColor = "#000";
-                document.getElementById("colorPreview").innerText = "";
-            }
-        }
-    </script>
+/* ---------------- history ---------------- */
+async function renderHistory() {
+  if (!fac) return; $('#hist').textContent = 'Loading…';
+  try { const d = await api('/facilities/' + fac.id + '/labels'); if (!CATS.length) { try { CATS = (await api('/analyze', { method: 'POST', body: { text: 'od' } })).categories; } catch (e) {} }
+    $('#hist').innerHTML = d.labels.length ? `<table><thead><tr><th>Label</th><th>When</th><th>Frequency</th><th>Read as</th><th>Checked by</th><th></th></tr></thead><tbody>${d.labels.map(l => `<tr><td>${esc(l.ref)}</td><td>${esc(new Date(l.at).toLocaleString('en-KE', { dateStyle: 'short', timeStyle: 'short' }))}</td><td><b>${esc((catOf(l.category) || {}).label || l.category)}</b></td><td>${l.detected ? esc((catOf(l.detected) || {}).label || l.detected) : '—'} <span class="muted">(${esc(String(l.confidence).toLowerCase())})</span></td><td>${esc(l.by)}</td><td>${l.overridden ? `<span class="pill" style="background:#78350f">changed: ${esc(l.overrideReason || '')}</span>` : ''}</td></tr>`).join('')}</tbody></table>`
+      : 'No labels yet.'; }
+  catch (e) { $('#hist').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+}
+$('#histReload').onclick = renderHistory;
+
+/* ---------------- facility, staff, print agents ---------------- */
+async function renderFacility() {
+  if (!fac) return; try { fac = (await api('/facilities/' + fac.id)).facility; } catch (e) { return toast(e.message); }
+  const f = fac, admin = f.role === 'ADMIN';
+  let h = `<div class="card"><div class="between"><h2>${esc(f.name)}</h2><span class="pill" style="background:${f.verified ? '#065f46' : '#78350f'}">${f.verified ? 'Licence verified' : 'Licence not yet verified'}</span></div>
+    <div class="muted small">${esc(f.type.replace('_', ' ').toLowerCase())}${f.county ? ' · ' + esc(f.county) : ''}${f.licence ? ' · licence ' + esc(f.licence) : ''} · code ${esc(f.code)} · you are ${esc(f.role.toLowerCase())}</div>
+    <div class="row" style="margin-top:10px"><span class="pill" style="background:#1e293b">${esc(f.stats.labelsToday)} labels today</span><span class="pill" style="background:#1e293b">${esc(f.stats.labelsTotal)} in total</span><span class="pill" style="background:#1e293b">${esc(f.stats.overridesToday)} changed by staff today</span></div></div>`;
+  if (admin) {
+    h += `<div class="card"><h2>Staff</h2><table><tbody>${f.staff.map(s => `<tr><td>${esc(s.name || '(not set)')}</td><td>${esc(s.phone)}</td><td>${esc(s.role.toLowerCase())}</td><td>${s.id !== me.id ? `<button class="btn ghost sm" data-rmstaff="${esc(s.id)}">Remove</button>` : ''}</td></tr>`).join('')}</tbody></table>
+      <div class="row" style="margin-top:8px"><input id="sPhone" placeholder="Phone, e.g. 0712 345 678" style="flex:2;min-width:160px"><input id="sName" placeholder="Name" style="flex:2;min-width:140px"><select id="sRole" style="flex:1;min-width:110px"><option value="STAFF">Staff</option><option value="ADMIN">Administrator</option></select><button id="sAdd" class="btn ok sm">Add</button></div></div>
+      <div class="card"><h2>Print agents (intercept your existing label printer)</h2>
+      <p class="muted small">Install the agent on the PC that prints labels. It adds the frequency banner when the reading is certain, and prints the job exactly as sent in every other case, so you can never be left unable to print.</p>
+      <table><tbody>${f.agents.map(a => `<tr><td>${esc(a.name)}</td><td>${a.lastSeen ? 'last job ' + esc(new Date(a.lastSeen).toLocaleString('en-KE', { dateStyle: 'short', timeStyle: 'short' })) : 'not used yet'}</td><td>${esc(a.jobs)} jobs · ${esc(a.enhanced)} banners</td><td><button class="btn ghost sm" data-revoke="${esc(a.id)}">Revoke</button></td></tr>`).join('') || '<tr><td class="muted">No agents yet.</td></tr>'}</tbody></table>
+      <div class="row" style="margin-top:8px"><input id="gName" placeholder="Name, e.g. Main dispensary PC" style="flex:1"><button id="gAdd" class="btn ok sm">Create agent key</button></div><div id="gOut"></div>
+      <p class="small" style="margin-top:10px"><a href="/api/print/agent/download" download="dosecolor-agent.js" style="color:#c4b5fd">Download the agent (dosecolor-agent.js)</a> · needs Node.js 18 or newer</p></div>
+      <div class="card"><h2>Privacy</h2><label class="row" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--txt)"><input id="storeText" type="checkbox" style="width:18px;height:18px" ${f.storeText ? 'checked' : ''}> Keep the prescription text with each label record</label>
+      <p class="muted small">Off (recommended): only the label number, the frequency, who checked it and a fingerprint of the text are kept. Turn on only if your facility's records policy needs the text.</p></div>`;
+  }
+  $('#fac').innerHTML = h;
+  if (!admin) return;
+  $('#sAdd').onclick = async () => { try { const d = await api(`/facilities/${f.id}/staff`, { method: 'POST', body: { phone: $('#sPhone').value.trim(), name: $('#sName').value.trim(), role: $('#sRole').value } }); toast(d.message); renderFacility(); } catch (e) { toast(e.message); } };
+  document.querySelectorAll('[data-rmstaff]').forEach(b => b.onclick = async () => { try { await api(`/facilities/${f.id}/staff`, { method: 'POST', body: { remove: b.dataset.rmstaff } }); renderFacility(); } catch (e) { toast(e.message); } });
+  document.querySelectorAll('[data-revoke]').forEach(b => b.onclick = async () => { if (!confirm('Revoke this agent? It will stop adding banners (jobs still print as sent).')) return; try { await api(`/facilities/${f.id}/agents`, { method: 'POST', body: { revoke: b.dataset.revoke } }); renderFacility(); } catch (e) { toast(e.message); } });
+  $('#storeText').onchange = async (e) => { try { await api(`/facilities/${f.id}`, { method: 'PATCH', body: { storeText: e.target.checked } }); toast('Saved'); } catch (x) { toast(x.message); e.target.checked = !e.target.checked; } };
+  $('#gAdd').onclick = async () => {
+    try { const d = await api(`/facilities/${f.id}/agents`, { method: 'POST', body: { name: $('#gName').value.trim() } });
+      const cfg = JSON.stringify({ server: location.origin, key: d.key, listenHost: '127.0.0.1', listenPort: 9100, printer: { host: '192.168.1.50', port: 9100 }, windowsPrinter: null, timeoutMs: 4000 }, null, 2);
+      $('#gOut').innerHTML = `<p class="oktxt small" style="margin-top:10px">${esc(d.message)} Save this as <b>dosecolor-agent.json</b> next to the agent, and change "printer" to your label printer's address:</p><div class="keybox"></div>`;
+      $('#gOut .keybox').textContent = cfg; }
+    catch (e) { toast(e.message); }
+  };
+}
+
+boot();
+})();
+</script>
 </body>
 </html>
