@@ -125,12 +125,23 @@ const ROLES = {
 };
 
 const ACTOR_ROLES = { MERCHANT: "MERCHANT", RIDER: "RIDER" };
-const JWT_SECRET = process.env.JWT_SECRET || DYNAMIC_JWT_SECRET;
-if (!process.env.JWT_SECRET) {
-    console.warn("⚠️  JWT_SECRET not set: using a random per-boot secret. All tokens die on restart. Set JWT_SECRET in production.");
+// STAGE 192: if JWT_SECRET is not set, keep ONE generated secret on disk (DATA_DIR, or ~/.rds-lab when DATA_DIR is not set)
+// so sign-ins survive restarts. The file is a dot-file ending in .key, which the static file server never serves.
+const JWT_SECRET_INFO_192 = (() => {
+    if (process.env.JWT_SECRET) return { secret: process.env.JWT_SECRET, source: 'env' };
+    const dir = process.env.DATA_DIR || path.join(os.homedir(), '.rds-lab'), file = path.join(dir, '.jwt-secret.key');
+    try { const s = fs.readFileSync(file, 'utf8').trim(); if (/^[0-9a-f]{128}$/.test(s)) return { secret: s, source: 'file', file }; } catch (e) { /* not created yet */ }
+    try { fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(file, DYNAMIC_JWT_SECRET, { mode: 0o600 }); return { secret: DYNAMIC_JWT_SECRET, source: 'file-new', file }; }
+    catch (e) { return { secret: DYNAMIC_JWT_SECRET, source: 'random', error: e.message }; }
+})();
+const JWT_SECRET = JWT_SECRET_INFO_192.secret;
+if (JWT_SECRET_INFO_192.source === 'file' || JWT_SECRET_INFO_192.source === 'file-new') {
+    console.log(`🔑 JWT_SECRET not set: using the secret ${JWT_SECRET_INFO_192.source === 'file-new' ? 'just created and ' : ''}stored in ${JWT_SECRET_INFO_192.file}. Sign-ins survive restarts. (For several servers, set JWT_SECRET.)`);
+} else if (JWT_SECRET_INFO_192.source === 'random') {
+    console.warn(`⚠️  JWT_SECRET not set and the secret could not be saved (${JWT_SECRET_INFO_192.error}): sign-ins will end on restart. Set JWT_SECRET.`);
 }
 if (ALLOW_TEST_CREDENTIALS) {
-    console.warn("⚠️  TEST CREDENTIALS ENABLED (OTP/merchant token 1234 for ANY phone). Set NODE_ENV=production and leave ALLOW_TEST_CREDENTIALS unset to disable.");
+    console.warn("⚠️  TEST MODE: code 1234 works for the test phone numbers. This is expected while you test. On Render set NODE_ENV=production to switch it off.");
 }
 
 // ============================================================================
@@ -445,9 +456,14 @@ const ledgerHooks192 = () => { try { return (adminReady192 && adminModule && adm
 // admin side (ledger, client registry). Remove this and both modules still work exactly as before.
 const orderEvents192 = () => {
     const H = ledgerHooks192(); if (!H) return null;
-    return { beforeOrder: (x) => H.checkOrder(x), afterOrder: (o) => H.onPayment(o), afterDelivery: (o) => H.onSettlement(o), afterPayout: (r) => H.onPayout(r) };
+    return { beforeOrder: (x) => H.checkOrder(x), afterOrder: (o) => H.onPayment(o), afterHandover: (o) => H.onHandover(o), afterMerchantPayout: (r) => H.onMerchantPayout(r), afterDelivery: (o) => H.onSettlement(o), afterPayout: (r) => H.onPayout(r) };
 };
-const switches192 = { panels: {}, users: {}, compliance: {} };   // MASTER CONTROL: panel on/off + switched-off customers (saved across restarts)
+const switches192 = { panels: {}, users: {}, compliance: {} };
+// SHOP MONEY: a shop is paid in full the moment it hands the order to the rider (routes/merchants.js)
+const merchantWallets192 = {};          // merchantId -> KES the platform owes the shop right now
+const merchantEarnings192 = [];         // one record per order handed over: { earningId, merchantId, orderId, amount, at }
+const merchantPayouts192 = [];          // money sent to the shop's M-Pesa: { payoutId, merchantId, amount, auto, at, mode, status }
+const MERCHANT_AUTO_PAYOUT_192 = process.env.MERCHANT_AUTO_PAYOUT !== 'false';   // default: send to the shop's M-Pesa at once   // MASTER CONTROL: panel on/off + switched-off customers (saved across restarts)
 const PAYMENTS_MODE_192 = (process.env.PAYMENTS_MODE || 'simulated').toLowerCase();
 const DRIVER_APPROVAL_REQUIRED_192 = process.env.DRIVER_APPROVAL_REQUIRED
     ? process.env.DRIVER_APPROVAL_REQUIRED === 'true'
@@ -472,7 +488,7 @@ app.get('/readyz', (req, res) => {
 const _snapshotPayload191 = snapshotPayload191;
 snapshotPayload191 = function () {
     const p = _snapshotPayload191();
-    p.version = 192; p.driverDocs192 = driverDocs192; p.driverPayouts192 = driverPayouts192; p.switches192 = switches192; p.ledger192 = ledgerState192; p.compliance192 = complianceState192;
+    p.version = 192; p.driverDocs192 = driverDocs192; p.driverPayouts192 = driverPayouts192; p.switches192 = switches192; p.merchantWallets192 = merchantWallets192; p.merchantEarnings192 = merchantEarnings192; p.merchantPayouts192 = merchantPayouts192; p.ledger192 = ledgerState192; p.compliance192 = complianceState192;
     return p;
 };
 const _restoreSnapshot191 = restoreSnapshot191;
@@ -484,6 +500,9 @@ restoreSnapshot191 = function () {
         for (const f of [SNAPSHOT_FILE_191, SNAPSHOT_FILE_191 + '.bak']) { try { raw = JSON.parse(fs.readFileSync(f, 'utf8')); break; } catch (e) {} }
         if (raw) {
             replaceObject191(driverDocs192, raw.driverDocs192); replaceArray191(driverPayouts192, raw.driverPayouts192);
+            if (raw.merchantWallets192 && typeof raw.merchantWallets192 === 'object') { for (const k of Object.keys(merchantWallets192)) delete merchantWallets192[k]; for (const [k, v] of Object.entries(raw.merchantWallets192)) if (isSafeKey(k) && Number.isFinite(Number(v))) merchantWallets192[k] = Number(v); }
+            if (Array.isArray(raw.merchantEarnings192)) { merchantEarnings192.length = 0; merchantEarnings192.push(...raw.merchantEarnings192.filter(e => e && typeof e === 'object')); }
+            if (Array.isArray(raw.merchantPayouts192)) { merchantPayouts192.length = 0; merchantPayouts192.push(...raw.merchantPayouts192.filter(e => e && typeof e === 'object')); }
             if (raw.ledger192 && typeof raw.ledger192 === 'object') {
                 for (const k of Object.keys(ledgerState192)) delete ledgerState192[k];
                 Object.assign(ledgerState192, raw.ledger192);
@@ -597,6 +616,7 @@ if (storeExt191 && typeof storeExt191.init === 'function') {
         paymentsMode: PAYMENTS_MODE_192, approvalRequired: DRIVER_APPROVAL_REQUIRED_192, testCreds: ALLOW_TEST_CREDENTIALS, smsConfigured: SMS_CONFIGURED_191,
         getSwitches: () => switches192, resetTestData: resetTestData192,
         getLedgerView: () => (ledger192 ? { engine: ledger192, tenant: MARKETPLACE_TENANT_192 } : null),
+        getMerchantWallets: () => merchantWallets192, getMerchantEarnings: () => merchantEarnings192, getMerchantPayouts: () => merchantPayouts192,
         // the admin side (ledger, compliance, client registry) reports into this one master control
         getComplianceView: () => { const H = ledgerHooks192(); return H && H.monitor ? H.monitor() : null; },
         setEnforcement: (on) => { switches192.compliance = { enforceLimits: !!on }; const H = ledgerHooks192(); if (H && H.setEnforcement) H.setEnforcement(on); return !!on; }, getCorridor: () => corridorStatus, getDriverDocs: () => driverDocs192, emitSafe: emitSafe191, appendAudit, markDirty: () => { stateDirty191 = true; },
@@ -637,6 +657,7 @@ function resetTestData192() {
     replaceArray191(driverPayouts192, []);
     replaceArray191(orderRatings191, []);
     for (const k of Object.keys(driverWallets)) driverWallets[k] = 0;
+    for (const k of Object.keys(merchantWallets192)) delete merchantWallets192[k]; merchantEarnings192.length = 0; merchantPayouts192.length = 0;
     try { if (adminReady192 && adminModule.resetMarketplaceLedger) adminModule.resetMarketplaceLedger(); } catch (e) {}
     stateDirty191 = true;
     try { saveSnapshotSync191(); } catch (e) {}
@@ -698,11 +719,11 @@ if (!ALLOW_TEST_CREDENTIALS) {
 
 // STAGE 191 — merchant extension (additive): handover guard + stock deduction on accept
 const merchantExt191 = safeRequire191('./routes/merchants', 'merchants');
-if (merchantExt191 && typeof merchantExt191.init === 'function') merchantExt191.init({ findOrderRefs191 });
-if (merchantExt191) {
-    if (typeof merchantExt191.handoverGuard === 'function') app.post('/api/merchant/orders/complete-handover', merchantExt191.handoverGuard);
-    if (typeof merchantExt191.stockOnAccept === 'function') app.post('/api/merchant/orders/accept', merchantExt191.stockOnAccept);
-}
+if (merchantExt191 && typeof merchantExt191.init === 'function') merchantExt191.init({
+    findOrderRefs191, findDispatchesById191, setDeliveryState191, softAuth, ACTOR_ROLES, ownsMerchant, isTenantActive, pickKey, appendAudit, emitSafe191, eatDayStart191,
+    getWallets: () => merchantWallets192, getEarnings: () => merchantEarnings192, getPayouts: () => merchantPayouts192,
+    autoPayout: () => MERCHANT_AUTO_PAYOUT_192, paymentsMode: () => PAYMENTS_MODE_192, markDirty: () => { stateDirty191 = true; }, orderEvents: () => orderEvents192()
+});
 
 let stateDirty191 = false;
 app.use('/api', (req, res, next) => {
@@ -710,6 +731,8 @@ app.use('/api', (req, res, next) => {
     if (mutating) res.on('finish', () => { if (res.statusCode < 400) stateDirty191 = true; });
     next();
 });
+// STAGE 192: the shop's order lifecycle (accept -> call rider -> hand over & get paid). Replaces the older inline accept/handover.
+if (merchantExt191 && typeof merchantExt191 === 'function') app.use('/api/merchant', merchantExt191);
 
 function allDispatchLists191() { return Object.values(global.activeDispatches || {}); }
 function findDispatchesById191(id) {
@@ -2019,9 +2042,10 @@ function appendAudit(actionType, record) {
     };
     entry.currentHash = auditBlockHash(prev, entry);
     sovereignAuditStream.push(entry);
-    fs.appendFile(AUDIT_FILE, JSON.stringify(entry) + "\n", (err) => {
-        if (err) console.error("[AUDIT] Persist failed:", err.message);
-    });
+    // STAGE 192: written SYNCHRONOUSLY, one block at a time. The old async fs.appendFile could land a burst of blocks
+    // on disk in the wrong order, which the next restart then reported as "tampering".
+    try { fs.appendFileSync(AUDIT_FILE, JSON.stringify(entry) + "\n"); }
+    catch (err) { console.error("[AUDIT] Persist failed:", err.message); }
     return entry;
 }
 
@@ -2037,15 +2061,52 @@ function verifyAuditChain(stream = sovereignAuditStream) {
     return { valid: true, length: stream.length, headHash: prev };
 }
 
+let auditDiagnosis192 = { status: 'EMPTY', message: 'No audit file yet.' };
 (function loadAuditChain() {
     try {
         if (!fs.existsSync(AUDIT_FILE)) return;
-        const lines = fs.readFileSync(AUDIT_FILE, "utf8").split("\n").filter(Boolean);
-        sovereignAuditStream = lines.map(l => JSON.parse(l));
-        const r = verifyAuditChain();
-        if (!r.valid) console.error(`🚨 AUDIT CHAIN TAMPERING DETECTED at block ${r.brokenAtIndex} of ${r.length}`);
-        else console.log(`🔐 Audit chain restored: ${r.length} blocks verified.`);
+        const raw = fs.readFileSync(AUDIT_FILE, "utf8").split("\n"), parsed = [], badLines = [];
+        raw.forEach((l, i) => { if (!l.trim()) return; try { parsed.push(JSON.parse(l)); } catch (e) { badLines.push(i + 1); } });
+        sovereignAuditStream = parsed;
+        let r = verifyAuditChain();
+        if (r.valid && !badLines.length) { auditDiagnosis192 = { status: 'OK', message: `${r.length} blocks verified.` }; console.log(`🔐 Audit chain restored: ${r.length} blocks verified.`); return; }
+        // ---- diagnose before deciding anything ----
+        const idx = parsed.map(e => e && e.index), n = parsed.length, uniq = new Set(idx);
+        const isPermutation = uniq.size === n && idx.every(v => Number.isInteger(v) && v >= 0 && v < n);
+        const sorted = isPermutation ? parsed.slice().sort((a, b) => a.index - b.index) : null;
+        const sortedOk = sorted ? verifyAuditChain(sorted).valid : false;
+        const onlyTrailingBad = badLines.length > 0 && badLines.every(ln => ln >= raw.filter(Boolean).length);   // a half-written last line (crash during a write)
+        if ((r.valid || sortedOk) && (!badLines.length || onlyTrailingBad)) {
+            // PROVABLE REORDER (and/or a torn last line): every block is intact, only the order on disk was wrong. Rewrite in order; keep the original.
+            const backup = AUDIT_FILE.replace(/\.jsonl$/, '') + '.' + Date.now() + '.bak';
+            fs.copyFileSync(AUDIT_FILE, backup);
+            const good = sorted || parsed;
+            fs.writeFileSync(AUDIT_FILE + '.tmp', good.map(e => JSON.stringify(e)).join("\n") + "\n"); fs.renameSync(AUDIT_FILE + '.tmp', AUDIT_FILE);
+            sovereignAuditStream = good;
+            const moved = sorted ? parsed.filter((e, i) => e.index !== i).length : 0;
+            auditDiagnosis192 = { status: 'REPAIRED', message: `${moved} block(s) had been written to disk out of order${badLines.length ? ' and a half-written last line was dropped' : ''}. No block content changed. Original kept as ${path.basename(backup)}.`, backup, moved, droppedLines: badLines.length };
+            console.log(`🔧 Audit chain repaired: ${auditDiagnosis192.message}`);
+            appendAudit('AUDIT_CHAIN_REPAIRED', { reason: 'BLOCKS_WRITTEN_OUT_OF_ORDER', moved, droppedLines: badLines.length, backup: path.basename(backup), blocks: good.length });
+            console.log(`🔐 Audit chain restored: ${verifyAuditChain().length} blocks verified.`);
+            return;
+        }
+        // ---- NOT a reorder: real damage. Keep every byte as evidence and say exactly what is wrong. ----
+        const reason = uniq.size !== n ? 'TWO_WRITERS: the same block number appears more than once (two server processes wrote to the same audit file)'
+            : badLines.length ? `CORRUPT_LINES: line(s) ${badLines.slice(0, 5).join(', ')} are not valid JSON`
+            : 'CHANGED_OR_DELETED: a block was edited or removed (its hash no longer matches)';
+        auditDiagnosis192 = { status: 'BROKEN', message: `Audit chain broken at block ${r.brokenAtIndex} of ${r.length}. ${reason}.`, brokenAt: r.brokenAtIndex, reason };
+        if (process.env.AUDIT_CHAIN_ARCHIVE_BROKEN === 'true') {
+            // the owner's explicit decision: keep the broken file as evidence and start a fresh chain that records where it came from
+            const archive = AUDIT_FILE.replace(/\.jsonl$/, '') + '.broken-' + Date.now() + '.jsonl';
+            fs.renameSync(AUDIT_FILE, archive); sovereignAuditStream = [];
+            appendAudit('AUDIT_CHAIN_ARCHIVED', { archive: path.basename(archive), blocks: n, brokenAt: r.brokenAtIndex, reason });
+            auditDiagnosis192 = { status: 'ARCHIVED', message: `The broken chain (${reason}) was kept as ${path.basename(archive)} and a new chain was started. Its first block records this.`, archive };
+            console.warn(`🗄️  ${auditDiagnosis192.message}`);
+        } else {
+            console.error(`🚨 AUDIT CHAIN TAMPERING DETECTED at block ${r.brokenAtIndex} of ${r.length}: ${reason}. The file was NOT changed. To keep it as evidence and start a new chain, set AUDIT_CHAIN_ARCHIVE_BROKEN=true for one restart.`);
+        }
     } catch (e) {
+        auditDiagnosis192 = { status: 'ERROR', message: e.message };
         console.error("[AUDIT] Could not load chain:", e.message);
     }
 })();
@@ -3026,7 +3087,11 @@ function securityPostureReal191() {
     const f = [];
     const add = (severity, id, msg) => f.push({ severity, id, message: msg });
     if (ALLOW_TEST_CREDENTIALS) add('CRITICAL', 'TEST_CREDS', 'Test credentials (OTP/merchant token 1234) are enabled.');
-    if (!process.env.JWT_SECRET) add('HIGH', 'JWT_SECRET', 'JWT_SECRET not set: tokens die on every restart and cannot be shared across instances.');
+    if (JWT_SECRET_INFO_192.source === 'random') add('HIGH', 'JWT_SECRET', 'JWT_SECRET not set and could not be saved: sign-ins end on every restart. Set JWT_SECRET.');
+    else if (JWT_SECRET_INFO_192.source !== 'env') add('INFO', 'JWT_SECRET', 'JWT_SECRET not set: a generated secret is kept on the server disk, so sign-ins survive restarts. Set JWT_SECRET if you run more than one server.');
+    if (auditDiagnosis192.status === 'BROKEN') add('CRITICAL', 'AUDIT_CHAIN', auditDiagnosis192.message + ' The file was kept unchanged as evidence.');
+    else if (auditDiagnosis192.status === 'REPAIRED') add('INFO', 'AUDIT_CHAIN_REPAIRED', 'At start-up: ' + auditDiagnosis192.message);
+    else if (auditDiagnosis192.status === 'ARCHIVED') add('HIGH', 'AUDIT_CHAIN_ARCHIVED', auditDiagnosis192.message);
     if (!STRICT_ACTOR_AUTH) add('HIGH', 'STRICT_ACTOR_AUTH', 'STRICT_ACTOR_AUTH is off: requests without a token can still reach driver/merchant/store endpoints.');
     if (CORS_ORIGIN === '*') add('MEDIUM', 'CORS_WILDCARD', 'ALLOWED_ORIGINS is unset: CORS allows any origin.');
     if (adminSetupRequired192()) add('HIGH', 'ADMIN_LOGIN', 'No admin password has been created yet: open /store and finish the first-time setup.');
@@ -3118,6 +3183,7 @@ adminOps191.post('/orders/cancel', requireSovereignAdminOnly, (req, res) => {
     if (!v) return res.status(404).json({ success: false, error: "Order not found." });
     if (CANCELLED_STATES_191.has(v.status)) return bad(res, `Order already ${v.status}.`, 409);
     if (/COMPLETED|DELIVERED/.test(String(v.status)) || v.deliveryStatus === 'DELIVERED') return bad(res, "Completed orders cannot be cancelled.", 409);
+    if (findOrderRefs191(orderId).merchant.some(x => x.order.shopPaid192)) return bad(res, "The shop has already handed this order to the rider and been paid. It cannot be cancelled: let the rider finish the delivery.", 409);
     cancelOrderEverywhere191(orderId, 'CANCELLED', cleanText(reason, 200));
     appendAudit('ADMIN_ORDER_CANCEL', { orderId, reason: cleanText(reason, 200), by: req.user.email || req.user.sub });
     stateDirty191 = true;

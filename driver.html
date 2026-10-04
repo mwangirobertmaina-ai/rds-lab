@@ -299,14 +299,17 @@ const NEXT = { ACCEPTED: ['arrived', "I've arrived at pickup", 'cy'], ARRIVED_PI
 function nav(p) { return p && Number.isFinite(p.lat) ? `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving` : null; }
 function routeHtml(j) { return `<div class="route"><div><b>${esc(j.pickup || 'Pickup')}</b></div><div><b>${esc(j.destination || 'Drop-off')}</b></div></div>`; }
 function activeHtml(j) {
-  const ride = j.kind === 'RIDE', st = j.stage || 'ACCEPTED', label = { ACCEPTED: ride ? 'Head to the pickup point' : 'Head to the shop', ARRIVED_PICKUP: ride ? 'Waiting for the passenger' : 'Collect the order', PICKED_UP: ride ? 'Trip in progress' : 'Deliver to the customer' }[st];
+  const ride = j.kind === 'RIDE', st = j.stage || 'ACCEPTED', label = { ACCEPTED: ride ? 'Head to the pickup point' : 'Head to the shop', ARRIVED_PICKUP: ride ? 'Waiting for the passenger' : (j.handedOver ? 'The shop handed you the order' : 'Wait for the shop to hand over'), PICKED_UP: ride ? 'Trip in progress' : 'Deliver to the customer' }[st];
   let h = `<div class="job new"><div class="between"><span class="tag ${ride ? 'ride' : ''}">${ride ? '🏍️ RIDE' : '📦 DELIVERY'}</span><span class="earn">${fmt(j.earn)}</span></div><h2 style="margin-top:8px">${esc(label)}</h2>${routeHtml(j)}<div class="muted">${j.distanceKm ? Number(j.distanceKm).toFixed(1) + ' km' : ''}${j.etaMin ? ' · ~' + j.etaMin + ' min' : ''} · you earn 95% of the ${fmt0(j.fare)} fare</div>`;
   if (j.customerPhone) h += `<a class="btn ghost" style="margin-top:12px;text-decoration:none" href="tel:${esc(String(j.customerPhone).replace(/\s/g, ''))}">📞 Call customer</a>`;
   const target = st === 'PICKED_UP' ? j.destinationCoords : j.pickupCoords, nv = nav(target); if (nv) h += `<a class="btn cy" style="margin-top:10px;text-decoration:none" target="_blank" rel="noopener" href="${nv}">🗺️ Navigate to ${st === 'PICKED_UP' ? 'drop-off' : 'pickup'}</a>`;
   if (st === 'ACCEPTED') h += `<button class="btn cy" style="margin-top:10px" data-act="arrived">I've arrived at the ${ride ? 'pickup' : 'shop'}</button>`;
-  if (st === 'ACCEPTED' || st === 'ARRIVED_PICKUP') h += `<button class="btn go" style="margin-top:10px" data-act="picked-up">${ride ? 'Passenger on board: start trip' : 'I have the order'}</button>`;
+  // rides: the passenger can board straight away. deliveries: the shop must hand the order over first (it is paid at that moment).
+  if (ride && (st === 'ACCEPTED' || st === 'ARRIVED_PICKUP')) h += `<button class="btn go" style="margin-top:10px" data-act="picked-up">Passenger on board: start trip</button>`;
+  if (!ride && st === 'ARRIVED_PICKUP' && !j.handedOver) h += `<div class="card" style="margin:12px 0 0;border-color:var(--gold)"><p class="muted" style="margin:0">⏳ Show the shop you are here. They press <b>Hand over</b>, then you can confirm you have the order.</p></div>`;
+  if (!ride && st === 'ARRIVED_PICKUP' && j.handedOver) h += `<button class="btn go" style="margin-top:10px" data-act="picked-up">I have the order</button>`;
   if (st === 'PICKED_UP') h += `<div class="card" style="margin:14px 0 0;border-color:var(--g)"><h3>Customer PIN</h3><p class="muted" style="margin-bottom:8px">Ask the ${ride ? 'passenger' : 'customer'} for their 4-digit PIN. You are paid only when it matches.</p><input id="pin" inputmode="numeric" maxlength="4" placeholder="• • • •" autocomplete="off" style="text-align:center;font-size:1.6rem;letter-spacing:12px"><div class="err" id="pinErr"></div><button class="btn go" data-act="complete">Complete &amp; get paid</button></div>`;
-  if (st !== 'PICKED_UP') h += `<button class="btn danger" style="margin-top:10px" data-act="release">Give this job back</button>`;
+  if (st !== 'PICKED_UP' && !j.handedOver) h += `<button class="btn danger" style="margin-top:10px" data-act="release">Give this job back</button>`;
   return h + '</div>';
 }
 function renderJobs() {

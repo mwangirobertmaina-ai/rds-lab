@@ -1062,14 +1062,27 @@ const hooks = {
         return safePost('ORDER_SETTLEMENT', order.id, (t) => {
             const b = order.breakdown || {}, tot = mc(order.total), items = mc(b.commodityCost !== undefined ? b.commodityCost : b.shopOwnerPayout), rider = mc(b.riderShare);
             if (!(tot > 0) || items < 0 || rider < 0 || items + rider > tot) throw new Error('Order amounts are inconsistent');
-            const income = tot - items - rider, vat = vatOf(income), rev = income - vat, p = [{ account: '2000', side: 'D', amountMinor: tot }];
-            if (items > 0) p.push({ account: '2010', side: 'C', amountMinor: items }); if (rider > 0) p.push({ account: '2020', side: 'C', amountMinor: rider }); if (rev > 0) p.push({ account: '4000', side: 'C', amountMinor: rev }); if (vat > 0) p.push({ account: '2030', side: 'C', amountMinor: vat });
+            const income = tot - items - rider, vat = vatOf(income), rev = income - vat, paidAtHandover = !!(ctx.ledger.state.idem[t] && ctx.ledger.state.idem[t][`ORDER:${order.id}:HANDOVER`]);
+            const p = [{ account: '2000', side: 'D', amountMinor: paidAtHandover ? tot - items : tot }];
+            if (items > 0 && !paidAtHandover) p.push({ account: '2010', side: 'C', amountMinor: items }); if (rider > 0) p.push({ account: '2020', side: 'C', amountMinor: rider }); if (rev > 0) p.push({ account: '4000', side: 'C', amountMinor: rev }); if (vat > 0) p.push({ account: '2030', side: 'C', amountMinor: vat });
             return ctx.ledger.post(t, { currency: 'KES', description: `Order settlement ${order.id} (shop, rider, platform, VAT)`, reference: order.id, source: 'ORDER_SETTLEMENT', idempotencyKey: `ORDER:${order.id}:SETTLE`, postings: p }, { by: 'system', system: true });
         });
     },
+    // the shop is paid in full when it hands the order to the rider: release the items amount from escrow to the shop
+    onHandover(order) {
+        return safePost('ORDER_HANDOVER', order.id, (t) => {
+            const b = order.breakdown || {}, items = mc(b.commodityCost !== undefined ? b.commodityCost : b.shopOwnerPayout), tot = mc(order.total);
+            if (!(items > 0) || items > tot) throw new Error('Order amounts are inconsistent');
+            return ctx.ledger.post(t, { currency: 'KES', description: `Shop paid in full at hand-over ${order.id}`, reference: order.id, source: 'ORDER_HANDOVER', idempotencyKey: `ORDER:${order.id}:HANDOVER`, postings: [{ account: '2000', side: 'D', amountMinor: items }, { account: '2010', side: 'C', amountMinor: items }] }, { by: 'system', system: true });
+        });
+    },
+    onMerchantPayout(rec) {
+        return safePost('SHOP_PAYOUT', rec.payoutId, (t) => { const a = mc(rec.amount); if (!(a > 0)) return null;
+            return ctx.ledger.post(t, { currency: 'KES', description: `Shop payout (SIMULATED M-Pesa B2C) ${rec.payoutId}${rec.auto ? ' (automatic at hand-over)' : ''}`, reference: rec.payoutId, source: 'SHOP_PAYOUT', idempotencyKey: `MPAYOUT:${rec.payoutId}`, postings: [{ account: '2010', side: 'D', amountMinor: a }, { account: '1010', side: 'C', amountMinor: a }] }, { by: 'system', system: true }); });
+    },
     onRefund(order) {
         clientEvent(c => { c.recordOrder({ userId: order.userId, phones: [order.phone, order.customerPhone], totalMinor: mc(order.total), orderId: order.id, kind: 'CANCELLED' }); c.recordOrder({ userId: order.userId, phones: [], totalMinor: mc(order.total), orderId: order.id, kind: 'REFUND' }); });
-        return safePost('ORDER_REFUND', order.id, (t) => { if (!ctx.ledger.state.idem[t] || !ctx.ledger.state.idem[t][`ORDER:${order.id}:PAY`]) return null; if (ctx.ledger.state.idem[t][`ORDER:${order.id}:SETTLE`]) return null; const tot = mc(order.total);
+        return safePost('ORDER_REFUND', order.id, (t) => { if (!ctx.ledger.state.idem[t] || !ctx.ledger.state.idem[t][`ORDER:${order.id}:PAY`]) return null; if (ctx.ledger.state.idem[t][`ORDER:${order.id}:SETTLE`] || ctx.ledger.state.idem[t][`ORDER:${order.id}:HANDOVER`]) return null; const tot = mc(order.total);
             return ctx.ledger.post(t, { currency: 'KES', description: `Refund due to customer (cancelled order) ${order.id}`, reference: order.id, source: 'ORDER_REFUND', idempotencyKey: `ORDER:${order.id}:REFUND`, postings: [{ account: '2000', side: 'D', amountMinor: tot }, { account: '2050', side: 'C', amountMinor: tot }] }, { by: 'system', system: true }); });
     },
     onPayout(rec) {

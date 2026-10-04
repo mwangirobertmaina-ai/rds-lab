@@ -45,7 +45,7 @@ label{display:block;font-size:.72rem;color:var(--cy);margin:2px 0 4px}
 @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .order ul{list-style:none;font-size:.82rem;color:#d1d5db}.order li{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--line)}.order li:last-child{border:0}
 .pill{font-size:.64rem;font-weight:800;padding:3px 9px;border-radius:12px;background:rgba(56,189,248,.14);color:var(--cy);white-space:nowrap}
-.pill.new{background:rgba(0,255,136,.16);color:var(--g)}.pill.rider,.pill.enroute,.pill.waiting_rider{background:rgba(255,215,0,.15);color:var(--gold)}.pill.completed,.pill.delivered{background:rgba(168,85,247,.18);color:#d8b4fe}.pill.cancelled{background:rgba(255,77,109,.15);color:var(--red)}
+.pill.new{background:rgba(0,255,136,.16);color:var(--g)}.pill.packing{background:rgba(56,189,248,.16);color:var(--cy)}.pill.rider_here{background:rgba(0,255,136,.2);color:var(--g)}.pill.handed{background:rgba(0,255,136,.12);color:var(--g)}.pill.rider,.pill.enroute,.pill.waiting_rider{background:rgba(255,215,0,.15);color:var(--gold)}.pill.completed,.pill.delivered{background:rgba(168,85,247,.18);color:#d8b4fe}.pill.cancelled{background:rgba(255,77,109,.15);color:var(--red)}
 .acts{display:flex;gap:8px;flex-wrap:wrap}.acts .btn{flex:1}
 .tbl{width:100%;border-collapse:collapse;font-size:.82rem}.tbl th{font-size:.68rem;color:var(--dim);text-transform:uppercase;text-align:left;padding:8px;border-bottom:1px solid var(--line)}.tbl td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
 .tbl img{width:42px;height:42px;border-radius:8px;object-fit:cover;background:#000}.tbl input{margin:0;width:84px;padding:7px}
@@ -435,9 +435,11 @@ function stageOf(o) {
   if (s === 'COMPLETED & PAID OUT') return { key: 'completed', label: 'Completed', group: 'done' };
   if (d === 'DELIVERED') return { key: 'delivered', label: 'Delivered', group: 'progress' };
   if (s === 'PENDING_VENDOR_ACCEPTANCE') return { key: 'new', label: 'New order', group: 'new' };
+  if (s === 'ACCEPTED_PACKING') return { key: 'packing', label: 'Packing', group: 'progress' };
+  if (s === 'HANDED_TO_RIDER') return d === 'PICKED_UP' ? { key: 'enroute', label: 'Out for delivery · paid', group: 'progress' } : { key: 'handed', label: 'Handed over · paid', group: 'progress' };
   if (s === 'AWAITING_DRIVER_PICKUP' && d === 'PICKED_UP') return { key: 'enroute', label: 'Out for delivery', group: 'progress' };
-  if (s === 'AWAITING_DRIVER_PICKUP' && d === 'ARRIVED_AT_PICKUP') return { key: 'rider', label: 'Rider is here', group: 'progress' };
-  if (s === 'AWAITING_DRIVER_PICKUP' && d === 'DRIVER_ASSIGNED') return { key: 'rider', label: 'Rider assigned', group: 'progress' };
+  if (s === 'AWAITING_DRIVER_PICKUP' && d === 'ARRIVED_AT_PICKUP') return { key: 'rider_here', label: 'Rider is here', group: 'progress' };
+  if (s === 'AWAITING_DRIVER_PICKUP' && d === 'DRIVER_ASSIGNED') return { key: 'rider', label: 'Rider on the way', group: 'progress' };
   if (s === 'AWAITING_DRIVER_PICKUP') return { key: 'waiting_rider', label: 'Waiting for rider', group: 'progress' };
   return { key: 'other', label: s.replace(/_/g, ' ').toLowerCase(), group: 'progress' };
 }
@@ -463,11 +465,14 @@ function orderCard(o) {
   const s = stageOf(o), amount = Number(o.shopOwnerPayout) || Number(o.totalAmount) || 0;
   const items = (o.items || []).map(i => `<li><span>${esc(i.name)}</span><b>× ${i.qty || 1}</b></li>`).join('') || '<li><span>Standard order</span></li>';
   let acts = '';
-  if (s.key === 'new') acts = `<button class="btn go" data-act="accept" data-oid="${esc(o.orderId)}">✓ Accept &amp; call rider</button><button class="btn danger" data-act="reject" data-oid="${esc(o.orderId)}">Decline</button>`;
-  else if (s.key === 'waiting_rider') acts = '<span class="muted">Packed. Waiting for a rider to accept the delivery…</span>';
-  else if (s.key === 'enroute') acts = '<span class="muted">The rider has your parcel and is on the way to the customer.</span>';
-  else if (s.key === 'rider') acts = `<button class="btn gold" data-act="handover" data-oid="${esc(o.orderId)}">📦 Handed to rider</button>`;
-  else if (s.key === 'delivered') acts = `<button class="btn cy" data-act="handover" data-oid="${esc(o.orderId)}">Mark complete</button>`;
+  const paid = Number(o.paidToShop) || amount;
+  if (s.key === 'new') acts = `<button class="btn go" data-act="accept" data-oid="${esc(o.orderId)}">✓ Accept order</button><button class="btn danger" data-act="reject" data-oid="${esc(o.orderId)}">Decline</button>`;
+  else if (s.key === 'packing') acts = `<span class="muted">Pack the order, then call a rider.</span><button class="btn cy" data-act="call" data-oid="${esc(o.orderId)}">📣 Call rider</button>`;
+  else if (s.key === 'waiting_rider') acts = '<span class="muted">Rider called. Waiting for one to accept…</span>';
+  else if (s.key === 'rider') acts = '<span class="muted">A rider is on the way to your shop. Hand the order over when they arrive.</span>';
+  else if (s.key === 'rider_here') acts = `<button class="btn go" data-act="handover" data-oid="${esc(o.orderId)}">📦 Hand over &amp; get paid ${fmt(amount)}</button>`;
+  else if (s.key === 'handed') acts = `<span style="color:var(--g)">✓ Paid ${fmt(paid)} in full at hand-over.</span>`;
+  else if (s.key === 'enroute') acts = `<span class="muted">The rider has the order and is on the way to the customer. You were paid ${fmt(paid)}.</span>`;
   return `<article class="order ${s.key === 'new' ? 'new' : ''}"><div class="between"><b style="font-family:monospace;font-size:.82rem;color:var(--cy)">${esc(o.orderId)}</b><span class="pill ${s.key}">${esc(s.label)}</span></div>
     <div class="muted">${ago(o.createdAt)}${o.cancelReason ? ' · ' + esc(o.cancelReason) : ''}</div><ul>${items}</ul>
     <div class="between"><span class="muted">You receive</span><b style="color:var(--g)">${fmt(amount)}</b></div>${acts ? `<div class="acts">${acts}</div>` : ''}</article>`;
@@ -488,9 +493,10 @@ $('#orders').addEventListener('click', async e => {
   if (e.target.id === 'retryOrders') return loadOrders();
   const b = e.target.closest('[data-act]'); if (!b) return; const id = b.dataset.oid, mid = state.shop.merchantId;
   try {
-    if (b.dataset.act === 'accept') { busy(b, true); await api('/api/merchant/orders/accept', { method: 'POST', body: { merchantId: mid, orderId: id } }); toast(`Order ${id} accepted. Rider requested.`, 'ok'); loadCatalog(); }
+    if (b.dataset.act === 'accept') { busy(b, true); await api('/api/merchant/orders/accept', { method: 'POST', body: { merchantId: mid, orderId: id } }); toast(`Order ${id} accepted. Pack it, then press "Call rider".`, 'ok'); loadCatalog(); }
+    if (b.dataset.act === 'call') { busy(b, true); const d = await api('/api/merchant/orders/call-driver', { method: 'POST', body: { merchantId: mid, orderId: id } }); toast(d.message || 'Rider called.', 'ok'); }
     if (b.dataset.act === 'reject') { const r = await ask('Decline this order?', 'The customer is notified and a refund is marked as due.', 'Decline order', true); if (!r) return; busy(b, true); await api('/api/merchant/orders/reject', { method: 'POST', body: { merchantId: mid, orderId: id, reason: r } }); toast('Order declined', 'ok'); }
-    if (b.dataset.act === 'handover') { busy(b, true); await api('/api/merchant/orders/complete-handover', { method: 'POST', body: { merchantId: mid, orderId: id } }); toast('Order marked complete', 'ok'); }
+    if (b.dataset.act === 'handover') { busy(b, true); const d = await api('/api/merchant/orders/complete-handover', { method: 'POST', body: { merchantId: mid, orderId: id } }); toast(d.message || 'Handed over and paid.', 'ok', 7000); loadWallet(); }
     stopRing(); await loadOrders(); loadStats();
   } catch (err) { toast(err.message, 'err', 5000); loadOrders(); }
 });
@@ -501,10 +507,12 @@ $('#oCsv').onclick = async () => {
 };
 
 /* ===================== stats ===================== */
-async function loadStats() { if (!state.token) return; try { const d = await api('/api/merchant/stats/' + encodeURIComponent(state.shop.merchantId)); state.stats = d; renderKpis(); } catch {} }
+async function loadStats() { if (!state.token) return; try { const d = await api('/api/merchant/stats/' + encodeURIComponent(state.shop.merchantId)); state.stats = d; renderKpis(); } catch {} loadWallet(); }
+async function loadWallet() { if (!state.token) return; try { state.wallet = await api('/api/merchant/wallet/' + encodeURIComponent(state.shop.merchantId)); renderKpis(); } catch {} }
 function renderKpis() {
   const s = state.stats, pend = pendingCount(), inprog = state.orders.filter(o => stageOf(o).group === 'progress').length;
-  const k = [['New orders', pend, pend ? 'var(--g)' : ''], ['In progress', inprog, ''], ['Orders today', s ? s.orders.today : '–', ''], ['Completed sales today', s ? fmt(s.revenue.today) : '–', ''], ['Completed sales total', s ? fmt(s.revenue.allTime) : '–', ''], ['Low stock items', s ? s.catalog.lowStock.length : '–', s && s.catalog.lowStock.length ? 'var(--gold)' : ''], ['Rating', s && s.rating.average ? s.rating.average + ' ★ (' + s.rating.count + ')' : '–', '']];
+  const w = state.wallet;
+  const k = [['New orders', pend, pend ? 'var(--g)' : ''], ['In progress', inprog, ''], ['Paid today at hand-over', w ? fmt(w.today.paid) : '–', w && w.today.paid ? 'var(--g)' : ''], ['Shop wallet', w ? fmt(w.balance) + (w.autoPayout ? ' (auto to M-Pesa)' : '') : '–', ''], ['Orders today', s ? s.orders.today : '–', ''], ['Completed sales today', s ? fmt(s.revenue.today) : '–', ''], ['Completed sales total', s ? fmt(s.revenue.allTime) : '–', ''], ['Low stock items', s ? s.catalog.lowStock.length : '–', s && s.catalog.lowStock.length ? 'var(--gold)' : ''], ['Rating', s && s.rating.average ? s.rating.average + ' ★ (' + s.rating.count + ')' : '–', '']];
   $('#kpis').innerHTML = k.map(([l, v, c]) => `<div class="kpi"><small>${l}</small><b ${c ? `style="color:${c}"` : ''}>${esc(v)}</b></div>`).join('');
 }
 

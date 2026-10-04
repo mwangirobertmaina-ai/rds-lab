@@ -70,7 +70,8 @@ function jobView(d, mine) {
         pickupCoords: d.pickupCoords || null, destinationCoords: d.destinationCoords || null,
         distanceKm: d.distanceKm == null ? null : d.distanceKm, etaMin: d.etaMin == null ? null : d.etaMin,
         fare: d.deliveryFee == null ? null : d.deliveryFee, earn: d.riderPayout == null ? null : d.riderPayout, currency: d.currency || 'KES',
-        status: d.status, stage: d.stage || null, dispatchedAt: d.dispatchedAt || null, acceptedAt: d.acceptedAt || null
+        status: d.status, stage: d.stage || null, dispatchedAt: d.dispatchedAt || null, acceptedAt: d.acceptedAt || null,
+        handedOver: !!d.handoverAt, waitingForShop: !d.isDirectRide && !!d.merchantId && !d.handoverAt
     };
     if (mine) v.customerPhone = d.customerPhone || null;      // only the assigned rider ever sees this
     return v;
@@ -190,6 +191,7 @@ router.post('/arrived', auth, (req, res) => {
 router.post('/picked-up', auth, (req, res) => {
     const m = myJob(req, res); if (!m) return;
     if (!['ACCEPTED', 'ARRIVED_PICKUP'].includes(m.job.stage)) return bad(res, 'Pickup was already confirmed.', 409);
+    if (!m.job.isDirectRide && m.job.merchantId && !m.job.handoverAt) return bad(res, m.job.stage === 'ARRIVED_PICKUP' ? 'Wait for the shop to hand the order over. The shop presses "Hand over" while you are there.' : 'Go to the shop and press "I\'ve arrived" first. The shop hands the order over when you are there.', 409);
     m.copies.forEach(x => { x.stage = 'PICKED_UP'; x.pickedUpAt = Date.now(); });
     D.setDeliveryState191(m.id, { deliveryStatus: 'PICKED_UP', driverId: req.user.driverId });
     notify(m.id, 'PICKED_UP');
@@ -200,6 +202,7 @@ router.post(['/release', '/dispatch/release'], auth, (req, res) => {
     const m = myJob(req, res); if (!m) return;
     const me = req.user.driverId, d = driverOf(me);
     if (m.job.stage === 'PICKED_UP') return bad(res, 'You already picked up this job. Complete it or contact support.', 409);
+    if (m.job.handoverAt) return bad(res, 'The shop has already handed this order to you and been paid. Please deliver it or contact support.', 409);
     const day = Date.now() - 24 * 3600 * 1000;
     d.releases = (d.releases || []).filter(t => t > day);
     if (d.releases.length >= RELEASE_LIMIT) return bad(res, 'You have given back too many jobs today. Please contact support.', 429);

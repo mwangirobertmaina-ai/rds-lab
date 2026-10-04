@@ -572,8 +572,11 @@ function stageOf(o) {
   if (CANCELLED.has(st)) return { key: 'cancelled', step: -1, label: st === 'REJECTED_BY_VENDOR' ? 'Shop declined' : 'Cancelled' };
   if (d === 'DELIVERED' || /COMPLETED/.test(st) || v === 'COMPLETED & PAID OUT') return { key: 'done', step: ride ? 2 : 3, label: ride ? 'Trip completed' : 'Delivered' };
   if (d === 'DRIVER_ASSIGNED') return { key: 'driver', step: ride ? 1 : 2, label: ride ? 'Rider on the way' : 'Rider heading to the shop' };
+  if (!ride && v === 'HANDED_TO_RIDER' && d !== 'PICKED_UP') return { key: 'driver', step: 2, label: 'The rider has collected your order' };
   if (d === 'ARRIVED_AT_PICKUP') return { key: 'driver', step: ride ? 1 : 2, label: ride ? 'Rider has arrived' : 'Rider is at the shop' };
   if (d === 'PICKED_UP') return { key: 'driver', step: ride ? 1 : 2, label: ride ? 'Trip in progress' : 'On the way to you' };
+  if (!ride && v === 'ACCEPTED_PACKING') return { key: 'confirmed', step: 1, label: 'The shop is packing your order' };
+  if (!ride && v === 'AWAITING_DRIVER_PICKUP') return { key: 'confirmed', step: 1, label: 'Packed. Finding a rider' };
   if (!ride && v && v !== 'PENDING_VENDOR_ACCEPTANCE') return { key: 'confirmed', step: 1, label: 'Shop is preparing' };
   return { key: 'placed', step: 0, label: ride ? 'Finding a rider' : 'Waiting for shop' };
 }

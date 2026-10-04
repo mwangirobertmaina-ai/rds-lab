@@ -297,7 +297,8 @@ function orders() {
             refundStatus: o.refundStatus || null, vehicle: o.vehicleType || null,
             totalC, itemsC, svcC: modern ? cents(b.serviceFee) : 0, feeC, riderC, appC: modern ? cents(b.appCommission) : feeC - riderC,
             platformC: totalC - itemsC - riderC,                    // cash truth: money in minus money out
-            storedTaxC: b.tax !== undefined ? cents(b.tax) : null, legacy: !modern, fields: { hasBreakdown: !!o.breakdown }
+            storedTaxC: b.tax !== undefined ? cents(b.tax) : null, legacy: !modern, fields: { hasBreakdown: !!o.breakdown },
+            handedOver: !!o.handoverAt, handoverAt: o.handoverAt || null, paidToShopC: o.paidToShop !== undefined ? cents(o.paidToShop) : null
         });
     }
     for (const o of (D.getStoreOrders() || [])) {                   // legacy /store checkout orders (retired)
@@ -376,6 +377,30 @@ function reconcile() {
     }
     const a = auditInfo(); c10.checked = a.length || 0; if (!a.valid) fail(c10, 'chain', 'a block does not match the one before it');
 
+    // ----- shops are paid in full, exactly once, at hand-over -----
+    if (D.getMerchantEarnings) {
+        const s1 = mk('SHOP_PAID_ONCE', 'Every shop is paid once, in full, when it hands the order to the rider', 'paid at hand-over = items total; one payment per order', true);
+        const s2 = mk('SHOP_WALLETS', 'Shop wallets add up', 'balance = paid at hand-over - sent to M-Pesa', true);
+        checks.push(s1, s2);
+        const earn = D.getMerchantEarnings() || [], mpay = D.getMerchantPayouts() || [], mw = D.getMerchantWallets() || {}, byId = new Map(all.map(o => [o.id, o])), seen = new Map();
+        for (const e of earn) {
+            s1.checked++; seen.set(e.orderId, (seen.get(e.orderId) || 0) + 1);
+            const o = byId.get(e.orderId);
+            if (!o) fail(s1, e.orderId, 'a shop was paid for an order that does not exist');
+            else if (cents(e.amount) !== o.itemsC) fail(s1, e.orderId, `shop paid ${fromC(cents(e.amount))} but the items total is ${fromC(o.itemsC)}`);
+            else if (!o.handedOver) fail(s1, e.orderId, 'a shop was paid but the order was never handed over');
+        }
+        for (const [id, n] of seen) if (n > 1) fail(s1, id, `the shop was paid ${n} times for this order`);
+        for (const o of all) if (o.handedOver && !seen.has(o.id)) fail(s1, o.id, 'handed over but the shop has no payment record');
+        const shops = new Set([...earn.map(e => e.merchantId), ...mpay.map(p => p.merchantId), ...Object.keys(mw)]);
+        for (const m of shops) {
+            s2.checked++;
+            const inC = sumC(earn.filter(e => e.merchantId === m), e => cents(e.amount)), outC = sumC(mpay.filter(p => p.merchantId === m), p => cents(p.amount)), balC = cents(mw[m] || 0);
+            if (balC !== inC - outC) fail(s2, m, `wallet ${fromC(balC)} but paid ${fromC(inC)} - sent ${fromC(outC)} = ${fromC(inC - outC)}`);
+            if (balC < 0) fail(s2, m, 'a shop wallet is negative');
+        }
+    }
+
     // ----- the ledger must agree with the orders (only orders whose payment was posted to the ledger are compared) -----
     const LV = D.getLedgerView ? D.getLedgerView() : null;
     if (LV && LV.engine) {
@@ -394,9 +419,12 @@ function reconcile() {
         const covered = all.filter(o => o.source === 'APP' && idem[`ORDER:${o.id}:PAY`]);
         const open = covered.filter(o => o.state === 'OPEN'), done = covered.filter(o => o.state === 'DONE'), canc = covered.filter(o => o.state === 'CANCELLED' && idem[`ORDER:${o.id}:REFUND`]);
         const paidOut = (L.state.journals[ten] || []).filter(e => e.source === 'RIDER_PAYOUT').reduce((s, e) => s + e.totalMinor, 0);
-        const exp = { escrow: sumC(open, o => o.totalC), shops: sumC(done, o => o.itemsC), riders: sumC(done, o => o.riderC) - paidOut, vat: sumC(done, o => vatOfC(o.platformC)), refunds: sumC(canc, o => o.totalC) };
+        const shopPaidOut = (L.state.journals[ten] || []).filter(e => e.source === 'SHOP_PAYOUT').reduce((s, e) => s + e.totalMinor, 0);
+        const handed = (o) => !!idem[`ORDER:${o.id}:HANDOVER`];
+        const exp = { escrow: sumC(open, o => o.totalC - (handed(o) ? o.itemsC : 0)), shops: sumC(covered.filter(o => o.state === 'DONE' || (o.state === 'OPEN' && handed(o))), o => o.itemsC) - shopPaidOut, riders: sumC(done, o => o.riderC) - paidOut, vat: sumC(done, o => vatOfC(o.platformC)), refunds: sumC(canc, o => o.totalC) };
         [[l2, '2000', exp.escrow], [l3, '2010', exp.shops], [l4, '2020', exp.riders], [l5, '2030', exp.vat], [l6, '2050', exp.refunds]].forEach(([c, code, e]) => { c.checked = covered.length; const g = bal(code); if (g !== e) fail(c, code, `ledger ${fromC(g)} vs orders ${fromC(e)}`); });
         for (const o of done) { l7.checked++; if (!idem[`ORDER:${o.id}:SETTLE`]) fail(l7, o.id, 'delivered but no settlement journal in the ledger'); }
+        for (const o of covered) if (o.handedOver && !handed(o)) fail(l7, o.id, 'the shop was paid at hand-over but there is no hand-over journal in the ledger');
         const fl = L.state.failures || []; if (fl.length) fail(l7, 'posting', `${fl.length} ledger posting failure(s), e.g. ${fl[fl.length - 1].kind} ${fl[fl.length - 1].ref}: ${fl[fl.length - 1].message}`);
     }
 
@@ -427,11 +455,13 @@ function finance() {
     const wallets = D.getWallets() || {}, payouts = D.getPayouts() || [];
     const walletC = sumC(Object.values(wallets), v => cents(v)), paidC = sumC(payouts, p => cents(p.amount));
     const liabilities = {
-        escrowHeld: fromC(sumC(open, o => o.totalC)), openOrders: open.length,
+        escrowHeld: fromC(sumC(open, o => o.totalC - (o.handedOver ? o.itemsC : 0))), openOrders: open.length,
         refundsDue: fromC(sumC(canc.filter(o => o.refundStatus !== 'REFUNDED'), o => o.totalC)), cancelledOrders: canc.length,
         owedToRiders: fromC(walletC), ridersWithdrawn: fromC(paidC),
-        owedToShops: fromC(sumC(done, o => o.itemsC)), vatAccrued: wins.allTime.vat,
-        note: 'There is no shop payout or VAT remittance record yet, so shops and KRA appear as fully owed.'
+        owedToShops: fromC(sumC(Object.values((D.getMerchantWallets && D.getMerchantWallets()) || {}), v => cents(v)) + sumC(done.filter(o => o.kind === 'SHOP' && !o.handedOver), o => o.itemsC)),
+        shopsPaidAtHandover: fromC(sumC((D.getMerchantEarnings && D.getMerchantEarnings()) || [], e => cents(e.amount))), shopsSentToMpesa: fromC(sumC((D.getMerchantPayouts && D.getMerchantPayouts()) || [], p => cents(p.amount))),
+        legacyShopOrdersUnpaid: done.filter(o => o.kind === 'SHOP' && !o.handedOver).length, vatAccrued: wins.allTime.vat,
+        note: 'Shops are paid in full when they hand the order to the rider. Orders delivered before this was built are still shown as owed to the shop. There is no VAT remittance record yet, so KRA appears as fully owed.'
     };
     const days = [];
     for (let i = 13; i >= 0; i--) {
