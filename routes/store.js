@@ -769,11 +769,12 @@ function resetPreview() {
     const all = orders(), ledger = D.getLedger() || [], payouts = D.getPayouts() || [];
     return { orders: all.length, open: all.filter(o => o.state === 'OPEN').length, cancelled: all.filter(o => o.state === 'CANCELLED').length, delivered: all.filter(o => o.state === 'DONE').length,
         heldForOpenOrders: fromC(sumC(all.filter(o => o.state === 'OPEN'), o => o.totalC)), jobsOnRadar: (global.driverQueue || []).length, riderEarningsRecords: ledger.length, payoutRecords: payouts.length,
-        ratings: (D.getRatings() || []).length, walletsTotal: fromC(sumC(Object.values(D.getWallets() || {}), v => cents(v))), paymentsMode: D.paymentsMode, canReset: D.paymentsMode === 'simulated', phrase: 'RESET TEST DATA' };
+        ratings: (D.getRatings() || []).length, walletsTotal: fromC(sumC(Object.values(D.getWallets() || {}), v => cents(v))), paymentsMode: D.paymentsMode, canReset: D.paymentsMode === 'simulated' && (!!D.testCreds || process.env.ALLOW_TEST_DATA_RESET === 'true'), phrase: 'RESET TEST DATA' };
 }
 router.get('/maintenance/preview', (req, res) => res.json({ success: true, ...resetPreview() }));
 router.post('/maintenance/reset-test-data', ownerOnly, (req, res) => {
     if (D.paymentsMode !== 'simulated') return fail(res, 'Real payments are switched on, so records cannot be cleared here.', 409);
+    if (!D.testCreds && process.env.ALLOW_TEST_DATA_RESET !== 'true') return fail(res, 'This is a production server (NODE_ENV=production), so accounting records cannot be cleared. Set ALLOW_TEST_DATA_RESET=true only on a test copy.', 409);
     if (!req.body || req.body.confirm !== 'RESET TEST DATA') return fail(res, 'Type RESET TEST DATA to confirm.');
     if (typeof D.resetTestData !== 'function') return fail(res, 'Clearing test data is not available on this server.', 501);
     const before = resetPreview(), r = D.resetTestData();

@@ -392,6 +392,17 @@ function bindUserIdentity191(req, res, next) {
     next();
 }
 app.post(['/api/store/checkout', '/api/user/checkout'], idempotency191, bindUserIdentity191);
+// STAGE 192 (F4, crash safety): a request that moves money is written to disk BEFORE its success reply is sent.
+// If the server dies before the write, the client got no success and can safely retry; if it dies after, the result is on disk.
+// (Without this, state was saved every 10 seconds, so a crash right after "order placed" could lose an acknowledged order.)
+const DURABLE_PATHS_192 = ['/api/user/checkout', '/api/user/orders/cancel', '/api/merchant/orders/accept', '/api/merchant/orders/reject', '/api/merchant/orders/call-driver',
+    '/api/merchant/orders/complete-handover', '/api/merchant/wallet/payout', '/api/driver/accept-dispatch', '/api/driver/arrived', '/api/driver/picked-up', '/api/driver/release',
+    '/api/driver/complete-dispatch', '/api/driver/payout', '/api/admin/ops/orders/cancel'];
+app.post(DURABLE_PATHS_192, (req, res, next) => {
+    const orig = res.json.bind(res);
+    res.json = (body) => { if (res.statusCode < 400 && PERSIST_STATE_191) { try { stateDirty191 = true; saveSnapshotSync191(); lastSnapshot191 = { at: Date.now(), ok: true, bytes: 0, error: null }; } catch (e) { lastSnapshot191 = { at: Date.now(), ok: false, bytes: 0, error: e.message }; } } return orig(body); };
+    next();
+});
 
 // STAGE 191 — store extension (additive): server-side price guard + authoritative /quote
 const storeExt191 = safeRequire191('./routes/store', 'store');

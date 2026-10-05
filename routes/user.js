@@ -222,6 +222,16 @@ router.post('/checkout', auth, (req, res) => {
     const recent = (burst.get(uid) || []).filter(t => now - t < 10 * 60 * 1000);
     if (recent.length >= 10) return bad(res, 'Too many orders in a short time. Please wait a few minutes.', 429);
 
+    // F2 across restarts: the same Idempotency-Key from the same customer returns the ORIGINAL order, even after a server restart
+    // (server.js also caches replies in memory, but that cache is empty after a restart; the order record is not).
+    const idemRaw = (req.headers || {})['idempotency-key'], idemKey = typeof idemRaw === 'string' && /^[A-Za-z0-9_.:-]{8,100}$/.test(idemRaw) ? idemRaw : null;
+    if (idemKey) {
+        const act = D.getActiveOrders();
+        for (const k of Object.keys(act || {})) for (const o of (act[k] || [])) if (o && o.userId === uid && o.idemKey === idemKey) {
+            res.set('Idempotent-Replay', 'true');
+            return res.json({ success: true, replayed: true, orderId: o.id, mode: k === 'DIRECT_RIDES' ? 'RIDE' : 'SHOP', total: o.total, deliveryPin: o.deliveryPin, etaMin: o.etaMin, payment: { mode: 'SIMULATED', status: 'SIMULATED_PAID' }, message: 'This order was already placed.' });
+        }
+    }
     const p = prepare(b);
     if (p.err) return bad(res, p.err[0], p.err[1]);
 
@@ -259,7 +269,7 @@ router.post('/checkout', auth, (req, res) => {
     const order = {
         id: orderId, userId: uid, phone, customerPhone, pickup: pickupLabel, destination: destLabel, pickupCoords: p.pickup, destinationCoords: p.dest,
         vehicleType: p.vehicle, currency: PRICING.currency, total: pr.total, breakdown, payment, items: p.lines,
-        distanceKm: p.km, etaMin: pr.etaMin, deliveryPin, pinSalt, pinHash,
+        distanceKm: p.km, etaMin: pr.etaMin, deliveryPin, pinSalt, pinHash, idemKey,
         status: p.isRide ? 'DISPATCHED_STRAIGHT_TO_DRIVER' : 'HELD_IN_ESCROW_PENDING_PACKAGING', createdAt: now
     };
 
