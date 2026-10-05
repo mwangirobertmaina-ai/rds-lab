@@ -409,6 +409,7 @@ if (userExt191) {
             softAuth, ROLES, isTenantActive, cleanText, isPhone, appendAudit,
             findOrderRefs191, orderView191, normalizedOrders191,
             getActiveOrders: () => activeOrders, getDrivers: () => drivers, getUsers: () => users, getRatings: () => orderRatings191,
+            getPresence: () => driverPresence191, getLocations: () => driverLocations191, requireApproval: () => DRIVER_APPROVAL_REQUIRED_192,
             orderEvents: () => orderEvents192()
         });
     }
@@ -556,13 +557,21 @@ app.post('/api/driver/register-and-send-otp', (req, res, next) => {
 
 // a ready-made, pre-approved rider for the test phone(s) (TEST_PHONES, default +254722334455, code 1234).
 // Real riders still register with documents. Set TEST_RIDER_VEHICLE=CAB to make the test rider a cab driver.
+// STAGE 192: there is also a ready-made TEST CAB DRIVER (TEST_CAB_PHONES, default +254733445566), so cab rides can be tested
+// end to end like boda rides. While testing (code 1234 for everyone) it always exists; in production only if its number is
+// also listed in TEST_PHONES. Set TEST_CAB_PHONES= (empty) to remove it.
+function isTestCab192(p) {
+    const list = process.env.TEST_CAB_PHONES !== undefined ? process.env.TEST_CAB_PHONES : '+254733445566';
+    return list.split(',').map(x => x.trim()).filter(Boolean).map(normalizeMsisdn191).includes(normalizeMsisdn191(String(p)));
+}
 function ensureTestRider192(phone) {
-    if (!isTestPhone191(phone)) return false;
+    const cabTest = isTestCab192(phone);
+    if (!isTestPhone191(phone) && !(cabTest && ALLOW_TEST_CREDENTIALS)) return false;
     const msisdn = normalizeMsisdn191(phone);
     const id = `DRV_${msisdn.replace(/[^0-9]/g, '')}`;
-    const veh = String(process.env.TEST_RIDER_VEHICLE || 'BODA').toUpperCase() === 'CAB' ? 'CAR' : 'BODA';
+    const veh = cabTest ? 'CAR' : (String(process.env.TEST_RIDER_VEHICLE || 'BODA').toUpperCase() === 'CAB' ? 'CAR' : 'BODA');
     if (!Object.prototype.hasOwnProperty.call(drivers, id)) {
-        drivers[id] = { id, name: 'Test Rider', phone: msisdn, email: 'driver@rds.com', vehicleType: veh, plate: 'KTEST 001A', psvBadge: 'N/A', nationalId: 'TEST-ACCOUNT',
+        drivers[id] = { id, name: cabTest ? 'Test Cab Driver' : 'Test Rider', phone: msisdn, email: 'driver@rds.com', vehicleType: veh, plate: cabTest ? 'KTEST 002C' : 'KTEST 001A', psvBadge: cabTest ? 'TEST-PSV' : 'N/A', nationalId: 'TEST-ACCOUNT',
             hasPassportSnap: false, hasVehicleSnap: false, verified: true, registeredAt: Date.now(), documentsReviewed: true, verificationStatus: 'TEST_ACCOUNT' };
     }
     const d = drivers[id];
@@ -3467,6 +3476,8 @@ try { if (compliance192 && switches192.compliance && typeof switches192.complian
 // test riders (TEST_PHONES) exist and are pre-approved after every start, so the test account works without an admin
 (function applyTestDrivers192() {
     for (const p of TEST_PHONES_191) ensureTestRider192(p);
+    const cabs = process.env.TEST_CAB_PHONES !== undefined ? process.env.TEST_CAB_PHONES : '+254733445566';
+    for (const p of cabs.split(',').map(x => x.trim()).filter(Boolean)) ensureTestRider192(p);
 })();
 
 const adsRouter = safeRequire191('./routes/ads', 'ads');

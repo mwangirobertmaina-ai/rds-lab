@@ -264,6 +264,7 @@ img,video,canvas,svg{max-width:100%}
 <div class="page" id="pRide"><div class="phead"><button data-back aria-label="Back">←</button><h2>Request a ride</h2></div>
   <div class="pbody"><div class="cols"><div class="colA">
     <div class="seg"><button id="vBoda" class="on" data-veh="BODA">🏍️ Boda</button><button id="vCar" data-veh="CAR">🚕 Cab</button></div>
+    <div id="rNear" class="muted" style="margin:-2px 0 12px;min-height:1.2em" aria-live="polite"></div>
     <div class="card"><div class="geo"><label for="rPick">Pickup</label><input id="rPick" placeholder="Search pickup or use location" autocomplete="off"><div class="sugg hidden" id="rPickSugg"></div></div>
       <div class="geo"><label for="rDrop">Drop-off</label><input id="rDrop" placeholder="Where to?" autocomplete="off"><div class="sugg hidden" id="rDropSugg"></div></div>
       <div class="tgl"><button id="tgPick" data-tg="pick">Tap map = Pickup</button><button id="tgDrop" class="on" data-tg="drop">Tap map = Drop-off</button></div>
@@ -543,9 +544,22 @@ function openRide(veh) {
   const m = makeMap('rMap'); if (m && !m._bound) { m._bound = true; m.on('click', async e => { const key = state.ride.target === 'pick' ? 'pickup' : 'drop'; state.ride[key] = { lat: e.latlng.lat, lng: e.latlng.lng, label: 'Pinned location' }; paintRide(); scheduleRQuote(); const l = await reverse(e.latlng.lat, e.latlng.lng); if (l) { state.ride[key].label = l; (key === 'pickup' ? $('#rPick') : $('#rDrop')).value = l; } }); }
   paintRide(); scheduleRQuote();
 }
-function paintVeh() { $('#vBoda').classList.toggle('on', state.ride.vehicle === 'BODA'); $('#vCar').classList.toggle('on', state.ride.vehicle === 'CAR'); }
+function paintVeh() { $('#vBoda').classList.toggle('on', state.ride.vehicle === 'BODA'); $('#vCar').classList.toggle('on', state.ride.vehicle === 'CAR'); loadNearby(); }
+// like the cars on Bolt's map: how many cabs / bodas are free near the pickup right now (counts only)
+let nearSeq = 0, nearTimer = null;
+async function loadNearby() {
+  const v = state.ride.vehicle, p = state.ride.pickup, seq = ++nearSeq, el = $('#rNear'), word = v === 'CAR' ? 'cab' : 'boda', icon = v === 'CAR' ? '🚕' : '🏍️';
+  clearTimeout(nearTimer); if (!$('#pRide').classList.contains('on')) return;
+  try {
+    const q = `vehicle=${v}` + (p && p.lat !== null && p.lat !== undefined ? `&lat=${p.lat}&lng=${p.lng}` : '');
+    const d = await api('/api/user/drivers-nearby?' + q, { token: null }); if (seq !== nearSeq) return;
+    if (d.available > 0) { el.style.color = 'var(--g)'; el.textContent = `${icon} ${d.available} ${word}${d.available === 1 ? '' : 's'} available${d.etaMin ? ` · nearest about ${d.etaMin} min away` : ''}`; }
+    else { el.style.color = 'var(--gold)'; el.textContent = `⚠️ No ${word}s are online near you right now. You can still request: the first ${word} to come online gets it${v === 'CAR' ? ', or try a boda.' : '.'}`; }
+  } catch (e) { if (seq === nearSeq) el.textContent = ''; }
+  nearTimer = setTimeout(loadNearby, 15000);
+}
 document.addEventListener('click', e => { const v = e.target.closest('[data-veh]'); if (v) { state.ride.vehicle = v.dataset.veh; paintVeh(); scheduleRQuote(); } const g = e.target.closest('[data-tg]'); if (g) { state.ride.target = g.dataset.tg; $('#tgPick').classList.toggle('on', g.dataset.tg === 'pick'); $('#tgDrop').classList.toggle('on', g.dataset.tg === 'drop'); } });
-function paintRide() { const r = state.ride; setMarkers('rMap', [r.pickup.lat !== null ? { lat: r.pickup.lat, lng: r.pickup.lng, color: '#00ff88' } : null, r.drop.lat !== null ? { lat: r.drop.lat, lng: r.drop.lng, color: '#ff4d6d' } : null]); }
+function paintRide() { const r = state.ride; loadNearby(); setMarkers('rMap', [r.pickup.lat !== null ? { lat: r.pickup.lat, lng: r.pickup.lng, color: '#00ff88' } : null, r.drop.lat !== null ? { lat: r.drop.lat, lng: r.drop.lng, color: '#ff4d6d' } : null]); }
 $('#rGps').onclick = () => here(p => { state.ride.pickup = p; $('#rPick').value = p.label; paintRide(); scheduleRQuote(); }, $('#rGps'));
 attachGeo($('#rPick'), $('#rPickSugg'), p => { state.ride.pickup = p; paintRide(); scheduleRQuote(); });
 attachGeo($('#rDrop'), $('#rDropSugg'), p => { state.ride.drop = p; paintRide(); scheduleRQuote(); });
@@ -617,6 +631,7 @@ function renderTracking() {
   const showMap = live && live.route && (live.route.pickup || live.route.destination) && s.key !== 'cancelled'; if (showMap) h += '<div class="map" id="trkMap" style="height:190px"></div>';
   if (live && live.driver && s.key !== 'cancelled') h += `<div class="card"><h3>Your rider</h3><b>${esc(live.driver.name || 'Rider')}</b>${live.driver.vehicleType || live.driver.plate ? `<div class="muted">${esc([live.driver.vehicleType, live.driver.plate].filter(Boolean).join(' · '))}</div>` : ''}${live.driver.phone ? `<a class="btn cy sm" style="margin-top:10px;text-decoration:none" href="tel:${esc(String(live.driver.phone).replace(/\s/g, ''))}">📞 Call rider</a>` : ''}${live.driverLocation ? `<div class="muted" style="margin-top:8px">Live location updated ${Math.max(0, Math.round((Date.now() - live.driverLocation.at) / 1000))}s ago</div>` : ''}</div>`;
   if (owner) h += `<div class="card"><h3>${ride ? 'Fare' : 'Items'}</h3>${ride ? '' : o.items.map(i => `<div class="between muted" style="margin-bottom:5px"><span>${i.qty || 1} × ${esc(i.name)}</span><span>${i.price ? fmt0((i.qty || 1) * i.price) : ''}</span></div>`).join('')}${o.pickup ? `<div class="muted" style="margin-bottom:4px">From: ${esc(o.pickup)}</div>` : ''}${o.destination ? `<div class="muted" style="margin-bottom:6px">To: ${esc(o.destination)}</div>` : ''}<div class="between" style="margin-top:6px"><b>Total paid</b><b style="color:var(--g)">${fmt(o.total)}</b></div></div>`;
+  if (ride && s.key === 'placed' && o.createdAt && Date.now() - o.createdAt > 3 * 60000) h += `<div class="note" style="margin-bottom:12px">No driver has accepted yet. You can keep waiting, or cancel and request again (a boda is often quicker).</div>`;
   if (owner && t.pin && s.key !== 'cancelled' && s.key !== 'done') h += `<div class="card" style="border-color:var(--g);text-align:center"><h3>Your delivery PIN</h3><div style="font-size:2.2rem;font-weight:900;letter-spacing:10px;color:var(--g)">${esc(t.pin)}</div><div class="muted" style="margin-top:6px">${ride ? 'Tell your rider this PIN when you arrive.' : 'Tell your rider this PIN when you receive your order.'} Never share it before.</div></div>`;
   if (owner && s.key !== 'cancelled' && s.key !== 'done' && s.step <= (ride ? 0 : 0)) h += `<button class="btn danger" data-act="cancel">Cancel ${ride ? 'ride' : 'order'}</button>`;
   else if (owner && ['driver', 'confirmed'].includes(s.key)) h += `<p class="muted" style="margin-bottom:8px">${s.key === 'confirmed' ? 'The shop has started preparing your order, so it can no longer be cancelled here.' : 'A rider is on the way. Call your rider if you need to change something.'}</p>`;

@@ -305,6 +305,27 @@ router.post('/checkout', auth, (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// How many drivers of this kind are free and online near the pickup (like the cars on Bolt's or Uber's map, but counts only:
+// no driver identity or position ever leaves the server). Same rules as the driver radar: online, allowed to work, not busy,
+// within 20 km of the pickup when both positions are known.
+router.get('/drivers-nearby', (req, res) => {
+    const want = ['CAR', 'CAB'].includes(String(req.query.vehicle || '').toUpperCase()) ? 'CAR' : 'BODA';
+    const at = { lat: Number(req.query.lat), lng: Number(req.query.lng) }, haveAt = validCoord(at);
+    const drivers = D.getDrivers ? D.getDrivers() : {}, pres = D.getPresence ? D.getPresence() : {}, locs = D.getLocations ? D.getLocations() : {};
+    const approval = !!(D.requireApproval && D.requireApproval()), now = Date.now(), busy = new Set();
+    for (const list of Object.values(global.activeDispatches || {})) for (const d of (list || [])) if (d && d.status === 'ACCEPTED_BY_DRIVER' && d.driverId) busy.add(d.driverId);
+    let available = 0, nearest = null;
+    for (const d of Object.values(drivers || {})) {
+        if (!d || !d.id || !has(pres, d.id) || !pres[d.id] || !pres[d.id].online || busy.has(d.id)) continue;
+        if (d.standing === 'SUSPENDED' || d.standing === 'REJECTED' || (approval && d.standing !== 'APPROVED')) continue;
+        if ((['CAR', 'CAB'].includes(String(d.vehicleType || '').toUpperCase()) ? 'CAR' : 'BODA') !== want) continue;
+        const l = has(locs, d.id) ? locs[d.id] : null; let km = null;
+        if (haveAt && l && now - l.at < 120000) { km = drivingKm(l.lat, l.lng, at.lat, at.lng); if (km > 20 * PRICING.roadFactor) continue; }
+        available++; if (km !== null && (nearest === null || km < nearest)) nearest = km;
+    }
+    res.json({ success: true, vehicle: want, available, nearestKm: nearest, etaMin: nearest === null ? null : Math.max(1, Math.ceil(nearest / PRICING.tariff[want].speed * 60)) });
+});
+
 router.get('/tariff', (req, res) => {
     res.json({ success: true, tariff: PRICING.tariff, roundTo: PRICING.roundTo, roadFactor: PRICING.roadFactor, minKm: PRICING.minKm,
         serviceFeeRate: PRICING.serviceFeeRate, riderShare: PRICING.driverShare, currency: PRICING.currency });
