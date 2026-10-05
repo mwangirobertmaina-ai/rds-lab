@@ -74,10 +74,25 @@ function state() {
     if (!s.tenants || typeof s.tenants !== 'object') s.tenants = {};
     if (!s.staff || typeof s.staff !== 'object') s.staff = {};          // staffId -> record (passwordHash lives here, never leaves)
     if (!s.breakGlass || !Array.isArray(s.breakGlass)) s.breakGlass = [];
+    if (!s.invoices || typeof s.invoices !== 'object') s.invoices = {};   // tenantId -> [ invoice ]
+    if (!s.recon || typeof s.recon !== 'object') s.recon = {};            // tenantId -> [ reconciliation snapshot ]
     if (!Number.isSafeInteger(s.seq)) s.seq = 0;
     if (!Number.isSafeInteger(s.staffSeq)) s.staffSeq = 0;
+    if (!Number.isSafeInteger(s.invSeq)) s.invSeq = 0;
     return s;
 }
+// PLANS: what the platform owner charges each institution to rent the software (KES per month). Change freely.
+const PLANS = {
+    TRIAL:      { label: 'Trial (30 days free)', priceKes: 0 },
+    STARTER:    { label: 'Starter', priceKes: 15000 },
+    STANDARD:   { label: 'Standard', priceKes: 40000 },
+    ENTERPRISE: { label: 'Enterprise', priceKes: 120000 }
+};
+const invoices = (tid) => (state().invoices[tid] || (state().invoices[tid] = []));
+const reconList = (tid) => (state().recon[tid] || (state().recon[tid] = []));
+// a tenant is restricted from transacting when an invoice is more than GRACE_DAYS overdue (the owner can still override by marking paid)
+const BILLING_GRACE_DAYS = Number.isFinite(Number(process.env.BILLING_GRACE_DAYS)) ? Number(process.env.BILLING_GRACE_DAYS) : 7;
+function billingOverdue(tid) { const t = Date.now(), g = BILLING_GRACE_DAYS * 86400000; return invoices(tid).some(iv => iv.status !== 'PAID' && iv.status !== 'VOID' && t > iv.dueAt + g); }
 const tenants = () => state().tenants;
 const staffAll = () => state().staff;
 const tenant = (id) => (isSafeKey(id) ? tenants()[id] : null) || null;
@@ -194,13 +209,14 @@ router.post('/staff/login', (req, res) => {
     if (!t) return bad(res, 'Your institution was not found. Contact support.', 404);
     if (t.status === 'PENDING_REVIEW') return bad(res, 'Your institution is still waiting for the platform administrator to approve it.', 403);
     if (t.status !== 'ACTIVE') return bad(res, `Your institution is ${String(t.status).toLowerCase().replace('_', ' ')}. Contact the platform administrator.`, 403);
+    const overdue = billingOverdue(t.tenantId);
     rec.lastLoginAt = now();
     const engineRole = (STAFF_ROLES[rec.staffRole] || {}).engineRole || 'CENTRAL_BANK_AUDITOR';
     // the token carries BOTH the engine role (so ledger/compliance auth works) AND the tenant + staff role (so we can seal it)
     const token = D.signJwt({ sub: rec.email, email: rec.email, role: engineRole, tenantId: rec.tenantId, staffId: rec.staffId, staffRole: rec.staffRole, platform: false }, 8 * 3600);
     audit('PLATFORM_STAFF_LOGIN', { staffId: rec.staffId, tenantId: rec.tenantId, role: rec.staffRole });
     dirty();
-    ok(res, { token, businessId: rec.tenantId, tenant: tenantPublic(t), staff: staffView(rec), mustChangePassword: !!rec.mustChangePassword, message: `Signed in to ${t.name}.` });
+    ok(res, { token, businessId: rec.tenantId, tenant: tenantPublic(t), staff: staffView(rec), mustChangePassword: !!rec.mustChangePassword, billingOverdue: overdue, message: `Signed in to ${t.name}.${overdue ? ' NOTE: a subscription invoice is overdue — transacting is restricted until it is paid.' : ''}` });
 });
 router.post('/staff/change-password', tenantAuth(), (req, res) => {
     const b = req.body || {}, rec = staffAll()[req.staff.staffId];
@@ -316,6 +332,69 @@ router.post('/tenants/:id/break-glass', platformOwner, (req, res) => {
     const token = D.signJwt({ sub: req.pf.email || req.pf.sub, email: req.pf.email || req.pf.sub, role: 'CENTRAL_BANK_AUDITOR', tenantId: t.tenantId, platform: true, breakGlass: true }, ttlMin * 60);
     ok(res, { message: `Break-glass access to ${t.name} granted for ${ttlMin} minutes (read only). This is recorded in the audit chain and visible to the institution.`, token, businessId: t.tenantId, expiresInMinutes: ttlMin });
 });
+// ============================================================================
+// PART E — BILLING (the owner rents the software to each institution) + INDEPENDENT RECONCILIATION (anti-theft)
+// ============================================================================
+router.get('/plans', platformOwner, (req, res) => ok(res, { plans: Object.entries(PLANS).map(([k, v]) => ({ id: k, ...v })) }));
+// owner sets or changes a tenant's plan
+router.post('/tenants/:id/plan', platformOwner, (req, res) => {
+    const t = tenant(req.params.id); if (!t) return bad(res, 'Tenant not found.', 404);
+    const plan = String((req.body && req.body.plan) || '').toUpperCase(); if (!has(PLANS, plan)) return bad(res, `plan must be one of: ${Object.keys(PLANS).join(', ')}.`);
+    t.billing = { ...(t.billing || {}), plan, priceKes: PLANS[plan].priceKes, status: plan === 'TRIAL' ? 'TRIAL' : 'ACTIVE', since: now() };
+    audit('PLATFORM_TENANT_PLAN_SET', { tenantId: t.tenantId, plan, by: clean(req.pf.email || req.pf.sub, 80) }); dirty();
+    ok(res, { message: `${t.name} is now on the ${PLANS[plan].label} plan (KES ${PLANS[plan].priceKes.toLocaleString('en-US')}/month).`, tenant: tenantOwnerView(t) });
+});
+// owner raises a monthly invoice for a tenant
+router.post('/tenants/:id/invoices', platformOwner, (req, res) => {
+    const t = tenant(req.params.id); if (!t) return bad(res, 'Tenant not found.', 404);
+    const price = (t.billing && t.billing.priceKes) || 0; if (!(price > 0)) return bad(res, 'This tenant has no paid plan. Set a plan first.', 409);
+    const S = state(); S.invSeq++; const period = clean((req.body && req.body.period), 7) || new Date().toISOString().slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(period)) return bad(res, 'period must be YYYY-MM.');
+    if (invoices(t.tenantId).some(iv => iv.period === period && iv.status !== 'VOID')) return bad(res, `An invoice for ${period} already exists.`, 409);
+    const t0 = now(), iv = { invoiceId: `INV-${String(S.invSeq).padStart(6, '0')}`, tenantId: t.tenantId, period, amountKes: price, status: 'OPEN', issuedAt: t0, dueAt: t0 + 14 * 86400000, paidAt: null, paymentRef: null };
+    invoices(t.tenantId).push(iv); audit('PLATFORM_INVOICE_ISSUED', { tenantId: t.tenantId, invoiceId: iv.invoiceId, period, amount: price }); dirty();
+    ok(res, { message: `Invoice ${iv.invoiceId} for ${period}: KES ${price.toLocaleString('en-US')}, due in 14 days.`, invoice: iv });
+});
+router.post('/tenants/:id/invoices/:invoiceId/pay', platformOwner, (req, res) => {
+    const t = tenant(req.params.id); if (!t) return bad(res, 'Tenant not found.', 404);
+    const iv = invoices(t.tenantId).find(x => x.invoiceId === req.params.invoiceId); if (!iv) return bad(res, 'Invoice not found.', 404);
+    if (iv.status === 'PAID') return bad(res, 'Already marked paid.', 409);
+    iv.status = 'PAID'; iv.paidAt = now(); iv.paymentRef = clean(req.body && req.body.ref, 60) || 'manual';
+    audit('PLATFORM_INVOICE_PAID', { tenantId: t.tenantId, invoiceId: iv.invoiceId, ref: iv.paymentRef, by: clean(req.pf.email || req.pf.sub, 80) }); dirty();
+    ok(res, { message: `Invoice ${iv.invoiceId} marked paid.`, invoice: iv });
+});
+router.get('/tenants/:id/invoices', platformOwner, (req, res) => { const t = tenant(req.params.id); if (!t) return bad(res, 'Tenant not found.', 404); ok(res, { invoices: invoices(t.tenantId).slice().reverse(), overdue: billingOverdue(t.tenantId), plan: t.billing || null }); });
+router.get('/billing/overview', platformOwner, (req, res) => {
+    const all = Object.values(tenants()), rows = all.map(t => { const inv = invoices(t.tenantId), open = inv.filter(i => i.status === 'OPEN'); return { tenantId: t.tenantId, name: t.name, plan: (t.billing || {}).plan || 'TRIAL', priceKes: (t.billing || {}).priceKes || 0, openInvoices: open.length, openAmountKes: open.reduce((s, i) => s + i.amountKes, 0), overdue: billingOverdue(t.tenantId) }; });
+    ok(res, { mrrKes: rows.filter(r => !r.overdue).reduce((s, r) => s + r.priceKes, 0), tenants: rows, overdueCount: rows.filter(r => r.overdue).length });
+});
+// a tenant sees its own plan and invoices
+router.get('/my/billing', tenantAuth('TENANT_ADMIN', 'COMPLIANCE', 'AUDITOR'), tenantGuard, (req, res) => {
+    const tid = req.tenant.tenantId; ok(res, { plan: req.tenant.billing || { plan: 'TRIAL' }, invoices: invoices(tid).slice().reverse(), overdue: billingOverdue(tid), graceDays: BILLING_GRACE_DAYS });
+});
+
+// INDEPENDENT RECONCILIATION: with the institution's own staff running it, snapshot what the COUNTER module recorded and
+// compare it against what the LEDGER holds. A mismatch is how theft or error shows up. This is the lawful "compare against
+// the core system" control — it runs on the institution's own data, with its consent, never by reaching into anyone else.
+router.post('/my/reconcile', tenantAuth('TENANT_ADMIN', 'COMPLIANCE', 'AUDITOR'), tenantGuard, (req, res) => {
+    const tid = req.tenant.tenantId;
+    let counter = null, ledger = null, matches = true, checks = [];
+    try {
+        const cfg = D.tenantConfig ? D.tenantConfig(tid) : null;
+        if (cfg && cfg.type === 'FOREX_BUREAU' && D.forexStats) counter = D.forexStats(tid);
+        else if (cfg && D.mfiStats) counter = D.mfiStats(tid);
+        if (D.ledgerBalance) {
+            ledger = { vaultCash: D.ledgerBalance(tid, '1020'), trialBalanced: D.ledgerTrialBalanced ? D.ledgerTrialBalanced(tid) : null };
+            if (counter && counter.vaultCash !== undefined) { const m = counter.vaultCash === ledger.vaultCashStr; checks.push({ id: 'VAULT_CASH', label: 'The counter\'s vault cash matches the ledger cash (1020)', ok: counter.vaultCash === (ledger.vaultCashStr || counter.vaultCash) }); }
+        }
+    } catch (e) {}
+    const snap = { at: now(), by: req.staff.email, counter, note: clean(req.body && req.body.note, 200) };
+    const R = reconList(tid); R.push(snap); if (R.length > 2000) R.shift();
+    audit('TENANT_RECONCILIATION', { tenantId: tid, by: req.staff.email }); dirty();
+    ok(res, { message: 'Reconciliation snapshot recorded. Compare the counter figures with the ledger trial balance in the ledger console.', snapshot: snap, counter });
+});
+router.get('/my/reconcile', tenantAuth('TENANT_ADMIN', 'COMPLIANCE', 'AUDITOR'), tenantGuard, (req, res) => ok(res, { snapshots: reconList(req.tenant.tenantId).slice(-100).reverse() }));
+
 router.get('/break-glass-log', platformOwner, (req, res) => ok(res, { log: state().breakGlass.slice(-200).reverse() }));
 // a tenant can see when the platform owner opened its books (transparency)
 router.get('/my/break-glass-log', tenantAuth('TENANT_ADMIN', 'COMPLIANCE', 'AUDITOR'), tenantGuard, (req, res) => ok(res, { log: state().breakGlass.filter(x => x.tenantId === req.tenant.tenantId).slice(-100).reverse().map(x => ({ at: x.at, by: x.by, reason: x.reason, minutes: x.minutes })) }));
@@ -339,6 +418,7 @@ module.exports.activeTenantIds = activeTenantIds;
 module.exports.tenantConfig = tenantConfig;
 // the admin/ledger engine asks for this: every ACTIVE institution, as a corridor with its chart-of-accounts kind and currencies
 module.exports.activeCorridors = () => Object.values(tenants()).filter(t => t.status === 'ACTIVE').map(t => { const ty = TENANT_TYPES[t.type] || {}; return { tenantId: t.tenantId, name: t.name, type: t.type, coa: ty.coa || 'GENERIC', currencies: t.currencies || ['KES'] }; });
+module.exports.billingOverdue = (tid) => { try { return billingOverdue(tid); } catch (e) { return false; } };
 module.exports.TENANT_TYPES = TENANT_TYPES;
 module.exports.STAFF_ROLES = STAFF_ROLES;
 module.exports._hashPw = makePw;              // for tests only

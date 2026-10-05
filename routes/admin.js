@@ -98,11 +98,13 @@ const MARKETPLACE_COA = [
     ['5000', 'Payment Processing Fees', 'EXPENSE'], ['5010', 'Bank Charges', 'EXPENSE'], ['5100', 'Operating Expenses', 'EXPENSE']
 ];
 const FOREX_COA = [
-    ['1000', 'Bank - Settlement Account', 'ASSET'], ['1010', 'M-Pesa / Mobile Money Clearing', 'ASSET'], ['1020', 'Cash on Hand - Local (KES)', 'ASSET'], ['1030', 'Foreign Currency on Hand', 'ASSET'], ['1100', 'Receivables', 'ASSET'],
+    ['1000', 'Bank - Settlement Account', 'ASSET'], ['1010', 'M-Pesa / Mobile Money Clearing', 'ASSET'], ['1020', 'Cash on Hand - Local (KES)', 'ASSET'], ['1030', 'Foreign Currency on Hand', 'ASSET'],
+    ['1040', 'FX Deal Clearing', 'ASSET'],       // bridges the two currency legs of one deal; nets to zero in base value when a deal is complete
+    ['1100', 'Receivables', 'ASSET'],
     ['2000', 'Customer Payables', 'LIABILITY'], ['2030', 'VAT Payable (KRA)', 'LIABILITY'], ['2090', 'Suspense (to be cleared)', 'LIABILITY'],
     ['3000', "Owner's Equity", 'EQUITY'], ['3100', 'Retained Earnings', 'EQUITY'],
     ['4000', 'FX Trading Income (spread)', 'INCOME'], ['4100', 'Commission Income', 'INCOME'], ['4200', 'Other Income', 'INCOME'],
-    ['5000', 'Bank Charges', 'EXPENSE'], ['5100', 'Operating Expenses', 'EXPENSE']
+    ['5000', 'Bank Charges', 'EXPENSE'], ['5100', 'FX Trading Loss', 'EXPENSE'], ['5200', 'Operating Expenses', 'EXPENSE']
 ];
 const MICROFINANCE_COA = [
     ['1000', 'Bank - Settlement Account', 'ASSET'], ['1010', 'M-Pesa / Mobile Money Clearing', 'ASSET'], ['1020', 'Cash on Hand (vault)', 'ASSET'], ['1200', 'Loans to Members (principal)', 'ASSET'], ['1210', 'Interest Receivable', 'ASSET'], ['1290', 'Loan Loss Provision (contra-asset)', 'ASSET'],
@@ -147,7 +149,7 @@ function createLedger(opts = {}) {
     function addAccount(tenant, a, by) {
         T(tenant);
         const code = clean(a.code, 8), name = clean(a.name, 80), type = String(a.type || '').toUpperCase(), currency = String(a.currency || '').toUpperCase();
-        if (!/^[0-9]{4,8}$/.test(code)) throw new LedgerError('BAD_ACCOUNT', 'Account code must be 4 to 8 digits.');
+        if (!/^[0-9]{4,8}(-[A-Z]{3})?$/.test(code)) throw new LedgerError('BAD_ACCOUNT', 'Account code must be 4 to 8 digits, optionally with a -CUR suffix.');
         if (!name) throw new LedgerError('BAD_ACCOUNT', 'Account name is required.');
         if (!has(TYPES, type)) throw new LedgerError('BAD_ACCOUNT', `Type must be one of ${Object.keys(TYPES).join(', ')}.`);
         if (!/^[A-Z]{3}$/.test(currency)) throw new LedgerError('BAD_ACCOUNT', 'Currency must be a 3-letter code such as KES.');
@@ -159,9 +161,16 @@ function createLedger(opts = {}) {
     }
     function ensureTenant(tenant, currency, profile) {
         T(tenant); const cur = String(currency || 'KES').toUpperCase();
-        if (Object.keys(accts(tenant)).length) return false;
-        const chart = profile === 'MARKETPLACE' ? MARKETPLACE_COA : profile === 'FOREX' ? FOREX_COA : profile === 'MICROFINANCE' ? MICROFINANCE_COA : GENERIC_COA;
-        for (const [code, name, type] of chart) addAccount(tenant, { code, name, type, currency: cur }, 'system');
+        // create the chart of accounts ONCE PER CURRENCY. A forex bureau holds accounts in KES and in each foreign currency;
+        // foreign-currency accounts use a currency-suffixed code (e.g. 1030-USD) so they never collide with the KES chart.
+        if (Object.values(accts(tenant)).some(a => a.currency === cur)) return false;
+        const baseChart = profile === 'MARKETPLACE' ? MARKETPLACE_COA : profile === 'FOREX' ? FOREX_COA : profile === 'MICROFINANCE' ? MICROFINANCE_COA : GENERIC_COA;
+        const isSecondCurrency = Object.keys(accts(tenant)).length && cur !== 'KES';
+        if (!isSecondCurrency) { for (const [code, name, type] of baseChart) addAccount(tenant, { code, name, type, currency: cur }, 'system'); return true; }
+        // a foreign currency for a forex bureau: only the accounts you hold a balance in, each coded <code>-<CUR>
+        const foreignCodes = [['1030', 'Foreign Currency on Hand', 'ASSET'], ['1040', 'FX Deal Clearing', 'ASSET']];
+        for (const [code, name, type] of foreignCodes) { const c = code + '-' + cur; if (!accts(tenant)[c]) try { addAccount(tenant, { code: c, name: name + ' (' + cur + ')', type, currency: cur }, 'system'); } catch (e) {} }
+        return true;
         return true;
     }
     function deactivateAccount(tenant, code, by) {

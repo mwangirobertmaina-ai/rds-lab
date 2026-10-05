@@ -454,7 +454,7 @@ const driverDocs192 = {};        // driverId -> { selfie, licence, goodConduct, 
 const driverPayouts192 = [];     // simulated M-Pesa B2C payouts
 const LEDGER_SINGLE_OPERATOR_192 = process.env.LEDGER_SINGLE_OPERATOR === 'true';   // true = the one owner may approve their own large journals (recorded as self-approved)
 const MARKETPLACE_TENANT_192 = process.env.MARKETPLACE_TENANT || 'BIZ-KE';
-const ledgerState192 = {}, complianceState192 = {}, platformState192 = {};                                  // saved with the rest of the state (see the snapshot wrapper)
+const ledgerState192 = {}, complianceState192 = {}, platformState192 = {}, forexState192 = {}, mfiState192 = {};                                  // saved with the rest of the state (see the snapshot wrapper)
 // routes/admin.js holds the ledger engine, the compliance engine and the admin API in ONE file
 // STAGE 193 — TENANT ISOLATION SEAL (mounted BEFORE the admin/cashier/kyc routes so it runs first):
 // a staff token carries the one tenant it belongs to. A tenant's token can NEVER address another institution, whatever
@@ -515,7 +515,7 @@ app.get('/readyz', (req, res) => {
 const _snapshotPayload191 = snapshotPayload191;
 snapshotPayload191 = function () {
     const p = _snapshotPayload191();
-    p.version = 192; p.driverDocs192 = driverDocs192; p.driverPayouts192 = driverPayouts192; p.switches192 = switches192; p.merchantWallets192 = merchantWallets192; p.merchantEarnings192 = merchantEarnings192; p.merchantPayouts192 = merchantPayouts192; p.ledger192 = ledgerState192; p.compliance192 = complianceState192; p.platform192 = platformState192;
+    p.version = 192; p.driverDocs192 = driverDocs192; p.driverPayouts192 = driverPayouts192; p.switches192 = switches192; p.merchantWallets192 = merchantWallets192; p.merchantEarnings192 = merchantEarnings192; p.merchantPayouts192 = merchantPayouts192; p.ledger192 = ledgerState192; p.compliance192 = complianceState192; p.forex192 = forexState192; p.mfi192 = mfiState192; p.platform192 = platformState192;
     return p;
 };
 const _restoreSnapshot191 = restoreSnapshot191;
@@ -542,6 +542,16 @@ restoreSnapshot191 = function () {
                 Object.assign(complianceState192, raw.compliance192);
                 for (const k of ['kyc', 'alerts', 'ctr', 'str', 'txns', 'log']) if (!Array.isArray(complianceState192[k])) complianceState192[k] = [];
                 if (!complianceState192.sanctions || typeof complianceState192.sanctions !== 'object') complianceState192.sanctions = { entries: [], source: null, listDate: null, loadedAt: null, loadedBy: null };
+            }
+            if (raw.mfi192 && typeof raw.mfi192 === 'object') {
+                for (const k of Object.keys(mfiState192)) delete mfiState192[k];
+                Object.assign(mfiState192, raw.mfi192);
+                for (const k of ['members', 'loans', 'ledgerLog']) if (!mfiState192[k] || typeof mfiState192[k] !== 'object') mfiState192[k] = {};
+            }
+            if (raw.forex192 && typeof raw.forex192 === 'object') {
+                for (const k of Object.keys(forexState192)) delete forexState192[k];
+                Object.assign(forexState192, raw.forex192);
+                for (const k of ['rates', 'positions', 'deals', 'till']) if (!forexState192[k] || typeof forexState192[k] !== 'object') forexState192[k] = {};
             }
             if (raw.platform192 && typeof raw.platform192 === 'object') {
                 for (const k of Object.keys(platformState192)) delete platformState192[k];
@@ -3516,15 +3526,43 @@ try { if (compliance192 && switches192.compliance && typeof switches192.complian
 
 // STAGE 193 — MULTI-TENANT PLATFORM (additive): many financial institutions rent the ledger + compliance engine, each sealed as its own tenant.
 const platformRouter = safeRequire191('./routes/platform', 'platform');
-let platformReady192 = false;
+let platformReady192 = false, forexReady192 = false, mfiReady192 = false;
 if (platformRouter) {
     try {
         if (typeof platformRouter.init === 'function') platformRouter.init({
-            getState: () => platformState192, signJwt, verifyJwt, isPhone, appendAudit, markDirty: () => { stateDirty191 = true; }
+            getState: () => platformState192, signJwt, verifyJwt, isPhone, appendAudit, markDirty: () => { stateDirty191 = true; },
+            tenantConfig: (id) => { try { const forexR = require('./routes/forex'); } catch (e) {} return (platformRouter && platformRouter.tenantConfig ? platformRouter.tenantConfig(id) : null); },
+            forexStats: (id) => { try { return forexState192 && require('./routes/forex').stats ? require('./routes/forex').stats(id) : null; } catch (e) { return null; } },
+            mfiStats: (id) => { try { return mfiState192 && require('./routes/microfinance').stats ? require('./routes/microfinance').stats(id) : null; } catch (e) { return null; } },
+            ledgerBalance: (id, code) => { try { const b = ledger192.balanceOf(id, code); return ledger192.dec(b.debit - b.credit, 'KES'); } catch (e) { return null; } },
+            ledgerTrialBalanced: (id) => { try { return ledger192.trialBalance(id).balanced; } catch (e) { return null; } }
         });
         if (typeof platformRouter === 'function') app.use('/api/platform', platformRouter);
         platformReady192 = true;
         console.log('\u2713 Multi-tenant platform ready: institutions can self-register at /platform and the owner approves them.');
+        // STAGE 193 PART C: the forex bureau counter. Signed-in bureau staff trade here; every deal posts balanced journals
+        // to the SAME ledger engine and runs AML through the SAME compliance engine. Isolation is enforced by the seal above.
+        try {
+            const forexRouter = safeRequire191('./routes/forex', 'forex');
+            if (forexRouter && typeof forexRouter.init === 'function' && ledger192 && compliance192) {
+                forexRouter.init({ getState: () => forexState192, verifyJwt, appendAudit, markDirty: () => { stateDirty191 = true; },
+                    ledger: ledger192, compliance: compliance192, tenantConfig: (id) => (platformRouter && platformRouter.tenantConfig ? platformRouter.tenantConfig(id) : null),
+                    billingOverdue: (id) => (platformRouter && platformRouter.billingOverdue ? platformRouter.billingOverdue(id) : false) });
+                app.use('/api/forex', forexRouter); forexReady192 = true;
+                console.log('\u2713 Forex bureau counter ready at /api/forex.');
+            }
+        } catch (e) { console.error('\u274C Forex counter did not start: ' + e.message); }
+        // STAGE 193 PART D: the microfinance / SACCO / bank counter (members, savings, loans), same ledger + compliance engines.
+        try {
+            const mfiRouter = safeRequire191('./routes/microfinance', 'microfinance');
+            if (mfiRouter && typeof mfiRouter.init === 'function' && ledger192 && compliance192) {
+                mfiRouter.init({ getState: () => mfiState192, verifyJwt, appendAudit, markDirty: () => { stateDirty191 = true; }, isPhone,
+                    ledger: ledger192, compliance: compliance192, tenantConfig: (id) => (platformRouter && platformRouter.tenantConfig ? platformRouter.tenantConfig(id) : null),
+                    billingOverdue: (id) => (platformRouter && platformRouter.billingOverdue ? platformRouter.billingOverdue(id) : false) });
+                app.use('/api/mfi', mfiRouter); mfiReady192 = true;
+                console.log('\u2713 Microfinance / SACCO counter ready at /api/mfi.');
+            }
+        } catch (e) { console.error('\u274C Microfinance counter did not start: ' + e.message); }
     } catch (e) {
         console.error('\u274C [STAGE193] The multi-tenant platform (routes/platform.js) did not start: ' + e.message);
         if (MODULE_STATUS_191.platform) MODULE_STATUS_191.platform = { loaded: false, error: e.message };
