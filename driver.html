@@ -229,7 +229,7 @@ function showOtp(phone, msg) { state.pendingPhone = phone; const local = /^(loca
 $('#lSend').onclick = async () => { const phone = normPhone($('#lPhone').value); $('#authErr').textContent = ''; if (!phone) return void ($('#authErr').textContent = 'Enter a valid Kenyan mobile number.'); const b = $('#lSend'); busy(b, true); try { const d = await api('/api/driver/login-otp', { method: 'POST', body: { phone }, token: null }); showOtp(phone, d.message); }
   catch (e) {
     // a code was sent less than 30 seconds ago and is still valid: go to the code box instead of blocking the rider
-    if (e.status === 429 && /30 seconds/.test(e.message)) { showOtp(phone, null); $('#otpMsg').textContent = `A code was already sent to ${phone} a moment ago. Enter it below (it stays valid for 5 minutes).`; }
+    if (e.status === 429 && /seconds before asking for another code/.test(e.message)) { showOtp(phone, null); $('#otpMsg').textContent = `A code was already sent to ${phone} a moment ago. Enter it below (it stays valid for 5 minutes).`; }
     else $('#authErr').textContent = e.message;
   } finally { busy(b, false); } };
 $('#otpBack').onclick = () => { $('#otpStep').classList.add('hidden'); $('#lPhoneStep').classList.remove('hidden'); };
