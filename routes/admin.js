@@ -97,6 +97,20 @@ const MARKETPLACE_COA = [
     ['4000', 'Platform Fee Income (net of VAT)', 'INCOME'], ['4100', 'Other Income', 'INCOME'],
     ['5000', 'Payment Processing Fees', 'EXPENSE'], ['5010', 'Bank Charges', 'EXPENSE'], ['5100', 'Operating Expenses', 'EXPENSE']
 ];
+const FOREX_COA = [
+    ['1000', 'Bank - Settlement Account', 'ASSET'], ['1010', 'M-Pesa / Mobile Money Clearing', 'ASSET'], ['1020', 'Cash on Hand - Local (KES)', 'ASSET'], ['1030', 'Foreign Currency on Hand', 'ASSET'], ['1100', 'Receivables', 'ASSET'],
+    ['2000', 'Customer Payables', 'LIABILITY'], ['2030', 'VAT Payable (KRA)', 'LIABILITY'], ['2090', 'Suspense (to be cleared)', 'LIABILITY'],
+    ['3000', "Owner's Equity", 'EQUITY'], ['3100', 'Retained Earnings', 'EQUITY'],
+    ['4000', 'FX Trading Income (spread)', 'INCOME'], ['4100', 'Commission Income', 'INCOME'], ['4200', 'Other Income', 'INCOME'],
+    ['5000', 'Bank Charges', 'EXPENSE'], ['5100', 'Operating Expenses', 'EXPENSE']
+];
+const MICROFINANCE_COA = [
+    ['1000', 'Bank - Settlement Account', 'ASSET'], ['1010', 'M-Pesa / Mobile Money Clearing', 'ASSET'], ['1020', 'Cash on Hand (vault)', 'ASSET'], ['1200', 'Loans to Members (principal)', 'ASSET'], ['1210', 'Interest Receivable', 'ASSET'], ['1290', 'Loan Loss Provision (contra-asset)', 'ASSET'],
+    ['2000', 'Member Deposits / Savings', 'LIABILITY'], ['2010', 'Member Share Capital', 'LIABILITY'], ['2030', 'VAT / Withholding Payable', 'LIABILITY'], ['2090', 'Suspense (to be cleared)', 'LIABILITY'],
+    ['3000', "Owner's / Institutional Equity", 'EQUITY'], ['3100', 'Retained Earnings', 'EQUITY'],
+    ['4000', 'Interest Income on Loans', 'INCOME'], ['4100', 'Fees & Commission Income', 'INCOME'], ['4200', 'Other Income', 'INCOME'],
+    ['5000', 'Interest Expense on Deposits', 'EXPENSE'], ['5100', 'Loan Loss Expense', 'EXPENSE'], ['5200', 'Operating Expenses', 'EXPENSE']
+];
 const GENERIC_COA = [
     ['1000', 'Cash at Bank', 'ASSET'], ['1020', 'Cash on Hand (vault)', 'ASSET'], ['1100', 'Customer Receivables', 'ASSET'],
     ['2000', 'Customer Deposits', 'LIABILITY'], ['2090', 'Suspense (to be cleared)', 'LIABILITY'],
@@ -146,7 +160,8 @@ function createLedger(opts = {}) {
     function ensureTenant(tenant, currency, profile) {
         T(tenant); const cur = String(currency || 'KES').toUpperCase();
         if (Object.keys(accts(tenant)).length) return false;
-        for (const [code, name, type] of (profile === 'MARKETPLACE' ? MARKETPLACE_COA : GENERIC_COA)) addAccount(tenant, { code, name, type, currency: cur }, 'system');
+        const chart = profile === 'MARKETPLACE' ? MARKETPLACE_COA : profile === 'FOREX' ? FOREX_COA : profile === 'MICROFINANCE' ? MICROFINANCE_COA : GENERIC_COA;
+        for (const [code, name, type] of chart) addAccount(tenant, { code, name, type, currency: cur }, 'system');
         return true;
     }
     function deactivateAccount(tenant, code, by) {
@@ -841,7 +856,11 @@ const MP = () => (ctx && ctx.marketplaceTenant) || 'BIZ-KE';
 const corridorsAll = () => {
     const st = ctx.corridorStatus || {};
     const dyn = (ctx.corridorRequests || []).map(r => ({ id: r.requestId, name: r.businessName, type: r.type || 'COMMERCIAL_NODE', currency: r.currency || 'KES', status: r.status || 'PENDING_SOVEREIGN_APPROVAL' }));
-    return [...BASE_CORRIDORS, ...dyn].map(c => ({ ...c, status: st[c.id] || c.status }));
+    // STAGE 193: institutions onboarded through the multi-tenant platform appear as their own corridors, each with its own
+    // chart of accounts and currency. server.js injects them through ctx.extraCorridors(); isolation is enforced upstream.
+    let plat = [];
+    try { plat = (ctx.extraCorridors ? ctx.extraCorridors() : []).map(t => ({ id: t.tenantId, name: t.name, type: t.type, currency: (t.currencies && t.currencies[0]) || 'KES', status: 'APPROVED_ACTIVE', coa: t.coa || 'GENERIC', platform: true })); } catch (e) { plat = []; }
+    return [...BASE_CORRIDORS, ...dyn, ...plat].map(c => ({ ...c, status: st[c.id] || c.status }));
 };
 const corridorOf = (id) => corridorsAll().find(c => c.id === id) || null;
 const frozen = (c) => !c || ['SUSPENDED', 'REVOKED', 'SUSPENDED_DEFAULTED', 'PENDING_SOVEREIGN_APPROVAL', 'PENDING_OWNER_APPROVAL'].includes(c.status);
@@ -850,7 +869,10 @@ function tenantFor(req, res, { write = false } = {}) {
     const id = tenantOf(req), c = corridorOf(id);
     if (!c) { fail(res, 404, 'Unknown tenant corridor.'); return null; }
     if (write && frozen(c)) { fail(res, 403, `Corridor ${id} is ${c.status}: operations are frozen.`); return null; }
-    ctx.ledger.ensureTenant(id, c.currency, id === MP() ? 'MARKETPLACE' : 'GENERIC');
+    const profile = id === MP() ? 'MARKETPLACE' : (c.coa === 'FOREX' ? 'FOREX' : c.coa === 'MICROFINANCE' ? 'MICROFINANCE' : 'GENERIC');
+    ctx.ledger.ensureTenant(id, c.currency, profile);
+    // a multi-currency institution (forex bureau, bank) also gets a chart of accounts in each of its declared currencies
+    if (c.platform && Array.isArray(c.currencies)) for (const cur of c.currencies) try { ctx.ledger.ensureTenant(id, cur, profile); } catch (e) {}
     return { id, corridor: c };
 }
 const actor = (req) => clean((req.user && (req.user.email || req.user.sub)) || 'unknown', 80);

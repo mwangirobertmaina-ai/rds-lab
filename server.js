@@ -454,8 +454,23 @@ const driverDocs192 = {};        // driverId -> { selfie, licence, goodConduct, 
 const driverPayouts192 = [];     // simulated M-Pesa B2C payouts
 const LEDGER_SINGLE_OPERATOR_192 = process.env.LEDGER_SINGLE_OPERATOR === 'true';   // true = the one owner may approve their own large journals (recorded as self-approved)
 const MARKETPLACE_TENANT_192 = process.env.MARKETPLACE_TENANT || 'BIZ-KE';
-const ledgerState192 = {}, complianceState192 = {};                                  // saved with the rest of the state (see the snapshot wrapper)
+const ledgerState192 = {}, complianceState192 = {}, platformState192 = {};                                  // saved with the rest of the state (see the snapshot wrapper)
 // routes/admin.js holds the ledger engine, the compliance engine and the admin API in ONE file
+// STAGE 193 — TENANT ISOLATION SEAL (mounted BEFORE the admin/cashier/kyc routes so it runs first):
+// a staff token carries the one tenant it belongs to. A tenant's token can NEVER address another institution, whatever
+// x-business-id it sends; its header is pinned to its own tenant. The platform owner (no tenantId) is exempt by design.
+app.use(['/api/admin', '/api/cashier', '/api/kyc'], (req, res, next) => {
+    const h = req.headers['authorization'];
+    if (h && h.startsWith('Bearer ')) {
+        const p = verifyJwt(h.slice(7).trim());
+        if (p && p.tenantId) {
+            const asked = req.headers['x-business-id'];
+            if (asked !== undefined && asked !== null && asked !== '' && asked !== p.tenantId) return res.status(403).json({ success: false, error: 'You cannot access another institution.', code: 'TENANT_MISMATCH' });
+            req.headers['x-business-id'] = p.tenantId;
+        }
+    }
+    next();
+});
 const adminModule = safeRequire191('./routes/admin', 'admin');
 const ledger192 = adminModule && typeof adminModule.createLedger === 'function' ? adminModule.createLedger({ state: ledgerState192, appendAudit, singleOperator: LEDGER_SINGLE_OPERATOR_192, manualAlwaysApproved: process.env.LEDGER_MANUAL_APPROVAL === 'true' }) : null;
 const compliance192 = adminModule && typeof adminModule.createCompliance === 'function' ? adminModule.createCompliance({
@@ -500,7 +515,7 @@ app.get('/readyz', (req, res) => {
 const _snapshotPayload191 = snapshotPayload191;
 snapshotPayload191 = function () {
     const p = _snapshotPayload191();
-    p.version = 192; p.driverDocs192 = driverDocs192; p.driverPayouts192 = driverPayouts192; p.switches192 = switches192; p.merchantWallets192 = merchantWallets192; p.merchantEarnings192 = merchantEarnings192; p.merchantPayouts192 = merchantPayouts192; p.ledger192 = ledgerState192; p.compliance192 = complianceState192;
+    p.version = 192; p.driverDocs192 = driverDocs192; p.driverPayouts192 = driverPayouts192; p.switches192 = switches192; p.merchantWallets192 = merchantWallets192; p.merchantEarnings192 = merchantEarnings192; p.merchantPayouts192 = merchantPayouts192; p.ledger192 = ledgerState192; p.compliance192 = complianceState192; p.platform192 = platformState192;
     return p;
 };
 const _restoreSnapshot191 = restoreSnapshot191;
@@ -527,6 +542,12 @@ restoreSnapshot191 = function () {
                 Object.assign(complianceState192, raw.compliance192);
                 for (const k of ['kyc', 'alerts', 'ctr', 'str', 'txns', 'log']) if (!Array.isArray(complianceState192[k])) complianceState192[k] = [];
                 if (!complianceState192.sanctions || typeof complianceState192.sanctions !== 'object') complianceState192.sanctions = { entries: [], source: null, listDate: null, loadedAt: null, loadedBy: null };
+            }
+            if (raw.platform192 && typeof raw.platform192 === 'object') {
+                for (const k of Object.keys(platformState192)) delete platformState192[k];
+                Object.assign(platformState192, raw.platform192);
+                for (const k of ['tenants', 'staff']) if (!platformState192[k] || typeof platformState192[k] !== 'object') platformState192[k] = {};
+                if (!Array.isArray(platformState192.breakGlass)) platformState192.breakGlass = [];
             }
             const sw = raw.switches192 || {};
             switches192.panels = {}; switches192.users = {};
@@ -2235,6 +2256,7 @@ if (adminModule && ledger192 && compliance192) {
             verifyAuditChain,
             corridorStatus,
             corridorRequests,
+            extraCorridors: () => { try { return (platformRouter && platformRouter.activeCorridors) ? platformRouter.activeCorridors() : []; } catch (e) { return []; } },
             ledger: ledger192, compliance: compliance192,
             vatRate: (userExt191 && userExt191.VAT_RATE) || 0.16, marketplaceTenant: MARKETPLACE_TENANT_192,
             platform: () => ({ users, drivers, merchantProfiles: global.merchantProfiles, orders: activeOrders, payouts: driverPayouts192 }),
@@ -3491,6 +3513,29 @@ try { if (compliance192 && switches192.compliance && typeof switches192.complian
     const cabs = process.env.TEST_CAB_PHONES !== undefined ? process.env.TEST_CAB_PHONES : '+254733445566';
     for (const p of cabs.split(',').map(x => x.trim()).filter(Boolean)) ensureTestRider192(p);
 })();
+
+// STAGE 193 — MULTI-TENANT PLATFORM (additive): many financial institutions rent the ledger + compliance engine, each sealed as its own tenant.
+const platformRouter = safeRequire191('./routes/platform', 'platform');
+let platformReady192 = false;
+if (platformRouter) {
+    try {
+        if (typeof platformRouter.init === 'function') platformRouter.init({
+            getState: () => platformState192, signJwt, verifyJwt, isPhone, appendAudit, markDirty: () => { stateDirty191 = true; }
+        });
+        if (typeof platformRouter === 'function') app.use('/api/platform', platformRouter);
+        platformReady192 = true;
+        console.log('\u2713 Multi-tenant platform ready: institutions can self-register at /platform and the owner approves them.');
+    } catch (e) {
+        console.error('\u274C [STAGE193] The multi-tenant platform (routes/platform.js) did not start: ' + e.message);
+        if (MODULE_STATUS_191.platform) MODULE_STATUS_191.platform = { loaded: false, error: e.message };
+    }
+}
+// the platform pages: /platform (institution self-registration + staff sign-in) and /platform-admin (the owner's tenant console)
+app.get(['/platform', '/platform-admin'], (req, res, next) => {
+    const f = path.join(__dirname, req.path === '/platform-admin' ? 'platform-admin.html' : 'platform.html');
+    if (fs.existsSync(f)) return res.sendFile(f);
+    next();
+});
 
 const adsRouter = safeRequire191('./routes/ads', 'ads');
 const socialOtps192 = {};
