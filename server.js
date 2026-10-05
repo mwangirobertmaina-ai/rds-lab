@@ -3444,6 +3444,24 @@ setInterval(() => {
 
 restoreSnapshot191();
 applyTestAccounts191();
+// STAGE 192: the inline demo order ("Milk x 2" for MERCH_DEF_172) has no customer behind it, so it can never be delivered:
+// it only rang the shop and later raised a "shop is slow" alert. Remove orders that are still waiting for the shop but have
+// no customer record and no customer id (real orders always have both). Additive: the inline seed itself is left untouched.
+(function removeOrphanDemoOrders192() {
+    try {
+        let removed = 0;
+        for (const [mid, list] of Object.entries(global.merchantOrders || {})) {
+            if (!Array.isArray(list)) continue;
+            for (let i = list.length - 1; i >= 0; i--) {
+                const o = list[i];
+                if (!o || o.status !== 'PENDING_VENDOR_ACCEPTANCE' || o.userId) continue;
+                const refs = findOrderRefs191(o.orderId);
+                if (!refs.active.length && !refs.store.length) { list.splice(i, 1); removed++; }
+            }
+        }
+        if (removed) { stateDirty191 = true; console.log(`🧹 Removed ${removed} demo order(s) that had no customer behind them.`); }
+    } catch (e) { /* never stop the server for this */ }
+})();
 try { if (compliance192 && switches192.compliance && typeof switches192.compliance.enforceLimits === 'boolean') compliance192.clients.cfg.enforceLimits = switches192.compliance.enforceLimits; } catch (e) {}   // the owner's KYC-limits switch survives restarts
 
 // test riders (TEST_PHONES) exist and are pre-approved after every start, so the test account works without an admin

@@ -51,7 +51,7 @@ label{display:block;font-size:.72rem;color:var(--dim);margin:2px 0 5px}
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px}.chips::-webkit-scrollbar{display:none}
 .chip{flex:none;background:var(--panel);border:1px solid #374151;color:var(--dim);padding:8px 14px;border-radius:20px;font-size:.74rem;font-weight:700;cursor:pointer}.chip.on{background:var(--pu);border-color:var(--pu);color:#fff}
 .shop{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:14px;cursor:pointer;transition:transform .1s}
-.shop:active{transform:scale(.985)}.shop .ban{height:118px;background:#000 center/cover}.shop .inf{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.shop:active{transform:scale(.985)}.shop .ban{height:118px;background:#1b2437 center/cover}img.ban,img.img{display:block;width:100%;object-fit:cover;border:0}.shop .inf{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .shop b{font-size:.95rem}.shop .tag{font-size:.64rem;background:rgba(56,189,248,.15);color:var(--cy);padding:3px 9px;border-radius:8px;font-weight:800;white-space:nowrap}
 .skel{background:linear-gradient(90deg,#111827 25%,#1b2437 50%,#111827 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:var(--r);height:170px;margin-bottom:14px}@keyframes sh{to{background-position:-200% 0}}
 .empty{text-align:center;color:var(--dim);padding:34px 10px;font-size:.88rem}
@@ -442,7 +442,7 @@ function renderShops() {
   let list = state.tenants.filter(t => (state.filter === 'ALL' || t.businessType === state.filter) && (!q || t.shopName.toLowerCase().includes(q) || t.businessType.toLowerCase().includes(q)));
   if (state.userLoc) list = list.map(t => ({ ...t, km: Number.isFinite(t.gpsLat) ? hav(state.userLoc.lat, state.userLoc.lng, t.gpsLat, t.gpsLon) : null })).sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9));
   if (!state.tenants.length && !$('#shops').children.length) { $('#shops').innerHTML = '<div class="skel"></div>'.repeat(2); return; }
-  $('#shops').innerHTML = list.length ? list.map(t => `<div class="shop" data-id="${esc(t.merchantId)}"><div class="ban" style="background-image:url('${esc(t.banner || PH)}')"></div><div class="inf"><div><b>${esc(t.shopName)}</b><div class="muted">${t.km != null ? t.km.toFixed(1) + ' km away · ' : ''}${t.catalog.length} items</div></div><span class="tag">${esc(t.businessType)}</span></div></div>`).join('') : '<div class="empty">No shops match your search.</div>';
+  $('#shops').innerHTML = list.length ? list.map(t => `<div class="shop" data-id="${esc(t.merchantId)}"><img class="ban" src="${esc(t.banner || PH)}" alt="" loading="lazy"><div class="inf"><div><b>${esc(t.shopName)}</b><div class="muted">${t.km != null ? t.km.toFixed(1) + ' km away · ' : ''}${t.catalog.length} items</div></div><span class="tag">${esc(t.businessType)}</span></div></div>`).join('') : '<div class="empty">No shops match your search.</div>';
 }
 $('#shopQ').addEventListener('input', debounce(e => { state.q = e.target.value.trim(); renderShops(); }, 200));
 $('#chips').addEventListener('click', e => { const c = e.target.closest('[data-f]'); if (c) { state.filter = c.dataset.f; renderShops(); } });
@@ -457,7 +457,7 @@ async function openShop(id) {
 function renderProducts() {
   const q = state.prodQ.toLowerCase(), list = state.products.filter(p => !q || String(p.name).toLowerCase().includes(q));
   $('#prods').innerHTML = list.length ? list.map(p => { const l = state.cart.lines[p.id], qty = l ? l.qty : 0, out = p.stock !== undefined && p.stock !== null && Number(p.stock) <= 0, low = !out && p.stock !== undefined && p.stock !== null && Number(p.stock) <= 5;
-    return `<div class="prod" data-pid="${esc(p.id)}"><div class="img" style="background-image:url('${esc(p.image || PH)}')"></div><div class="inf"><div><div class="t">${esc(p.name)}</div><div class="p">${fmt0(p.price)}</div>${low ? `<div class="low">Only ${p.stock} left</div>` : ''}</div>${out ? '<div class="soldout">Out of stock</div>' : `<div class="step"><button data-d="-1" aria-label="Remove one">−</button><span data-q="${esc(p.id)}">${qty}</span><button data-d="1" aria-label="Add one">+</button></div>`}</div></div>`; }).join('') : '<div class="empty" style="grid-column:span 2">No items found.</div>';
+    return `<div class="prod" data-pid="${esc(p.id)}"><img class="img" src="${esc(p.image || PH)}" alt="" loading="lazy"><div class="inf"><div><div class="t">${esc(p.name)}</div><div class="p">${fmt0(p.price)}</div>${low ? `<div class="low">Only ${p.stock} left</div>` : ''}</div>${out ? '<div class="soldout">Out of stock</div>' : `<div class="step"><button data-d="-1" aria-label="Remove one">−</button><span data-q="${esc(p.id)}">${qty}</span><button data-d="1" aria-label="Add one">+</button></div>`}</div></div>`; }).join('') : '<div class="empty" style="grid-column:span 2">No items found.</div>';
   paintCart();
 }
 $('#prodQ').addEventListener('input', debounce(e => { state.prodQ = e.target.value.trim(); renderProducts(); }, 200));
@@ -622,7 +622,9 @@ function renderTracking() {
   else if (owner && ['driver', 'confirmed'].includes(s.key)) h += `<p class="muted" style="margin-bottom:8px">${s.key === 'confirmed' ? 'The shop has started preparing your order, so it can no longer be cancelled here.' : 'A rider is on the way. Call your rider if you need to change something.'}</p>`;
   if (owner && s.key === 'done') h += state.rated[o.orderId] ? `<div class="tag2 ok">Thanks for rating (${state.rated[o.orderId]}★)</div>` : `<div class="card"><h3>Rate your ${ride ? 'trip' : 'delivery'}</h3><div class="stars">${[1, 2, 3, 4, 5].map(n => `<button data-star="${n}" class="${n <= state.rating ? 'on' : ''}" aria-label="${n} stars">⭐</button>`).join('')}</div><input id="rateNote" placeholder="Optional comment" maxlength="300"><button class="btn go" data-act="rate">Submit rating</button></div>`;
   if (t.error) h += `<div class="err">${esc(t.error)}</div>`;
-  h += '<button class="btn ghost" data-act="close" style="margin-top:10px">Close</button>'; body.innerHTML = h;
+  h += '<button class="btn ghost" data-act="close" style="margin-top:10px">Close</button>';
+  const keepNote = $('#rateNote') ? $('#rateNote').value : '';           // a comment being typed survives a redraw (star tap, live update)
+  body.innerHTML = h; if (keepNote && $('#rateNote')) $('#rateNote').value = keepNote;
   if (showMap) setTimeout(() => drawTrackMap(live), 60);
 }
 function drawTrackMap(live) {

@@ -308,14 +308,20 @@ function activeHtml(j) {
   if (ride && (st === 'ACCEPTED' || st === 'ARRIVED_PICKUP')) h += `<button class="btn go" style="margin-top:10px" data-act="picked-up">Passenger on board: start trip</button>`;
   if (!ride && st === 'ARRIVED_PICKUP' && !j.handedOver) h += `<div class="card" style="margin:12px 0 0;border-color:var(--gold)"><p class="muted" style="margin:0">⏳ Show the shop you are here. They press <b>Hand over</b>, then you can confirm you have the order.</p></div>`;
   if (!ride && st === 'ARRIVED_PICKUP' && j.handedOver) h += `<button class="btn go" style="margin-top:10px" data-act="picked-up">I have the order</button>`;
-  if (st === 'PICKED_UP') h += `<div class="card" style="margin:14px 0 0;border-color:var(--g)"><h3>Customer PIN</h3><p class="muted" style="margin-bottom:8px">Ask the ${ride ? 'passenger' : 'customer'} for their 4-digit PIN. You are paid only when it matches.</p><input id="pin" inputmode="numeric" maxlength="4" placeholder="• • • •" autocomplete="off" style="text-align:center;font-size:1.6rem;letter-spacing:12px"><div class="err" id="pinErr"></div><button class="btn go" data-act="complete">Complete &amp; get paid</button></div>`;
+  if (st === 'PICKED_UP') h += `<div class="card" style="margin:14px 0 0;border-color:var(--g)"><h3>Customer PIN</h3><p class="muted" style="margin-bottom:8px">Ask the ${ride ? 'passenger' : 'customer'} for their 4-digit PIN. You are paid only when it matches.</p><input id="pin" inputmode="numeric" maxlength="4" placeholder="• • • •" autocomplete="off" style="text-align:center;font-size:1.6rem;letter-spacing:12px"><div class="err" id="pinErr">${state.pinErrFor === j.id ? esc(state.pinErr) : ''}</div><button class="btn go" data-act="complete">Complete &amp; get paid</button></div>`;
   if (st !== 'PICKED_UP' && !j.handedOver) h += `<button class="btn danger" style="margin-top:10px" data-act="release">Give this job back</button>`;
   return h + '</div>';
 }
 function renderJobs() {
   const bb = $('#blockedBox'), ab = $('#activeBox'), rd = $('#radar');
   bb.innerHTML = state.blocked ? `<div class="card" style="border-color:var(--gold)"><h2>⏳ Account under review</h2><p class="muted" style="margin:8px 0 12px">${esc(state.blocked)}</p><button class="btn ghost" id="recheck">Check again</button></div>` : '';
-  ab.innerHTML = state.active ? activeHtml(state.active) : ''; updateMap();
+  const nextHtml = state.active ? activeHtml(state.active) : '';
+  if (nextHtml !== state.lastActiveHtml) {
+    const pin = $('#pin'), typed = pin ? pin.value : '', hadFocus = pin && document.activeElement === pin;
+    ab.innerHTML = nextHtml; state.lastActiveHtml = nextHtml;
+    const np = $('#pin'); if (np && typed) { np.value = typed; if (hadFocus) np.focus(); }
+  }
+  updateMap();
   const showRadar = !state.blocked && !state.active; $('#radarHead').classList.toggle('hidden', !(showRadar && state.online));
   if (state.blocked || state.active) { rd.innerHTML = ''; return; }
   if (!state.online) { rd.innerHTML = '<div class="empty">You are offline.<br>Switch on <b>online</b> above to start receiving jobs.</div>'; return; }
@@ -329,10 +335,14 @@ $('#vJobs').addEventListener('click', async e => {
     busy(b, true);
     if (a === 'accept') { const d = await api('/api/driver/accept-dispatch', { method: 'POST', body: { dispatchId: id } }); toast(d.message, 'ok'); }
     else if (a === 'release') { busy(b, false); if (!(await ask('Give this job back?', 'It returns to the radar for other riders. Giving back too many jobs can affect your account.', 'Give back'))) return; busy(b, true); await api('/api/driver/release', { method: 'POST', body: { dispatchId: id } }); toast('Job returned', 'ok'); }
-    else if (a === 'complete') { const pin = ($('#pin') || {}).value || ''; if (!/^\d{4}$/.test(pin)) { $('#pinErr').textContent = "Enter the customer's 4-digit PIN."; busy(b, false); return; } const d = await api('/api/driver/complete-dispatch', { method: 'POST', body: { dispatchId: id, pin } }); toast(d.message, 'ok', 5000); state.balance = d.balance; }
+    else if (a === 'complete') { const pin = ($('#pin') || {}).value || ''; if (!/^\d{4}$/.test(pin)) { state.pinErr = "Enter the customer's 4-digit PIN."; state.pinErrFor = id; $('#pinErr').textContent = state.pinErr; busy(b, false); return; } const d = await api('/api/driver/complete-dispatch', { method: 'POST', body: { dispatchId: id, pin } }); state.pinErr = ''; state.pinErrFor = null; toast(d.message, 'ok', 5000); state.balance = d.balance; }
     else await api('/api/driver/' + a, { method: 'POST', body: { dispatchId: id } });
     await loadJobs();
-  } catch (err) { if (a === 'complete' && $('#pinErr')) $('#pinErr').textContent = err.message; else toast(err.message, 'err', 5000); busy(b, false); loadJobs(); }
+  } catch (err) {
+    if (a === 'complete') { state.pinErr = err.message; state.pinErrFor = id; state.lastActiveHtml = null; if ($('#pin')) $('#pin').value = ''; }
+    else toast(err.message, 'err', 5000);
+    busy(b, false); loadJobs();
+  }
 });
 
 /* ---------- earnings ---------- */

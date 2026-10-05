@@ -547,6 +547,8 @@ function overview() {
     apps.core.health = (audit.valid && snap.ok !== false && errRate < 0.05) ? 'ok' : 'warn';
     for (const def of PANEL_DEFS) { const a = apps[def.key]; if (!a) continue; const st = panelState(def.key); a.switch = st; if (!st.on) a.health = 'off'; }
     // ---- the social feed reports its own numbers ----
+    let dose = null; try { dose = D.getPrintStats ? D.getPrintStats() : null; } catch (e) { dose = null; }
+    if (dose) { Object.assign(apps.printer.stats || (apps.printer.stats = {}), dose); if (apps.printer.health !== 'off' && dose.facilities > 0) apps.printer.health = dose.unverified > 0 ? 'warn' : 'ok'; }
     let social = null; try { social = D.getAdsStats ? D.getAdsStats() : null; } catch (e) { social = null; }
     if (social) { Object.assign(apps.ads.stats || (apps.ads.stats = {}), social); if (apps.ads.health === 'ok' && (social.reportsOpen > 0 || social.hidden > 0)) apps.ads.health = 'warn'; }
     // ---- the admin side (ledger, compliance engine, client registry) reports into this one control room ----
@@ -566,7 +568,7 @@ function overview() {
             { id: 'core', label: 'RDS server', sub: `${last.req} req/min`, health: apps.core.health },
             { id: 'admin', label: 'Admin & Compliance', sub: `${Math.max(socks.admins, 1)} online${comp ? ' · ' + comp.compliance.alertsOpen + ' alerts · ' + comp.clients.total + ' clients' : ''}`, health: apps.admin.health },
             { id: 'ads', label: 'Social & Ads', sub: social ? `${social.users} people · ${social.posts} posts${social.campaignsActive ? ' · ' + social.campaignsActive + ' ads running' : ''}${social.reportsOpen ? ' · ' + social.reportsOpen + ' reported' : ''}` : `${sk.ads.requests} requests`, health: apps.ads.health },
-            { id: 'printer', label: 'Printer', sub: `${sk.printer.requests} requests`, health: apps.printer.health },
+            { id: 'printer', label: 'DoseColor', sub: dose ? `${dose.facilitiesActive} facilities · ${dose.labels24h} labels today` : `${sk.printer.requests} requests`, health: apps.printer.health },
             { id: 'pay', label: 'M-Pesa', sub: D.paymentsMode === 'simulated' ? 'simulated' : 'live', health: D.paymentsMode === 'simulated' ? 'warn' : 'ok' },
             { id: 'sms', label: 'SMS codes', sub: D.smsConfigured ? 'connected' : 'not set up', health: D.smsConfigured ? 'ok' : 'warn' }
         ],
@@ -616,6 +618,9 @@ function alerts() {
     PANEL_DEFS.forEach(def => { const st = panelState(def.key); if (!st.on) add('HIGH', 'OFF_' + def.key, `${def.title} is switched OFF${st.message ? ': ' + st.message : ''}. Users cannot use it until you switch it on.`); });
     const nOff = Object.keys(S().users || {}).length; if (nOff) add('INFO', 'USERS_OFF', `${nOff} customer account(s) are switched off.`);
     let sv = null; try { sv = D.getAdsStats ? D.getAdsStats() : null; } catch (e) {}
+    let dv = null; try { dv = D.getPrintStats ? D.getPrintStats() : null; } catch (e) {}
+    if (dv && dv.unverified) add('INFO', 'DOSECOLOR_UNVERIFIED', `${dv.unverified} DoseColor facilit${dv.unverified === 1 ? 'y has' : 'ies have'} not had their licence verified yet.`);
+    if (dv && dv.labels24h >= 20 && dv.overrides24h / dv.labels24h > 0.3) add('HIGH', 'DOSECOLOR_OVERRIDES', `${dv.overrides24h} of ${dv.labels24h} DoseColor labels today were changed by staff: check whether prescriptions are being written unclearly.`);
     if (sv && sv.campaignsInReview) add('INFO', 'ADS_REVIEW', `${sv.campaignsInReview} ad(s) waiting for your review before they can run (ADS_REQUIRE_REVIEW is on).`);
     if (sv && sv.reportsOpen) add('HIGH', 'SOCIAL_REPORTS', `${sv.reportsOpen} social post / account report(s) waiting for a moderator${sv.hidden ? ` (${sv.hidden} post(s) hidden until reviewed)` : ''}.`);
     let cv = null; try { cv = D.getComplianceView ? D.getComplianceView() : null; } catch (e) {}
