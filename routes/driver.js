@@ -96,7 +96,11 @@ router.post('/login-otp', (req, res) => {
     const id = `DRV_${phone.replace(/[^0-9]/g, '')}`;
     if (!has(D.getDrivers(), id) && !(D.ensureTestRider && D.ensureTestRider(phone))) return bad(res, 'No rider account found for this number. Please register first.', 404);
     const now = Date.now();
-    if (now - (otpCooldown.get(id) || 0) < 30000) return bad(res, 'Please wait 30 seconds before asking for another code.', 429);
+    // Real numbers: one code per 30 seconds (each code is a paid SMS, and this stops anyone flooding a driver's phone).
+    // Test numbers (and the whole server while it is in test mode) get no SMS and always use the test code, so they never wait.
+    const free = !!(D.otpCooldownFree && D.otpCooldownFree(phone));
+    const waitMs = 30000 - (now - (otpCooldown.get(id) || 0));
+    if (!free && waitMs > 0) return bad(res, `Please wait ${Math.ceil(waitMs / 1000)} seconds before asking for another code. The code already sent still works for 5 minutes.`, 429, { codeSent: true, retryAfterSeconds: Math.ceil(waitMs / 1000) });
     otpCooldown.set(id, now);
     D.sendOtp(phone);
     res.json({ success: true, message: `We sent a code to ${phone}.` });

@@ -684,6 +684,7 @@ if (driverExt192) {
             getDrivers: () => drivers, getWallets: () => driverWallets, getLedger: () => driverLedger191, getPresence: () => driverPresence191,
             getLocations: () => driverLocations191, getPayouts: () => driverPayouts192,
             isPhone, sendOtp: (phone) => issueOtp(otps, phone, {}), ensureTestRider: ensureTestRider192,
+            otpCooldownFree: (phone) => ALLOW_TEST_CREDENTIALS || isTestPhone191(phone) || isTestCab192(phone),   // test numbers never wait for a new code
             orderEvents: () => orderEvents192(),
             requireApproval: () => DRIVER_APPROVAL_REQUIRED_192, paymentsMode: () => PAYMENTS_MODE_192, markDirty: () => { stateDirty191 = true; }
         });
