@@ -708,6 +708,19 @@ router.post('/compliance/enforcement', ownerOnly, (req, res) => {
     D.setEnforcement(b.on); if (D.appendAudit) D.appendAudit('MASTER_KYC_LIMITS_SWITCH', { on: b.on, by: by(req) }); dirty();
     res.json({ success: true, message: `KYC limits at checkout are now ${b.on ? 'ON' : 'OFF'}.`, enforcement: b.on });
 });
+// STAGE 193 — FINANCIAL INSTITUTIONS (forex bureaus, microfinance, SACCOs, banks): the owner sees them all here and can
+// approve a pending one, or switch a negligent one OFF (its staff are signed out and can no longer transact).
+router.get('/institutions', (req, res) => { let v = null; try { v = D.getInstitutions ? D.getInstitutions() : null; } catch (e) {} res.json({ success: true, available: !!v, institutions: v }); });
+router.post('/institutions/action', ownerOnly, (req, res) => {
+    const b = req.body || {}, action = String(b.action || '').toLowerCase();
+    if (!['approve', 'suspend', 'reactivate'].includes(action)) return fail(res, 'action must be approve, suspend or reactivate.');
+    if (!b.tenantId || typeof b.tenantId !== 'string') return fail(res, 'tenantId is required.');
+    if (!D.institutionAction) return fail(res, 'The institution platform is not running on this server.', 501);
+    const r = D.institutionAction(action, b.tenantId, by(req), b.reason);
+    if (!r.ok) return fail(res, r.error || 'Action failed.', 409);
+    if (D.appendAudit) D.appendAudit('MASTER_INSTITUTION_' + action.toUpperCase(), { tenantId: b.tenantId, by: by(req) }); dirty();
+    res.json({ success: true, message: `${r.name} is now ${r.status === 'ACTIVE' ? 'ON (active)' : 'OFF (suspended)'}.`, status: r.status });
+});
 router.get('/people/customers', (req, res) => res.json({ success: true, customers: customers(req.query.q) }));
 router.get('/people/riders', (req, res) => res.json({ success: true, riders: riders(req.query.q) }));
 router.get('/people/shops', (req, res) => res.json({ success: true, shops: shops(req.query.q) }));

@@ -672,6 +672,9 @@ if (storeExt191 && typeof storeExt191.init === 'function') {
         getMerchantWallets: () => merchantWallets192, getMerchantEarnings: () => merchantEarnings192, getMerchantPayouts: () => merchantPayouts192,
         // the admin side (ledger, compliance, client registry) reports into this one master control
         getComplianceView: () => { const H = ledgerHooks192(); return H && H.monitor ? H.monitor() : null; },
+        // STAGE 193: the master control sees and switches the financial institutions onboarded through the platform
+        getInstitutions: () => { try { return platformRouter && platformRouter.monitorInstitutions ? platformRouter.monitorInstitutions() : null; } catch (e) { return null; } },
+        institutionAction: (action, tenantId, by, reason) => { try { return platformRouter && platformRouter.ownerAction ? platformRouter.ownerAction(action, tenantId, by, reason) : { ok: false, error: 'platform not ready' }; } catch (e) { return { ok: false, error: e.message }; } },
         setEnforcement: (on) => { switches192.compliance = { enforceLimits: !!on }; const H = ledgerHooks192(); if (H && H.setEnforcement) H.setEnforcement(on); return !!on; }, getCorridor: () => corridorStatus, getDriverDocs: () => driverDocs192, emitSafe: emitSafe191, appendAudit, markDirty: () => { stateDirty191 = true; },
         getActiveOrders: () => activeOrders, getStoreOrders: () => storeOrders, getDrivers: () => drivers, getWallets: () => driverWallets, getLedger: () => driverLedger191,
         getPayouts: () => driverPayouts192, getPresence: () => driverPresence191, getUsers: () => users, getRatings: () => orderRatings191, getPendingMerchants: () => pendingMerchants,
@@ -3535,7 +3538,13 @@ if (platformRouter) {
             forexStats: (id) => { try { return forexState192 && require('./routes/forex').stats ? require('./routes/forex').stats(id) : null; } catch (e) { return null; } },
             mfiStats: (id) => { try { return mfiState192 && require('./routes/microfinance').stats ? require('./routes/microfinance').stats(id) : null; } catch (e) { return null; } },
             ledgerBalance: (id, code) => { try { const b = ledger192.balanceOf(id, code); return ledger192.dec(b.debit - b.credit, 'KES'); } catch (e) { return null; } },
-            ledgerTrialBalanced: (id) => { try { return ledger192.trialBalance(id).balanced; } catch (e) { return null; } }
+            ledgerTrialBalanced: (id) => { try { return ledger192.trialBalance(id).balanced; } catch (e) { return null; } },
+            institutionMoney: (id, type) => { try {
+                const tb = ledger192.trialBalance(id); const bal = (c) => { const r = tb.rows.find(x => x.code === c); return r ? r.balanceMinor : 0; };
+                const base = { booksBalanced: tb.balanced && tb.equationHolds, vaultCash: ledger192.dec(bal('1020'), 'KES'), journals: (ledger192.summary(id).journals) };
+                if (type === 'FOREX_BUREAU') { const fx = require('./routes/forex').stats ? require('./routes/forex').stats(id) : {}; return { ...base, ...fx }; }
+                const mf = require('./routes/microfinance').stats ? require('./routes/microfinance').stats(id) : {}; return { ...base, ...mf };
+            } catch (e) { return { error: e.message }; } }
         });
         if (typeof platformRouter === 'function') app.use('/api/platform', platformRouter);
         platformReady192 = true;

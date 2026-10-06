@@ -65,7 +65,7 @@ table{width:100%;border-collapse:collapse;font-size:.82rem}th{font-size:.68rem;c
     <div class="row"><span class="pillb wait" id="books">Checking the books…</span><span class="muted" id="upd"></span><button class="btn ghost sm" id="pause">⏸ Pause</button><button class="btn ghost sm" id="logout">Sign out</button></div>
   </div></header>
   <main class="wrap">
-    <div class="tabs"><button class="tab on" data-tab="tLive">Live</button><button class="tab" data-tab="tPanels">Switches</button><button class="tab" data-tab="tPeople">People</button><button class="tab" data-tab="tComp">Compliance <span class="n hidden" id="compN">0</span></button><button class="tab" data-tab="tMoney">Money &amp; KRA</button><button class="tab" data-tab="tApps">Apps</button><button class="tab" data-tab="tAlerts">Alerts <span class="n hidden" id="alN">0</span></button></div>
+    <div class="tabs"><button class="tab on" data-tab="tLive">Live</button><button class="tab" data-tab="tPanels">Switches</button><button class="tab" data-tab="tPeople">People</button><button class="tab" data-tab="tInst">Institutions <span class="n hidden" id="instN">0</span></button><button class="tab" data-tab="tComp">Compliance <span class="n hidden" id="compN">0</span></button><button class="tab" data-tab="tMoney">Money &amp; KRA</button><button class="tab" data-tab="tApps">Apps</button><button class="tab" data-tab="tAlerts">Alerts <span class="n hidden" id="alN">0</span></button></div>
 
     <section id="tLive">
       <div class="kpis" id="kpis"><div class="skel"></div></div>
@@ -85,6 +85,15 @@ table{width:100%;border-collapse:collapse;font-size:.82rem}th{font-size:.68rem;c
       <div class="apps" id="panelCards"></div>
     </section>
 
+    <section id="tInst" class="hidden">
+      <div class="card"><div class="between"><div><h2 style="margin:0">Financial institutions</h2><div class="muted">Forex bureaus, microfinance, SACCOs and banks that rent your platform. Approve a new one, or switch a negligent one OFF — its staff are signed out and cannot transact until you switch it back on.</div></div><button class="btn ghost sm" id="instRefresh">Refresh</button></div>
+        <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">
+          <a class="btn go sm" href="/platform" target="_blank" rel="noopener">Open staff counter (/platform) ↗</a>
+          <a class="btn sm" href="/platform-admin" target="_blank" rel="noopener">Owner institution console (/platform-admin) ↗</a>
+        </div>
+        <div class="kpis" id="instKpis" style="margin-top:12px"></div></div>
+      <div class="card scroll" id="instList"><div class="muted">Loading…</div></div>
+    </section>
     <section id="tComp" class="hidden">
       <div class="note" id="compNone" style="margin-bottom:14px">The compliance engine is not running on this server (routes/admin.js was not started). Check /readyz.</div>
       <div class="apps" id="compCards"></div>
@@ -258,7 +267,7 @@ async function loadOv() { if (S.paused && S.ov) return; try { S.ov = await api('
 async function loadFin() { try { S.fin = await api('/api/store/master/finance'); if (S.tab === 'tMoney') drawMoney(); } catch (e) {} }
 async function loadRec() { try { S.rec = await api('/api/store/master/reconcile'); drawChecks(); } catch (e) {} }
 async function loadAl() { try { S.al = await api('/api/store/master/alerts'); drawAlerts(); } catch (e) {} }
-function tab(id) { S.tab = id; $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === id)); ['tLive', 'tPanels', 'tPeople', 'tComp', 'tMoney', 'tApps', 'tAlerts'].forEach(s => $('#' + s).classList.toggle('hidden', s !== id)); if (id === 'tComp' && S.ov) drawComp(); if (id === 'tPanels' && S.ov) drawPanels(); if (id === 'tPeople') loadPeople(); if (id === 'tLive' && S.ov) drawLive(); if (id === 'tApps' && S.ov) drawApps(); if (id === 'tMoney') { loadMaint(); loadFin(); loadRec(); if (S.fin) drawMoney(); } if (id === 'tAlerts') loadAl(); }
+function tab(id) { S.tab = id; $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === id)); ['tLive', 'tPanels', 'tPeople', 'tInst', 'tComp', 'tMoney', 'tApps', 'tAlerts'].forEach(s => $('#' + s).classList.toggle('hidden', s !== id)); if (id === 'tComp' && S.ov) drawComp(); if (id === 'tPanels' && S.ov) drawPanels(); if (id === 'tPeople') loadPeople(); if (id === 'tInst') loadInstitutions(); if (id === 'tLive' && S.ov) drawLive(); if (id === 'tApps' && S.ov) drawApps(); if (id === 'tMoney') { loadMaint(); loadFin(); loadRec(); if (S.fin) drawMoney(); } if (id === 'tAlerts') loadAl(); }
 document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) tab(t.dataset.tab); const w = e.target.closest('[data-w]'); if (w) { S.win = w.dataset.w; $$('#win button').forEach(b => b.classList.toggle('on', b === w)); if (S.fin) drawMoney(); } });
 $('#chk').onclick = async () => { const b = $('#chk'); b.disabled = true; await loadRec(); b.disabled = false; };
 
@@ -337,10 +346,44 @@ $('#compPolicy').addEventListener('click', async e => {
 });
 $('#booksNote').addEventListener('click', () => { tab('tMoney'); setTimeout(() => { const el = $('#checks'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 400); });
 $('#books').addEventListener('click', () => { tab('tMoney'); setTimeout(() => { const el = $('#checks'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 400); });
+
+/* ---------- financial institutions (forex, microfinance, SACCO, bank) ---------- */
+async function loadInstitutions() { try { const d = await api('/api/store/master/institutions'); S.inst = d.institutions; drawInstitutions(); } catch (e) { $('#instList').innerHTML = `<div class="err">${esc(e.message)}</div>`; } }
+function moneyLine(it) {
+  const m = it.money || {};
+  if (it.type === 'FOREX_BUREAU') return `Vault ${esc(m.vaultCash||'0.00')} KES · deals today ${num(m.dealsToday||0)} · currencies held ${num(m.currenciesHeld||0)}`;
+  return `Vault ${esc(m.vaultCash||'0.00')} KES · members ${num(m.members||0)} · loans out ${esc(m.loansOutstanding||'0.00')} · savings ${esc(m.savingsHeld||'0.00')}`;
+}
+const INST_TYPE = { FOREX_BUREAU:'Forex bureau', MICROFINANCE_BANK:'Microfinance bank', MICROFINANCE_CREDIT:'Credit (non-deposit)', SACCO:'SACCO', COMMERCIAL_BANK:'Bank' };
+function drawInstitutions() {
+  const d = S.inst; if (!d) return;
+  const pend = d.pending || 0; $('#instN').textContent = pend; $('#instN').classList.toggle('hidden', !pend);
+  $('#instKpis').innerHTML = [['Institutions', num(d.count)], ['Active', num(d.active)], ['Awaiting approval', num(d.pending)], ['Switched off', num(d.suspended)], ['Billing overdue', num(d.overdue)], ['Monthly rental (MRR)', money0(d.mrrKes)]].map(([l,v])=>`<div class="kpi"><small>${l}</small><b>${esc(v)}</b></div>`).join('');
+  if (!d.institutions || !d.institutions.length) { $('#instList').innerHTML = '<div class="muted">No institutions yet. They register at <b>/platform</b>; approve them here.</div>'; return; }
+  $('#instList').innerHTML = `<table><thead><tr><th>Institution</th><th>Type</th><th>Licence</th><th>Plan</th><th>Money (from the ledger)</th><th>Books</th><th>Status</th><th>Switch</th></tr></thead><tbody>${d.institutions.map(it=>`
+    <tr>
+      <td><b>${esc(it.name)}</b><div class="muted">${esc(it.tenantId)} · ${num(it.staff)} staff</div></td>
+      <td>${esc(INST_TYPE[it.type]||it.type)}</td>
+      <td>${it.licenceStatus==='LICENCE_VERIFIED'?'<span class="ok">✓ verified</span>':it.licenceStatus==='LICENCE_REJECTED'?'<span class="bad">rejected</span>':'<span class="warn">declared</span>'}<div class="muted">${esc(it.regulator||'')} ${esc(it.licenceNumber||'')}</div></td>
+      <td>${esc(it.plan)}${it.overdue?'<div class="bad">overdue</div>':''}</td>
+      <td class="muted">${moneyLine(it)}</td>
+      <td>${it.money&&it.money.booksBalanced?'<span class="ok">balanced</span>':it.money&&it.money.error?'<span class="muted">—</span>':'<span class="bad">CHECK</span>'}</td>
+      <td>${it.status==='ACTIVE'?'<span class="stat on">ON</span>':it.status==='PENDING_REVIEW'?'<span class="stat wait">WAITING</span>':`<span class="stat off">OFF</span>${it.suspendedReason?'<div class="muted">'+esc(it.suspendedReason)+'</div>':''}`}</td>
+      <td>${it.status==='PENDING_REVIEW'?`<button class="btn go sm" data-inst="approve" data-id="${esc(it.tenantId)}">Approve</button>`:it.status==='ACTIVE'?`<button class="sw on" role="switch" aria-checked="true" data-inst="suspend" data-id="${esc(it.tenantId)}" data-name="${esc(it.name)}"></button>`:`<button class="sw" role="switch" aria-checked="false" data-inst="reactivate" data-id="${esc(it.tenantId)}"></button>`}</td>
+    </tr>`).join('')}</tbody></table>
+    <div class="muted" style="margin-top:10px">Open the full owner console at <a href="/platform-admin" target="_blank" rel="noopener" style="color:var(--cy)">/platform-admin</a> to verify licences, set plans and raise invoices.</div>`;
+}
+$('#instList').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-inst]'); if (!b) return; const action = b.dataset.inst, id = b.dataset.id;
+  if (action === 'suspend') { const r = await ask('Switch OFF ' + (b.dataset.name||'this institution') + '?', 'Its staff are signed out at once and cannot open the counter or move money until you switch it back on. Use this if the institution is negligent or in breach.', { ok: 'Switch OFF', input: 'Reason (shown to the institution)', danger: true }); if (!r) return; const d = await post('/api/store/master/institutions/action', { action, tenantId: id, reason: r.value }); if (d) loadInstitutions(); return; }
+  const d = await post('/api/store/master/institutions/action', { action, tenantId: id }); if (d) loadInstitutions();
+});
+$('#instRefresh').onclick = loadInstitutions;
+
 function start() {
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); S.timers.forEach(clearInterval);
   loadOv(); loadRec(); loadAl(); loadFin();
-  S.timers = [setInterval(() => { if (!document.hidden) loadOv(); }, 5000), setInterval(() => { if (!document.hidden) { loadRec(); loadAl(); if (S.tab === 'tMoney') loadFin(); } }, 30000)];
+  S.timers = [setInterval(() => { if (!document.hidden) loadOv(); }, 5000), setInterval(() => { if (!document.hidden) { loadRec(); loadAl(); if (S.tab === 'tMoney') loadFin(); if (S.tab === 'tInst') loadInstitutions(); } }, 30000)];
 }
 if (S.token) start();
 })();

@@ -101,13 +101,17 @@ function userCard(u) { if (!u) return null; return { id: u.id, name: u.name, han
 const blockedBetween = (a, b) => !!(a && b && ((S.blocks[a] && S.blocks[a][b]) || (S.blocks[b] && S.blocks[b][a])));
 const follows = (a, b) => !!(a && S.follows[a] && S.follows[a][b]);
 const countOf = (m) => Object.keys(m || {}).length;
+// reactions (Facebook-style). Stored as S.likes[pid][uid] = { r, at }; older data stored a timestamp, which reads as 'like'.
+const REACTS = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
+const reactType = (v) => (v ? (typeof v === 'object' && v.r ? v.r : 'like') : null);
+function reactBreakdown(L) { const o = {}; for (const k in (L || {})) { const t = reactType(L[k]); if (t) o[t] = (o[t] || 0) + 1; } return o; }
 function postView(p, viewer) {
     const m = p.mediaId ? S.media[p.mediaId] : null, vid = viewer && viewer.id;
     return {
         id: p.id, author: userCard(S.users[p.uid]), caption: p.caption, hashtags: p.hashtags || [], createdAt: p.createdAt, editedAt: p.editedAt || null,
         media: m ? { kind: m.kind, url: mediaUrl(m.id), mime: m.mime } : null, style: p.style || null,
         counts: { likes: countOf(S.likes[p.id]), comments: (S.comments[p.id] || []).filter(c => !c.deleted).length, shares: p.shares || 0, views: p.views || 0, reposts: countOf(S.reposts[p.id]) },
-        liked: !!(vid && S.likes[p.id] && S.likes[p.id][vid]), mine: vid === p.uid, followingAuthor: follows(vid, p.uid),
+        liked: !!(vid && S.likes[p.id] && S.likes[p.id][vid]), myReaction: vid && S.likes[p.id] ? reactType(S.likes[p.id][vid]) : null, reactions: reactBreakdown(S.likes[p.id]), mine: vid === p.uid, followingAuthor: follows(vid, p.uid),
         reposted: !!(vid && S.reposts[p.id] && S.reposts[p.id][vid]), saved: !!(vid && S.saves[vid] && S.saves[vid][p.id]),
         quote: p.quoteOf ? quoteView(p.quoteOf, viewer) : null,
         sponsored: p.sponsored ? { label: p.sponsored.label, ctaText: p.sponsored.ctaText, ctaUrl: p.sponsored.ctaUrl } : null, status: p.status
@@ -356,9 +360,12 @@ router.delete('/posts/:id', auth, (req, res) => {
 });
 router.post('/posts/:id/like', auth, (req, res) => {
     const p = livePost(req, res); if (!p) return; if (limited('like:' + req.su.id, ...LIM.like)) return slow(res, 'likes');
-    const L = S.likes[p.id] || (S.likes[p.id] = {}), uid = req.su.id, want = req.body && typeof req.body.like === 'boolean' ? req.body.like : !L[uid];
-    if (want && !L[uid]) { L[uid] = now(); notify(p.uid, { type: 'like', from: uid, postId: p.id }); } else if (!want) delete L[uid];
-    dirty(); res.json({ success: true, liked: !!L[uid], likes: countOf(L) });
+    const L = S.likes[p.id] || (S.likes[p.id] = {}), uid = req.su.id, b = req.body || {};
+    const reaction = REACTS.includes(b.reaction) ? b.reaction : null;
+    const had = reactType(L[uid]);
+    if (reaction) { if (had === reaction) delete L[uid]; else { L[uid] = { r: reaction, at: now() }; if (!had) notify(p.uid, { type: 'like', from: uid, postId: p.id }); } }
+    else { const want = typeof b.like === 'boolean' ? b.like : !L[uid]; if (want) { const wasNew = !L[uid]; if (reactType(L[uid]) !== 'like') L[uid] = { r: 'like', at: now() }; if (wasNew) notify(p.uid, { type: 'like', from: uid, postId: p.id }); } else delete L[uid]; }
+    dirty(); res.json({ success: true, liked: !!L[uid], myReaction: reactType(L[uid]), likes: countOf(L), reactions: reactBreakdown(L) });
 });
 router.post('/posts/:id/view', soft, (req, res) => {
     const p = livePost(req, res); if (!p) return;
@@ -383,17 +390,31 @@ router.post('/posts/:id/cta', soft, (req, res) => {
 // comments
 router.get('/posts/:id/comments', soft, (req, res) => {
     const p = livePost(req, res); if (!p) return; const me = req.su;
-    const list = (S.comments[p.id] || []).filter(c => !c.deleted && S.users[c.uid] && !S.users[c.uid].deleted && !blockedBetween(me && me.id, c.uid)).slice(-200);
-    res.json({ success: true, comments: list.map(c => ({ id: c.id, text: c.text, at: c.at, author: userCard(S.users[c.uid]), mine: !!(me && c.uid === me.id), canDelete: !!(me && (c.uid === me.id || p.uid === me.id)) })) });
+    const all = (S.comments[p.id] || []).filter(c => !c.deleted && S.users[c.uid] && !S.users[c.uid].deleted && !blockedBetween(me && me.id, c.uid));
+    const view = (c) => ({ id: c.id, text: c.text, at: c.at, author: userCard(S.users[c.uid]), mine: !!(me && c.uid === me.id), canDelete: !!(me && (c.uid === me.id || p.uid === me.id)), parentId: c.parentId || null, likes: countOf(c.likes), liked: !!(me && c.likes && c.likes[me.id]) });
+    const repliesByParent = {}; for (const c of all) if (c.parentId) (repliesByParent[c.parentId] || (repliesByParent[c.parentId] = [])).push(view(c));
+    const tops = all.filter(c => !c.parentId).slice(-200).map(c => ({ ...view(c), replies: (repliesByParent[c.id] || []).slice(-50) }));
+    res.json({ success: true, comments: tops });
 });
 router.post('/posts/:id/comments', auth, (req, res) => {
     const p = livePost(req, res); if (!p) return; if (limited('comment:' + req.su.id, ...LIM.comment)) return slow(res, 'comments');
     const text = clean(req.body && req.body.text, 500); if (!text) return fail(res, 400, 'Write a comment first.');
-    const c = { id: newId('C'), uid: req.su.id, text, at: now() };
-    (S.comments[p.id] || (S.comments[p.id] = [])).push(c);
+    const list = (S.comments[p.id] || (S.comments[p.id] = []));
+    let parentId = null; const pid = req.body && req.body.parentId;
+    if (pid) { const par = list.find(x => x.id === pid && !x.deleted); if (!par) return fail(res, 404, 'That comment is no longer there.'); parentId = par.parentId || par.id; }   // replies always attach to the top-level comment (one level deep)
+    const c = { id: newId('C'), uid: req.su.id, text, at: now(), parentId };
+    list.push(c);
     notify(p.uid, { type: 'comment', from: req.su.id, postId: p.id, text });
+    if (parentId) { const par = list.find(x => x.id === parentId); if (par && par.uid !== req.su.id) notify(par.uid, { type: 'reply', from: req.su.id, postId: p.id, text }); }
     for (const h of mentionsOf(text)) { const to = S.handles[h]; if (to && to !== p.uid) notify(to, { type: 'mention', from: req.su.id, postId: p.id, text }); }
-    dirty(); res.json({ success: true, comment: { id: c.id, text, at: c.at, author: userCard(req.su), mine: true, canDelete: true } });
+    dirty(); res.json({ success: true, comment: { id: c.id, text, at: c.at, author: userCard(req.su), mine: true, canDelete: true, parentId, likes: 0, liked: false, replies: [] } });
+});
+router.post('/posts/:id/comments/:cid/like', auth, (req, res) => {
+    const p = S.posts[req.params.id], c = p && (S.comments[p.id] || []).find(x => x.id === req.params.cid && !x.deleted);
+    if (!c) return fail(res, 404, 'Comment not found.');
+    const L = c.likes || (c.likes = {}), uid = req.su.id, want = req.body && typeof req.body.like === 'boolean' ? req.body.like : !L[uid];
+    if (want) { if (!L[uid]) { L[uid] = now(); if (c.uid !== uid) notify(c.uid, { type: 'like', from: uid, postId: p.id }); } } else delete L[uid];
+    dirty(); res.json({ success: true, liked: !!L[uid], likes: countOf(L) });
 });
 router.delete('/posts/:id/comments/:cid', auth, (req, res) => {
     const p = S.posts[req.params.id], c = p && (S.comments[p.id] || []).find(x => x.id === req.params.cid && !x.deleted);
@@ -450,6 +471,13 @@ router.post('/users/:id/report', auth, (req, res) => {
 // ---------------------------------------------------------------------------
 // DISCOVER
 // ---------------------------------------------------------------------------
+// people to follow: accounts you don't follow yet, most-followed and newest first (so a new user is never alone)
+router.get('/discover/people', soft, (req, res) => {
+    const me = req.su;
+    let list = Object.values(S.users).filter(u => !u.deleted && !S.bans[u.id] && (!me || (u.id !== me.id && !follows(me.id, u.id) && !blockedBetween(me.id, u.id))));
+    list.sort((a, b) => (countOf(S.followers[b.id]) - countOf(S.followers[a.id])) || (b.createdAt - a.createdAt));
+    res.json({ success: true, people: list.slice(0, 30).map(u => ({ ...userCard(u), bio: u.bio || '', followers: countOf(S.followers[u.id]), posts: S.order.filter(id => S.posts[id] && S.posts[id].uid === u.id && S.posts[id].status === 'LIVE').length, isFollowing: follows(me && me.id, u.id), isMe: !!(me && me.id === u.id) })) });
+});
 router.get('/search', soft, (req, res) => {
     const q = clean(req.query.q, 60).toLowerCase(), me = req.su; if (q.length < 1) return res.json({ success: true, users: [], posts: [] });
     const tag = q.replace(/^#/, ''), word = q.replace(/^[@#]/, '');
@@ -482,7 +510,7 @@ const pairKey = (a, b) => [a, b].sort().join('|');
 function convOf(req, res) { const c = S.convs[req.params.id]; if (!okId(req.params.id, 'K') || !c || !c.members.includes(req.su.id)) { fail(res, 404, 'Conversation not found.'); return null; } return c; }
 function convView(c, me) {
     const msgs = S.msgs[c.id] || [], last = msgs[msgs.length - 1], lastRead = (S.reads[c.id] || {})[me.id] || 0;
-    const lastV = last ? { text: last.text || (last.mediaId ? '📷 Photo' : ''), at: last.at, mine: last.from === me.id, system: !!last.system, from: last.system ? null : (S.users[last.from] ? S.users[last.from].name : '') } : null;
+    const lastV = last ? { text: last.text || (last.mediaId ? (S.media[last.mediaId] && S.media[last.mediaId].kind === 'video' ? '🎥 Video' : '📷 Photo') : (last.sharedPostId ? '📎 Shared a post' : '')), at: last.at, mine: last.from === me.id, system: !!last.system, from: last.system ? null : (S.users[last.from] ? S.users[last.from].name : '') } : null;
     const base = { id: c.id, last: lastV, unread: msgs.filter(m => m.from !== me.id && m.at > lastRead).length, updatedAt: c.lastAt };
     if (c.type === 'group') return { ...base, type: 'group', name: c.name, with: null, members: c.members.filter(m => S.users[m] && !S.users[m].deleted).map(m => ({ ...userCard(S.users[m]), admin: (c.admins || []).includes(m) })), isAdmin: (c.admins || []).includes(me.id), blocked: false };
     const other = S.users[c.members.find(m => m !== me.id)];
@@ -502,8 +530,10 @@ router.post('/conversations', auth, (req, res) => {
 });
 const msgView = (m, me, c) => {
     const others = c.members.filter(x => x !== m.from), R = S.reads[c.id] || {}, seenBy = others.filter(x => (R[x] || 0) >= m.at).length;
-    const md = m.mediaId && S.media[m.mediaId] && !S.media[m.mediaId].deleted ? { kind: 'image', url: `/api/ads/conversations/${c.id}/media/${m.mediaId}` } : null;
-    return { id: m.id, text: m.text, at: m.at, mine: m.from === me.id, system: !!m.system, media: md, from: c.type === 'group' && !m.system ? userCard(S.users[m.from]) : undefined,
+    const md = m.mediaId && S.media[m.mediaId] && !S.media[m.mediaId].deleted ? { kind: S.media[m.mediaId].kind, url: `/api/ads/conversations/${c.id}/media/${m.mediaId}` } : null;
+    let sharedPost;
+    if (m.sharedPostId) { const sp = S.posts[m.sharedPostId]; if (sp && sp.status === 'LIVE') { const spm = sp.mediaId ? S.media[sp.mediaId] : null; sharedPost = { id: sp.id, caption: (sp.caption || '').slice(0, 140), author: userCard(S.users[sp.uid]), thumb: spm && spm.kind === 'image' && !spm.deleted ? mediaUrl(spm.id) : null }; } else sharedPost = { unavailable: true }; }
+    return { id: m.id, text: m.text, at: m.at, mine: m.from === me.id, system: !!m.system, media: md, sharedPost, forwarded: !!m.forwarded, from: c.type === 'group' && !m.system ? userCard(S.users[m.from]) : undefined,
         seen: m.from === me.id && others.length > 0 && seenBy === others.length, seenBy: c.type === 'group' && m.from === me.id ? seenBy : undefined };
 };
 router.get('/conversations/:id/messages', auth, (req, res) => {
@@ -516,11 +546,13 @@ router.post('/conversations/:id/messages', auth, (req, res) => {
     if (!group && blockedBetween(me.id, other)) return fail(res, 403, 'You cannot message this account.');
     if (limited('msg:' + me.id, ...LIM.msg) || limited('msgday:' + me.id, ...LIM.msgDay)) return slow(res, 'messages');
     const text = clean(req.body && req.body.text, 2000), mid = req.body && req.body.mediaId;
-    let md = null;
-    if (mid) { md = S.media[mid]; if (!md || md.deleted || md.uid !== me.id || md.kind !== 'image') return fail(res, 400, 'Upload the photo first.'); if (md.usedAs) return fail(res, 409, 'That photo is already used.'); }
-    if (!text && !md) return fail(res, 400, 'Write a message first.');
+    const sid = req.body && req.body.postId, forwarded = !!(req.body && req.body.forwarded);
+    let md = null, sp = null;
+    if (mid) { md = S.media[mid]; if (!md || md.deleted || md.uid !== me.id || !(md.kind === 'image' || md.kind === 'video')) return fail(res, 400, 'Upload the photo or video first.'); if (md.usedAs) return fail(res, 409, 'That file is already used.'); }
+    if (sid) { if (!okId(String(sid), 'P') || !(sp = S.posts[sid]) || sp.status !== 'LIVE') return fail(res, 400, 'That post is no longer available to share.'); }
+    if (!text && !md && !sp) return fail(res, 400, 'Write a message first.');
     if (md) { md.usedAs = 'message'; md.convId = c.id; }
-    const m = { id: newId('X'), from: me.id, text, at: now(), mediaId: md ? md.id : null }, list = S.msgs[c.id] || (S.msgs[c.id] = []);
+    const m = { id: newId('X'), from: me.id, text, at: now(), mediaId: md ? md.id : null, sharedPostId: sp ? sp.id : null, forwarded }, list = S.msgs[c.id] || (S.msgs[c.id] = []);
     list.push(m); if (list.length > 5000) list.shift(); c.lastAt = m.at;
     (S.reads[c.id] || (S.reads[c.id] = {}))[me.id] = m.at;
     for (const to of c.members.filter(x => x !== me.id)) emitTo(to, 'social:message', { conversationId: c.id, message: { ...msgView(m, S.users[to] || { id: to }, c), mine: false }, from: userCard(me) });
@@ -784,6 +816,21 @@ router.setSocketIo = (server) => {
         socket.on('social:auth', (tok) => { try { join(tok); } catch (e) {} });
         socket.on('social:typing', (p) => {
             try { const uid = socket.data && socket.data.socialUid, c = p && S.convs[p.conversationId]; if (!uid || !c || !c.members.includes(uid)) return; for (const to of c.members.filter(m => m !== uid)) emitTo(to, 'social:typing', { conversationId: c.id, name: S.users[uid] ? S.users[uid].name : '' }); } catch (e) {}
+        });
+        // ---- voice / video call signalling (WebRTC). The server only RELAYS; media is peer-to-peer and never touches the server. ----
+        // Allowed signal types. 'ring' starts a call; 'offer'/'answer'/'ice' carry the WebRTC handshake; 'accept'/'reject'/'end'/'busy'/'cancel' end or progress it.
+        const CALL_TYPES = new Set(['ring', 'offer', 'answer', 'ice', 'accept', 'reject', 'end', 'busy', 'cancel']);
+        socket.on('social:call', (p) => {
+            try {
+                const uid = socket.data && socket.data.socialUid; if (!uid) return;
+                if (!p || typeof p !== 'object' || !CALL_TYPES.has(p.type)) return;
+                const c = S.convs[p.conversationId];
+                if (!c || c.type === 'group' || !c.members.includes(uid)) return;     // 1:1 calls only, and only inside your own conversation
+                const to = c.members.find(m => m !== uid); if (!to || S.bans[to]) return;
+                if (p.callId && (typeof p.callId !== 'string' || p.callId.length > 64)) return;
+                // relay exactly what is needed to the callee's own room; never broadcast
+                emitTo(to, 'social:call', { type: p.type, conversationId: c.id, callId: p.callId || null, video: !!p.video, sdp: p.sdp, candidate: p.candidate, from: uid, fromUser: userCard(S.users[uid]) });
+            } catch (e) {}
         });
     });
 };

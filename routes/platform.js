@@ -419,6 +419,31 @@ module.exports.tenantConfig = tenantConfig;
 // the admin/ledger engine asks for this: every ACTIVE institution, as a corridor with its chart-of-accounts kind and currencies
 module.exports.activeCorridors = () => Object.values(tenants()).filter(t => t.status === 'ACTIVE').map(t => { const ty = TENANT_TYPES[t.type] || {}; return { tenantId: t.tenantId, name: t.name, type: t.type, coa: ty.coa || 'GENERIC', currencies: t.currencies || ['KES'] }; });
 module.exports.billingOverdue = (tid) => { try { return billingOverdue(tid); } catch (e) { return false; } };
+// ---- master control (store) integration: one snapshot of every institution + the owner actions, callable from server.js ----
+module.exports.monitorInstitutions = () => {
+    try {
+        const all = Object.values(tenants());
+        const rows = all.map(t => {
+            const money = (D.institutionMoney ? D.institutionMoney(t.tenantId, t.type) : null) || {};
+            const inv = invoices(t.tenantId), open = inv.filter(i => i.status === 'OPEN' || i.status === 'OVERDUE');
+            return { tenantId: t.tenantId, name: t.name, type: t.type, status: t.status, licenceStatus: t.licenceStatus || 'LICENCE_DECLARED',
+                regulator: t.regulator || null, licenceNumber: t.licenceNumber || null, plan: (t.billing || {}).plan || 'TRIAL', priceKes: (t.billing || {}).priceKes || 0,
+                overdue: billingOverdue(t.tenantId), openInvoices: open.length, suspendedReason: t.suspendedReason || null,
+                staff: Object.values(staffAll()).filter(s => s.tenantId === t.tenantId && !s.disabled).length, money };
+        }).sort((a, b) => (b.status === 'PENDING_REVIEW') - (a.status === 'PENDING_REVIEW') || a.name.localeCompare(b.name));
+        return { count: all.length, pending: all.filter(t => t.status === 'PENDING_REVIEW').length, active: all.filter(t => t.status === 'ACTIVE').length,
+            suspended: all.filter(t => t.status === 'SUSPENDED').length, overdue: all.filter(t => billingOverdue(t.tenantId)).length, mrrKes: all.filter(t => t.status === 'ACTIVE' && !billingOverdue(t.tenantId)).reduce((s, t) => s + ((t.billing || {}).priceKes || 0), 0), institutions: rows };
+    } catch (e) { return { count: 0, institutions: [], error: e.message }; }
+};
+// the owner, from the master control, may approve / suspend / reactivate an institution (audited the same way)
+module.exports.ownerAction = (action, tenantId, by, reason) => {
+    const t = tenants()[tenantId]; if (!t) return { ok: false, error: 'Institution not found.' };
+    const who = clean(by, 80) || 'owner';
+    if (action === 'suspend') { if (t.status !== 'ACTIVE') return { ok: false, error: 'Only an active institution can be switched off.' }; t.status = 'SUSPENDED'; t.suspendedReason = clean(reason, 200) || 'Switched off by the owner from the master control'; audit('PLATFORM_TENANT_SUSPENDED', { tenantId, by: who, reason: t.suspendedReason, via: 'MASTER_CONTROL' }); }
+    else if (action === 'reactivate' || action === 'approve') { if (t.status !== 'SUSPENDED' && t.status !== 'PENDING_REVIEW') return { ok: false, error: `This institution is ${t.status}.` }; t.status = 'ACTIVE'; t.suspendedReason = null; t.reviewedBy = who; t.reviewedAt = now(); audit('PLATFORM_TENANT_' + (action === 'approve' ? 'APPROVED' : 'REACTIVATED'), { tenantId, by: who, via: 'MASTER_CONTROL' }); }
+    else return { ok: false, error: 'action must be approve, suspend or reactivate.' };
+    dirty(); return { ok: true, status: t.status, name: t.name };
+};
 module.exports.TENANT_TYPES = TENANT_TYPES;
 module.exports.STAFF_ROLES = STAFF_ROLES;
 module.exports._hashPw = makePw;              // for tests only
