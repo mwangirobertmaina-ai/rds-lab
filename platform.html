@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1a">
+<title>RDS Compliance Platform — for financial institutions</title>
+<style>
+:root{
+  --bg:#0a0f1a;--panel:#111a2b;--panel2:#0d1524;--line:#1e2a40;--line2:#2a3a56;
+  --ink:#eef2f8;--dim:#8b9ad0;--faint:#5c6b86;
+  --ok:#34d399;--ok-dim:#0e3b2e;--warn:#f0b445;--warn-dim:#3a2c0e;--bad:#f06d6d;--bad-dim:#3a1515;
+  --accent:#4f8cff;--accent-ink:#0a0f1a;--r:14px
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);min-height:100vh;min-height:100dvh;
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;
+  background-image:radial-gradient(1200px 500px at 80% -10%,rgba(79,140,255,.08),transparent),radial-gradient(900px 400px at -10% 110%,rgba(52,211,153,.05),transparent)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hidden{display:none!important}
+a{color:#9db9ff}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+/* header */
+header.top{border-bottom:1px solid var(--line);background:rgba(10,15,26,.8);backdrop-filter:blur(10px);position:sticky;top:0;z-index:20}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(145deg,#1b2d4d,#0f1a2e);border:1px solid var(--line2);display:grid;place-items:center;color:var(--ok);font-weight:800;font-size:1rem}
+.brand b{font-size:1.02rem;letter-spacing:.2px}
+.brand span{display:block;font-size:.72rem;color:var(--faint);font-weight:500}
+.nav{display:flex;gap:8px}
+.nav button{background:transparent;border:1px solid transparent;border-radius:10px;padding:9px 15px;font-size:.86rem;font-weight:600;color:var(--dim);cursor:pointer}
+.nav button.on{background:var(--panel);border-color:var(--line2);color:var(--ink)}
+/* hero */
+.hero{padding:62px 0 34px}
+.hero h1{font-size:clamp(1.9rem,4.5vw,3rem);line-height:1.08;letter-spacing:-.02em;font-weight:760;max-width:16ch}
+.hero p.lead{color:var(--dim);font-size:1.06rem;margin-top:16px;max-width:60ch}
+.trust{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line2);background:var(--panel2);border-radius:999px;padding:8px 14px;font-size:.82rem;color:var(--dim)}
+.chip .d{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.hero .cta{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
+.btn{border:1px solid var(--line2);background:var(--panel);border-radius:11px;padding:12px 20px;font-weight:700;font-size:.9rem;cursor:pointer;transition:border-color .15s,background .15s}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--ok);border-color:var(--ok);color:#06231a}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent}
+.btn.danger{background:var(--bad-dim);border-color:#5a2020;color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:9px 14px;font-size:.82rem;border-radius:9px}
+/* panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px}
+.panel2{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px}
+h2.sec{font-size:1.25rem;letter-spacing:-.01em;margin-bottom:4px}
+.muted{color:var(--dim);font-size:.9rem}
+.faint{color:var(--faint);font-size:.82rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+label{display:block;font-size:.78rem;color:var(--dim);margin:0 0 6px;font-weight:600}
+input,select{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:11px 13px;font-size:.92rem}
+input:focus,select:focus{border-color:var(--accent)}
+.field{margin-bottom:14px}
+.err{color:var(--bad);font-size:.84rem;min-height:1.1em;margin-top:4px}
+.ok-note{color:var(--ok);font-size:.84rem}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+/* currency picker */
+.curwrap{display:flex;gap:8px;flex-wrap:wrap}
+.cur{border:1px solid var(--line2);background:var(--panel2);border-radius:9px;padding:8px 12px;font-size:.82rem;cursor:pointer;font-weight:600;color:var(--dim);user-select:none}
+.cur.on{border-color:var(--ok);color:var(--ok);background:var(--ok-dim)}
+.cur.locked{opacity:.6;cursor:not-allowed;border-color:var(--line)}
+/* result / receipt */
+.receipt{border:1px solid var(--ok);border-radius:12px;background:var(--ok-dim);padding:18px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:.88rem;margin-top:10px}
+.kv span:first-child{color:var(--dim)}
+.secret{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#071c16;border:1px dashed var(--ok);border-radius:8px;padding:10px 12px;font-size:1.05rem;letter-spacing:.5px;color:var(--ok);display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px}
+.copy{border:1px solid var(--line2);background:transparent;border-radius:7px;padding:5px 10px;font-size:.75rem;cursor:pointer;color:var(--ink)}
+/* dashboard */
+.badge{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:5px 12px;font-size:.76rem;font-weight:700;border:1px solid}
+.badge.ok{color:var(--ok);border-color:#1c5a46;background:var(--ok-dim)}
+.badge.warn{color:var(--warn);border-color:#5a4512;background:var(--warn-dim)}
+.badge.bad{color:var(--bad);border-color:#5a2020;background:var(--bad-dim)}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th{text-align:left;color:var(--faint);font-weight:600;font-size:.76rem;padding:9px 10px;border-bottom:1px solid var(--line)}
+td{padding:11px 10px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+.empty{text-align:center;color:var(--faint);padding:34px 10px;font-size:.9rem}
+/* toast */
+#toasts{position:fixed;top:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px;max-width:360px}
+.toast{border:1px solid var(--line2);background:var(--panel);border-left:3px solid var(--accent);border-radius:10px;padding:12px 15px;font-size:.86rem;box-shadow:0 12px 30px rgba(0,0,0,.4)}
+.toast.ok{border-left-color:var(--ok)}.toast.err{border-left-color:var(--bad)}
+footer{border-top:1px solid var(--line);margin-top:48px;padding:26px 0;color:var(--faint);font-size:.8rem}
+.section{padding:30px 0}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* dashboard tabs + counter */
+.dtabs{display:flex;gap:8px;margin:0 0 18px;flex-wrap:wrap}
+.dtabs button{background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:10px 17px;font-weight:700;font-size:.88rem;color:var(--dim);cursor:pointer}
+.dtabs button.on{background:var(--ok-dim);border-color:#1c5a46;color:var(--ok)}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.stat .l{font-size:.74rem;color:var(--faint);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.stat .v{font-size:1.35rem;font-weight:800;letter-spacing:-.02em;margin-top:3px}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.subtabs button{background:transparent;border:1px solid var(--line2);border-radius:9px;padding:8px 14px;font-size:.83rem;font-weight:600;color:var(--dim);cursor:pointer}
+.subtabs button.on{background:var(--panel);color:var(--ink);border-color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden}
+.seg button{background:var(--panel2);border:0;border-right:1px solid var(--line2);padding:10px 18px;font-weight:700;font-size:.86rem;color:var(--dim);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--ok);color:#06231a}
+.quotebox{border:1px dashed var(--line2);border-radius:12px;padding:14px 16px;background:var(--panel2);margin:4px 0 14px}
+.quotebox .big{font-size:1.3rem;font-weight:800;letter-spacing:-.02em}
+.readonly-note{border:1px solid var(--warn);background:var(--warn-dim);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:.84rem;margin-bottom:14px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand"><div class="mark">R</div><div><b>RDS Compliance Platform</b><span>Ledger &amp; AML for regulated institutions</span></div></div>
+  <div class="nav">
+    <button id="navHome" class="on" data-view="home">Overview</button>
+    <button id="navReg" data-view="register">Apply</button>
+    <button id="navLogin" data-view="login">Staff sign in</button>
+  </div>
+</div></header>
+
+<!-- HOME -->
+<main id="vHome" class="view">
+  <section class="hero"><div class="wrap">
+    <h1>Compliant books and AML reporting your regulator can inspect.</h1>
+    <p class="lead">One platform your forex bureau, microfinance bank or SACCO runs its ledger and anti-money-laundering controls on. Every institution is sealed from every other. You keep your own licence; we keep your books provable.</p>
+    <div class="trust">
+      <span class="chip"><span class="d"></span>Double-entry ledger, balanced to the cent</span>
+      <span class="chip"><span class="d"></span>CDD, sanctions, CTR &amp; STR tracking</span>
+      <span class="chip"><span class="d"></span>Tamper-evident audit chain</span>
+    </div>
+    <div class="cta">
+      <button class="btn primary" data-view="register">Apply to onboard your institution</button>
+      <button class="btn ghost" data-view="login">Staff sign in</button>
+    </div>
+  </div></section>
+
+  <section class="section"><div class="wrap">
+    <div class="grid2" style="gap:16px">
+      <div class="panel">
+        <h2 class="sec">How onboarding works</h2>
+        <p class="muted" style="margin-top:8px">We never claim an institution is licensed. You declare your licence; our platform administrator verifies it against the public register before you go live.</p>
+        <div class="kv" style="grid-template-columns:28px 1fr;margin-top:16px;gap:14px 14px;align-items:start">
+          <span class="badge warn" style="justify-content:center">1</span><div><b>You apply</b><div class="faint">Institution details, type, and your CBK or SASRA licence number.</div></div>
+          <span class="badge warn" style="justify-content:center">2</span><div><b>We review and verify</b><div class="faint">Your application is <b>pending</b>. The platform administrator checks your licence against the regulator's register.</div></div>
+          <span class="badge ok" style="justify-content:center">3</span><div><b>You go live</b><div class="faint">Your administrator signs in, adds your cashiers and compliance officer, and starts work at the counter. Your data is sealed from every other institution.</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2 class="sec">Who it is for</h2>
+        <div id="typeList" class="muted" style="margin-top:12px">Loading institution types…</div>
+        <p class="faint" style="margin-top:14px">Each type gets the right chart of accounts, cashier counter and rules. Your institution still holds its own regulator licence; the software is the compliance and bookkeeping tool you use afterward.</p>
+      </div>
+    </div>
+  </div></section>
+</main>
+
+<!-- REGISTER -->
+<main id="vRegister" class="view hidden"><div class="wrap section">
+  <div class="panel" style="max-width:720px;margin:0 auto">
+    <h2 class="sec">Apply to onboard your institution</h2>
+    <p class="muted" style="margin-top:4px;margin-bottom:20px">Takes two minutes. You'll get a one-time administrator password. You can sign in once we approve your institution.</p>
+    <div id="regForm">
+      <div class="field"><label for="rName">Institution legal name</label><input id="rName" placeholder="e.g. Westlands Forex Bureau Ltd" maxlength="120"></div>
+      <div class="grid2">
+        <div class="field"><label for="rType">Institution type</label><select id="rType"></select></div>
+        <div class="field"><label>Regulator</label><input id="rRegulator" readonly></div>
+      </div>
+      <div class="field"><label for="rLicence" id="rLicenceLabel">Licence number</label><input id="rLicence" placeholder="As issued by your regulator" maxlength="60"></div>
+      <div class="field"><label>Currencies handled</label><div id="rCur" class="curwrap"></div><div class="faint" id="rCurNote" style="margin-top:7px"></div></div>
+      <div class="grid2">
+        <div class="field"><label for="rCounty">County</label><input id="rCounty" placeholder="e.g. Nairobi" maxlength="60"></div>
+        <div class="field"><label for="rAddress">Physical address</label><input id="rAddress" placeholder="Building, street, town" maxlength="200"></div>
+      </div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:8px 0 18px">
+      <p class="muted" style="margin-bottom:14px">The administrator account is the first person who can sign in and add your other staff.</p>
+      <div class="field"><label for="rOwnerName">Administrator full name</label><input id="rOwnerName" maxlength="100"></div>
+      <div class="grid2">
+        <div class="field"><label for="rOwnerEmail">Administrator email</label><input id="rOwnerEmail" type="email" maxlength="120"></div>
+        <div class="field"><label for="rOwnerPhone">Administrator phone</label><input id="rOwnerPhone" type="tel" placeholder="+2547…" maxlength="20"></div>
+      </div>
+      <div class="field"><label for="rOwnerPw">Administrator password <span class="faint">(8+ characters — you'll sign in with this)</span></label><input id="rOwnerPw" type="password" autocomplete="new-password" maxlength="128"></div>
+      <div class="err" id="regErr"></div>
+      <button class="btn primary" id="regGo" style="width:100%;margin-top:6px">Submit application</button>
+    </div>
+    <div id="regDone" class="hidden">
+      <div class="receipt">
+        <div class="row" style="justify-content:space-between"><b style="font-size:1.05rem">Application received</b><span class="badge warn">Pending review</span></div>
+        <p class="muted" id="regDoneMsg" style="margin-top:8px"></p>
+        <div class="kv"><span>Institution ID</span><b id="rdId"></b><span>Administrator</span><b id="rdEmail"></b></div>
+        <p class="faint" style="margin-top:14px">Keep your <b>Institution ID</b> — your staff need it to sign in, together with their email and password. You'll sign in with the password you just chose, as soon as your institution is approved.</p>
+        <p class="faint" id="rdLicNote" style="margin-top:8px"></p>
+      </div>
+      <button class="btn ghost" id="regToLogin" style="margin-top:16px">Go to staff sign in</button>
+    </div>
+  </div>
+</div></main>
+
+<!-- LOGIN -->
+<main id="vLogin" class="view hidden"><div class="wrap section">
+  <div class="panel" style="max-width:420px;margin:0 auto">
+    <h2 class="sec">Staff sign in</h2>
+    <p class="muted" style="margin-top:4px;margin-bottom:18px">For administrators, cashiers and compliance officers of an onboarded institution.</p>
+    <div class="field"><label for="lTenant">Institution ID</label><input id="lTenant" placeholder="e.g. TEN-ABC123" autocapitalize="characters" autocomplete="off"></div>
+    <div class="field"><label for="lEmail">Work email</label><input id="lEmail" type="email" autocomplete="username"></div>
+    <div class="field"><label for="lPw">Password</label><input id="lPw" type="password" autocomplete="current-password"></div>
+    <div class="err" id="loginErr"></div>
+    <button class="btn primary" id="loginGo" style="width:100%">Sign in</button>
+    <p class="faint" style="margin-top:16px">New institution? <a href="#" data-view="register">Apply to onboard</a>.</p>
+  </div>
+</div></main>
+
+<!-- DASHBOARD (signed-in staff) -->
+<main id="vDash" class="view hidden"><div class="wrap section">
+  <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+    <div>
+      <h2 class="sec" id="dName">Institution</h2>
+      <div class="row" style="margin-top:8px"><span id="dType" class="faint"></span><span id="dLic"></span></div>
+    </div>
+    <div class="row"><span id="dWho" class="faint"></span><button class="btn sm ghost" id="dLogout">Sign out</button></div>
+  </div>
+
+  <div id="pwBanner" class="panel2 hidden" style="border-color:var(--warn);background:var(--warn-dim);margin-bottom:18px">
+    <b>Change your password</b><p class="muted" style="margin:6px 0 12px">You're using a one-time password. Set your own to continue securely.</p>
+    <div class="row"><input id="pwNew" type="password" placeholder="New password (8+ characters)" style="max-width:280px"><button class="btn sm primary" id="pwGo">Change password</button></div>
+    <div class="err" id="pwErr"></div>
+  </div>
+
+  <div id="overdueBanner" class="readonly-note hidden" style="border-color:var(--bad);background:var(--bad-dim);color:var(--bad)">
+    A subscription invoice is overdue. Trading at the counter is paused until it is settled. Reading your books and reports still works.
+  </div>
+
+  <!-- dashboard tabs -->
+  <div class="dtabs">
+    <button id="tabCounter" data-dtab="counter" class="on">Counter</button>
+    <button id="tabAdmin" data-dtab="admin">Institution &amp; staff</button>
+  </div>
+
+  <!-- ============ COUNTER ============ -->
+  <div id="dCounter">
+
+    <!-- FOREX COUNTER -->
+    <div id="forexCounter" class="hidden">
+      <div class="statgrid" style="margin-bottom:18px">
+        <div class="stat"><div class="l">KES in till</div><div class="v" id="fxKes">—</div></div>
+        <div class="stat"><div class="l">Deals today</div><div class="v" id="fxDealsToday">—</div></div>
+        <div class="stat"><div class="l">Bought today</div><div class="v" id="fxBoughtToday">—</div></div>
+        <div class="stat"><div class="l">Sold today</div><div class="v" id="fxSoldToday">—</div></div>
+      </div>
+      <div class="subtabs">
+        <button data-fx="trade" class="on">New deal</button>
+        <button data-fx="rates">Rate board</button>
+        <button data-fx="positions">Positions</button>
+        <button data-fx="till">Till / close</button>
+        <button data-fx="blotter">Today's deals</button>
+      </div>
+
+      <!-- FX: trade -->
+      <div id="fxTrade" class="panel">
+        <h2 class="sec" style="font-size:1.1rem">Buy or sell foreign currency</h2>
+        <p class="faint" style="margin:6px 0 16px">BUY = the bureau buys foreign cash from the customer (pays out KES). SELL = the bureau sells foreign cash to the customer (takes in KES).</p>
+        <div class="grid2">
+          <div>
+            <div class="field"><label>Direction</label>
+              <div class="seg" id="fxDir"><button data-dir="BUY" class="on">BUY foreign</button><button data-dir="SELL">SELL foreign</button></div>
+            </div>
+            <div class="grid2">
+              <div class="field"><label for="fxCur">Currency</label><select id="fxCur"></select></div>
+              <div class="field"><label for="fxAmt">Foreign amount</label><input id="fxAmt" inputmode="decimal" placeholder="e.g. 500"></div>
+            </div>
+            <div class="quotebox">
+              <div class="faint" id="fxQuoteLbl">Enter an amount to see the quote.</div>
+              <div class="big" id="fxQuoteMain" style="margin-top:4px">—</div>
+              <div class="faint" id="fxQuoteSub"></div>
+            </div>
+          </div>
+          <div>
+            <div class="field"><label for="fxName">Customer name <span class="faint">(required for large deals)</span></label><input id="fxName" maxlength="100"></div>
+            <div class="grid2">
+              <div class="field"><label for="fxId">ID number</label><input id="fxId" maxlength="30" style="text-transform:uppercase"></div>
+              <div class="field"><label for="fxPhone">Phone</label><input id="fxPhone" maxlength="20" placeholder="+2547…"></div>
+            </div>
+            <div class="err" id="fxErr"></div>
+            <button class="btn primary" id="fxExecute" style="width:100%" disabled>Execute deal</button>
+          </div>
+        </div>
+        <div id="fxReceipt" class="hidden" style="margin-top:16px"></div>
+      </div>
+
+      <!-- FX: rates -->
+      <div id="fxRates" class="panel hidden">
+        <div class="row" style="justify-content:space-between"><h2 class="sec" style="font-size:1.1rem">Rate board</h2></div>
+        <p class="faint" style="margin:6px 0 14px">Rates are KES per 1 unit of the currency. Sell must be above buy; the spread is the bureau's margin.</p>
+        <div id="fxSetRate" class="panel2" style="margin-bottom:16px">
+          <div class="row" style="align-items:flex-end">
+            <div class="field" style="margin:0;min-width:120px"><label for="frCur">Currency</label><select id="frCur"></select></div>
+            <div class="field" style="margin:0;min-width:120px"><label for="frBuy">Buy (KES)</label><input id="frBuy" inputmode="decimal" placeholder="e.g. 128.50"></div>
+            <div class="field" style="margin:0;min-width:120px"><label for="frSell">Sell (KES)</label><input id="frSell" inputmode="decimal" placeholder="e.g. 132.00"></div>
+            <button class="btn sm primary" id="frGo">Set rate</button>
+          </div>
+          <div class="err" id="frErr"></div>
+        </div>
+        <div style="overflow-x:auto"><table id="fxRateTable"><tbody></tbody></table></div>
+      </div>
+
+      <!-- FX: positions -->
+      <div id="fxPositions" class="panel hidden">
+        <h2 class="sec" style="font-size:1.1rem">Positions</h2>
+        <p class="faint" style="margin:6px 0 14px">How much foreign cash the bureau holds, what it cost in KES, and its value at today's buy rate.</p>
+        <div class="field" style="max-width:260px"><label>KES on hand (ledger)</label><div class="big" id="fxPosKes">—</div></div>
+        <div style="overflow-x:auto"><table id="fxPosTable"><tbody></tbody></table></div>
+      </div>
+
+      <!-- FX: till -->
+      <div id="fxTill" class="panel hidden">
+        <h2 class="sec" style="font-size:1.1rem">Till reconciliation / close</h2>
+        <p class="faint" style="margin:6px 0 14px">Count the cash and confirm it matches what the ledger says the till should hold. This is the anti-theft check at close.</p>
+        <div id="fxTillExpected" class="panel2" style="margin-bottom:14px"></div>
+        <div class="field" style="max-width:260px"><label for="fxCountKes">Counted KES cash</label><input id="fxCountKes" inputmode="decimal" placeholder="e.g. 450000"></div>
+        <div id="fxCountForeign"></div>
+        <div class="field"><label for="fxTillNote">Note (optional)</label><input id="fxTillNote" maxlength="200"></div>
+        <div class="err" id="fxTillErr"></div>
+        <button class="btn primary" id="fxTillGo">Reconcile till</button>
+        <div id="fxTillResult" class="hidden" style="margin-top:14px"></div>
+      </div>
+
+      <!-- FX: blotter -->
+      <div id="fxBlotter" class="panel hidden">
+        <div class="row" style="justify-content:space-between"><h2 class="sec" style="font-size:1.1rem">Today's deals</h2><a class="btn sm ghost" id="fxCsv" href="#">Export CSV</a></div>
+        <div id="fxBlotterSummary" class="faint" style="margin:6px 0 12px"></div>
+        <div style="overflow-x:auto"><table id="fxBlotterTable"><tbody></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- MICROFINANCE / SACCO COUNTER -->
+    <div id="mfiCounter" class="hidden">
+      <div class="statgrid" style="margin-bottom:18px">
+        <div class="stat"><div class="l">Vault cash</div><div class="v" id="mfVault">—</div></div>
+        <div class="stat"><div class="l">Members</div><div class="v" id="mfMembers">—</div></div>
+        <div class="stat"><div class="l">Savings held</div><div class="v" id="mfSavings">—</div></div>
+        <div class="stat"><div class="l">Loans outstanding</div><div class="v" id="mfLoans">—</div></div>
+      </div>
+      <div class="subtabs">
+        <button data-mf="members" class="on">Members &amp; savings</button>
+        <button data-mf="loans">Loans</button>
+        <button data-mf="reconcile">Reconcile</button>
+      </div>
+
+      <!-- MFI: members -->
+      <div id="mfMembersView">
+        <div class="grid2" style="align-items:start">
+          <div class="panel">
+            <h2 class="sec" style="font-size:1.1rem">Register a member</h2>
+            <div class="field" style="margin-top:12px"><label for="mmName">Full name</label><input id="mmName" maxlength="100" placeholder="First and last name"></div>
+            <div class="grid2">
+              <div class="field"><label for="mmId">ID number</label><input id="mmId" maxlength="30" style="text-transform:uppercase"></div>
+              <div class="field"><label for="mmPhone">Phone</label><input id="mmPhone" maxlength="20" placeholder="+2547…"></div>
+            </div>
+            <div class="err" id="mmErr"></div>
+            <button class="btn primary" id="mmGo">Add member</button>
+          </div>
+          <div class="panel">
+            <div class="row" style="justify-content:space-between"><h2 class="sec" style="font-size:1.1rem">Members</h2></div>
+            <div class="field" style="margin:10px 0"><input id="mmSearch" placeholder="Search by name, ID or phone"></div>
+            <div style="overflow-x:auto;max-height:420px;overflow-y:auto"><table id="mfMemberTable"><tbody></tbody></table></div>
+          </div>
+        </div>
+        <!-- selected member drawer -->
+        <div id="mfMemberCard" class="panel hidden" style="margin-top:16px">
+          <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <div><h2 class="sec" style="font-size:1.1rem" id="mcName">Member</h2><div class="faint" id="mcMeta"></div></div>
+            <button class="btn sm ghost" id="mcClose">Close</button>
+          </div>
+          <div class="statgrid" style="margin:14px 0">
+            <div class="stat"><div class="l">Savings balance</div><div class="v" id="mcSavings">—</div></div>
+            <div class="stat"><div class="l">Open loans</div><div class="v" id="mcLoans">—</div></div>
+          </div>
+          <div class="grid2">
+            <div class="panel2">
+              <h2 class="sec" style="font-size:1rem">Savings</h2>
+              <div class="field" style="margin:10px 0"><label for="mcAmt">Amount (KES)</label><input id="mcAmt" inputmode="decimal" placeholder="e.g. 5000"></div>
+              <div class="err" id="mcErr"></div>
+              <div class="row"><button class="btn sm primary" id="mcDeposit">Deposit</button><button class="btn sm" id="mcWithdraw">Withdraw</button></div>
+            </div>
+            <div class="panel2">
+              <h2 class="sec" style="font-size:1rem">Recent activity</h2>
+              <div id="mcActivity" class="muted" style="margin-top:10px;max-height:200px;overflow-y:auto">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MFI: loans -->
+      <div id="mfLoansView" class="hidden">
+        <div class="grid2" style="align-items:start">
+          <div class="panel">
+            <h2 class="sec" style="font-size:1.1rem">Disburse a loan</h2>
+            <p class="faint" style="margin:6px 0 12px">Declining-balance, equal principal each month. Interest accrues on the outstanding balance.</p>
+            <div class="field"><label for="mlMember">Member ID</label><input id="mlMember" placeholder="MEM-… (pick from members, or type)"></div>
+            <div class="grid2">
+              <div class="field"><label for="mlAmt">Principal (KES)</label><input id="mlAmt" inputmode="decimal" placeholder="e.g. 50000"></div>
+              <div class="field"><label for="mlMonths">Term (months)</label><input id="mlMonths" inputmode="numeric" placeholder="e.g. 12"></div>
+            </div>
+            <div class="field"><label for="mlRate">Interest %/month</label><input id="mlRate" inputmode="decimal" placeholder="e.g. 3"></div>
+            <div class="err" id="mlErr"></div>
+            <button class="btn primary" id="mlGo">Disburse loan</button>
+            <div id="mlSchedule" class="hidden" style="margin-top:14px"></div>
+          </div>
+          <div class="panel">
+            <div class="row" style="justify-content:space-between"><h2 class="sec" style="font-size:1.1rem">Loans</h2>
+              <select id="mlFilter" style="width:auto"><option value="ACTIVE">Active</option><option value="CLOSED">Closed</option><option value="">All</option></select>
+            </div>
+            <div style="overflow-x:auto;margin-top:12px;max-height:460px;overflow-y:auto"><table id="mfLoanTable"><tbody></tbody></table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MFI: reconcile -->
+      <div id="mfReconcileView" class="panel hidden">
+        <h2 class="sec" style="font-size:1.1rem">Reconciliation</h2>
+        <p class="faint" style="margin:6px 0 14px">The checks the institution and its regulator rely on. Every figure is read from the ledger.</p>
+        <div class="statgrid" style="margin-bottom:16px">
+          <div class="stat"><div class="l">Vault cash</div><div class="v" id="mrVault">—</div></div>
+          <div class="stat"><div class="l">Interest earned</div><div class="v" id="mrInterest">—</div></div>
+        </div>
+        <div id="mrChecks"></div>
+        <button class="btn sm ghost" id="mrRefresh" style="margin-top:12px">Refresh</button>
+      </div>
+    </div>
+
+    <!-- read-only role note -->
+    <div id="noCounter" class="hidden">
+      <div class="panel"><div class="empty">This counter is read-only for your role. Cashiers and administrators transact; auditors and compliance officers review. Use the <b>Institution &amp; staff</b> tab, or the ledger &amp; compliance console.</div></div>
+    </div>
+  </div>
+
+  <!-- ============ ADMIN (institution & staff) ============ -->
+  <div id="dAdmin" class="hidden">
+  <div class="grid2" style="gap:16px;align-items:start">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><h2 class="sec" style="font-size:1.1rem">Your staff</h2><button class="btn sm" id="addStaffBtn">Add staff</button></div>
+      <p class="faint" style="margin:6px 0 14px">Only people you add here can act for your institution, and only within it.</p>
+      <div id="addStaffForm" class="panel2 hidden" style="margin-bottom:14px">
+        <div class="grid2"><div class="field" style="margin-bottom:10px"><label for="sName">Full name</label><input id="sName" maxlength="100"></div><div class="field" style="margin-bottom:10px"><label for="sEmail">Work email</label><input id="sEmail" type="email" maxlength="120"></div></div>
+        <div class="field" style="margin-bottom:10px"><label for="sRole">Role</label><select id="sRole"></select></div>
+        <div class="err" id="sErr"></div>
+        <div class="row"><button class="btn sm primary" id="sGo">Create staff</button><button class="btn sm ghost" id="sCancel">Cancel</button></div>
+        <div id="sResult" class="hidden" style="margin-top:12px"><label>One-time password for this person</label><div class="secret"><span id="sPw"></span><button class="copy" id="sCopy">Copy</button></div></div>
+      </div>
+      <div style="overflow-x:auto"><table id="staffTable"><tbody></tbody></table></div>
+    </div>
+
+    <div class="panel">
+      <h2 class="sec" style="font-size:1.1rem">Your institution</h2>
+      <div class="kv" id="instKv" style="margin-top:12px"></div>
+      <div id="curBox" class="hidden" style="margin-top:16px">
+        <label>Currencies</label><div id="dCur" class="curwrap" style="margin-bottom:10px"></div>
+        <div class="row"><input id="addCur" placeholder="Add currency, e.g. AED" maxlength="3" style="max-width:160px;text-transform:uppercase"><button class="btn sm" id="addCurGo">Add currency</button></div>
+      </div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+      <h2 class="sec" style="font-size:1rem">Platform access to your books</h2>
+      <p class="faint" style="margin:6px 0 10px">If our platform administrator ever opens your books for support, it is recorded here. We cannot do it silently.</p>
+      <div id="bgLog" class="muted">No access recorded.</div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+      <div class="row"><a class="btn sm" href="/admin" target="_blank" rel="noopener">Open ledger &amp; compliance console →</a></div>
+      <p class="faint" style="margin-top:8px">Your ledger, trial balance, KYC cases and reports open in the full console, scoped to your institution.</p>
+    </div>
+  </div>
+  </div>
+</div></main>
+
+<footer><div class="wrap">RDS Compliance Platform. The software records what each institution declares and what the platform administrator verifies; it does not itself grant or certify any regulator licence. Each institution remains responsible for its own CBK or SASRA obligations.</div></footer>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+const $=(id)=>document.getElementById(id);
+const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const API=(location.origin&&location.origin!=='null')?location.origin:'http://localhost:3000';
+let TYPES=[],REG={},token=sessionStorage.getItem('rds_tenant_token')||null,me=null,selCur=new Set();
+let CTX={kind:null,canTrade:false,overdue:false}; // counter context after sign-in
+function toast(msg,kind){const el=document.createElement('div');el.className='toast '+(kind||'');el.textContent=msg;$('toasts').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300)},kind==='err'?6000:3800);}
+async function api(path,opts={}){const h={'Content-Type':'application/json'};if(token&&opts.auth!==false)h.Authorization='Bearer '+token;if(me&&me.businessId&&opts.auth!==false)h['x-business-id']=me.businessId;Object.assign(h,opts.headers||{});
+  const r=await fetch(API+path,{method:opts.method||'GET',headers:h,body:opts.body!==undefined?JSON.stringify(opts.body):undefined});
+  let d=null;try{d=await r.json()}catch(e){}
+  if(!r.ok||!d||d.success===false){const e=new Error((d&&d.error)||('Request failed ('+r.status+')'));e.status=r.status;e.data=d;throw e;}return d;}
+function view(v){['home','register','login','dash'].forEach(x=>$('v'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('hidden',x!==v));
+  ['navHome','navReg','navLogin'].forEach(id=>{const b=$(id);if(b)b.classList.toggle('on',b.dataset.view===v)});window.scrollTo({top:0});}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b){e.preventDefault();const v=b.dataset.view;if(v==='dash'&&!token)return view('login');view(v);}});
+
+/* ---------- types ---------- */
+async function loadTypes(){try{const d=await api('/api/platform/types',{auth:false});TYPES=d.types;REG=d.regulators;
+  $('typeList').innerHTML=TYPES.map(t=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)"><b style="font-weight:600;color:var(--ink)">${esc(t.label)}</b><span class="faint">${esc(t.regulatorName)}</span></div>`).join('');
+  $('rType').innerHTML=TYPES.map(t=>`<option value="${esc(t.id)}">${esc(t.label)}</option>`).join('');onType();
+}catch(e){$('typeList').textContent='Could not load institution types. Refresh to try again.';}}
+function curTile(c,locked,on){return `<span class="cur ${on?'on':''} ${locked?'locked':''}" data-cur="${esc(c)}">${esc(c)}</span>`;}
+function onType(){const t=TYPES.find(x=>x.id===$('rType').value);if(!t)return;$('rRegulator').value=t.regulatorName;$('rLicenceLabel').textContent=t.licenceLabel;$('rLicence').placeholder=t.licenceLabel;
+  selCur=new Set(t.defaultCurrencies);selCur.add('KES');
+  const common=['KES','USD','EUR','GBP','AED','ZAR','TZS','UGX'];const list=[...new Set([...common,...t.defaultCurrencies])];
+  $('rCur').innerHTML=list.map(c=>curTile(c,!t.multiCurrency||c==='KES',selCur.has(c))).join('');
+  $('rCurNote').textContent=t.multiCurrency?'Tap to choose the currencies you buy and sell. KES is always included.':'This institution type uses KES only.';}
+$('rType').onchange=onType;
+$('rCur').onclick=e=>{const el=e.target.closest('[data-cur]');if(!el||el.classList.contains('locked'))return;const c=el.dataset.cur;if(selCur.has(c)&&c!=='KES'){selCur.delete(c);el.classList.remove('on')}else{selCur.add(c);el.classList.add('on')}};
+
+/* ---------- register ---------- */
+$('regGo').onclick=async()=>{const err=$('regErr');err.textContent='';const b=$('regGo');b.disabled=true;b.innerHTML='<span class="spin"></span>';
+  try{const d=await api('/api/platform/register',{method:'POST',auth:false,body:{name:$('rName').value.trim(),type:$('rType').value,licenceNumber:$('rLicence').value.trim(),currencies:[...selCur],county:$('rCounty').value.trim(),address:$('rAddress').value.trim(),ownerName:$('rOwnerName').value.trim(),ownerEmail:$('rOwnerEmail').value.trim(),ownerPhone:$('rOwnerPhone').value.trim(),password:$('rOwnerPw').value}});
+    $('regForm').classList.add('hidden');$('regDone').classList.remove('hidden');
+    $('regDoneMsg').textContent=d.message;$('rdId').textContent=d.tenant.tenantId;$('rdEmail').textContent=d.adminEmail;$('rdLicNote').textContent=d.note;
+  }catch(e){err.textContent=e.message;}finally{b.disabled=false;b.textContent='Submit application';}};
+$('regToLogin').onclick=()=>{$('lEmail').value=$('rdEmail').textContent;$('lTenant').value=$('rdId').textContent;view('login');};
+
+/* ---------- login ---------- */
+$('loginGo').onclick=async()=>{const err=$('loginErr');err.textContent='';const b=$('loginGo');b.disabled=true;b.innerHTML='<span class="spin"></span>';
+  try{const d=await api('/api/platform/staff/login',{method:'POST',auth:false,body:{tenantId:$('lTenant').value.trim(),email:$('lEmail').value.trim(),password:$('lPw').value}});
+    token=d.token;sessionStorage.setItem('rds_tenant_token',token);me={businessId:d.businessId,tenant:d.tenant,staff:d.staff,mustChange:d.mustChangePassword,overdue:d.billingOverdue};
+    $('lPw').value='';await enterDash();
+  }catch(e){err.textContent=e.message;}finally{b.disabled=false;b.textContent='Sign in';}};
+['lTenant','lEmail','lPw'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')$('loginGo').click();}));
+
+/* ---------- dashboard shell ---------- */
+async function enterDash(){
+  try{const m=await api('/api/platform/staff/me');me.tenant=m.tenant;me.staff=m.staff;me.businessId=m.businessId;}catch(e){if(e.status===401){return signOut();}}
+  const t=me.tenant,s=me.staff;
+  $('dName').textContent=t.name;$('dType').textContent=t.typeLabel+' · '+t.regulatorName;
+  $('dLic').innerHTML=t.licenceStatus==='LICENCE_VERIFIED'?'<span class="badge ok">Licence verified</span>':t.licenceStatus==='LICENCE_REJECTED'?'<span class="badge bad">Licence not accepted</span>':'<span class="badge warn">Licence declared, not verified</span>';
+  $('dWho').textContent=s.name+' · '+s.roleLabel;
+  $('pwBanner').classList.toggle('hidden',!me.mustChange&&!s.mustChangePassword);
+  $('overdueBanner').classList.toggle('hidden',!me.overdue);
+  const isAdmin=s.role==='TENANT_ADMIN';
+  $('addStaffBtn').classList.toggle('hidden',!isAdmin);
+  $('instKv').innerHTML=[['Institution ID',t.tenantId],['Type',t.typeLabel],['Regulator',t.regulatorName],['County',t.county||'—'],['Currencies',(t.currencies||[]).join(', ')]].map(([k,v])=>`<span>${esc(k)}</span><b>${esc(v)}</b>`).join('');
+  const ty=TYPES.find(x=>x.id===t.type);
+  $('curBox').classList.toggle('hidden',!(isAdmin&&ty&&ty.multiCurrency));
+  if(isAdmin&&ty&&ty.multiCurrency){$('dCur').innerHTML=(t.currencies||[]).map(c=>curTile(c,true,true)).join('');}
+  // counter context
+  CTX.canTrade = (s.role==='CASHIER'||s.role==='TENANT_ADMIN') && !me.overdue;
+  CTX.overdue = !!me.overdue;
+  CTX.kind = t.type==='FOREX_BUREAU' ? 'forex' : (['MICROFINANCE_BANK','MICROFINANCE_CREDIT','SACCO','COMMERCIAL_BANK'].includes(t.type) ? 'mfi' : null);
+  view('dash');loadStaff();loadBg();
+  dtab('counter');mountCounter();
+}
+function signOut(){token=null;me=null;sessionStorage.removeItem('rds_tenant_token');view('login');}
+$('dLogout').onclick=signOut;
+$('pwGo').onclick=async()=>{const err=$('pwErr');err.textContent='';try{await api('/api/platform/staff/change-password',{method:'POST',body:{newPassword:$('pwNew').value}});toast('Password changed','ok');$('pwBanner').classList.add('hidden');me.mustChange=false;me.staff.mustChangePassword=false;}catch(e){err.textContent=e.message;}};
+
+/* dashboard tabs */
+function dtab(which){$('tabCounter').classList.toggle('on',which==='counter');$('tabAdmin').classList.toggle('on',which==='admin');
+  $('dCounter').classList.toggle('hidden',which!=='counter');$('dAdmin').classList.toggle('hidden',which!=='admin');}
+$('tabCounter').onclick=()=>dtab('counter');$('tabAdmin').onclick=()=>dtab('admin');
+
+/* ---------- staff (admin) ---------- */
+async function loadStaff(){try{const d=await api('/api/platform/my/staff');$('sRole').innerHTML=d.roles.map(r=>`<option value="${esc(r.id)}">${esc(r.label)}</option>`).join('');
+  const isAdmin=me.staff.role==='TENANT_ADMIN';
+  $('staffTable').querySelector('tbody').innerHTML=d.staff.length?('<tr><th>Name</th><th>Role</th><th>Status</th>'+(isAdmin?'<th></th>':'')+'</tr>'+d.staff.map(s=>`<tr><td><b style="font-weight:600">${esc(s.name)}</b><div class="faint">${esc(s.email)}</div></td><td>${esc(s.roleLabel)}</td><td>${s.disabled?'<span class="badge bad">Disabled</span>':'<span class="badge ok">Active</span>'}</td>${isAdmin?`<td style="text-align:right;white-space:nowrap">${s.staffId!==me.staff.staffId?`<button class="btn sm ghost" data-staff="${esc(s.staffId)}" data-act="${s.disabled?'enable':'disable'}">${s.disabled?'Enable':'Disable'}</button> `:''}<button class="btn sm ghost" data-staff="${esc(s.staffId)}" data-act="reset-password">Reset password</button></td>`:''}</tr>`).join('')):'<tr><td class="empty">No staff yet.</td></tr>';
+}catch(e){toast(e.message,'err');}}
+$('addStaffBtn').onclick=()=>{$('addStaffForm').classList.toggle('hidden');$('sResult').classList.add('hidden');};
+$('sCancel').onclick=()=>$('addStaffForm').classList.add('hidden');
+$('sGo').onclick=async()=>{const err=$('sErr');err.textContent='';try{const d=await api('/api/platform/my/staff',{method:'POST',body:{name:$('sName').value.trim(),email:$('sEmail').value.trim(),role:$('sRole').value}});
+  $('sResult').classList.remove('hidden');$('sPw').textContent=d.temporaryPassword;$('sName').value='';$('sEmail').value='';toast(d.message,'ok');loadStaff();
+}catch(e){err.textContent=e.message;}};
+$('sCopy').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText($('sPw').textContent);toast('Password copied','ok');};
+$('staffTable').addEventListener('click',async e=>{const b=e.target.closest('[data-staff]');if(!b)return;try{const d=await api('/api/platform/my/staff/'+b.dataset.staff,{method:'POST',body:{action:b.dataset.act}});toast(d.message,'ok');if(d.temporaryPassword){$('addStaffForm').classList.remove('hidden');$('sResult').classList.remove('hidden');$('sPw').textContent=d.temporaryPassword;}loadStaff();}catch(x){toast(x.message,'err');}});
+$('addCurGo').onclick=async()=>{try{const d=await api('/api/platform/my/currencies',{method:'POST',body:{currency:$('addCur').value.trim()}});toast(d.message,'ok');$('addCur').value='';me.tenant.currencies=d.currencies;enterDash();}catch(e){toast(e.message,'err');}};
+async function loadBg(){try{const d=await api('/api/platform/my/break-glass-log');$('bgLog').innerHTML=d.log.length?d.log.map(x=>`<div style="padding:7px 0;border-bottom:1px solid var(--line)"><div class="faint">${new Date(x.at).toLocaleString('en-KE')} · ${esc(x.by)}</div><div class="muted">${esc(x.reason)}</div></div>`).join(''):'<span class="faint">No access recorded. Your books have not been opened by the platform administrator.</span>';}catch(e){}}
+
+/* ============================================================
+   COUNTER
+   ============================================================ */
+function mountCounter(){
+  $('forexCounter').classList.add('hidden');$('mfiCounter').classList.add('hidden');$('noCounter').classList.add('hidden');
+  const readonlyRole = !(me.staff.role==='CASHIER'||me.staff.role==='TENANT_ADMIN');
+  if(CTX.kind==='forex'){ $('forexCounter').classList.remove('hidden'); fxShow('trade'); fxRefreshAll(); }
+  else if(CTX.kind==='mfi'){ $('mfiCounter').classList.remove('hidden'); mfShow('members'); mfRefreshAll(); }
+  else { $('noCounter').classList.remove('hidden'); }
+}
+function disableTrade(container){ if(CTX.canTrade)return; container.querySelectorAll('button.primary, button[data-act], #frGo, #mcDeposit, #mcWithdraw, #mlGo, #mmGo, #fxExecute, #fxTillGo').forEach(b=>{b.disabled=true;b.title=CTX.overdue?'Trading paused: invoice overdue':'Read-only for your role';}); }
+
+/* ---------- FOREX ---------- */
+let fxMoney={};
+const money=(s)=>s==null?'—':s;
+function fxShow(which){['trade','rates','positions','till','blotter'].forEach(x=>$('fx'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('hidden',x!==which));
+  document.querySelectorAll('[data-fx]').forEach(b=>b.classList.toggle('on',b.dataset.fx===which));
+  if(which==='rates')fxLoadRates();if(which==='positions')fxLoadPositions();if(which==='till')fxLoadTill();if(which==='blotter')fxLoadBlotter();}
+document.querySelectorAll('[data-fx]').forEach(b=>b.onclick=()=>fxShow(b.dataset.fx));
+let fxDir='BUY';
+$('fxDir').addEventListener('click',e=>{const b=e.target.closest('[data-dir]');if(!b)return;fxDir=b.dataset.dir;document.querySelectorAll('#fxDir button').forEach(x=>x.classList.toggle('on',x===b));fxQuote();});
+$('fxCur').onchange=fxQuote;$('fxAmt').addEventListener('input',()=>{clearTimeout(fxMoney._t);fxMoney._t=setTimeout(fxQuote,250);});
+async function fxRefreshAll(){
+  try{const d=await api('/api/forex/rates');
+    $('fxCur').innerHTML=(d.currencies||[]).map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')||'<option value="">— no currencies —</option>';
+    $('frCur').innerHTML=(d.currencies||[]).map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  }catch(e){}
+  fxStats();
+  disableTrade($('forexCounter'));
+}
+async function fxStats(){try{const p=await api('/api/forex/positions');$('fxKes').textContent='KES '+money(p.kesOnHand);
+  const d=await api('/api/forex/deals');$('fxDealsToday').textContent=d.count;$('fxBoughtToday').textContent='KES '+money(d.summary.buyKes);$('fxSoldToday').textContent='KES '+money(d.summary.sellKes);}catch(e){}}
+async function fxQuote(){const cur=$('fxCur').value,amt=$('fxAmt').value.trim();const ex=$('fxExecute');
+  if(!cur||!amt){$('fxQuoteLbl').textContent='Enter an amount to see the quote.';$('fxQuoteMain').textContent='—';$('fxQuoteSub').textContent='';ex.disabled=true;return;}
+  try{const q=await api('/api/forex/quote',{method:'POST',body:{deal:fxDir,currency:cur,foreignAmount:amt}});
+    $('fxQuoteLbl').textContent=fxDir==='BUY'?'Customer gives you, you pay out:':'Customer pays you, you hand over:';
+    $('fxQuoteMain').textContent=fxDir==='BUY'?('Pay out KES '+q.kes):('Collect KES '+q.kes);
+    $('fxQuoteSub').textContent=`${q.foreign} ${cur} @ ${q.rateStr} · you ${fxDir==='BUY'?'receive':'release'} ${q.foreign} ${cur}`;
+    ex.disabled=!CTX.canTrade;
+  }catch(e){$('fxQuoteLbl').textContent=e.message;$('fxQuoteMain').textContent='—';$('fxQuoteSub').textContent='';ex.disabled=true;}}
+$('fxExecute').onclick=async()=>{const err=$('fxErr');err.textContent='';const b=$('fxExecute');b.disabled=true;b.innerHTML='<span class="spin"></span>';
+  try{const d=await api('/api/forex/deals',{method:'POST',body:{deal:fxDir,currency:$('fxCur').value,foreignAmount:$('fxAmt').value.trim(),customerName:$('fxName').value.trim(),idNumber:$('fxId').value.trim(),phone:$('fxPhone').value.trim()}});
+    toast(d.message,'ok');const r=d.receipt;
+    $('fxReceipt').classList.remove('hidden');$('fxReceipt').innerHTML=`<div class="receipt"><div class="row" style="justify-content:space-between"><b>${esc(r.bureau)}</b><span class="badge ok">${esc(d.deal.dealId)}</span></div>
+      <div class="kv"><span>${esc(r.line1)}</span><b>${esc(d.deal.foreign)} ${esc(d.deal.currency)}</b><span>${esc(r.line2)}</span><b></b><span>${esc(r.line3)}</span><b>KES ${esc(d.deal.kes)}</b>${d.ctrId?`<span>Cash report</span><b>${esc(d.ctrId)}</b>`:''}</div>
+      <p class="faint" style="margin-top:10px">${esc(r.note)}</p></div>`;
+    $('fxAmt').value='';$('fxName').value='';$('fxId').value='';$('fxPhone').value='';fxQuote();fxStats();
+  }catch(e){err.textContent=e.message;}finally{b.innerHTML='Execute deal';b.disabled=!CTX.canTrade;}};
+async function fxLoadRates(){try{const d=await api('/api/forex/rates');const tb=$('fxRateTable').querySelector('tbody');
+  tb.innerHTML=d.board.length?('<tr><th>Currency</th><th>Buy (KES)</th><th>Sell (KES)</th><th>Spread</th><th>Updated</th></tr>'+d.board.map(r=>`<tr><td><b>${esc(r.currency)}</b></td><td>${esc(r.buy)}</td><td>${esc(r.sell)}</td><td>${esc(r.spreadPct)}%</td><td class="faint">${r.updatedAt?new Date(r.updatedAt).toLocaleString('en-KE'):'—'}</td></tr>`).join('')):'<tr><td class="empty">No rates set yet. Set a rate below to start trading.</td></tr>';
+}catch(e){toast(e.message,'err');}}
+$('frGo').onclick=async()=>{const err=$('frErr');err.textContent='';try{const d=await api('/api/forex/rates',{method:'POST',body:{currency:$('frCur').value,buy:$('frBuy').value.trim(),sell:$('frSell').value.trim()}});toast(d.message,'ok');$('frBuy').value='';$('frSell').value='';fxLoadRates();fxRefreshAll();}catch(e){err.textContent=e.message;}};
+async function fxLoadPositions(){try{const d=await api('/api/forex/positions');$('fxPosKes').textContent='KES '+money(d.kesOnHand);const tb=$('fxPosTable').querySelector('tbody');
+  tb.innerHTML=d.foreign.length?('<tr><th>Currency</th><th>Units held</th><th>KES cost</th><th>Avg rate</th><th>Mark rate</th><th>Unrealised</th></tr>'+d.foreign.map(r=>`<tr><td><b>${esc(r.currency)}</b></td><td>${esc(r.units)}</td><td>${esc(r.costKes)}</td><td>${esc(r.avgCostRate||'—')}</td><td>${esc(r.markRate||'—')}</td><td>${esc(r.unrealisedKes||'—')}</td></tr>`).join('')):'<tr><td class="empty">No foreign currency held.</td></tr>';
+}catch(e){toast(e.message,'err');}}
+async function fxLoadTill(){try{const d=await api('/api/forex/till');$('fxTillExpected').innerHTML=`<div class="faint">Ledger says the till should hold:</div><div class="big" style="margin:4px 0">KES ${esc(d.expectedKes)}</div>${d.foreign.length?('<div class="faint" style="margin-top:6px">'+d.foreign.map(f=>esc(f.expected)+' '+esc(f.currency)).join(' · ')+'</div>'):''}`;
+  $('fxCountForeign').innerHTML=d.foreign.map(f=>`<div class="field" style="max-width:260px"><label>Counted ${esc(f.currency)} (expected ${esc(f.expected)})</label><input data-fxcount="${esc(f.currency)}" inputmode="decimal"></div>`).join('');
+  disableTrade($('fxTill'));
+}catch(e){toast(e.message,'err');}}
+$('fxTillGo').onclick=async()=>{const err=$('fxTillErr');err.textContent='';const cf={};document.querySelectorAll('[data-fxcount]').forEach(i=>{if(i.value.trim())cf[i.dataset.fxcount]=i.value.trim();});
+  try{const d=await api('/api/forex/till/reconcile',{method:'POST',body:{countedKes:$('fxCountKes').value.trim()||'0',countedForeign:cf,note:$('fxTillNote').value.trim()}});
+    const rec=d.reconciliation;$('fxTillResult').classList.remove('hidden');
+    $('fxTillResult').innerHTML=`<div class="${rec.matches?'receipt':'panel2'}" style="${rec.matches?'':'border-color:var(--bad)'}"><b style="color:${rec.matches?'var(--ok)':'var(--bad)'}">${esc(d.message)}</b>
+      <div class="kv"><span>Expected KES</span><b>${esc(rec.expectedKes)}</b><span>Counted KES</span><b>${esc(rec.countedKes)}</b><span>Difference</span><b>${esc(rec.kesDiff)}</b></div>
+      ${rec.foreign.length?('<div style="margin-top:8px" class="mono">'+rec.foreign.map(f=>`${esc(f.currency)}: expected ${esc(f.expected)}, counted ${esc(f.counted)}, diff ${esc(f.diff)} ${f.matches?'✓':'✗'}`).join('<br>')+'</div>'):''}</div>`;
+    toast(rec.matches?'Till balances':'Till does not balance',rec.matches?'ok':'err');
+  }catch(e){err.textContent=e.message;}};
+async function fxLoadBlotter(){try{const d=await api('/api/forex/deals');$('fxBlotterSummary').textContent=`${d.count} deals today · bought KES ${d.summary.buyKes} · sold KES ${d.summary.sellKes}`;
+  const tb=$('fxBlotterTable').querySelector('tbody');
+  tb.innerHTML=d.deals.length?('<tr><th>Deal</th><th>Type</th><th>Foreign</th><th>KES</th><th>Rate</th><th>Customer</th><th>Time</th></tr>'+d.deals.map(x=>`<tr><td class="mono">${esc(x.dealId)}</td><td>${x.deal==='BUY'?'<span class="badge ok">BUY</span>':'<span class="badge warn">SELL</span>'}</td><td>${esc(x.foreign)} ${esc(x.currency)}</td><td>KES ${esc(x.kes)}</td><td>${esc(x.rate)}</td><td>${esc(x.customerName||'Walk-in')}</td><td class="faint">${new Date(x.at).toLocaleTimeString('en-KE')}</td></tr>`).join('')):'<tr><td class="empty">No deals today.</td></tr>';
+}catch(e){toast(e.message,'err');}}
+$('fxCsv').onclick=(e)=>{e.preventDefault();const u=API+'/api/forex/deals/export.csv';fetch(u,{headers:{Authorization:'Bearer '+token,'x-business-id':me.businessId}}).then(r=>r.blob()).then(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='forex-deals.csv';a.click();}).catch(()=>toast('Could not export','err'));};
+
+/* ---------- MICROFINANCE / SACCO ---------- */
+let mfSel=null;
+function mfShow(which){$('mfMembersView').classList.toggle('hidden',which!=='members');$('mfLoansView').classList.toggle('hidden',which!=='loans');$('mfReconcileView').classList.toggle('hidden',which!=='reconcile');
+  document.querySelectorAll('[data-mf]').forEach(b=>b.classList.toggle('on',b.dataset.mf===which));
+  if(which==='members')mfLoadMembers();if(which==='loans')mfLoadLoans();if(which==='reconcile')mfLoadReconcile();}
+document.querySelectorAll('[data-mf]').forEach(b=>b.onclick=()=>mfShow(b.dataset.mf));
+async function mfRefreshAll(){mfStats();disableTrade($('mfiCounter'));}
+async function mfStats(){try{const d=await api('/api/mfi/reconcile');$('mfVault').textContent='KES '+money(d.vaultCash);}catch(e){}
+  try{const m=await api('/api/mfi/members');$('mfMembers').textContent=m.count;let sav=0;}catch(e){}
+  try{const r=await api('/api/mfi/reconcile');for(const c of r.checks){if(c.id==='SAVINGS_MATCH')$('mfSavings').textContent='KES '+money(c.members);if(c.id==='LOANS_MATCH')$('mfLoans').textContent='KES '+money(c.members);}}catch(e){}}
+async function mfLoadMembers(){try{const q=$('mmSearch').value.trim();const d=await api('/api/mfi/members'+(q?('?q='+encodeURIComponent(q)):''));const tb=$('mfMemberTable').querySelector('tbody');
+  tb.innerHTML=d.members.length?('<tr><th>Name</th><th>Savings</th><th>Loans</th></tr>'+d.members.map(m=>`<tr style="cursor:pointer" data-mem="${esc(m.memberId)}"><td><b style="font-weight:600">${esc(m.name)}</b><div class="faint">${esc(m.memberId)}</div></td><td>KES ${esc(m.savingsBalance)}</td><td>${m.openLoans||0}</td></tr>`).join('')):'<tr><td class="empty">No members yet.</td></tr>';
+}catch(e){toast(e.message,'err');}}
+$('mmSearch').addEventListener('input',()=>{clearTimeout(mfSel&&mfSel._t);const t=setTimeout(mfLoadMembers,250);mfSel=mfSel||{};mfSel._t=t;});
+$('mfMemberTable').addEventListener('click',e=>{const tr=e.target.closest('[data-mem]');if(tr)openMember(tr.dataset.mem);});
+$('mmGo').onclick=async()=>{const err=$('mmErr');err.textContent='';try{const d=await api('/api/mfi/members',{method:'POST',body:{name:$('mmName').value.trim(),idNumber:$('mmId').value.trim(),phone:$('mmPhone').value.trim()}});toast(d.message,'ok');$('mmName').value='';$('mmId').value='';$('mmPhone').value='';mfLoadMembers();mfStats();openMember(d.member.memberId);}catch(e){err.textContent=e.message;}};
+async function openMember(id){try{const d=await api('/api/mfi/members/'+encodeURIComponent(id));mfSel={id,...d.member};
+  $('mfMemberCard').classList.remove('hidden');$('mcName').textContent=d.member.name;$('mcMeta').textContent=`${d.member.memberId} · ${d.member.phone||'no phone'} · ID ${d.member.idNumber||'—'}`;
+  $('mcSavings').textContent='KES '+d.member.savingsBalance;$('mcLoans').textContent=d.member.openLoans||0;
+  $('mcActivity').innerHTML=(d.activity&&d.activity.length)?d.activity.map(a=>`<div style="padding:6px 0;border-bottom:1px solid var(--line)"><span class="faint">${new Date(a.at).toLocaleString('en-KE')}</span> · ${esc(a.kind.replace(/_/g,' ').toLowerCase())} <b>KES ${esc((a.amountMinor/100).toLocaleString('en-KE',{minimumFractionDigits:2}))}</b></div>`).join(''):'<span class="faint">No activity yet.</span>';
+  disableTrade($('mfMemberCard'));$('mfMemberCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+}catch(e){toast(e.message,'err');}}
+$('mcClose').onclick=()=>$('mfMemberCard').classList.add('hidden');
+async function mcMove(kind){const err=$('mcErr');err.textContent='';if(!mfSel)return;const amt=$('mcAmt').value.trim();
+  try{const d=await api('/api/mfi/savings/'+kind,{method:'POST',body:{memberId:mfSel.id,amount:amt}});toast(d.message,'ok');$('mcAmt').value='';openMember(mfSel.id);mfStats();}catch(e){err.textContent=e.message;}}
+$('mcDeposit').onclick=()=>mcMove('deposit');$('mcWithdraw').onclick=()=>mcMove('withdraw');
+async function mfLoadLoans(){try{const st=$('mlFilter').value;const d=await api('/api/mfi/loans'+(st?('?status='+st):''));const tb=$('mfLoanTable').querySelector('tbody');
+  tb.innerHTML=d.loans.length?('<tr><th>Loan</th><th>Principal</th><th>Rate</th><th>Outstanding</th><th>Status</th><th></th></tr>'+d.loans.map(l=>`<tr><td class="mono">${esc(l.loanId)}<div class="faint">${esc(l.memberId)}</div></td><td>KES ${esc(l.principal)}</td><td>${esc(l.ratePctPerMonth)}%/mo</td><td>KES ${esc(l.outstanding)}</td><td>${l.status==='ACTIVE'?'<span class="badge warn">Active</span>':'<span class="badge ok">Closed</span>'}</td><td>${l.status==='ACTIVE'?`<button class="btn sm" data-repay="${esc(l.loanId)}" ${CTX.canTrade?'':'disabled'}>Repay</button>`:''}</td></tr>`).join('')):'<tr><td class="empty">No loans.</td></tr>';
+}catch(e){toast(e.message,'err');}}
+$('mlFilter').onchange=mfLoadLoans;
+$('mfLoanTable').addEventListener('click',async e=>{const b=e.target.closest('[data-repay]');if(!b)return;const amt=prompt('Repayment amount (KES):');if(!amt)return;
+  try{const d=await api('/api/mfi/loans/'+encodeURIComponent(b.dataset.repay)+'/repay',{method:'POST',body:{amount:amt}});toast(d.message,'ok');mfLoadLoans();mfStats();}catch(x){toast(x.message,'err');}});
+$('mlGo').onclick=async()=>{const err=$('mlErr');err.textContent='';try{const d=await api('/api/mfi/loans',{method:'POST',body:{memberId:$('mlMember').value.trim(),amount:$('mlAmt').value.trim(),months:Number($('mlMonths').value.trim()),ratePctPerMonth:$('mlRate').value.trim()}});
+  toast(d.message,'ok');$('mlSchedule').classList.remove('hidden');
+  $('mlSchedule').innerHTML=`<div class="panel2"><b>${esc(d.loan.loanId)} · schedule</b><div style="overflow-x:auto;margin-top:8px"><table><tbody><tr><th>Mo</th><th>Opening</th><th>Principal</th><th>Interest</th><th>Payment</th></tr>${d.schedule.map(r=>`<tr><td>${r.month}</td><td>${esc(r.opening)}</td><td>${esc(r.principal)}</td><td>${esc(r.interest)}</td><td>${esc(r.payment)}</td></tr>`).join('')}</tbody></table></div></div>`;
+  $('mlAmt').value='';$('mlMonths').value='';$('mlRate').value='';mfLoadLoans();mfStats();
+}catch(e){err.textContent=e.message;}};
+async function mfLoadReconcile(){try{const d=await api('/api/mfi/reconcile');$('mrVault').textContent='KES '+money(d.vaultCash);$('mrInterest').textContent='KES '+money(d.interestEarned);
+  $('mrChecks').innerHTML=d.checks.map(c=>`<div class="row" style="justify-content:space-between;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--panel2)"><div><b style="font-weight:600">${esc(c.label)}</b>${c.ledger!==undefined?`<div class="faint mono">ledger ${esc(c.ledger)} · members ${esc(c.members)}</div>`:''}</div><span class="badge ${c.ok?'ok':'bad'}">${c.ok?'OK':'CHECK'}</span></div>`).join('');
+}catch(e){toast(e.message,'err');}}
+$('mrRefresh').onclick=mfLoadReconcile;
+
+loadTypes();
+if(token){me={businessId:null};enterDash();}
+})();
+</script>
+</body>
+</html>
