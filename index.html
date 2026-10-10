@@ -1,490 +1,392 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDS STAGE 55 SOVEREIGN MULTI-TENANT COMMAND CENTER</title>
-    <!-- Leaflet CSS & JS for Real-Time Spatial Telemetry -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <style>
-        :root {
-            --neon-green: #00ff66;
-            --dark-bg: #0b0f19;
-            --panel-bg: #111827;
-            --border-color: #1f2937;
-            --text-dim: #9ca3af;
-            --cyan: #38bdf8;
-            --alert-red: #ff3366;
-            --gold: #ffd700;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
-
-        body {
-            background-color: var(--dark-bg);
-            color: var(--neon-green);
-            padding: 20px;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--neon-green);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-
-        h1 { font-size: 1.3rem; letter-spacing: 2px; color: var(--neon-green); }
-        h2 { font-size: 0.95rem; border-bottom: 1px dashed var(--neon-green); padding-bottom: 6px; margin-bottom: 12px; color: var(--neon-green); text-transform: uppercase; }
-
-        .badge {
-            background: var(--neon-green);
-            color: var(--dark-bg);
-            padding: 5px 12px;
-            font-weight: bold;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            letter-spacing: 1px;
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 1024px) {
-            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        .card {
-            border: 1px solid var(--neon-green);
-            padding: 15px;
-            background: var(--panel-bg);
-            border-radius: 6px;
-            box-shadow: 0 0 10px rgba(0, 255, 102, 0.05);
-        }
-
-        .card h3 { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
-        .card .value { font-size: 1.35rem; font-weight: bold; color: var(--cyan); }
-
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1.3fr 0.7fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 1024px) {
-            .main-grid { grid-template-columns: 1fr; }
-        }
-
-        .panel {
-            border: 1px solid var(--neon-green);
-            background: var(--panel-bg);
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            background: var(--dark-bg);
-            border: 1px solid var(--neon-green);
-            color: var(--neon-green);
-            border-radius: 4px;
-            font-size: 0.9rem;
-        }
-
-        input::placeholder { color: #4b5563; }
-
-        button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            background: var(--neon-green);
-            border: none;
-            color: var(--dark-bg);
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: opacity 0.2s;
-        }
-
-        button:hover { opacity: 0.85; }
-        .btn-cyan { background: var(--cyan); color: var(--dark-bg); }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.8rem; }
-        th, td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
-        th { color: var(--cyan); background: var(--dark-bg); }
-        td { color: #d1d5db; }
-
-        #map {
-            width: 100%;
-            height: 280px;
-            background: var(--dark-bg);
-            border: 1px solid var(--neon-green);
-            border-radius: 4px;
-        }
-
-        .console-box {
-            background: var(--dark-bg);
-            border: 1px solid var(--neon-green);
-            padding: 10px;
-            height: 160px;
-            overflow-y: auto;
-            font-size: 0.75rem;
-            color: var(--neon-green);
-            border-radius: 4px;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .status-msg { margin-top: 5px; font-weight: bold; font-size: 0.85rem; }
-        .small-text { font-size: 0.75rem; color: var(--text-dim); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f19">
+<title>RDS Store · Master Control</title>
+<style>
+:root{--g:#00ff88;--bg:#0b0f19;--panel:#111827;--dim:#9ca3af;--cy:#38bdf8;--red:#ff4d6d;--gold:#ffc244;--pu:#a855f7;--line:#222c3d;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif}
+body{background:var(--bg);color:#fff;min-height:100vh}button,input{font:inherit;color:inherit}:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.hidden{display:none!important}.muted{color:var(--dim);font-size:.78rem}.err{color:var(--red);font-size:.82rem;margin:8px 0}.ok{color:var(--g)}.warn{color:var(--gold)}.bad{color:var(--red)}
+h1{font-size:1.2rem}h2{font-size:1rem;margin-bottom:10px}h3{font-size:.74rem;color:var(--cy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+input{width:100%;background:var(--bg);border:1px solid #374151;border-radius:11px;padding:12px;margin-bottom:10px;font-size:.92rem;outline:none}input:focus{border-color:var(--pu)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:11px;padding:11px 16px;font-weight:800;font-size:.82rem;cursor:pointer;background:#1f2937}.btn.go{background:var(--g);color:#000}.btn.ghost{background:transparent;border:1px solid #374151}.btn.sm{padding:7px 12px;font-size:.74rem}.btn:disabled{opacity:.5}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}.btn.go .spin{border-color:rgba(0,0,0,.3);border-top-color:#000}@keyframes sp{to{transform:rotate(360deg)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.wrap{max-width:1180px;margin:0 auto;padding:14px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.between{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.login{max-width:420px;margin:70px auto;padding:0 16px}.logo{width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,var(--pu),var(--cy));display:grid;place-items:center;font-size:1.8rem;margin:0 auto 12px}
+.top{position:sticky;top:0;z-index:40;background:rgba(11,15,25,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}.top .wrap{padding:10px 14px}
+.pillb{font-size:.72rem;font-weight:800;padding:5px 11px;border-radius:14px;white-space:nowrap}.pillb.ok{background:rgba(0,255,136,.14);color:var(--g)}.pillb.bad{background:rgba(255,77,109,.16);color:var(--red)}.pillb.wait{background:#1f2937;color:var(--dim)}
+.tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:14px 0}.tabs::-webkit-scrollbar{display:none}.tab{flex:none;background:var(--panel);border:1px solid #374151;color:var(--dim);padding:9px 18px;border-radius:20px;font-size:.82rem;font-weight:800;cursor:pointer}.tab.on{background:var(--g);border-color:var(--g);color:#000}.tab .n{background:var(--red);color:#fff;border-radius:9px;font-size:.62rem;padding:1px 6px;margin-left:6px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px}.kpi small{color:var(--dim);font-size:.68rem;display:block;margin-bottom:4px}.kpi b{font-size:1.2rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:820px){.g2{grid-template-columns:1fr}}
+svg{display:block;width:100%;height:auto}.node{cursor:pointer}.node:hover rect.nb{stroke-width:3}
+.flow{stroke-dasharray:7 7;animation:dash 1.1s linear infinite}@keyframes dash{to{stroke-dashoffset:-14}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--dim);margin-top:8px}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+table{width:100%;border-collapse:collapse;font-size:.82rem}th{font-size:.68rem;color:var(--dim);text-transform:uppercase;text-align:left;padding:8px;border-bottom:1px solid var(--line)}td{padding:8px;border-bottom:1px solid var(--line)}td.r,th.r{text-align:right}tr:last-child td{border:0}
+.feed{max-height:330px;overflow:auto}.feed div{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.78rem}.feed div:last-child{border:0}.feed .t{color:var(--dim);flex:none;width:62px}.feed .e{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}.dot.ok{background:var(--g);box-shadow:0 0 8px var(--g)}.dot.warn{background:var(--gold)}.dot.down{background:var(--red)}.dot.off{background:#6b7280}
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:.8rem}.kv:last-child{border:0}.kv span:first-child{color:var(--dim)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}.seg button{background:var(--panel);border:1px solid #374151;border-radius:10px;padding:8px 14px;font-size:.78rem;font-weight:800;cursor:pointer}.seg button.on{border-color:var(--g);color:var(--g);background:rgba(0,255,136,.08)}
+.bar{display:flex;height:38px;border-radius:10px;overflow:hidden;margin:10px 0}.bar div{display:grid;place-items:center;font-size:.68rem;font-weight:800;color:#000;min-width:2px}
+.eq{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:.82rem;margin-bottom:10px;line-height:1.7}.eq b{color:var(--g)}
+.chk{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.82rem}.chk:last-child{border:0}.chk .m{flex:none;width:22px;font-size:1rem}.chk code{display:block;color:var(--dim);font-size:.72rem;margin-top:3px}.chk .f{color:var(--red);font-size:.74rem;margin-top:4px}
+.al{padding:12px 14px;border-radius:12px;margin-bottom:10px;font-size:.84rem;border:1px solid var(--line);background:var(--panel)}.al.CRITICAL{border-color:var(--red);background:rgba(255,77,109,.1)}.al.HIGH{border-color:var(--gold);background:rgba(255,194,68,.08)}.al b{font-size:.68rem;margin-right:8px}
+.note{background:rgba(255,194,68,.1);border:1px solid rgba(255,194,68,.35);color:#fde68a;border-radius:12px;padding:12px;font-size:.78rem;margin-top:10px;line-height:1.5}
+.skel{background:linear-gradient(90deg,#111827 25%,#1b2437 50%,#111827 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:var(--r);height:200px;margin-bottom:14px}@keyframes sh{to{background-position:-200% 0}}
+.sw{position:relative;width:62px;height:34px;background:#374151;border:0;border-radius:20px;cursor:pointer;transition:background .2s;flex:none}.sw::after{content:'';position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;transition:transform .2s}.sw.on{background:var(--g)}.sw.on::after{transform:translateX(28px)}.sw:disabled{opacity:.5;cursor:wait}
+.pn.off{border-color:var(--red);background:rgba(255,77,109,.06)}.pn h2{margin:0}.stat{font-size:.74rem;font-weight:800;padding:3px 10px;border-radius:12px}.stat.on{background:rgba(0,255,136,.14);color:var(--g)}.stat.off{background:rgba(255,77,109,.16);color:var(--red)}.stat.wait{background:rgba(255,194,68,.15);color:var(--gold)}
+.btn.red{background:var(--red);color:#fff}.btn.danger{background:transparent;border:1px solid var(--red);color:var(--red)}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.72);z-index:200;padding:20px}.modal.on{display:grid}.modal .box{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;max-width:400px;width:100%}.modal p{font-size:.84rem;color:var(--dim);margin:6px 0 12px;line-height:1.5}
+#toasts{position:fixed;top:12px;left:0;right:0;max-width:480px;margin:0 auto;padding:0 14px;z-index:300;pointer-events:none;display:flex;flex-direction:column;gap:8px}.toast{background:#1f2937;border:1px solid #374151;border-left:4px solid var(--cy);border-radius:12px;padding:12px 14px;font-size:.84rem;pointer-events:auto}.toast.ok{border-left-color:var(--g)}.toast.err{border-left-color:var(--red)}
+.sub{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}.sub input{margin:0;max-width:260px}
+.scroll{overflow-x:auto}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
 </head>
 <body>
 
-    <header>
-        <h1>⚡ RDS STAGE 55 MULTI-TENANT COMMAND CENTER</h1>
-        <div class="badge" id="system-status">TENANT_ISOLATED</div>
-    </header>
+<section id="login" class="login">
+  <div style="text-align:center;margin-bottom:20px"><div class="logo">🛰️</div><h1>RDS Store · Master Control</h1><p class="muted" style="margin-top:6px">Owner sign in. Switch any part of the project on or off.</p></div>
+  <div class="card">
+    <label class="muted" for="em">Email</label><input id="em" type="email" autocomplete="username" value="">
+    <label class="muted" for="pw">Password</label><input id="pw" type="password" autocomplete="current-password">
+    <div class="err" id="lerr"></div><button class="btn go" id="lgo" style="width:100%">Sign in</button>
+    <div id="setupBox" class="hidden" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px"><h3>First-time setup</h3><p class="muted" style="margin-bottom:10px;line-height:1.5">This server has no admin password yet. Create yours now. The <b>setup code</b> is printed in the window where your server runs (or in Render, under <b>Logs</b>) on a line that says <b>ADMIN SETUP CODE</b>.</p><label class="muted" for="suCode">Setup code</label><input id="suCode" inputmode="numeric" autocomplete="off"><label class="muted" for="suPw">Choose your password (8 or more characters)</label><input id="suPw" type="password" autocomplete="new-password"><label class="muted" for="suPw2">Repeat the password</label><input id="suPw2" type="password" autocomplete="new-password"><div class="err" id="suErr"></div><button class="btn go" id="suGo" style="width:100%">Create password &amp; sign in</button></div>
+    <details style="margin-top:14px"><summary class="muted" style="cursor:pointer">Use an admin token instead</summary><input id="tk" placeholder="Paste admin token" style="margin-top:10px"><button class="btn ghost sm" id="tkgo">Use token</button></details>
+  </div>
+</section>
 
-    <!-- TOP KPI METRICS ROW -->
-    <div class="metrics-grid">
-        <div class="card">
-            <h3>Gross Platform Volume</h3>
-            <div class="value" id="metric-volume">KES 0.00</div>
+<div id="app" class="hidden">
+  <header class="top"><div class="wrap between">
+    <div><b style="font-size:1.05rem">🏬 RDS Store · Master Control</b> <span class="muted" id="stage"></span></div>
+    <div class="row"><span class="pillb wait" id="books">Checking the books…</span><span class="muted" id="upd"></span><button class="btn ghost sm" id="pause">⏸ Pause</button><button class="btn ghost sm" id="logout">Sign out</button></div>
+  </div></header>
+  <main class="wrap">
+    <div class="tabs"><button class="tab on" data-tab="tLive">Live</button><button class="tab" data-tab="tPanels">Switches</button><button class="tab" data-tab="tPeople">People</button><button class="tab" data-tab="tInst">Institutions <span class="n hidden" id="instN">0</span></button><button class="tab" data-tab="tComp">Compliance <span class="n hidden" id="compN">0</span></button><button class="tab" data-tab="tMoney">Money &amp; KRA</button><button class="tab" data-tab="tApps">Apps</button><button class="tab" data-tab="tAlerts">Alerts <span class="n hidden" id="alN">0</span></button></div>
+
+    <section id="tLive">
+      <div class="kpis" id="kpis"><div class="skel"></div></div>
+      <div class="note hidden" id="booksNote" role="button" tabindex="0" style="cursor:pointer;border-color:var(--red);background:rgba(255,77,109,.08);color:#fecdd3"></div>
+      <div class="card"><div class="between"><h3 style="margin:0">How everything is connected, right now</h3><span class="muted">Click any circle for details</span></div><svg id="graph" viewBox="0 0 960 560" role="img" aria-label="System map"></svg>
+        <div class="legend"><span><i style="background:var(--g)"></i>Healthy</span><span><i style="background:var(--gold)"></i>Needs attention</span><span><i style="background:var(--red)"></i>Down or not deployed</span><span>Moving dashes = traffic · line thickness = volume</span></div></div>
+      <div class="card hidden" id="detail"></div>
+      <div class="g2">
+        <div class="card"><h3>Orders per hour (last 24 h)</h3><div id="chHour"></div></div>
+        <div class="card"><h3>Server requests per minute</h3><div id="chReq"></div></div>
+      </div>
+      <div class="card"><h3>Live activity</h3><div class="feed" id="feed"></div></div>
+    </section>
+
+    <section id="tPanels" class="hidden">
+      <div class="card"><div class="between"><div><h2 style="margin:0">Panel switches</h2><div class="muted">Switch any app on or off for everyone, instantly. This master control and sign-in for admins always stay on.</div></div><div class="row"><button class="btn red sm" id="stopAll">⛔ Emergency stop</button><button class="btn go sm" id="resumeAll">▶ Resume all</button></div></div></div>
+      <div class="apps" id="panelCards"></div>
+    </section>
+
+    <section id="tInst" class="hidden">
+      <div class="card"><div class="between"><div><h2 style="margin:0">Financial institutions</h2><div class="muted">Forex bureaus, microfinance, SACCOs and banks that rent your platform. Approve a new one, or switch a negligent one OFF — its staff are signed out and cannot transact until you switch it back on.</div></div><button class="btn ghost sm" id="instRefresh">Refresh</button></div>
+        <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">
+          <a class="btn go sm" href="/platform" target="_blank" rel="noopener">Open staff counter (/platform) ↗</a>
+          <a class="btn sm" href="/platform-admin" target="_blank" rel="noopener">Owner institution console (/platform-admin) ↗</a>
         </div>
-        <div class="card">
-            <h3>Active Fleet Drivers</h3>
-            <div class="value" id="metric-drivers">0</div>
-        </div>
-        <div class="card">
-            <h3>KRA VAT Liability</h3>
-            <div class="value" id="metric-vat">KES 0.00</div>
-        </div>
-        <div class="card">
-            <h3>Secured Vault Status</h3>
-            <div class="value" style="color: var(--neon-green);" id="metric-vault">BANK_GRADE_CRYPTOGRAPHIC_LOCKED</div>
-        </div>
-    </div>
+        <div class="kpis" id="instKpis" style="margin-top:12px"></div></div>
+      <div class="card scroll" id="instList"><div class="muted">Loading…</div></div>
+    </section>
+    <section id="tComp" class="hidden">
+      <div class="note" id="compNone" style="margin-bottom:14px">The compliance engine is not running on this server (routes/admin.js was not started). Check /readyz.</div>
+      <div class="apps" id="compCards"></div>
+      <div class="card" id="compPolicy"></div>
+      <div class="g2"><div class="card"><h3>Highest-risk clients</h3><div id="compTop"></div></div><div class="card"><h3>Open compliance alerts</h3><div id="compAlerts"></div></div></div>
+      <div class="card"><div class="between"><div><h3 style="margin:0">Full compliance console</h3><div class="muted">Post journals, approve KYC, correct client details, file reports.</div></div><a class="btn go sm" href="/admin" target="_blank" rel="noopener" style="text-decoration:none">Open /admin ➜</a></div></div>
+    </section>
 
-    <!-- MAIN TWO-COLUMN DASHBOARD LAYOUT -->
-    <div class="main-grid">
-        <div>
-            <!-- Tenant Context Switcher Panel -->
-            <div class="panel">
-                <h2>STAGE 55 TENANT NAMESPACE SWITCHER</h2>
-                <input type="text" id="active-tenant-id" placeholder="Active Business ID (e.g. BIZ-001)" value="BIZ-001" onchange="refreshDashboard()">
-                <div class="small-text">Scoped isolation active: Queries automatically append tenant headers.</div>
-            </div>
+    <section id="tPeople" class="hidden">
+      <div class="sub"><div class="seg" id="pseg"><button data-pk="customers" class="on">Customers</button><button data-pk="riders">Riders</button><button data-pk="shops">Shops</button></div><input id="pq" type="search" placeholder="Search name, phone or ID" aria-label="Search people"><button class="btn ghost sm" id="prefresh">Refresh</button></div>
+      <div class="card hidden" id="addOff"><h3>Switch off a customer by phone number</h3><div class="row"><input id="offPhone" type="tel" placeholder="07XX XXX XXX or +2547…" style="margin:0;max-width:260px"><button class="btn danger sm" id="offGo">Switch off</button></div></div>
+      <div class="card scroll" id="people"><div class="muted">Loading…</div></div>
+    </section>
 
-            <!-- STK Gateway Panel -->
-            <div class="panel">
-                <h2>STAGE 55 HIGH-SPEED STK GATEWAY</h2>
-                <input type="text" id="stk-phone" placeholder="Customer Phone (e.g. 2547XXXXXXXX)" value="254708374149">
-                <input type="number" id="stk-amount" placeholder="Override Amount (KES - Optional)">
-                <button onclick="executeStkPush()" class="btn-cyan">Execute Multi-Tenant STK Push</button>
-                <div class="status-msg" id="stk-status"></div>
-            </div>
+    <section id="tMoney" class="hidden">
+      <div class="between" style="margin-bottom:12px"><div class="seg" id="win"><button data-w="today" class="on">Today</button><button data-w="last7">7 days</button><button data-w="last30">30 days</button><button data-w="allTime">All time</button></div><button class="btn ghost sm" id="chk">Re-check the books</button></div>
+      <div class="kpis" id="mk"></div>
+      <div class="card"><h3>Where every shilling goes</h3><div class="bar" id="split"></div><div class="legend" id="splitL"></div>
+        <div class="eq" id="eq"></div></div>
+      <div class="g2">
+        <div class="card"><h3>KRA tax (VAT)</h3><div id="tax"></div></div>
+        <div class="card"><h3>What the business owes right now</h3><div id="liab"></div></div>
+      </div>
+      <div class="g2"><div class="card"><h3>Customer payments, last 14 days</h3><div id="chGmv"></div></div><div class="card"><h3>Platform income after VAT, last 14 days</h3><div id="chPlat"></div><div class="legend"><span><i style="background:var(--g)"></i>Net revenue</span><span><i style="background:var(--gold)"></i>VAT to KRA</span></div></div></div>
+      <div class="g2"><div class="card"><h3>Top shops</h3><div id="tShops"></div></div><div class="card"><h3>Top riders</h3><div id="tRiders"></div></div></div>
+      <div class="card" id="maint"><h3>Test data</h3><div id="maintBody" class="muted">Loading…</div></div>
+      <div class="card"><div class="between"><h3 style="margin:0">Do the books balance?</h3><span class="pillb wait" id="booksBig">…</span></div><div id="checks" style="margin-top:8px"></div></div>
+    </section>
 
-            <!-- Live Map Panel -->
-            <div class="panel">
-                <h2>MAP: LIVE FLEET & DISPATCH TELEMETRY</h2>
-                <div id="map"></div>
-            </div>
+    <section id="tApps" class="hidden"><div class="apps" id="apps"></div></section>
+    <section id="tAlerts" class="hidden"><div id="alerts"></div></section>
+  </main>
+</div>
 
-            <!-- Merchant Inventory Panel -->
-            <div class="panel">
-                <h2>MERCHANT PRODUCT & INVENTORY CATALOG</h2>
-                <input type="text" id="prod-name" placeholder="Product Name">
-                <input type="number" id="prod-price" placeholder="Price (KES)">
-                <input type="number" id="prod-stock" placeholder="Initial Stock">
-                <button onclick="publishProduct()">Publish Scoped Product</button>
-                <div style="max-height: 160px; overflow-y: auto;">
-                    <table>
-                        <thead>
-                            <tr><th>Product</th><th>Price</th><th>Stock</th></tr>
-                        </thead>
-                        <tbody id="product-table-body">
-                            <tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No products registered yet.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+<div class="modal" id="dlg"><div class="box"><h2 id="dlgT"></h2><p id="dlgP"></p><input id="dlgIn" class="hidden" maxlength="200"><div class="row" style="justify-content:flex-end"><button class="btn ghost" id="dlgNo">Cancel</button><button class="btn go" id="dlgYes">OK</button></div></div></div>
+<div id="toasts" aria-live="polite"></div>
 
-        <div>
-            <!-- Audited Ledger Panel -->
-            <div class="panel">
-                <h2>AUDITED TENANT LEDGER</h2>
-                <div style="max-height: 200px; overflow-y: auto;">
-                    <table>
-                        <thead>
-                            <tr><th>ID</th><th>Gross</th><th>Tax</th></tr>
-                        </thead>
-                        <tbody id="ledger-table-body">
-                            <tr><td colspan="3" style="text-align:center; color:var(--text-dim);">Awaiting transactions...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+<script>
+(() => {
+'use strict';
+const API = (location.origin && location.origin !== 'null') ? location.origin : 'http://localhost:3000';
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => 'KES ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money0 = n => 'KES ' + Number(n || 0).toLocaleString('en-KE', { maximumFractionDigits: 0 });
+const num = n => Number(n || 0).toLocaleString('en-KE');
+const hhmm = ms => ms ? new Date(ms).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) : '–';
+const ago = ms => { if (!ms) return 'never'; const s = Math.max(0, (Date.now() - ms) / 1000); if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + ' min ago'; if (s < 86400) return Math.floor(s / 3600) + ' h ago'; return Math.floor(s / 86400) + ' d ago'; };
+const dur = s => s < 3600 ? Math.floor(s / 60) + ' min' : s < 86400 ? (s / 3600).toFixed(1) + ' h' : (s / 86400).toFixed(1) + ' days';
+const S = { pk: 'customers', people: null, token: sessionStorage.getItem('rds_owner_token'), tab: 'tLive', win: 'today', ov: null, fin: null, rec: null, al: null, sel: null, paused: false, timers: [] };
 
-            <!-- Active Driver Roster Panel -->
-            <div class="panel">
-                <h2>FLEET: ACTIVE DRIVER ROSTER</h2>
-                <div id="driver-roster" style="max-height: 180px; overflow-y: auto;">
-                    <span class="small-text">Loading roster telemetry...</span>
-                </div>
-            </div>
+async function api(path, { method = 'GET', body, token = S.token } = {}) {
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const h = {}; if (body !== undefined) h['Content-Type'] = 'application/json'; if (token) h.Authorization = 'Bearer ' + token;
+    const res = await fetch(API + path, { method, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined, signal: ctrl.signal });
+    let d = null; try { d = await res.json(); } catch {}
+    if (!res.ok || !d || d.success === false) { const e = new Error((d && d.error) || `Request failed (${res.status})`); e.status = res.status; e.data = d; if (res.status === 401 && token) logout(true); throw e; }
+    return d;
+  } catch (e) { if (e.name === 'AbortError') { const x = new Error('The server took too long to respond.'); x.status = 0; throw x; } if (e instanceof TypeError) { const x = new Error('Cannot reach the server.'); x.status = 0; throw x; } throw e; } finally { clearTimeout(t); }
+}
 
-            <!-- KRA Tax Compliance Vault -->
-            <div class="panel">
-                <h2>KRA TAX COMPLIANCE VAULT</h2>
-                <div id="kra-vault-box" style="font-size: 0.8rem; line-height: 1.6; color: var(--cyan);">
-                    Loading compliance metrics...
-                </div>
-            </div>
+/* ---------- login ---------- */
+$('#em').value = sessionStorage.getItem('rds_owner_email') || '';
+async function doLogin() { const b = $('#lgo'); $('#lerr').textContent = ''; b.disabled = true; b.innerHTML = '<span class="spin"></span>'; try { const d = await api('/api/auth/admin-login', { method: 'POST', body: { email: $('#em').value.trim(), password: $('#pw').value }, token: null }); sessionStorage.setItem('rds_owner_email', $('#em').value.trim()); setToken(d.token); } catch (e) { if (e.status === 503 && e.data && e.data.setupRequired) { $('#setupBox').classList.remove('hidden'); $('#lerr').textContent = 'No admin password exists yet. Create one below.'; $('#suCode').focus(); } else $('#lerr').textContent = e.status === 503 ? 'Admin login is not set up on this server.' : e.message; } finally { b.disabled = false; b.textContent = 'Sign in'; } }
+$('#lgo').onclick = doLogin; $('#pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+$('#suGo').onclick = async () => { const err = $('#suErr'); err.textContent = ''; const pw = $('#suPw').value, code = $('#suCode').value.trim();
+  if (!code) return void (err.textContent = 'Enter the setup code from your server window or Render Logs.'); if (pw.length < 8) return void (err.textContent = 'Choose a password of at least 8 characters.'); if (pw !== $('#suPw2').value) return void (err.textContent = 'The two passwords do not match.');
+  const b = $('#suGo'); b.disabled = true; b.innerHTML = '<span class="spin"></span>';
+  try { await api('/api/auth/admin-setup', { method: 'POST', body: { code, email: $('#em').value.trim(), password: pw }, token: null }); $('#pw').value = pw; $('#setupBox').classList.add('hidden'); $('#suPw').value = $('#suPw2').value = ''; await doLogin(); } catch (e) { err.textContent = e.message; } finally { b.disabled = false; b.textContent = 'Create password & sign in'; } };
+$('#tkgo').onclick = () => { const t = $('#tk').value.trim(); if (t) setToken(t); };
+function setToken(t) { S.token = t; sessionStorage.setItem('rds_owner_token', t); start(); }
+function logout(expired) { S.token = null; sessionStorage.removeItem('rds_owner_token'); S.timers.forEach(clearInterval); S.timers = []; $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); if (expired) $('#lerr').textContent = 'Your session ended. Please sign in again.'; }
+$('#logout').onclick = async () => { try { await api('/api/auth/logout', { method: 'POST' }); } catch {} logout(false); };
+$('#pause').onclick = () => { S.paused = !S.paused; $('#pause').textContent = S.paused ? '▶ Resume' : '⏸ Pause'; };
 
-            <!-- Console Stream -->
-            <div class="panel">
-                <h2>CONSOLE STREAM</h2>
-                <div class="console-box" id="console-stream">
-                    [SYSTEM] Stage 55 Multi-Tenant Sovereign Command Center active.<br>
-                </div>
-            </div>
-        </div>
-    </div>
+/* ---------- charts (plain SVG) ---------- */
+function barChart(el, items, opts = {}) {
+  const W = 560, H = 190, pl = 44, pb = 22, pt = 10, n = items.length; if (!n) { el.innerHTML = '<div class="muted">No data yet.</div>'; return; }
+  const tot = items.map(i => i.parts.reduce((s, p) => s + p.v, 0)), max = Math.max(1, ...tot), bw = (W - pl) / n;
+  let g = '';
+  [0, 0.5, 1].forEach(f => { const y = pt + (H - pt - pb) * (1 - f); g += `<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="#222c3d"/><text x="${pl - 6}" y="${y + 4}" text-anchor="end" fill="#9ca3af" font-size="10">${esc((opts.fy || (v => Math.round(v)))(max * f))}</text>`; });
+  items.forEach((it, i) => { let y0 = H - pb; it.parts.forEach(p => { const h = (p.v / max) * (H - pt - pb); y0 -= h; g += `<rect x="${pl + i * bw + bw * 0.14}" y="${y0}" width="${bw * 0.72}" height="${Math.max(0, h)}" rx="2" fill="${p.c}"><title>${esc(it.label)}: ${esc((opts.fy || (v => v))(p.v))}</title></rect>`; }); if (i % (opts.every || Math.ceil(n / 8)) === 0) g += `<text x="${pl + i * bw + bw / 2}" y="${H - 6}" text-anchor="middle" fill="#9ca3af" font-size="10">${esc(it.label)}</text>`; });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${g}</svg>`;
+}
+function lineChart(el, pts, color) {
+  const W = 560, H = 190, pl = 40, pb = 22, pt = 10; if (pts.length < 2) { el.innerHTML = '<div class="muted">Collecting data… a point is added every minute.</div>'; return; }
+  const max = Math.max(5, ...pts.map(p => p.v)), x = i => pl + (W - pl - 8) * i / (pts.length - 1), y = v => pt + (H - pt - pb) * (1 - v / max);
+  let g = [0, 0.5, 1].map(f => { const yy = pt + (H - pt - pb) * (1 - f); return `<line x1="${pl}" x2="${W}" y1="${yy}" y2="${yy}" stroke="#222c3d"/><text x="${pl - 6}" y="${yy + 4}" text-anchor="end" fill="#9ca3af" font-size="10">${Math.round(max * f)}</text>`; }).join('');
+  const path = pts.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
+  g += `<path d="${path} L${x(pts.length - 1)} ${H - pb} L${x(0)} ${H - pb} Z" fill="${color}" opacity=".13"/><path d="${path}" fill="none" stroke="${color}" stroke-width="2.2"/>`;
+  [0, Math.floor(pts.length / 2), pts.length - 1].forEach(i => { g += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" fill="#9ca3af" font-size="10">${esc(pts[i].l)}</text>`; });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">${g}</svg>`;
+}
 
-    <script>
-        const LOCAL_API = "http://localhost:3000";
-        const CLOUD_API = "https://rds-lab.onrender.com";
-        let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
+/* ---------- live: system graph ---------- */
+const POS = { customer: [120, 290], merchant: [480, 70], driver: [840, 290], core: [480, 290], admin: [120, 500], ads: [120, 80], printer: [840, 70], pay: [700, 500], sms: [480, 500] };
+const ICON = { customer: '🛍️', merchant: '🏪', driver: '🏍️', core: '🖥️', admin: '🛡️', ads: '📣', printer: '🖨️', pay: '💳', sms: '💬' };
+const HC = { ok: '#00ff88', warn: '#ffc244', down: '#ff4d6d', off: '#6b7280' };
+function curve(a, b, k) { const [x1, y1] = a, [x2, y2] = b, mx = (x1 + x2) / 2, my = (y1 + y2) / 2; if (!k) return { d: `M${x1} ${y1} L${x2} ${y2}`, lx: mx, ly: my }; return { d: `M${x1} ${y1} Q${mx} ${my + k} ${x2} ${y2}`, lx: mx, ly: my + k / 2 }; }
+const BEND = { 'customer>driver': 150, 'driver>customer': -110, 'merchant>driver': -30, 'ads>customer': 0, 'core>merchant': 0 };
+function drawGraph() {
+  const g = S.ov.graph; let s = '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L9 5L1 9z" fill="#38bdf8"/></marker></defs>';
+  const maxV = Math.max(1, ...g.edges.map(e => e.value));
+  g.edges.forEach(e => { const a = POS[e.from], b = POS[e.to]; if (!a || !b) return; const c = curve(a, b, BEND[e.from + '>' + e.to] || 0), w = 1.5 + 5 * Math.sqrt(e.value / maxV); s += `<path d="${c.d}" fill="none" stroke="${e.value > 0 ? '#38bdf8' : '#2a3550'}" stroke-width="${w.toFixed(1)}" opacity="${e.value > 0 ? 0.85 : 0.5}" class="${e.value > 0 ? 'flow' : ''}" marker-end="url(#ah)"/>`; s += `<text x="${c.lx}" y="${c.ly - 8}" text-anchor="middle" font-size="11" fill="#cbd5e1" paint-order="stroke" stroke="#0b0f19" stroke-width="4">${esc(e.label)}</text>`; });
+  g.nodes.forEach(n => { const [x, y] = POS[n.id] || [0, 0], col = HC[n.health] || HC.ok, sel = S.sel === n.id; s += `<g class="node" data-n="${n.id}" tabindex="0" role="button" aria-label="${esc(n.label)}"><rect class="nb" x="${x - 78}" y="${y - 34}" width="156" height="68" rx="16" fill="${sel ? '#1b2437' : '#111827'}" stroke="${col}" stroke-width="${sel ? 3.5 : 2.2}"/><text x="${x - 58}" y="${y + 8}" font-size="26">${ICON[n.id]}</text><text x="${x - 24}" y="${y - 4}" font-size="14" font-weight="800" fill="#fff">${esc(n.label)}</text><text x="${x - 24}" y="${y + 16}" font-size="11" fill="#9ca3af">${esc(n.sub)}</text><circle cx="${x + 62}" cy="${y - 20}" r="6" fill="${col}"/></g>`; });
+  $('#graph').innerHTML = s;
+}
+$('#graph').addEventListener('click', e => { const n = e.target.closest('[data-n]'); if (n) { S.sel = S.sel === n.dataset.n ? null : n.dataset.n; drawGraph(); drawDetail(); } });
+const APPKEY = { customer: 'customer', merchant: 'merchant', driver: 'driver', ads: 'ads', printer: 'printer', admin: 'admin', core: 'core' };
+function kv(rows) { return rows.map(([k, v]) => `<div class="kv"><span>${esc(k)}</span><b>${v}</b></div>`).join(''); }
+function appRows(k, a) {
+  if (k === 'core') return [['Version', esc(a.stage + ' · v' + a.version)], ['Uptime', dur(a.uptimeSeconds)], ['Requests (total)', num(a.requestsTotal)], ['Requests per minute', num(a.requestsPerMin)], ['Server errors', `${num(a.errors5xx)} (${a.errorRate}%)`], ['Average response', a.avgMs + ' ms'], ['Event loop lag', a.eventLoopLagMs + ' ms'], ['Memory', a.memoryMB + ' MB'], ['Live connections', num(a.sockets)], ['State saved', a.snapshot && a.snapshot.ok !== false ? `<span class="ok">✓ ${a.snapshot.at ? ago(a.snapshot.at) : 'ready'}</span>` : '<span class="bad">✗ failing</span>'], ['Payments', a.paymentsMode === 'simulated' ? '<span class="warn">simulated</span>' : '<span class="ok">live</span>'], ['Rider approval', a.driverApprovalRequired ? 'required' : 'not required'], ['Test code 1234 for everyone', a.testCredentials ? '<span class="bad">ON</span>' : '<span class="ok">off</span>']];
+  const t = a.traffic || {}, r = [['Page', (a.panels || []).map(p => `<a href="${esc(p)}" target="_blank" rel="noopener" style="color:var(--cy)">${esc(p)}</a>`).join(' · ') + (a.deployed === false ? ' <span class="bad">(not deployed)</span>' : '')], ['Server module', a.module === null || a.module === undefined ? '–' : a.module ? '<span class="ok">✓ loaded</span>' : '<span class="bad">✗ not loaded</span>'], ['Page views', num(a.pageViews)], ['Last page view', ago(a.lastSeen)], ['API requests', num(t.requests)], ['API errors', t.errors ? `<span class="bad">${num(t.errors)}</span>` : '0'], ['Avg response', (t.avgMs || 0) + ' ms']];
+  if (a.switch) r.unshift(['Switch', a.switch.on ? '<span class="ok">ON</span>' : `<span class="bad">OFF</span>${a.switch.message ? ' · ' + esc(a.switch.message) : ''}`]);
+  if (a.sockets !== null && a.sockets !== undefined) r.push(['Connected now', num(a.sockets)]);
+  const st = a.stats || {}; Object.entries(st).forEach(([key, v]) => { if (key === 'note') return; const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()); r.push([label, typeof v === 'boolean' ? (v ? '<span class="ok">✓ yes</span>' : '<span class="bad">✗ no</span>') : typeof v === 'number' && /walletsOwed/.test(key) ? money(v) : v === null ? '–' : esc(v)]); });
+  if (st.note) r.push(['Note', `<span class="muted" style="font-weight:400">${esc(st.note)}</span>`]);
+  return r;
+}
+function drawDetail() { const box = $('#detail'); if (!S.sel || S.sel === 'pay' || S.sel === 'sms') { box.classList.add('hidden'); if (S.sel === 'pay' || S.sel === 'sms') { const n = S.ov.graph.nodes.find(x => x.id === S.sel); box.classList.remove('hidden'); box.innerHTML = `<h2><span class="dot ${n.health}"></span>${esc(n.label)}</h2><p class="muted">${S.sel === 'pay' ? 'Payments are simulated: orders are marked paid and rider withdrawals “send”, but no real M-Pesa money moves until Daraja is connected.' : (n.sub === 'connected' ? 'An SMS provider is connected, so real login codes are sent.' : 'No SMS provider is set up. Only the test number can sign in. Set SMS_PROVIDER and its keys in the environment.')}</p>`; } return; } const a = S.ov.apps[APPKEY[S.sel]]; box.classList.remove('hidden'); box.innerHTML = `<h2><span class="dot ${a.health}"></span>${esc(a.title)}</h2>${kv(appRows(S.sel, a))}`; }
+function drawLive() {
+  const o = S.ov, k = o.kpis;
+  $('#kpis').innerHTML = [['Orders today', num(k.ordersToday)], ['Delivered today', num(k.deliveredToday)], ['Customers paid today', money0(k.gmvToday)], ['Platform income today', money(k.platformToday)], ['KRA VAT today', money(k.vatToday)], ['Open orders now', num(k.openOrders)], ['Compliance alerts', num(k.complianceAlerts)], ['High-risk clients', num(k.highRiskClients)], ['Clients on file', num(k.clientsTotal)], ['Riders online', num(k.ridersOnline)], ['Shops open', num(k.shopsActive)], ['Requests / min', num(k.reqPerMin)]].map(([l, v]) => `<div class="kpi"><small>${l}</small><b>${v}</b></div>`).join('');
+  drawGraph(); drawDetail();
+  barChart($('#chHour'), o.hourly.map(h => ({ label: hhmm(h.t).slice(0, 2), parts: [{ v: h.orders, c: '#a855f7' }] })), { every: 3 });
+  lineChart($('#chReq'), o.samples.map(s => ({ v: s.req, l: hhmm(s.t) })), '#38bdf8');
+  $('#feed').innerHTML = o.activity.length ? o.activity.map(a => `<div><span class="t">${hhmm(a.at)}</span><span class="e">${a.source === 'audit' ? '🔒 ' : '⚡ '}${esc(a.event)}${a.orderId ? ' · ' + esc(a.orderId) : ''}${a.status ? ' · ' + esc(a.status) : ''}</span></div>`).join('') : '<div class="muted">Nothing yet. Place an order, accept a job, or open an app and it will appear here.</div>';
+  $('#stage').textContent = `${o.stage} · v${o.version}`;
+}
 
-        const socket = io();
+/* ---------- money ---------- */
+const WL = { today: 'today', last7: 'the last 7 days', last30: 'the last 30 days', allTime: 'all time' };
+function drawMoney() {
+  const f = S.fin, w = f.windows[S.win], r = f.vat.rate, pct = x => w.customerPaid ? (x / w.customerPaid * 100).toFixed(1) + '%' : '0%';
+  $('#mk').innerHTML = [['Orders delivered', num(w.orders)], ['Customers paid', money(w.customerPaid)], ['Shops earn', money(w.items)], ['Riders earn', money(w.rider)], ['Platform income', money(w.platform)], ['VAT to KRA', money(w.vat)], ['Net revenue', money(w.net)]].map(([l, v]) => `<div class="kpi"><small>${l}</small><b>${v}</b></div>`).join('');
+  const parts = [['Shops', w.items, '#38bdf8'], ['Riders', w.rider, '#a855f7'], ['Net revenue', w.net, '#00ff88'], ['KRA VAT', w.vat, '#ffc244']], tot = Math.max(0.01, w.items + w.rider + w.net + w.vat);
+  $('#split').innerHTML = parts.map(([n, v, c]) => `<div style="background:${c};width:${(v / tot * 100).toFixed(2)}%" title="${n}: ${money(v)}">${v / tot > 0.07 ? n : ''}</div>`).join('');
+  $('#splitL').innerHTML = parts.map(([n, v, c]) => `<span><i style="background:${c}"></i>${n} ${money(v)} (${pct(v)})</span>`).join('');
+  $('#eq').innerHTML = `For ${esc(WL[S.win])}:<br>Customers paid <b>${money(w.customerPaid)}</b> = shops <b>${money(w.items)}</b> + riders <b>${money(w.rider)}</b> + platform <b>${money(w.platform)}</b><br>Platform income <b>${money(w.platform)}</b> = 2% service fees <b>${money(w.serviceFees)}</b> + 5% delivery commission <b>${money(w.commission)}</b><br>VAT inside platform income = income × ${(r * 100).toFixed(0)} ÷ ${(100 + r * 100).toFixed(0)} = <b>${money(w.vat)}</b>, leaving net revenue <b>${money(w.net)}</b><br>Delivery fees <b>${money(w.deliveryFees)}</b>: riders get 95% = <b>${money(w.rider)}</b>, platform keeps 5% = <b>${money(w.commission)}</b>`;
+  $('#tax').innerHTML = kv([['VAT rate', (r * 100).toFixed(0) + '%'], ['VAT in ' + WL[S.win], money(w.vat)], ['VAT accrued, all time', money(f.windows.allTime.vat)], ['Taxable base', 'Platform fee income (VAT-inclusive)'], ['If VAT applied to the whole payment', `<span class="warn">${money(f.vat.exposureIfFullBasis)}</span>`]]) + `<div class="note">${esc(f.vat.exposureNote)}</div><div class="note">${esc(f.disclaimer)}</div>`;
+  const L = f.liabilities;
+  $('#liab').innerHTML = kv([['Customers’ money held for open orders', `${money(L.escrowHeld)} <span class="muted">(${L.openOrders} orders)</span>`], ['Refunds due on cancelled orders', `${money(L.refundsDue)} <span class="muted">(${L.cancelledOrders})</span>`], ['Owed to riders (wallets)', money(L.owedToRiders)], ['Paid out to riders so far', money(L.ridersWithdrawn)], ['Owed to shops', money(L.owedToShops)], ['VAT owed to KRA', money(L.vatAccrued)]]) + `<div class="note">${esc(L.note)}</div>`;
+  barChart($('#chGmv'), f.days.map(d => ({ label: new Date(d.day).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' }), parts: [{ v: d.gmv, c: '#38bdf8' }] })), { fy: v => money0(v).replace('KES ', ''), every: 2 });
+  barChart($('#chPlat'), f.days.map(d => ({ label: new Date(d.day).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' }), parts: [{ v: d.net, c: '#00ff88' }, { v: d.vat, c: '#ffc244' }] })), { fy: v => money0(v).replace('KES ', ''), every: 2 });
+  $('#tShops').innerHTML = f.topShops.length ? `<table><thead><tr><th>Shop</th><th class="r">Orders</th><th class="r">Sales</th></tr></thead><tbody>${f.topShops.map(s => `<tr><td>${esc(s.name)}</td><td class="r">${s.orders}</td><td class="r">${money(s.sales)}</td></tr>`).join('')}</tbody></table>` : '<div class="muted">No delivered shop orders yet.</div>';
+  $('#tRiders').innerHTML = f.topRiders.length ? `<table><thead><tr><th>Rider</th><th class="r">Trips</th><th class="r">Earned</th></tr></thead><tbody>${f.topRiders.map(s => `<tr><td>${esc(s.name)}</td><td class="r">${s.trips}</td><td class="r">${money(s.earned)}</td></tr>`).join('')}</tbody></table>` : '<div class="muted">No completed jobs yet.</div>';
+}
+function drawChecks() {
+  const r = S.rec; if (!r) return; const hard = r.checks.filter(c => c.hard), bad = hard.filter(c => !c.ok).length;
+  const pill = (el, big) => { el.className = 'pillb ' + (r.ok ? 'ok' : 'bad'); el.textContent = r.ok ? (big ? '✓ Books balance to the cent' : '✓ Books balance') : `✗ ${bad} problem${bad === 1 ? '' : 's'} in the books`; };
+  pill($('#books'), false); pill($('#booksBig'), true);
+  // say WHICH checks fail, right on the live view, and make the red pill a link to the details
+  const failing = hard.filter(c => !c.ok), note = $('#booksNote');
+  $('#books').style.cursor = 'pointer'; $('#books').title = failing.length ? failing.map(c => c.label).join('\n') : 'Books balance. Click for the checks.';
+  note.classList.toggle('hidden', !failing.length);
+  if (failing.length) note.innerHTML = `<b>${failing.length} problem${failing.length === 1 ? '' : 's'} in the books:</b> ` + failing.map(c => `${esc(c.label)}${c.failures && c.failures.length ? ' <span class="muted">(' + esc(String(c.failures[0].message || c.failures[0].detail || c.failures[0].reason || c.failures[0].id || '').slice(0, 90)) + ')</span>' : ''}`).join(' · ') + ' <u>Click for details</u>';
+  const I = r.identity;
+  $('#checks').innerHTML = `<div class="eq">Across ${num(I.orders)} delivered orders: customers paid <b>${money(I.customerPaid)}</b>. Shops <b>${money(I.shop)}</b> + riders <b>${money(I.rider)}</b> + platform <b>${money(I.platform)}</b> = <b>${money(I.shop + I.rider + I.platform)}</b>. ${I.balanced ? '<b>Exact match.</b>' : '<span class="bad">Mismatch.</span>'}</div>` +
+    r.checks.map(c => `<div class="chk"><span class="m">${c.ok ? '<span class="ok">✓</span>' : c.hard ? '<span class="bad">✗</span>' : '<span class="warn">ℹ</span>'}</span><div><b>${esc(c.label)}</b> <span class="muted">· ${num(c.checked)} checked${c.hard ? '' : ' · information only'}</span><code>${esc(c.formula)}</code>${c.failures.slice(0, 4).map(f => `<div class="f">${esc(f.ref)}: ${esc(f.detail)}</div>`).join('')}</div></div>`).join('') +
+    (r.taxFormulaDifferences.orders ? `<div class="note">${r.taxFormulaDifferences.orders} older order(s) stored VAT with the earlier formula (16% of income). The control room recomputes VAT correctly, so these figures differ from the older admin totals.</div>` : '') +
+    (r.legacy.orders ? `<div class="note">${r.legacy.orders} older order(s) were placed before the 2% service fee was charged on top. The platform paid out ${money(r.legacy.uncollectedServiceFees)} less income than designed on those orders.</div>` : '');
+}
 
-        function logConsole(msg) {
-            const box = document.getElementById('console-stream');
-            const time = new Date().toLocaleTimeString();
-            box.innerHTML += `[${time}] ${typeof msg === 'object' ? JSON.stringify(msg) : msg}<br>`;
-            box.scrollTop = box.scrollHeight;
-        }
+/* ---------- apps & alerts ---------- */
+function drawApps() { const o = S.ov; $('#apps').innerHTML = ['customer', 'merchant', 'driver', 'ads', 'printer', 'admin', 'core'].map(k => { const a = o.apps[k]; return `<div class="card"><h2><span class="dot ${a.health}"></span>${esc(a.title)}</h2>${kv(appRows(k, a))}</div>`; }).join(''); }
+function drawAlerts() { const a = S.al.alerts; const n = a.filter(x => ['CRITICAL', 'HIGH'].includes(x.severity)).length; $('#alN').textContent = n; $('#alN').classList.toggle('hidden', !n); $('#alerts').innerHTML = a.length ? a.map(x => `<div class="al ${x.severity}"><b class="${x.severity === 'CRITICAL' ? 'bad' : x.severity === 'HIGH' ? 'warn' : 'muted'}">${x.severity}</b>${esc(x.message)}</div>`).join('') : '<div class="card muted" style="text-align:center">✓ Nothing needs attention.</div>'; }
 
-        // Initialize Leaflet Map centered on Nairobi
-        const map = L.map('map', {
-            tap: true,
-            touchZoom: true,
-            dragging: true
-        }).setView([-1.286389, 36.817223], 13);
+/* ---------- loading ---------- */
+async function loadOv() { if (S.paused && S.ov) return; try { S.ov = await api('/api/store/master/overview'); $('#upd').textContent = 'Updated ' + hhmm(S.ov.generatedAt); if (S.tab === 'tLive') drawLive(); if (S.tab === 'tApps') drawApps(); if (S.tab === 'tPanels') drawPanels(); if (S.tab === 'tComp') drawComp(); } catch (e) { $('#upd').textContent = e.message; } }
+async function loadFin() { try { S.fin = await api('/api/store/master/finance'); if (S.tab === 'tMoney') drawMoney(); } catch (e) {} }
+async function loadRec() { try { S.rec = await api('/api/store/master/reconcile'); drawChecks(); } catch (e) {} }
+async function loadAl() { try { S.al = await api('/api/store/master/alerts'); drawAlerts(); } catch (e) {} }
+function tab(id) { S.tab = id; $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === id)); ['tLive', 'tPanels', 'tPeople', 'tInst', 'tComp', 'tMoney', 'tApps', 'tAlerts'].forEach(s => $('#' + s).classList.toggle('hidden', s !== id)); if (id === 'tComp' && S.ov) drawComp(); if (id === 'tPanels' && S.ov) drawPanels(); if (id === 'tPeople') loadPeople(); if (id === 'tInst') loadInstitutions(); if (id === 'tLive' && S.ov) drawLive(); if (id === 'tApps' && S.ov) drawApps(); if (id === 'tMoney') { loadMaint(); loadFin(); loadRec(); if (S.fin) drawMoney(); } if (id === 'tAlerts') loadAl(); }
+document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) tab(t.dataset.tab); const w = e.target.closest('[data-w]'); if (w) { S.win = w.dataset.w; $$('#win button').forEach(b => b.classList.toggle('on', b === w)); if (S.fin) drawMoney(); } });
+$('#chk').onclick = async () => { const b = $('#chk'); b.disabled = true; await loadRec(); b.disabled = false; };
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            subdomains: ['a', 'b', 'c', 'd']
-        }).addTo(map);
+/* ---------- master switches ---------- */
+function toast(msg, type) { const el = document.createElement('div'); el.className = 'toast ' + (type || ''); el.textContent = msg; $('#toasts').appendChild(el); setTimeout(() => el.remove(), 4200); }
+function ask(title, text, { ok = 'Confirm', input = null, danger = false } = {}) {
+  return new Promise(res => { $('#dlgT').textContent = title; $('#dlgP').textContent = text; const i = $('#dlgIn'); i.classList.toggle('hidden', !input); i.value = ''; i.placeholder = input || ''; const y = $('#dlgYes'); y.textContent = ok; y.className = 'btn ' + (danger ? 'red' : 'go'); const m = $('#dlg'); m.classList.add('on'); if (input) i.focus();
+    const done = v => { m.classList.remove('on'); y.onclick = $('#dlgNo').onclick = null; res(v); }; y.onclick = () => done({ ok: true, value: i.value.trim() }); $('#dlgNo').onclick = () => done(null); });
+}
+async function post(path, body) { try { const d = await api(path, { method: 'POST', body }); toast(d.message || 'Done', 'ok'); return d; } catch (e) { toast(e.status === 403 ? 'Only the owner (SOVEREIGN_ADMIN) can switch things. ' + e.message : e.message, 'err'); return null; } }
+function drawPanels() {
+  const sw = S.ov && S.ov.switches; if (!sw) return;
+  $('#panelCards').innerHTML = sw.panels.map(p => `<div class="card pn ${p.on ? '' : 'off'}"><div class="between"><div><h2>${esc(p.title)}</h2><div class="muted">${p.pages.map(x => `<a href="${esc(x)}" target="_blank" rel="noopener" style="color:var(--cy)">${esc(x)}</a>`).join(' · ')}</div></div><div class="row"><span class="stat ${p.on ? 'on' : 'off'}">${p.on ? 'ON' : 'OFF'}</span><button class="sw ${p.on ? 'on' : ''}" role="switch" aria-checked="${p.on}" aria-label="${esc(p.title)} switch" data-pn="${esc(p.key)}"></button></div></div>
+    <div style="margin-top:10px">${kv([['Status', p.on ? '<span class="ok">Live for everyone</span>' : `<span class="bad">Switched off${p.switchedAt ? ' ' + ago(p.switchedAt) : ''}${p.switchedBy ? ' by ' + esc(p.switchedBy) : ''}</span>`], ...(p.on ? [] : [['Message shown', esc(p.message || '–')]]), ['Page views', num(p.pageViews)], ['Last page view', ago(p.lastSeen)], ['API requests', num(p.requests)], ['API errors', p.errors ? `<span class="bad">${num(p.errors)}</span>` : '0'], ['Page file', p.deployed === null ? '–' : p.deployed ? '<span class="ok">✓ deployed</span>' : '<span class="bad">✗ missing</span>'], ['Server module', p.moduleLoaded === null ? '–' : p.moduleLoaded ? '<span class="ok">✓ loaded</span>' : '<span class="bad">✗ not loaded</span>']])}</div></div>`).join('');
+}
+$('#panelCards').addEventListener('click', async e => {
+  const b = e.target.closest('[data-pn]'); if (!b) return; const key = b.dataset.pn, p = S.ov.switches.panels.find(x => x.key === key), turnOn = !p.on;
+  if (!turnOn) { const r = await ask(`Switch OFF ${p.title}?`, key === 'admin' ? 'The admin portal and its tools will stop working. This master control and admin sign-in stay on.' : `Nobody can use the ${p.title.toLowerCase()} until you switch it back on. People who have it open will see an error on their next action.`, { ok: 'Switch OFF', input: 'Message people will see (optional)', danger: true }); if (!r) return; b.disabled = true; const d = await post('/api/store/master/panels/set', { panel: key, on: false, message: r.value }); b.disabled = false; if (d) { S.ov.switches = { panels: d.panels, customersOff: d.customersOff }; drawPanels(); loadOv(); } }
+  else { b.disabled = true; const d = await post('/api/store/master/panels/set', { panel: key, on: true }); b.disabled = false; if (d) { S.ov.switches = { panels: d.panels, customersOff: d.customersOff }; drawPanels(); loadOv(); } }
+});
+$('#stopAll').onclick = async () => { const r = await ask('Emergency stop', 'This switches OFF the customer app, shop console, rider app, ads and printer all at once. Admin and this master control stay on. Use it if something is going wrong.', { ok: 'Stop everything', input: 'Message people will see (optional)', danger: true }); if (!r) return; const d = await post('/api/store/master/panels/all', { on: false, message: r.value }); if (d) { S.ov.switches = { panels: d.panels, customersOff: d.customersOff }; drawPanels(); loadOv(); } };
+$('#resumeAll').onclick = async () => { const d = await post('/api/store/master/panels/all', { on: true }); if (d) { S.ov.switches = { panels: d.panels, customersOff: d.customersOff }; drawPanels(); loadOv(); } };
 
-        let driverMarkers = {};
+/* ---------- people ---------- */
+let pTimer = null;
+async function loadPeople() { try { const q = encodeURIComponent($('#pq').value.trim()); S.people = await api(`/api/store/master/people/${S.pk}?q=${q}`); drawPeople(); } catch (e) { $('#people').innerHTML = `<div class="err">${esc(e.message)}</div>`; } }
+function sw(on, id) { return `<button class="sw ${on ? 'on' : ''}" role="switch" aria-checked="${on}" data-id="${esc(id)}" aria-label="Switch"></button>`; }
+function drawPeople() {
+  const d = S.people; if (!d) return; $('#addOff').classList.toggle('hidden', S.pk !== 'customers');
+  if (S.pk === 'customers') $('#people').innerHTML = d.customers.length ? `<table><thead><tr><th>Customer</th><th class="r">Orders</th><th class="r">Delivered</th><th class="r">Spent</th><th>Last order</th><th>Status</th><th>Switch</th></tr></thead><tbody>${d.customers.map(c => `<tr><td><b>${esc(c.phone || '–')}</b><div class="muted">${esc(c.userId)}</div></td><td class="r">${c.orders}</td><td class="r">${c.delivered}</td><td class="r">${money(c.spent)}</td><td>${ago(c.lastOrderAt)}</td><td>${c.active ? '<span class="stat on">ON</span>' : `<span class="stat off">OFF</span><div class="muted">${esc(c.reason || '')}</div>`}</td><td>${sw(c.active, c.userId)}</td></tr>`).join('')}</tbody></table>` : '<div class="muted">No customers yet.</div>';
+  if (S.pk === 'riders') $('#people').innerHTML = d.riders.length ? `<table><thead><tr><th>Rider</th><th>Vehicle</th><th class="r">Trips</th><th class="r">Earned</th><th class="r">Wallet</th><th>Status</th><th>Switch</th></tr></thead><tbody>${d.riders.map(r => `<tr><td><b>${esc(r.name)}</b><div class="muted">${esc(r.phone)} ${r.online ? '· <span class="ok">online</span>' : ''}</div></td><td>${esc(r.vehicle)}<div class="muted">${esc(r.plate || '')}</div></td><td class="r">${r.trips}</td><td class="r">${money(r.earned)}</td><td class="r">${money(r.wallet)}</td><td><span class="stat ${r.active ? 'on' : r.status === 'SUSPENDED' || r.status === 'REJECTED' ? 'off' : 'wait'}">${r.active ? 'ON' : esc(r.status === 'PENDING' ? 'WAITING' : r.status)}</span>${r.docsOnFile ? '' : '<div class="muted">no documents</div>'}${r.reviewNote ? `<div class="muted">${esc(r.reviewNote)}</div>` : ''}</td><td>${sw(r.active, r.driverId)}</td></tr>`).join('')}</tbody></table>` : '<div class="muted">No riders yet.</div>';
+  if (S.pk === 'shops') $('#people').innerHTML = d.shops.length ? `<table><thead><tr><th>Shop</th><th class="r">Orders</th><th class="r">Sales</th><th class="r">Items</th><th class="r">Low stock</th><th class="r">Waiting</th><th>Status</th><th>Switch</th></tr></thead><tbody>${d.shops.map(s => `<tr><td><b>${esc(s.name)}</b><div class="muted">${esc(s.merchantId)}</div></td><td class="r">${s.orders}</td><td class="r">${money(s.sales)}</td><td class="r">${s.items}</td><td class="r">${s.lowStock ? `<span class="warn">${s.lowStock}</span>` : 0}</td><td class="r">${s.waiting}</td><td><span class="stat ${s.active ? 'on' : 'off'}">${s.active ? 'ON' : 'OFF'}</span></td><td>${sw(s.active, s.merchantId)}</td></tr>`).join('')}</tbody></table>` : '<div class="muted">No shops yet.</div>';
+}
+$('#pseg').addEventListener('click', e => { const b = e.target.closest('[data-pk]'); if (!b) return; S.pk = b.dataset.pk; $$('#pseg button').forEach(x => x.classList.toggle('on', x === b)); $('#pq').value = ''; S.people = null; $('#people').innerHTML = '<div class="muted">Loading…</div>'; loadPeople(); });
+$('#pq').addEventListener('input', () => { clearTimeout(pTimer); pTimer = setTimeout(loadPeople, 300); });
+$('#prefresh').onclick = loadPeople;
+$('#people').addEventListener('click', async e => {
+  const b = e.target.closest('.sw[data-id]'); if (!b) return; const id = b.dataset.id, on = b.classList.contains('on'), kind = S.pk;
+  const body = kind === 'customers' ? { userId: id } : kind === 'riders' ? { driverId: id } : { merchantId: id };
+  const who = kind === 'customers' ? 'this customer' : kind === 'riders' ? 'this rider' : 'this shop';
+  if (on) { const r = await ask(`Switch OFF ${who}?`, kind === 'customers' ? 'They are signed out at once and cannot sign in or order until you switch them back on.' : kind === 'riders' ? 'They go offline and cannot take jobs. If they hold a job, you must reassign or cancel it.' : 'The shop stops receiving orders and disappears from the customer app.', { ok: 'Switch OFF', input: 'Reason (optional)', danger: true }); if (!r) return; body.active = false; body.reason = r.value; }
+  else body.active = true;
+  b.disabled = true; const d = await post(`/api/store/master/people/${kind}/set`, body); b.disabled = false; if (d) loadPeople();
+});
+$('#offGo').onclick = async () => { const phone = $('#offPhone').value.trim(); if (!phone) return toast('Enter a phone number.', 'err'); const r = await ask('Switch OFF this customer?', `${phone} will be blocked from signing in and ordering.`, { ok: 'Switch OFF', input: 'Reason (optional)', danger: true }); if (!r) return; const d = await post('/api/store/master/people/customers/set', { phone, active: false, reason: r.value }); if (d) { $('#offPhone').value = ''; loadPeople(); } };
+/* ---------- test data ---------- */
+async function loadMaint() { try { S.maint = await api('/api/store/master/maintenance/preview'); drawMaint(); } catch (e) { $('#maintBody').textContent = e.message; } }
+function drawMaint() {
+  const d = S.maint; if (!d) return;
+  $('#maintBody').innerHTML = d.canReset ? `<p style="margin-bottom:10px;line-height:1.5">Your server is in <b>test mode</b>: payments are simulated, so no real money is involved. Clear the test orders and money so the books start clean before you go live. Customers, riders, shops, products and switches are kept, and a backup of the old state is saved first.</p>${kv([['Orders', num(d.orders) + ` (${d.open} open, ${d.delivered} delivered, ${d.cancelled} cancelled)`], ['Money held for open orders', money(d.heldForOpenOrders)], ['Jobs on the rider radar', num(d.jobsOnRadar)], ['Rider earnings records', num(d.riderEarningsRecords)], ['Rider wallets total', money(d.walletsTotal)]])}<button class="btn danger" id="resetGo" style="margin-top:12px">Clear test orders &amp; money…</button>` : (d.paymentsMode !== 'simulated' ? '<p>Real payments are switched on, so records cannot be cleared from here.</p>' : '<p>This is a production server, so accounting records cannot be cleared. Every order stays in the books.</p>');
+}
+$('#maintBody').addEventListener('click', async e => {
+  if (!e.target.closest('#resetGo')) return; const d = S.maint; if (!d) return;
+  const r = await ask('Clear all test orders and money?', `This permanently removes ${d.orders} orders, ${d.riderEarningsRecords} rider earnings and zeroes every wallet. A backup is saved first. Type ${d.phrase} to confirm.`, { ok: 'Clear everything', input: d.phrase, danger: true });
+  if (!r) return; if (r.value !== d.phrase) return toast(`You must type exactly: ${d.phrase}`, 'err');
+  const out = await post('/api/store/master/maintenance/reset-test-data', { confirm: r.value }); if (out) { loadOv(); loadFin(); loadRec(); loadAl(); loadMaint(); }
+});
+/* ---------- compliance (the admin side reports here) ---------- */
+function drawComp() {
+  const c = S.ov && S.ov.compliance; $('#compNone').classList.toggle('hidden', !!c); if (!c) { $('#compCards').innerHTML = ''; $('#compPolicy').innerHTML = ''; return; }
+  const L = c.ledger, P = c.compliance, K = c.clients, ok = (v, yes, no) => v ? `<span class="ok">${yes}</span>` : `<span class="bad">${no}</span>`, sev = P.alertsBySeverity || {};
+  $('#compCards').innerHTML = [
+    ['Ledger', ok(L.chainValid && L.trialBalanced, '✓ intact and balanced', '✗ PROBLEM'), kv([['Journals posted', num(L.journals)], ['Accounts', num(L.accounts)], ['Hash chain', ok(L.chainValid, 'intact', 'BROKEN')], ['Trial balance', ok(L.trialBalanced && L.equationHolds, 'balanced to the cent', 'OUT OF BALANCE')], ['Waiting for a second person', L.pending ? `<span class="warn">${L.pending}</span>` : '0'], ['Period closed through', esc(L.closedThrough || 'none yet')], ['Posting failures', L.failures ? `<span class="bad">${L.failures}</span>` : '0'], ['Last posting', ago(L.lastPostingAt)]])],
+    ['Compliance engine', ok(!(sev.CRITICAL) && !(P.overdueCtr + P.overdueStr), '✓ nothing overdue', '✗ needs attention'), kv([['Open alerts', num(P.alertsOpen)], ['Critical / High', `${sev.CRITICAL || 0} / ${sev.HIGH || 0}`], ['Cash reports (CTR) open', `${num(P.ctrOpen)}${P.overdueCtr ? ` <span class="bad">(${P.overdueCtr} overdue)</span>` : ''}`], ['Suspicious reports (STR) open', `${num(P.strOpen)}${P.overdueStr ? ` <span class="bad">(${P.overdueStr} overdue)</span>` : ''}`], ['KYC cases waiting', num(P.kycPending)], ['Active rules', num(P.rulesActive)], ['Sanctions list', P.sanctionsListLoaded ? `<span class="ok">${num(P.sanctionsEntries)} name${P.sanctionsEntries === 1 ? '' : 's'} (${esc(P.sanctionsListDate || 'date unknown')})</span>` : '<span class="bad">NOT loaded: screening is not effective</span>']])],
+    ['Client registry (always on)', ok(!K.failures && K.lastScan && Date.now() - K.lastScan.at < 15 * 60000, '✓ scanning', '✗ check'), kv([['Clients on file', num(K.total)], ['Opened today', num(K.openedToday)], ['Tier 0 / 1 / 2 / 3', esc((K.tiers || []).join(' / '))], ['Rated HIGH / MEDIUM', `${K.high} / ${K.medium}`], ['Active but not verified', K.unverifiedActive ? `<span class="warn">${K.unverifiedActive}</span>` : '0'], ['Identity conflicts', K.conflicts ? `<span class="bad">${K.conflicts}</span>` : '0'], ['Blocked / PEP / multi-account', `${K.blocked} / ${K.pep} / ${K.multiAccount}`], ['Last platform scan', K.lastScan ? ago(K.lastScan.at) + ` (${K.lastScan.scanned} checked, ${K.lastScan.skipped} skipped)` : '<span class="bad">never</span>'], ['Registry errors', K.failures ? `<span class="bad">${K.failures}</span>` : '0']])]
+  ].map(([t, st, body]) => `<div class="card"><div class="between"><h2 style="margin:0">${esc(t)}</h2><span>${st}</span></div><div style="margin-top:10px">${body}</div></div>`).join('');
+  $('#compPolicy').innerHTML = `<div class="between"><div><h3 style="margin:0">KYC limits at checkout</h3><div class="muted" style="max-width:640px">When ON, a customer who is not verified cannot place orders above their tier's limit (Tier 0: KES 50,000 per order), and blocked clients cannot order at all. Switch OFF only if you must let everyone order freely.</div></div><div class="row"><span class="stat ${c.enforcement ? 'on' : 'off'}">${c.enforcement ? 'ON' : 'OFF'}</span><button class="sw ${c.enforcement ? 'on' : ''}" role="switch" aria-checked="${c.enforcement}" aria-label="KYC limits at checkout" data-enf="${c.enforcement ? '0' : '1'}"></button></div></div>`;
+  $('#compTop').innerHTML = c.topRisk.length ? `<table><thead><tr><th>Client</th><th>Kind</th><th class="r">Tier</th><th class="r">Score</th></tr></thead><tbody>${c.topRisk.map(x => `<tr><td><b>${esc(x.name)}</b><div class="muted">${esc(x.clientId)} · ${esc((x.why || []).join('; '))}${x.blocked ? ' · <span class="bad">BLOCKED</span>' : ''}</div></td><td>${esc(x.segment)}</td><td class="r">${x.tier}</td><td class="r bad">${x.score}</td></tr>`).join('')}</tbody></table>` : '<div class="muted">No client is rated HIGH risk.</div>';
+  $('#compAlerts').innerHTML = c.openAlerts.length ? c.openAlerts.map(a => `<div class="al ${a.severity}"><b class="${a.severity === 'CRITICAL' ? 'bad' : a.severity === 'HIGH' ? 'warn' : 'muted'}">${esc(a.severity)}</b> ${esc(a.rule)} · ${esc(a.customer || '')}<div class="muted">${esc(a.detail)}</div></div>`).join('') : '<div class="muted">No open alerts.</div>';
+  const n = P.alertsOpen + (L.chainValid && L.trialBalanced ? 0 : 1); $('#compN').textContent = n; $('#compN').classList.toggle('hidden', !n);
+}
+$('#compPolicy').addEventListener('click', async e => {
+  const b = e.target.closest('[data-enf]'); if (!b) return; const on = b.dataset.enf === '1';
+  if (!on) { const r = await ask('Switch OFF KYC limits?', 'Unverified and blocked clients will be able to order without any limit. The change is recorded in the audit chain.', { ok: 'Switch OFF', danger: true }); if (!r) return; }
+  b.disabled = true; const d = await post('/api/store/master/compliance/enforcement', { on }); b.disabled = false; if (d) loadOv();
+});
+$('#booksNote').addEventListener('click', () => { tab('tMoney'); setTimeout(() => { const el = $('#checks'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 400); });
+$('#books').addEventListener('click', () => { tab('tMoney'); setTimeout(() => { const el = $('#checks'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 400); });
 
-        socket.on('connect', () => {
-            logConsole("Stage 55 WebSocket telemetry link established.");
-            refreshDashboard();
-        });
+/* ---------- financial institutions (forex, microfinance, SACCO, bank) ---------- */
+async function loadInstitutions() { try { const d = await api('/api/store/master/institutions'); S.inst = d.institutions; drawInstitutions(); } catch (e) { $('#instList').innerHTML = `<div class="err">${esc(e.message)}</div>`; } }
+function moneyLine(it) {
+  const m = it.money || {};
+  if (it.type === 'FOREX_BUREAU') return `Vault ${esc(m.vaultCash||'0.00')} KES · deals today ${num(m.dealsToday||0)} · currencies held ${num(m.currenciesHeld||0)}`;
+  return `Vault ${esc(m.vaultCash||'0.00')} KES · members ${num(m.members||0)} · loans out ${esc(m.loansOutstanding||'0.00')} · savings ${esc(m.savingsHeld||'0.00')}`;
+}
+const INST_TYPE = { FOREX_BUREAU:'Forex bureau', MICROFINANCE_BANK:'Microfinance bank', MICROFINANCE_CREDIT:'Credit (non-deposit)', SACCO:'SACCO', COMMERCIAL_BANK:'Bank' };
+function drawInstitutions() {
+  const d = S.inst; if (!d) return;
+  const pend = d.pending || 0; $('#instN').textContent = pend; $('#instN').classList.toggle('hidden', !pend);
+  $('#instKpis').innerHTML = [['Institutions', num(d.count)], ['Active', num(d.active)], ['Awaiting approval', num(d.pending)], ['Switched off', num(d.suspended)], ['Billing overdue', num(d.overdue)], ['Monthly rental (MRR)', money0(d.mrrKes)]].map(([l,v])=>`<div class="kpi"><small>${l}</small><b>${esc(v)}</b></div>`).join('');
+  if (!d.institutions || !d.institutions.length) { $('#instList').innerHTML = '<div class="muted">No institutions yet. They register at <b>/platform</b>; approve them here.</div>'; return; }
+  $('#instList').innerHTML = `<table><thead><tr><th>Institution</th><th>Type</th><th>Licence</th><th>Plan</th><th>Money (from the ledger)</th><th>Books</th><th>Status</th><th>Switch</th></tr></thead><tbody>${d.institutions.map(it=>`
+    <tr>
+      <td><b>${esc(it.name)}</b><div class="muted">${esc(it.tenantId)} · ${num(it.staff)} staff</div></td>
+      <td>${esc(INST_TYPE[it.type]||it.type)}</td>
+      <td>${it.licenceStatus==='LICENCE_VERIFIED'?'<span class="ok">✓ verified</span>':it.licenceStatus==='LICENCE_REJECTED'?'<span class="bad">rejected</span>':'<span class="warn">declared</span>'}<div class="muted">${esc(it.regulator||'')} ${esc(it.licenceNumber||'')}</div></td>
+      <td>${esc(it.plan)}${it.overdue?'<div class="bad">overdue</div>':''}</td>
+      <td class="muted">${moneyLine(it)}</td>
+      <td>${it.money&&it.money.booksBalanced?'<span class="ok">balanced</span>':it.money&&it.money.error?'<span class="muted">—</span>':'<span class="bad">CHECK</span>'}</td>
+      <td>${it.status==='ACTIVE'?'<span class="stat on">ON</span>':it.status==='PENDING_REVIEW'?'<span class="stat wait">WAITING</span>':`<span class="stat off">OFF</span>${it.suspendedReason?'<div class="muted">'+esc(it.suspendedReason)+'</div>':''}`}</td>
+      <td>${it.status==='PENDING_REVIEW'?`<button class="btn go sm" data-inst="approve" data-id="${esc(it.tenantId)}">Approve</button>`:it.status==='ACTIVE'?`<button class="sw on" role="switch" aria-checked="true" data-inst="suspend" data-id="${esc(it.tenantId)}" data-name="${esc(it.name)}"></button>`:`<button class="sw" role="switch" aria-checked="false" data-inst="reactivate" data-id="${esc(it.tenantId)}"></button>`}</td>
+    </tr>`).join('')}</tbody></table>
+    <div class="muted" style="margin-top:10px">Open the full owner console at <a href="/platform-admin" target="_blank" rel="noopener" style="color:var(--cy)">/platform-admin</a> to verify licences, set plans and raise invoices.</div>`;
+}
+$('#instList').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-inst]'); if (!b) return; const action = b.dataset.inst, id = b.dataset.id;
+  if (action === 'suspend') { const r = await ask('Switch OFF ' + (b.dataset.name||'this institution') + '?', 'Its staff are signed out at once and cannot open the counter or move money until you switch it back on. Use this if the institution is negligent or in breach.', { ok: 'Switch OFF', input: 'Reason (shown to the institution)', danger: true }); if (!r) return; const d = await post('/api/store/master/institutions/action', { action, tenantId: id, reason: r.value }); if (d) loadInstitutions(); return; }
+  const d = await post('/api/store/master/institutions/action', { action, tenantId: id }); if (d) loadInstitutions();
+});
+$('#instRefresh').onclick = loadInstitutions;
 
-        socket.on('orderStatusUpdate', (data) => {
-            logConsole(`Order ${data.orderId} status updated: ${data.status}`);
-            refreshDashboard();
-        });
-
-        socket.on('payoutProcessed', (data) => {
-            logConsole(`Instant B2C Payout settled for owner ${data.ownerId}: KES ${data.amount}`);
-            refreshDashboard();
-        });
-
-        socket.on('productAdded', (data) => {
-            logConsole(`Product broadcast received: ${data.name}`);
-            refreshDashboard();
-        });
-
-        socket.on('driver_location_broadcast', (data) => {
-            if (driverMarkers[data.driverId]) {
-                driverMarkers[data.driverId].setLatLng([data.lat, data.lng]);
-            } else {
-                driverMarkers[data.driverId] = L.marker([data.lat, data.lng]).addTo(map)
-                    .bindPopup(`<b>Driver ${data.driverId}</b><br>Status: ONLINE`);
-            }
-        });
-
-        async function tenantFetch(endpoint, options = {}) {
-            const currentBiz = document.getElementById('active-tenant-id').value.trim() || "BIZ-001";
-            try {
-                const res = await fetch(`${API_BASE}${endpoint}`, {
-                    ...options,
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-business-id": currentBiz,
-                        ...(options.headers || {})
-                    }
-                });
-                if (res.ok) return await res.json();
-            } catch (err) {}
-            return null;
-        }
-
-        async function executeStkPush() {
-            const phone = document.getElementById('stk-phone').value;
-            const amount = document.getElementById('stk-amount').value;
-            const businessId = document.getElementById('active-tenant-id').value.trim() || "BIZ-001";
-            const statusDiv = document.getElementById('stk-status');
-
-            if (!phone) {
-                alert("Please specify a recipient phone number.");
-                return;
-            }
-
-            statusDiv.style.color = "var(--cyan)";
-            statusDiv.innerText = "Dispatching high-speed STK Push to Daraja gateway...";
-            logConsole(`Initiating STK Push for ${phone} under namespace ${businessId}...`);
-
-            try {
-                const res = await fetch(`${API_BASE}/mpesa/stkpush`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-business-id': businessId },
-                    body: JSON.stringify({ phone, amount: amount ? Number(amount) : null, distanceKm: 5, businessId })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    statusDiv.style.color = "var(--gold)";
-                    statusDiv.innerText = `STK Sent! Request ID: ${data.CheckoutRequestID}`;
-                    logConsole(`STK Push initiated successfully! Checkout ID: ${data.CheckoutRequestID}`);
-                    refreshDashboard();
-                } else {
-                    statusDiv.style.color = "var(--alert-red)";
-                    statusDiv.innerText = `Error: ${data.error || "Gateway execution failed"}`;
-                    logConsole(`STK Push Error: ${data.error}`);
-                }
-            } catch (err) {
-                statusDiv.style.color = "var(--alert-red)";
-                statusDiv.innerText = `Network Error: ${err.message}`;
-                logConsole(`Network error during STK Push: ${err.message}`);
-            }
-        }
-
-        async function publishProduct() {
-            const businessId = document.getElementById('active-tenant-id').value.trim() || "BIZ-001";
-            const name = document.getElementById('prod-name').value;
-            const price = document.getElementById('prod-price').value;
-            const stock = document.getElementById('prod-stock').value;
-
-            if (!name || !price) {
-                alert("Please provide product name and price.");
-                return;
-            }
-
-            const res = await tenantFetch('/api/products', {
-                method: 'POST',
-                body: JSON.stringify({ businessId, name, price, stock })
-            });
-
-            if (res && res.success) {
-                logConsole(`Published product successfully under ${businessId}: ${name} (KES ${price})`);
-                document.getElementById('prod-name').value = '';
-                document.getElementById('prod-price').value = '';
-                document.getElementById('prod-stock').value = '';
-                refreshDashboard();
-            } else {
-                logConsole(`Product publishing error: ${res?.error || 'Unauthorized'}`);
-            }
-        }
-
-        async function refreshDashboard() {
-            try {
-                // 1. Fetch Scoped KRA Compliance Vault
-                const kraData = await tenantFetch('/api/compliance/kra-vault');
-                if (kraData && kraData.success && kraData.kraReport) {
-                    const rep = kraData.kraReport;
-                    document.getElementById('metric-volume').innerText = `KES ${rep.metrics.grossVolume.toLocaleString()}`;
-                    document.getElementById('metric-vat').innerText = `KES ${rep.metrics.vatLiability.toLocaleString()}`;
-                    document.getElementById('metric-vault').innerText = rep.vaultStatus;
-                    document.getElementById('kra-vault-box').innerHTML = `
-                        Status: <b>${rep.vaultStatus}</b><br>
-                        PIN Registered: ${rep.pinRegistered}<br>
-                        Taxable Commission: KES ${rep.metrics.taxableCommission.toLocaleString()} <br>
-                        VAT Liability: KES ${rep.metrics.vatLiability.toLocaleString()} <br>
-                        Transactions Logged: ${rep.transactionsLogged} (<span style="color:var(--neon-green);">${rep.integrity}</span>)
-                    `;
-                }
-
-                // 2. Fetch Drivers / Fleet Telemetry
-                const driversRes = await fetch(`${API_BASE}/drivers`);
-                const driversData = await driversRes.json();
-                const drivers = driversData.drivers || driversData || [];
-                document.getElementById('metric-drivers').innerText = drivers.length;
-
-                const roster = document.getElementById('driver-roster');
-                if (drivers.length === 0) {
-                    roster.innerHTML = "<span class='small-text'>No active drivers registered in matrix.</span>";
-                } else {
-                    let dHtml = "";
-                    drivers.forEach(d => {
-                        dHtml += `
-                            <div style="padding: 6px; border-bottom: 1px solid var(--border-color); display:flex; justify-content:space-between;">
-                                <div><b>${d.name || 'Driver'}</b> - <span style="color:var(--cyan)">${(d.status || 'ONLINE').toUpperCase()}</span></div>
-                                <div class="small-text">ID: ${d.id || 'N/A'}</div>
-                            </div>
-                        `;
-                        if (d.location && typeof d.location.lat === 'number' && typeof d.location.lng === 'number') {
-                            if (driverMarkers[d.id]) {
-                                driverMarkers[d.id].setLatLng([d.location.lat, d.location.lng]);
-                            } else {
-                                driverMarkers[d.id] = L.marker([d.location.lat, d.location.lng]).addTo(map)
-                                    .bindPopup(`<b>${d.name || 'Driver'}</b><br>Status: ${d.status}`);
-                            }
-                        }
-                    });
-                    roster.innerHTML = dHtml;
-                }
-
-                // 3. Fetch Scoped Products
-                const prodData = await tenantFetch('/api/products');
-                const products = (prodData && prodData.products) || [];
-                const pTable = document.querySelector('#product-table-body');
-                if (products.length === 0) {
-                    pTable.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No products found for this tenant.</td></tr>`;
-                } else {
-                    let pHtml = "";
-                    products.forEach(p => {
-                        pHtml += `<tr><td>${p.name}</td><td>KES ${p.price}</td><td>${p.stock || 0}</td></tr>`;
-                    });
-                    pTable.innerHTML = pHtml;
-                }
-
-                // 4. Fetch Scoped Ledger
-                const ledgerData = await tenantFetch('/ledger');
-                const ledger = (ledgerData && ledgerData.ledger) || [];
-                const lTable = document.querySelector('#ledger-table-body');
-                if (ledger.length === 0) {
-                    lTable.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No audited ledger records found for tenant.</td></tr>`;
-                } else {
-                    let lHtml = "";
-                    ledger.slice(-8).reverse().forEach(l => {
-                        lHtml += `<tr><td>${l.id ? l.id.slice(0, 10) : 'LEDGER'}...</td><td>KES ${Number(l.gross || l.amount || 0).toFixed(2)}</td><td>KES ${Number(l.tax || 0).toFixed(2)}</td></tr>`;
-                    });
-                    lTable.innerHTML = lHtml;
-                }
-
-            } catch (err) {}
-        }
-
-        setTimeout(() => { map.invalidateSize(); }, 500);
-        refreshDashboard();
-    </script>
+function start() {
+  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); S.timers.forEach(clearInterval);
+  loadOv(); loadRec(); loadAl(); loadFin();
+  S.timers = [setInterval(() => { if (!document.hidden) loadOv(); }, 5000), setInterval(() => { if (!document.hidden) { loadRec(); loadAl(); if (S.tab === 'tMoney') loadFin(); if (S.tab === 'tInst') loadInstitutions(); } }, 30000)];
+}
+if (S.token) start();
+})();
+</script>
 </body>
 </html>
