@@ -1,224 +1,610 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#000000">
-  <title>RDS HYBRID MARKETPLACE</title>
-  <style>
-    :root {
-      --neon-green: #00ff88;
-      --dark-bg: #000000;
-      --panel-bg: #111111;
-      --text-dim: #888888;
-      --cyan: #00e5ff;
-      --gold: #ffd700;
-    }
-    * { box-sizing: border-box; touch-action: manipulation; }
-    body {
-      background: var(--dark-bg);
-      color: var(--neon-green);
-      font-family: monospace;
-      padding: 12px;
-      margin: 0;
-    }
-    h2 { margin: 0 0 10px 0; font-size: 1.2rem; }
-    .box {
-      border: 1px solid var(--neon-green);
-      border-radius: 6px;
-      padding: 12px;
-      margin-bottom: 12px;
-      background: var(--panel-bg);
-    }
-    button {
-      padding: 10px 14px;
-      background: var(--neon-green);
-      color: #000;
-      font-weight: bold;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-family: monospace;
-    }
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .product-card {
-      border: 1px solid #333;
-      padding: 10px;
-      background: #181818;
-      border-radius: 4px;
-      text-align: center;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      background: #111;
-      color: var(--neon-green);
-      border: 1px solid var(--neon-green);
-      border-radius: 4px;
-      margin-bottom: 8px;
-      font-family: monospace;
-    }
-    .cart-item {
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px solid #222;
-      padding: 6px 0;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f19">
+<title>RDS Vendor Console</title>
+<style>
+:root{--g:#00ff88;--bg:#0b0f19;--panel:#111827;--card:#151b2a;--dim:#9ca3af;--cy:#38bdf8;--red:#ff4d6d;--gold:#ffd700;--pu:#a855f7;--line:#222c3d;--r:12px;--safe:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:#fff;min-height:100vh;padding-bottom:calc(30px + var(--safe))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.wrap{max-width:1100px;margin:0 auto;padding:14px}
+.narrow{max-width:520px;margin:0 auto;padding:18px 14px}
+h1{font-size:1.25rem}h2{font-size:1rem;margin-bottom:10px}h3{font-size:.78rem;color:var(--cy);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.muted{color:var(--dim);font-size:.78rem}.err{color:var(--red);font-size:.8rem;margin:6px 0}.ok{color:var(--g)}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid #374151;border-radius:9px;padding:11px;margin-bottom:10px;font-size:.9rem;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--g)}input[readonly]{opacity:.7}
+label{display:block;font-size:.72rem;color:var(--cy);margin:2px 0 4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:9px;padding:11px 16px;font-weight:700;font-size:.82rem;cursor:pointer;background:#1f2937;transition:transform .08s,opacity .15s}
+.btn.block{width:100%}.btn:active{transform:scale(.98)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.go{background:var(--g);color:#000}.btn.cy{background:var(--cy);color:#000}.btn.gold{background:var(--gold);color:#000}.btn.danger{background:transparent;border:1px solid var(--red);color:var(--red)}.btn.ghost{background:transparent;border:1px solid #374151}.btn.sm{padding:7px 12px;font-size:.74rem}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}.btn.go .spin,.btn.cy .spin,.btn.gold .spin{border-color:rgba(0,0,0,.3);border-top-color:#000}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none!important}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>.grow{flex:1;min-width:140px}.between{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:520px){.g2{grid-template-columns:1fr}}
+.brandbox{width:46px;height:46px;border-radius:12px;background:var(--g);color:#000;display:grid;place-items:center;font-size:1.4rem;margin:0 auto 8px}
+.top{position:sticky;top:0;z-index:40;background:rgba(11,15,25,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px}
+.shop b{display:block;font-size:1rem;color:var(--g)}.shop span{font-size:.7rem;color:var(--dim)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;margin-right:6px}.dot.on{background:var(--g);box-shadow:0 0 8px var(--g)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px}.kpi small{color:var(--dim);font-size:.68rem;display:block}.kpi b{font-size:1.15rem}
+.tabs{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;background:var(--panel);border:1px solid #374151;color:var(--dim);padding:9px 16px;border-radius:20px;font-size:.8rem;font-weight:700;cursor:pointer}.tab.on{background:var(--g);border-color:var(--g);color:#000}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px}.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;background:var(--panel);border:1px solid #374151;color:var(--dim);padding:6px 12px;border-radius:18px;font-size:.72rem;font-weight:700;cursor:pointer}.chip.on{background:var(--pu);border-color:var(--pu);color:#fff}
+.orders{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
+.order{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px;animation:in .25s}
+.order.new{border-color:var(--g);box-shadow:0 0 0 1px rgba(0,255,136,.25)}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.order ul{list-style:none;font-size:.82rem;color:#d1d5db}.order li{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--line)}.order li:last-child{border:0}
+.pill{font-size:.64rem;font-weight:800;padding:3px 9px;border-radius:12px;background:rgba(56,189,248,.14);color:var(--cy);white-space:nowrap}
+.pill.new{background:rgba(0,255,136,.16);color:var(--g)}.pill.packing{background:rgba(56,189,248,.16);color:var(--cy)}.pill.rider_here{background:rgba(0,255,136,.2);color:var(--g)}.pill.handed{background:rgba(0,255,136,.12);color:var(--g)}.pill.rider,.pill.enroute,.pill.waiting_rider{background:rgba(255,215,0,.15);color:var(--gold)}.pill.completed,.pill.delivered{background:rgba(168,85,247,.18);color:#d8b4fe}.pill.cancelled{background:rgba(255,77,109,.15);color:var(--red)}
+.acts{display:flex;gap:8px;flex-wrap:wrap}.acts .btn{flex:1}
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem}.tbl th{font-size:.68rem;color:var(--dim);text-transform:uppercase;text-align:left;padding:8px;border-bottom:1px solid var(--line)}.tbl td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl img{width:42px;height:42px;border-radius:8px;object-fit:cover;background:#000}.tbl input{margin:0;width:84px;padding:7px}
+.tag{font-size:.64rem;padding:2px 8px;border-radius:10px;background:#1f2937}.tag.low{background:rgba(255,215,0,.15);color:var(--gold)}.tag.out{background:rgba(255,77,109,.15);color:var(--red)}
+.scroll{overflow-x:auto}
+.skel{background:linear-gradient(90deg,#111827 25%,#1b2437 50%,#111827 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:var(--r);height:150px}@keyframes sh{to{background-position:-200% 0}}
+.empty{text-align:center;color:var(--dim);padding:30px 10px;font-size:.85rem;grid-column:1/-1}
+.thumb{display:flex;align-items:center;gap:10px;margin-bottom:10px}.thumb img{width:54px;height:54px;border-radius:9px;object-fit:cover;border:1px solid #374151;background:#000}
+.alert{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:150;width:calc(100% - 24px);max-width:460px;background:linear-gradient(90deg,#10b981,#38bdf8);color:#04111a;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:pulse .8s infinite alternate}
+@keyframes pulse{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(1.02)}}
+.alert b{font-size:.9rem}.alert p{font-size:.74rem;font-weight:600}
+.banner{background:rgba(255,77,109,.12);border:1px solid var(--red);color:#fecdd3;border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:.84rem}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.7);z-index:200;padding:18px}.modal.on{display:grid}
+.modal .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;max-width:420px;width:100%}.modal p{font-size:.82rem;color:var(--dim);margin-bottom:12px}
+video{width:100%;border-radius:10px;background:#000;max-height:50vh}
+#toasts{position:fixed;bottom:calc(14px + var(--safe));left:0;right:0;max-width:480px;margin:0 auto;padding:0 14px;z-index:300;pointer-events:none;display:flex;flex-direction:column;gap:8px}
+.toast{background:#1f2937;border:1px solid #374151;border-left:4px solid var(--cy);border-radius:10px;padding:11px 14px;font-size:.82rem;animation:in .2s;pointer-events:auto}.toast.ok{border-left-color:var(--g)}.toast.err{border-left-color:var(--red)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+
+/* ===================== RESPONSIVE LAYER: phones, tablets, laptops ===================== */
+html{color-scheme:dark;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*{scrollbar-width:thin;scrollbar-color:#374151 transparent}
+body{min-height:100vh;min-height:100dvh}
+img,video,canvas,svg{max-width:100%}
+@media (min-width:1200px){html{font-size:17px}}
+@media (min-width:1700px){html{font-size:18px}}
+
+.alert{top:calc(12px + env(safe-area-inset-top,0px))}
+.top .wrap{padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.shop{min-width:0}.shop b,.shop span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
+.orders{grid-template-columns:repeat(auto-fill,minmax(min(310px,100%),1fr))}
+.narrow{padding-top:max(18px,5vh)}
+@media (pointer:coarse){input,select,textarea{font-size:16px}.btn,.tab,.chip{min-height:44px}.tbl input{min-height:40px}}
+@media (hover:hover){.order:hover{border-color:#3b4a63}.btn:not(:disabled):hover{filter:brightness(1.08)}}
+
+/* phones: inventory turns into stacked cards instead of scrolling sideways */
+@media (max-width:640px){
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
+  .tbl thead{display:none}
+  .tbl tr{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+  .tbl td{border:0;padding:5px 0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .tbl td[data-label]::before{content:attr(data-label);color:var(--dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.4px}
+  .tbl td:last-child{justify-content:flex-end;padding-top:8px}
+  .tbl td.empty{display:block;padding:20px 0}
+}
+@media (max-width:520px){
+  #oq,#cq{width:100%!important}
+  .top .row{gap:6px}.top .btn.sm{padding:7px 9px}
+  .panel{padding:13px}
+  .wrap{padding:12px}
+}
+@media (max-width:380px){.kpis{grid-template-columns:1fr 1fr;gap:8px}.kpi b{font-size:1rem}.tab{padding:8px 12px}}
+/* the catalogue form and inventory sit side by side only when there is room */
+@media (max-width:899px){#tCatalog>.g2{grid-template-columns:1fr}}
+@media (min-width:900px){
+  #tCatalog>.g2{grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:16px}
+  #itemForm{position:sticky;top:76px}
+}
+@media (min-width:1000px){
+  .wrap{padding:20px 28px}
+  .top .wrap{padding:12px 28px}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+  .kpi{padding:16px}.kpi b{font-size:1.35rem}
+  #toasts{left:auto;right:24px;max-width:380px;margin:0}
+}
+@media (min-width:1400px){.wrap{max-width:1320px}}
+/* phones turned sideways */
+@media (max-height:500px) and (orientation:landscape){.top{position:static}.alert{max-width:520px}}
+
+
+/* ===================== POLISH LAYER 2: banner, figures, touch ===================== */
+/* the "new order" banner never covers the header or the figures: bottom on phones and tablets, inside the header on laptops */
+.alert{top:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));max-width:520px}
+.alert>div{min-width:0}
+@media (min-width:1100px){.alert{top:6px;bottom:auto;max-width:480px;padding:8px 12px}.alert p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+/* figures: an even grid, never five in one row and two in the next */
+.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:last-child:nth-child(odd){grid-column:1/-1}
+@media (min-width:600px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi:last-child:nth-child(odd){grid-column:auto}}
+@media (min-width:1200px){.kpis{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}.kpi{padding:14px}.kpi b{font-size:1.2rem}}
+@media (pointer:coarse){.btn{min-height:44px}.btn.sm{min-height:40px}}
+</style>
 </head>
 <body>
 
-<h2>🛒 RDS CUSTOMER MARKETPLACE</h2>
-
-<div class="box">
-  <label><strong>Select Merchant Store:</strong></label>
-  <select id="shopSelect" onchange="loadProducts()" style="width:100%; padding:8px; background:#111; color:#00ff88; border:1px solid #00ff88; margin-top:5px;"></select>
+<!-- new order ringer -->
+<div class="alert hidden" id="alert" role="alert">
+  <div><b>🔔 New order!</b><p id="alertTxt">A customer just placed an order.</p></div>
+  <div class="row" style="flex:none"><button class="btn sm" style="background:#04111a;color:#fff" id="alertView">View</button><button class="btn sm" style="background:#04111a;color:#fff" id="alertStop">Silence</button></div>
 </div>
 
-<div class="box">
-  <strong>📦 Available Inventory</strong>
-  <div id="productCatalog" class="product-grid"><em>Loading inventory...</em></div>
-</div>
+<!-- ============ AUTH ============ -->
+<section id="viewAuth" class="narrow">
+  <div id="loginBox" class="panel">
+    <div style="text-align:center;margin-bottom:14px"><div class="brandbox">🏪</div><h1 style="color:var(--g)">Vendor sign in</h1><p class="muted" style="margin-top:4px">Use your registered phone and the login token sent to you by SMS.</p></div>
+    <label for="lPhone">Phone number</label><input id="lPhone" type="tel" inputmode="tel" placeholder="07XX XXX XXX or +2547…" autocomplete="tel">
+    <label for="lToken">Login token</label><input id="lToken" inputmode="numeric" maxlength="8" placeholder="Token from SMS" autocomplete="one-time-code" style="text-align:center;letter-spacing:4px;font-size:1.1rem">
+    <div class="err" id="lErr"></div>
+    <button class="btn go block" id="lGo">Sign in</button>
+    <div style="text-align:center;border-top:1px solid var(--line);margin-top:16px;padding-top:14px"><p class="muted">New shop owner?</p><button class="btn ghost block" id="toReg" style="margin-top:8px">Register a new shop</button></div>
+  </div>
 
-<div class="box">
-  <strong>🛍️ Shopping Cart</strong>
-  <div id="cartList" style="margin-top:8px;"><em>Cart is empty.</em></div>
-  <h3 id="cartTotal" style="margin:10px 0 5px 0;">Total: $0.00</h3>
-  <input type="text" id="custName" placeholder="Your Name (e.g. Robert)" value="Robert" />
-  <input type="text" id="custPhone" placeholder="Phone Number" value="0712345678" />
-  <button onclick="checkout()" style="width:100%; background:var(--gold);">⚡ Place Order & Request Driver</button>
-</div>
+  <form id="regBox" class="panel hidden" novalidate>
+    <div style="text-align:center;margin-bottom:12px"><h1 style="color:var(--g)">Register your shop</h1><p class="muted" style="margin-top:4px">An admin reviews every application. You receive your login token by SMS once approved.</p></div>
+    <div class="g2"><div><label for="rShop">Shop name</label><input id="rShop" maxlength="100" placeholder="e.g. Naivas Westlands"></div><div><label for="rType">Business category</label><input id="rType" maxlength="40" placeholder="e.g. Pharmacy, Electronics"></div></div>
+    <div class="g2"><div><label for="rReg">Licence / registration no.</label><input id="rReg" maxlength="40" placeholder="PVT-2026XYZ"></div><div><label for="rOwner">Owner full legal name</label><input id="rOwner" maxlength="100"></div></div>
+    <div class="g2"><div><label for="rPhone">Phone (receives login token)</label><input id="rPhone" type="tel" placeholder="07XX XXX XXX"></div><div><label for="rMpesa">M-Pesa phone number</label><input id="rMpesa" type="tel" placeholder="Same as phone if blank"></div></div>
+    <div class="panel" style="background:var(--bg)"><div class="between"><h3 style="margin:0">Shop location</h3><button type="button" class="btn cy sm" id="rGps">📍 Detect GPS</button></div>
+      <div class="g2" style="margin-top:10px"><input id="rLat" placeholder="Latitude" inputmode="decimal"><input id="rLon" placeholder="Longitude" inputmode="decimal"></div></div>
+    <div class="panel" style="background:var(--bg)"><h3>Owner ID / passport photo</h3><div class="thumb"><img id="pvId" alt="" class="hidden"><span class="muted" id="pvIdT">Required</span></div>
+      <div class="row"><button type="button" class="btn go sm" data-cam="id" data-facing="environment">📸 Take photo</button><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="id" class="hidden"></label></div></div>
+    <div class="panel" style="background:var(--bg)"><h3>Owner face photo</h3><div class="thumb"><img id="pvFace" alt="" class="hidden"><span class="muted" id="pvFaceT">Required: clear photo of the owner's face</span></div>
+      <div class="row"><button type="button" class="btn go sm" data-cam="face" data-facing="user">🤳 Take selfie</button><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="face" class="hidden"></label></div></div>
+    <div class="panel" style="background:var(--bg)"><h3>Shop front photo</h3><div class="thumb"><img id="pvShop" alt="" class="hidden"><span class="muted" id="pvShopT">Required</span></div>
+      <div class="row"><button type="button" class="btn go sm" data-cam="shop" data-facing="environment">📸 Take photo</button><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="shop" class="hidden"></label></div></div>
+    <div class="err" id="rErr"></div>
+    <div class="row"><button type="submit" class="btn go grow" id="rGo">Submit application</button><button type="button" class="btn ghost" id="toLogin">Back</button></div>
+  </form>
 
-<div class="box">
-  <strong>📡 Order Tracker Status</strong>
-  <p id="orderStatus">No active orders placed.</p>
-</div>
+  <div id="regDone" class="panel hidden" style="text-align:center"><div class="brandbox">✅</div><h1>Application received</h1><p class="muted" style="margin:8px 0 14px">An admin will review it shortly. You will get your login token by SMS when it is approved.</p><button class="btn go block" id="doneBack">Back to sign in</button></div>
+</section>
 
+<!-- ============ DASHBOARD ============ -->
+<section id="viewApp" class="hidden">
+  <header class="top"><div class="wrap">
+    <div class="shop"><b id="hShop">Shop</b><span id="hMeta"></span></div>
+    <div class="row"><span class="muted" id="live"><i class="dot"></i><span>Offline</span></span>
+      <button class="btn ghost sm" id="soundBtn" title="Order alert sound">🔔 On</button><button class="btn danger sm" id="logout">Sign out</button></div>
+  </div></header>
+
+  <main class="wrap">
+    <div class="banner hidden" id="suspBanner">⚠️ This shop is currently suspended by the platform. You cannot accept orders or edit your catalogue. Please contact support.</div>
+    <div class="kpis" id="kpis"></div>
+    <div class="tabs" role="tablist"><button class="tab on" data-tab="tOrders">Orders <span id="newCount"></span></button><button class="tab" data-tab="tCatalog">Catalogue</button><button class="tab" data-tab="tSettings">Shop settings</button></div>
+
+    <!-- ORDERS -->
+    <section id="tOrders">
+      <div class="between" style="margin-bottom:10px"><div class="chips" id="ofilters"></div>
+        <div class="row"><input id="oq" type="search" placeholder="Search order or item…" style="margin:0;width:200px" aria-label="Search orders"><button class="btn ghost sm" id="oRefresh">↻ Refresh</button><button class="btn ghost sm" id="oCsv">⬇ CSV</button></div></div>
+      <div class="orders" id="orders"></div>
+    </section>
+
+    <!-- CATALOGUE -->
+    <section id="tCatalog" class="hidden">
+      <div class="g2" style="align-items:start">
+        <form class="panel" id="itemForm" novalidate>
+          <h2 id="formTitle">Add item</h2>
+          <label for="iName">Product / service name</label><input id="iName" maxlength="120">
+          <label for="iCat">Category</label><input id="iCat" maxlength="40" list="catList" placeholder="e.g. Groceries"><datalist id="catList"></datalist>
+          <div class="g2"><div><label for="iPrice">Price (KES)</label><input id="iPrice" type="number" inputmode="decimal" min="0" step="0.01"></div><div><label for="iStock">Stock</label><input id="iStock" type="number" inputmode="numeric" min="0" step="1" value="10"></div></div>
+          <label>Image</label><div class="thumb"><img id="pvItem" alt="" class="hidden"><span class="muted" id="pvItemT">Optional</span></div>
+          <div class="row" style="margin-bottom:10px"><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="item" class="hidden"></label><input id="iImg" type="url" placeholder="…or paste an image URL" style="margin:0;flex:1;min-width:150px"></div>
+          <div class="err" id="iErr"></div>
+          <div class="row"><button type="submit" class="btn go grow" id="iGo">Publish item</button><button type="button" class="btn ghost hidden" id="iCancel">Cancel edit</button></div>
+        </form>
+        <div class="panel"><div class="between" style="margin-bottom:10px"><h2 style="margin:0">Inventory <span class="muted" id="cCount"></span></h2><input id="cq" type="search" placeholder="Search items…" style="margin:0;width:170px" aria-label="Search items"></div>
+          <div class="scroll"><table class="tbl"><thead><tr><th>Item</th><th>Price</th><th>Stock</th><th></th></tr></thead><tbody id="catalog"></tbody></table></div></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tSettings" class="hidden">
+      <form class="panel" id="setForm" style="max-width:560px" novalidate>
+        <h2>Shop settings</h2>
+        <div class="g2"><div><label>Merchant ID</label><input id="sId" readonly></div><div><label>Phone</label><input id="sPhone" readonly></div></div>
+        <label for="sName">Shop name</label><input id="sName" maxlength="100">
+        <label for="sType">Business category</label><input id="sType" maxlength="40">
+        <div class="between"><label style="margin:0">Location</label><button type="button" class="btn cy sm" id="sGps">📍 Detect GPS</button></div>
+        <div class="g2" style="margin-top:8px"><input id="sLat" placeholder="Latitude" inputmode="decimal"><input id="sLon" placeholder="Longitude" inputmode="decimal"></div>
+        <label>Shop banner</label><div class="thumb"><img id="pvBanner" alt="" class="hidden"><span class="muted" id="pvBannerT">No banner</span></div>
+        <div class="row" style="margin-bottom:10px"><label class="btn ghost sm" style="margin:0;cursor:pointer">⬆ Upload<input type="file" accept="image/*" data-file="banner" class="hidden"></label><input id="sBanner" type="url" placeholder="…or paste an image URL" style="margin:0;flex:1;min-width:150px"></div>
+        <div class="err" id="sErr"></div>
+        <button class="btn go block" id="sGo" type="submit">Save changes</button>
+      </form>
+    </section>
+  </main>
+</section>
+
+<!-- dialogs -->
+<div class="modal" id="dlg"><div class="box"><h2 id="dlgT"></h2><p id="dlgP"></p><div class="hidden" id="dlgReasonBox"><label for="dlgReason">Reason (shown to the customer)</label><select id="dlgReason"><option>Out of stock</option><option>Shop is closing</option><option>Cannot deliver to this area</option><option>Other</option></select></div><div class="row"><button class="btn ghost grow" id="dlgNo">Cancel</button><button class="btn go grow" id="dlgYes">OK</button></div></div></div>
+<div class="modal" id="cam"><div class="box"><h2>📸 Camera</h2><video id="camVid" autoplay playsinline muted></video><canvas id="camCan" class="hidden"></canvas><div class="row" style="margin-top:12px"><button class="btn go grow" id="camSnap">Capture</button><button class="btn ghost" id="camX">Cancel</button></div></div></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script src="/socket.io/socket.io.js" onerror="void 0"></script>
 <script>
-const LOCAL_API = "http://localhost:3000";
-const CLOUD_API = "https://rds-lab.onrender.com";
-let API_BASE = window.location.origin.includes("localhost") ? LOCAL_API : CLOUD_API;
-
-let cart = [];
-
-async function apiFetch(ep, opts = {}) {
-  try {
-    const res = await fetch(`${API_BASE}${ep}`, {
-      ...opts,
-      headers: { "Content-Type": "application/json", ...(opts.headers || {}) }
-    });
-    return await res.json();
-  } catch (e) { return null; }
-}
-
-async function loadShops() {
-  const data = await apiFetch("/businesses");
-  const select = document.getElementById("shopSelect");
-  select.innerHTML = "";
-  const list = (data && data.businesses) || [];
-  if (list.length === 0) {
-    select.innerHTML = "<option value='BIZ-001'>Caro Supermarket (Default)</option>";
-  } else {
-    list.forEach(b => {
-      select.innerHTML += `<option value="${b.id}">${b.name} (${b.category || 'Retail'})</option>`;
-    });
-  }
-  loadProducts();
-}
-
-async function loadProducts() {
-  const bizId = document.getElementById("shopSelect").value || "BIZ-001";
-  const data = await apiFetch(`/products?businessId=${bizId}`);
-  const grid = document.getElementById("productCatalog");
-  
-  let products = (data && data.products) || [];
-  if (products.length === 0) {
-    products = [
-      { id: "P-101", name: "Fresh Milk 1L", price: 2.50 },
-      { id: "P-102", name: "Loaf of Bread", price: 1.80 },
-      { id: "P-103", name: "Bottled Water 500ml", price: 0.90 }
-    ];
-  }
-
-  grid.innerHTML = "";
-  products.forEach(p => {
-    grid.innerHTML += `
-      <div class="product-card">
-        <b>${p.name}</b><br>
-        <span style="color:var(--cyan)">$${p.price.toFixed(2)}</span><br><br>
-        <button onclick="addToCart('${p.name}', ${p.price})"> Add</button>
-      </div>
-    `;
-  });
-}
-
-function addToCart(name, price) {
-  cart.push({ name, price });
-  renderCart();
-}
-
-function renderCart() {
-  const container = document.getElementById("cartList");
-  if (cart.length === 0) {
-    container.innerHTML = "<em>Cart is empty.</em>";
-    document.getElementById("cartTotal").innerText = "Total: $0.00";
-    return;
-  }
-  
-  let html = "";
-  let total = 0;
-  cart.forEach((item, index) => {
-    total += item.price;
-    html += `
-      <div class="cart-item">
-        <span>${item.name}</span>
-        <span>$${item.price.toFixed(2)}</span>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
-  document.getElementById("cartTotal").innerText = `Total: $${total.toFixed(2)}`;
-}
-
-async function checkout() {
-  if (cart.length === 0) return alert("Your cart is empty!");
-  const name = document.getElementById("custName").value.trim() || "Guest";
-  const phone = document.getElementById("custPhone").value.trim() || "0700000000";
-  const total = cart.reduce((sum, item) => sum + item.price, 0);
-
-  document.getElementById("orderStatus").innerText = "⏳ Creating order and requesting nearby driver...";
-
-  const res = await apiFetch("/order/create", {
-    method: "POST",
-    body: JSON.stringify({ customerName: name, customerPhone: phone, amount: total, items: cart })
-  });
-
-  if (res && res.success) {
-    const orderId = res.order.id;
-    document.getElementById("orderStatus").innerText = `✅ Order ${orderId} created! Auto-dispatching driver...`;
-    
-    // Trigger spatial auto-dispatch
-    const dispatchRes = await apiFetch("/dispatch/auto", {
-      method: "POST",
-      body: JSON.stringify({ orderId })
-    });
-
-    if (dispatchRes && dispatchRes.success) {
-      document.getElementById("orderStatus").innerText = `🚚 Order ${orderId} assigned to driver! Tracking live...`;
-      cart = [];
-      renderCart();
-    }
-  }
-}
-
-window.onload = () => {
-  loadShops();
+(() => {
+'use strict';
+/* ===================== helpers ===================== */
+const API = (location.origin && location.origin !== 'null') ? location.origin : 'http://localhost:3000';
+const BASE_TITLE = 'RDS Vendor Console';
+const CANCELLED = new Set(['CANCELLED_BY_CUSTOMER','REJECTED_BY_VENDOR','ORDERLY_DISMISSED','CANCELLED']);
+const PH = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100%" height="100%" fill="#1b2437"/></svg>');
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => 'KES ' + Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const ago = ms => { if (!ms) return ''; const s = Math.max(0, (Date.now() - ms) / 1000); if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + ' min ago'; if (s < 86400) return Math.floor(s / 3600) + ' h ago'; return new Date(ms).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' }); };
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} }
 };
+const state = { token: LS.get('rds_m_token', null), shop: LS.get('rds_m_shop', null), orders: [], catalog: [], stats: null, filter: 'new', oq: '', cq: '', editing: null, seen: null, sound: LS.get('rds_m_sound', true), socket: null, photos: { id: null, face: null, shop: null, item: null, banner: null }, suspended: false };
+
+function toast(msg, type = 'info', ms = 3400) {
+  const el = document.createElement('div'); el.className = 'toast ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : ''); el.textContent = msg;
+  $('#toasts').appendChild(el); setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, ms);
+}
+function ask(title, text, ok = 'OK', reason = false) {
+  return new Promise(res => {
+    $('#dlgT').textContent = title; $('#dlgP').textContent = text; $('#dlgYes').textContent = ok; $('#dlgReasonBox').classList.toggle('hidden', !reason);
+    const m = $('#dlg'); m.classList.add('on');
+    const done = v => { m.classList.remove('on'); $('#dlgYes').onclick = $('#dlgNo').onclick = null; res(v ? (reason ? $('#dlgReason').value : true) : false); };
+    $('#dlgYes').onclick = () => done(true); $('#dlgNo').onclick = () => done(false);
+  });
+}
+function busy(btn, on, label) {
+  if (!btn) return;
+  if (on) { btn.dataset.l = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + (label ? ' ' + esc(label) : ''); }
+  else { btn.disabled = false; if (btn.dataset.l !== undefined) btn.innerHTML = btn.dataset.l; }
+}
+async function api(path, { method = 'GET', body, token = state.token, signal, timeout = 20000, raw = false } = {}) {
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), timeout);
+  if (signal) signal.addEventListener('abort', () => ctrl.abort());
+  try {
+    const h = {}; if (body !== undefined) h['Content-Type'] = 'application/json'; if (token) h.Authorization = 'Bearer ' + token;
+    const res = await fetch(API + path, { method, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined, signal: ctrl.signal });
+    if (raw && res.ok) return res;
+    let data = null; try { data = await res.json(); } catch {}
+    if (!res.ok || !data || data.success === false) {
+      const e = new Error((data && data.error) || `Request failed (${res.status})`); e.status = res.status; e.retryAfter = res.headers.get('Retry-After');
+      if (res.status === 401 && token && token === state.token) sessionExpired();
+      if (res.status === 403 && /suspended/i.test(e.message)) setSuspended(true);
+      if (res.status === 429) e.message = `Too many requests. Try again in ${e.retryAfter || 'a few'} seconds.`;
+      throw e;
+    }
+    return data;
+  } catch (e) {
+    if (e.name === 'AbortError') { if (signal && signal.aborted) { e.aborted = true; throw e; } const t = new Error('The server took too long to respond.'); t.status = 0; throw t; }
+    if (e instanceof TypeError) { const n = new Error('Cannot reach the server. Check your connection.'); n.status = 0; throw n; }
+    throw e;
+  } finally { clearTimeout(timer); }
+}
+const normPhone = v => { const s = String(v || '').replace(/[\s()-]/g, ''); if (/^0[17]\d{8}$/.test(s)) return '+254' + s.slice(1); if (/^254[17]\d{8}$/.test(s)) return '+' + s; if (/^\+\d{9,15}$/.test(s)) return s; return null; };
+
+/* ===================== images (compress + camera) ===================== */
+function fileToDataUrl(file, maxDim = 1024, q = 0.82) {
+  return new Promise((resolve, reject) => {
+    if (!file || !/^image\//.test(file.type) || file.type === 'image/svg+xml') return reject(new Error('Please choose a photo (JPG, PNG or WebP).'));
+    const rd = new FileReader();
+    rd.onerror = () => reject(new Error('Could not read that file.'));
+    rd.onload = () => { const img = new Image(); img.onerror = () => reject(new Error('That image could not be opened.')); img.onload = () => resolve(canvasToJpeg(img, img.naturalWidth, img.naturalHeight, maxDim, q)); img.src = rd.result; };
+    rd.readAsDataURL(file);
+  });
+}
+function canvasToJpeg(src, w, h, maxDim, q) {
+  const k = Math.min(1, maxDim / Math.max(w, h)), c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  let out = c.toDataURL('image/jpeg', q); while (out.length > 2.5 * 1024 * 1024 && q > 0.3) { q -= 0.15; out = c.toDataURL('image/jpeg', q); } return out;
+}
+function setPhoto(key, url) {
+  state.photos[key] = url;
+  const map = { id: ['#pvId', '#pvIdT'], face: ['#pvFace', '#pvFaceT'], shop: ['#pvShop', '#pvShopT'], item: ['#pvItem', '#pvItemT'], banner: ['#pvBanner', '#pvBannerT'] }[key];
+  const img = $(map[0]), t = $(map[1]); if (url) { img.src = url; img.classList.remove('hidden'); t.textContent = 'Photo ready'; t.classList.add('ok'); } else { img.classList.add('hidden'); t.classList.remove('ok'); }
+}
+document.addEventListener('change', async e => {
+  const f = e.target.closest('[data-file]'); if (!f || !f.files[0]) return;
+  try { setPhoto(f.dataset.file, await fileToDataUrl(f.files[0])); if (f.dataset.file === 'item') $('#iImg').value = ''; if (f.dataset.file === 'banner') $('#sBanner').value = ''; } catch (err) { toast(err.message, 'err'); }
+  f.value = '';
+});
+let camStream = null, camKey = null;
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-cam]'); if (!b) return;
+  camKey = b.dataset.cam;
+  try { camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: b.dataset.facing || 'environment' }, audio: false }); $('#camVid').srcObject = camStream; $('#cam').classList.add('on'); }
+  catch { toast('Camera is not available. Use Upload instead.', 'err'); }
+});
+function closeCam() { if (camStream) camStream.getTracks().forEach(t => t.stop()); camStream = null; $('#cam').classList.remove('on'); }
+$('#camX').onclick = closeCam;
+$('#camSnap').onclick = () => { const v = $('#camVid'); if (!v.videoWidth) return toast('Camera is still starting…'); setPhoto(camKey, canvasToJpeg(v, v.videoWidth, v.videoHeight, 1024, 0.82)); closeCam(); };
+
+/* ===================== auth ===================== */
+function show(view) { $('#viewAuth').classList.toggle('hidden', view !== 'auth'); $('#viewApp').classList.toggle('hidden', view !== 'app'); }
+function authPane(p) { $('#loginBox').classList.toggle('hidden', p !== 'login'); $('#regBox').classList.toggle('hidden', p !== 'reg'); $('#regDone').classList.toggle('hidden', p !== 'done'); }
+$('#toReg').onclick = () => authPane('reg'); $('#toLogin').onclick = () => authPane('login'); $('#doneBack').onclick = () => authPane('login');
+$('#lToken').addEventListener('keydown', e => { if (e.key === 'Enter') $('#lGo').click(); });
+$('#lGo').onclick = async () => {
+  $('#lErr').textContent = ''; const phone = normPhone($('#lPhone').value), token = $('#lToken').value.trim();
+  if (!phone) return void ($('#lErr').textContent = 'Enter a valid Kenyan mobile number.');
+  if (!token) return void ($('#lErr').textContent = 'Enter your login token.');
+  const b = $('#lGo'); busy(b, true);
+  try {
+    const d = await api('/api/merchant/login', { method: 'POST', body: { phone, token }, token: null });
+    state.token = d.token; state.shop = { merchantId: d.merchantId, shopName: d.shopName, businessType: d.businessType, phone };
+    LS.set('rds_m_token', state.token); LS.set('rds_m_shop', state.shop); $('#lToken').value = '';
+    enterApp();
+  } catch (e) { $('#lErr').textContent = e.message; } finally { busy(b, false); }
+};
+function sessionExpired() { if (!state.token) return; clearSession(); toast('Your session expired. Please sign in again.', 'err'); }
+function clearSession() {
+  state.token = null; state.shop = null; state.seen = null; state.orders = []; LS.del('rds_m_token'); LS.del('rds_m_shop'); stopRing();
+  if (state.socket) { state.socket.auth = {}; state.socket.disconnect(); } setLive(false); show('auth'); authPane('login'); document.title = BASE_TITLE;
+}
+$('#logout').onclick = async () => { try { await api('/api/auth/logout', { method: 'POST' }); } catch {} clearSession(); };
+async function restore() {
+  if (!state.token || !state.shop) { clearSession(); return; }
+  try {
+    const d = await api('/api/auth/me');
+    if (!d.identity || d.identity.merchantId !== state.shop.merchantId) return clearSession();
+    if (d.identity.expiresInSeconds < 3600) { try { const r = await api('/api/auth/refresh', { method: 'POST' }); state.token = r.token; LS.set('rds_m_token', r.token); } catch {} }
+    enterApp();
+  } catch (e) { if (e.status !== 401) { toast(e.message, 'err'); } if (!state.token) return; show('auth'); }
+}
+
+/* registration */
+$('#rGps').onclick = () => gps(p => { $('#rLat').value = p.latitude.toFixed(6); $('#rLon').value = p.longitude.toFixed(6); }, $('#rGps'));
+function gps(cb, btn) {
+  if (!navigator.geolocation) return toast('Location is not supported on this device.', 'err');
+  busy(btn, true, 'Locating…');
+  navigator.geolocation.getCurrentPosition(pos => { busy(btn, false); cb(pos.coords); toast('Location captured', 'ok'); }, err => { busy(btn, false); toast(err.code === 1 ? 'Location permission denied.' : 'Could not get your location.', 'err'); }, { enableHighAccuracy: true, timeout: 12000 });
+}
+$('#regBox').addEventListener('submit', async e => {
+  e.preventDefault(); const err = $('#rErr'); err.textContent = '';
+  const shopName = $('#rShop').value.trim(), businessType = $('#rType').value.trim(), regNumber = $('#rReg').value.trim(), ownerName = $('#rOwner').value.trim();
+  const phone = normPhone($('#rPhone').value), mpesa = $('#rMpesa').value.trim() ? normPhone($('#rMpesa').value) : phone;
+  if (!shopName || !ownerName) return void (err.textContent = 'Shop name and owner name are required.');
+  if (!businessType) return void (err.textContent = 'Enter your business category.');
+  if (!phone) return void (err.textContent = 'Enter a valid Kenyan mobile number.');
+  if (!mpesa) return void (err.textContent = 'M-Pesa number must be a valid phone number (till numbers are not supported yet).');
+  const lat = $('#rLat').value.trim(), lon = $('#rLon').value.trim();
+  if ((lat || lon) && !(Math.abs(Number(lat)) <= 90 && Math.abs(Number(lon)) <= 180 && lat !== '' && lon !== '')) return void (err.textContent = 'Enter a valid latitude and longitude, or leave both empty.');
+  if (!state.photos.id) return void (err.textContent = 'Please take or upload a photo of the owner ID / passport.');
+  if (!state.photos.face) return void (err.textContent = 'Please take a selfie or upload a clear photo of the owner\'s face.');
+  if (!state.photos.shop) return void (err.textContent = 'Please take or upload a photo of the shop front.');
+  const payload = { shopName, businessType, regNumber, ownerName, phone, mpesaPhone: mpesa, passportImage: state.photos.id, ownerFace: state.photos.face, storePhoto: state.photos.shop };
+  if (lat && lon) { payload.gpsLat = Number(lat); payload.gpsLon = Number(lon); }
+  const b = $('#rGo'); busy(b, true, 'Submitting…');
+  try { await api('/api/merchant/register', { method: 'POST', body: payload, token: null }); authPane('done'); $('#regBox').reset(); setPhoto('id', null); setPhoto('face', null); setPhoto('shop', null); }
+  catch (er) { err.textContent = er.message; } finally { busy(b, false); }
+});
+
+/* ===================== ringer ===================== */
+let audioCtx = null, ringTimer = null, ringUntil = 0, titleTimer = null;
+function unlockAudio() { try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch {} }
+document.addEventListener('pointerdown', unlockAudio); document.addEventListener('keydown', unlockAudio);
+function chime() {
+  try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch {}
+  if (!state.sound || !audioCtx) return;
+  const t = audioCtx.currentTime;
+  [659.25, 880, 659.25, 880].forEach((f, i) => { const o = audioCtx.createOscillator(), g = audioCtx.createGain(), s = t + i * 0.16; o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.35, s + 0.02); g.gain.exponentialRampToValueAtTime(0.001, s + 0.22); o.connect(g); g.connect(audioCtx.destination); o.start(s); o.stop(s + 0.24); });
+}
+const pendingCount = () => state.orders.filter(o => stageOf(o).key === 'new').length;
+function startRing() {
+  ringUntil = Date.now() + 90000; $('#alert').classList.remove('hidden'); updateAlert();
+  if (!ringTimer) { chime(); ringTimer = setInterval(() => { if (Date.now() > ringUntil || !pendingCount()) return stopRing(); chime(); }, 3000); }
+  if (!titleTimer) { let on = false; titleTimer = setInterval(() => { on = !on; document.title = on ? `🔔 (${pendingCount()}) New order!` : BASE_TITLE; }, 900); }
+}
+function stopRing() { clearInterval(ringTimer); ringTimer = null; clearInterval(titleTimer); titleTimer = null; $('#alert').classList.add('hidden'); document.title = BASE_TITLE; }
+function updateAlert() { const n = pendingCount(); $('#alertTxt').textContent = n === 1 ? '1 order is waiting for you to accept it.' : `${n} orders are waiting for you to accept them.`; }
+$('#alertStop').onclick = stopRing; $('#alertView').onclick = () => { stopRing(); tab('tOrders'); setFilter('new'); };
+function paintSound() { $('#soundBtn').textContent = state.sound ? '🔔 On' : '🔕 Off'; }
+$('#soundBtn').onclick = () => { state.sound = !state.sound; LS.set('rds_m_sound', state.sound); paintSound(); unlockAudio(); if (state.sound) chime(); };
+
+/* ===================== realtime ===================== */
+function setLive(on) { const l = $('#live'); $('.dot', l).classList.toggle('on', on); $('span', l).textContent = on ? 'Live' : 'Offline'; }
+function initSocket() {
+  if (typeof io !== 'function') return;
+  if (state.socket) { state.socket.auth = { token: state.token }; state.socket.disconnect().connect(); return; }
+  const s = io({ auth: { token: state.token }, reconnection: true }); state.socket = s;
+  s.on('connect', () => { setLive(true); joinOrderRooms(); });
+  s.on('disconnect', () => setLive(false));
+  s.on('connect_error', err => { setLive(false); if (err && err.message === 'unauthorized' && state.token) sessionExpired(); });
+  s.on('new_customer_order', () => softReload(true));
+  s.on('merchant_order_update', () => softReload());
+  s.on('orderListUpdated', () => softReload());
+  s.on('order_status_update', () => softReload());
+  s.on('tenant_status_changed', p => { if (p && state.shop && p.merchantId === state.shop.merchantId) { setSuspended(p.status === 'SUSPENDED' || p.status === 'REVOKED'); toast(p.status === 'APPROVED_ACTIVE' ? 'Your shop is active again.' : 'Your shop status changed: ' + p.status, p.status === 'APPROVED_ACTIVE' ? 'ok' : 'err'); } });
+}
+function joinOrderRooms() { if (state.socket && state.socket.connected) state.orders.filter(o => !['completed', 'cancelled'].includes(stageOf(o).key)).forEach(o => state.socket.emit('join_order', o.orderId)); }
+const softReload = (() => { const run = debounce(() => { loadOrders(); loadStats(); }, 400); return () => run(); })();
+function setSuspended(v) { state.suspended = !!v; $('#suspBanner').classList.toggle('hidden', !state.suspended); }
+
+/* ===================== orders ===================== */
+function stageOf(o) {
+  const s = o.status || '', d = o.deliveryStatus;
+  if (CANCELLED.has(s)) return { key: 'cancelled', label: s === 'REJECTED_BY_VENDOR' ? 'Declined' : s === 'CANCELLED_BY_CUSTOMER' ? 'Customer cancelled' : 'Cancelled', group: 'cancelled' };
+  if (s === 'COMPLETED & PAID OUT') return { key: 'completed', label: 'Completed', group: 'done' };
+  if (d === 'DELIVERED') return { key: 'delivered', label: 'Delivered', group: 'progress' };
+  if (s === 'PENDING_VENDOR_ACCEPTANCE') return { key: 'new', label: 'New order', group: 'new' };
+  if (s === 'ACCEPTED_PACKING') return { key: 'packing', label: 'Packing', group: 'progress' };
+  if (s === 'HANDED_TO_RIDER') return d === 'PICKED_UP' ? { key: 'enroute', label: 'Out for delivery · paid', group: 'progress' } : { key: 'handed', label: 'Handed over · paid', group: 'progress' };
+  if (s === 'AWAITING_DRIVER_PICKUP' && d === 'PICKED_UP') return { key: 'enroute', label: 'Out for delivery', group: 'progress' };
+  if (s === 'AWAITING_DRIVER_PICKUP' && d === 'ARRIVED_AT_PICKUP') return { key: 'rider_here', label: 'Rider is here', group: 'progress' };
+  if (s === 'AWAITING_DRIVER_PICKUP' && d === 'DRIVER_ASSIGNED') return { key: 'rider', label: 'Rider on the way', group: 'progress' };
+  if (s === 'AWAITING_DRIVER_PICKUP') return { key: 'waiting_rider', label: 'Waiting for rider', group: 'progress' };
+  return { key: 'other', label: s.replace(/_/g, ' ').toLowerCase(), group: 'progress' };
+}
+const FILTERS = [['new', 'New'], ['progress', 'In progress'], ['done', 'Completed'], ['cancelled', 'Cancelled'], ['all', 'All']];
+function setFilter(f) { state.filter = f; renderOrders(); }
+let ordersCtrl = null;
+async function loadOrders() {
+  if (!state.token) return;
+  if (ordersCtrl) ordersCtrl.abort(); ordersCtrl = new AbortController();
+  try {
+    const d = await api('/api/merchant/orders/' + encodeURIComponent(state.shop.merchantId), { signal: ordersCtrl.signal });
+    state.orders = (d.orders || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    detectNew(state.orders); renderOrders(); joinOrderRooms();
+  } catch (e) { if (!e.aborted && !$('#orders').children.length) $('#orders').innerHTML = `<div class="empty">${esc(e.message)}<br><br><button class="btn go sm" id="retryOrders">Try again</button></div>`; }
+}
+function detectNew(list) {
+  const pend = list.filter(o => stageOf(o).key === 'new');
+  if (state.seen === null) { state.seen = new Set(list.map(o => o.orderId)); if (pend.length) { $('#alert').classList.remove('hidden'); updateAlert(); } return; }
+  const fresh = pend.filter(o => !state.seen.has(o.orderId)); list.forEach(o => state.seen.add(o.orderId));
+  if (fresh.length) startRing(); else if (!pend.length) stopRing(); else updateAlert();
+}
+function orderCard(o) {
+  const s = stageOf(o), amount = Number(o.shopOwnerPayout) || Number(o.totalAmount) || 0;
+  const items = (o.items || []).map(i => `<li><span>${esc(i.name)}</span><b>× ${i.qty || 1}</b></li>`).join('') || '<li><span>Standard order</span></li>';
+  let acts = '';
+  const paid = Number(o.paidToShop) || amount;
+  if (s.key === 'new') acts = `<button class="btn go" data-act="accept" data-oid="${esc(o.orderId)}">✓ Accept order</button><button class="btn danger" data-act="reject" data-oid="${esc(o.orderId)}">Decline</button>`;
+  else if (s.key === 'packing') acts = `<span class="muted">Pack the order, then call a rider.</span><button class="btn cy" data-act="call" data-oid="${esc(o.orderId)}">📣 Call rider</button>`;
+  else if (s.key === 'waiting_rider') acts = '<span class="muted">Rider called. Waiting for one to accept…</span>';
+  else if (s.key === 'rider') acts = '<span class="muted">A rider is on the way to your shop. Hand the order over when they arrive.</span>';
+  else if (s.key === 'rider_here') acts = `<button class="btn go" data-act="handover" data-oid="${esc(o.orderId)}">📦 Hand over &amp; get paid ${fmt(amount)}</button>`;
+  else if (s.key === 'handed') acts = `<span style="color:var(--g)">✓ Paid ${fmt(paid)} in full at hand-over.</span>`;
+  else if (s.key === 'enroute') acts = `<span class="muted">The rider has the order and is on the way to the customer. You were paid ${fmt(paid)}.</span>`;
+  return `<article class="order ${s.key === 'new' ? 'new' : ''}"><div class="between"><b style="font-family:monospace;font-size:.82rem;color:var(--cy)">${esc(o.orderId)}</b><span class="pill ${s.key}">${esc(s.label)}</span></div>
+    <div class="muted">${ago(o.createdAt)}${o.cancelReason ? ' · ' + esc(o.cancelReason) : ''}</div><ul>${items}</ul>
+    <div class="between"><span class="muted">You receive</span><b style="color:var(--g)">${fmt(amount)}</b></div>${acts ? `<div class="acts">${acts}</div>` : ''}</article>`;
+}
+function renderOrders() {
+  const counts = { all: state.orders.length }; state.orders.forEach(o => { const g = stageOf(o).group; counts[g] = (counts[g] || 0) + 1; });
+  $('#ofilters').innerHTML = FILTERS.map(([k, l]) => `<button class="chip ${state.filter === k ? 'on' : ''}" data-f="${k}">${l}${counts[k] ? ' · ' + counts[k] : ''}</button>`).join('');
+  $('#newCount').textContent = counts.new ? `(${counts.new})` : '';
+  const q = state.oq.toLowerCase();
+  const list = state.orders.filter(o => (state.filter === 'all' || stageOf(o).group === state.filter) && (!q || o.orderId.toLowerCase().includes(q) || (o.items || []).some(i => String(i.name).toLowerCase().includes(q))));
+  $('#orders').innerHTML = list.length ? list.map(orderCard).join('') : `<div class="empty">${state.orders.length ? 'No orders in this view.' : 'No orders yet. New orders appear here instantly.'}</div>`;
+  renderKpis();
+}
+$('#ofilters').addEventListener('click', e => { const c = e.target.closest('[data-f]'); if (c) setFilter(c.dataset.f); });
+$('#oq').addEventListener('input', debounce(e => { state.oq = e.target.value.trim(); renderOrders(); }, 200));
+$('#oRefresh').onclick = () => { loadOrders(); loadStats(); loadCatalog(); };
+$('#orders').addEventListener('click', async e => {
+  if (e.target.id === 'retryOrders') return loadOrders();
+  const b = e.target.closest('[data-act]'); if (!b) return; const id = b.dataset.oid, mid = state.shop.merchantId;
+  try {
+    if (b.dataset.act === 'accept') { busy(b, true); await api('/api/merchant/orders/accept', { method: 'POST', body: { merchantId: mid, orderId: id } }); toast(`Order ${id} accepted. Pack it, then press "Call rider".`, 'ok'); loadCatalog(); }
+    if (b.dataset.act === 'call') { busy(b, true); const d = await api('/api/merchant/orders/call-driver', { method: 'POST', body: { merchantId: mid, orderId: id } }); toast(d.message || 'Rider called.', 'ok'); }
+    if (b.dataset.act === 'reject') { const r = await ask('Decline this order?', 'The customer is notified and a refund is marked as due.', 'Decline order', true); if (!r) return; busy(b, true); await api('/api/merchant/orders/reject', { method: 'POST', body: { merchantId: mid, orderId: id, reason: r } }); toast('Order declined', 'ok'); }
+    if (b.dataset.act === 'handover') { busy(b, true); const d = await api('/api/merchant/orders/complete-handover', { method: 'POST', body: { merchantId: mid, orderId: id } }); toast(d.message || 'Handed over and paid.', 'ok', 7000); loadWallet(); }
+    stopRing(); await loadOrders(); loadStats();
+  } catch (err) { toast(err.message, 'err', 5000); loadOrders(); }
+});
+$('#oCsv').onclick = async () => {
+  const b = $('#oCsv'); busy(b, true);
+  try { const res = await api(`/api/merchant/orders/${encodeURIComponent(state.shop.merchantId)}/export.csv`, { raw: true }); const url = URL.createObjectURL(await res.blob()); const a = document.createElement('a'); a.href = url; a.download = `orders-${state.shop.merchantId}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); }
+  catch (e) { toast(e.message, 'err'); } finally { busy(b, false); }
+};
+
+/* ===================== stats ===================== */
+async function loadStats() { if (!state.token) return; try { const d = await api('/api/merchant/stats/' + encodeURIComponent(state.shop.merchantId)); state.stats = d; renderKpis(); } catch {} loadWallet(); }
+async function loadWallet() { if (!state.token) return; try { state.wallet = await api('/api/merchant/wallet/' + encodeURIComponent(state.shop.merchantId)); renderKpis(); } catch {} }
+function renderKpis() {
+  const s = state.stats, pend = pendingCount(), inprog = state.orders.filter(o => stageOf(o).group === 'progress').length;
+  const w = state.wallet;
+  const k = [['New orders', pend, pend ? 'var(--g)' : ''], ['In progress', inprog, ''], ['Paid today at hand-over', w ? fmt(w.today.paid) : '–', w && w.today.paid ? 'var(--g)' : ''], ['Shop wallet', w ? fmt(w.balance) + (w.autoPayout ? ' (auto to M-Pesa)' : '') : '–', ''], ['Orders today', s ? s.orders.today : '–', ''], ['Completed sales today', s ? fmt(s.revenue.today) : '–', ''], ['Completed sales total', s ? fmt(s.revenue.allTime) : '–', ''], ['Low stock items', s ? s.catalog.lowStock.length : '–', s && s.catalog.lowStock.length ? 'var(--gold)' : ''], ['Rating', s && s.rating.average ? s.rating.average + ' ★ (' + s.rating.count + ')' : '–', '']];
+  $('#kpis').innerHTML = k.map(([l, v, c]) => `<div class="kpi"><small>${l}</small><b ${c ? `style="color:${c}"` : ''}>${esc(v)}</b></div>`).join('');
+}
+
+/* ===================== catalogue ===================== */
+async function loadCatalog() {
+  if (!state.token) return;
+  try {
+    const d = await api('/api/merchant/catalog/' + encodeURIComponent(state.shop.merchantId), { token: null });
+    state.catalog = d.catalog || []; if (d.profile) { state.shop = { ...state.shop, ...pickProfile(d.profile) }; LS.set('rds_m_shop', state.shop); paintHeader(); fillSettings(d.profile); }
+    renderCatalog();
+  } catch (e) { $('#catalog').innerHTML = `<tr><td colspan="4" class="empty">${esc(e.message)}</td></tr>`; }
+}
+const pickProfile = p => ({ shopName: p.shopName, businessType: p.businessType, phone: p.phone || (state.shop && state.shop.phone) });
+function stockTag(n) { n = Number(n); return n <= 0 ? '<span class="tag out">Out</span>' : n <= 5 ? '<span class="tag low">Low</span>' : ''; }
+function renderCatalog() {
+  const q = state.cq.toLowerCase();
+  const list = state.catalog.filter(i => !q || String(i.name).toLowerCase().includes(q) || String(i.category).toLowerCase().includes(q));
+  $('#cCount').textContent = `(${state.catalog.length})`;
+  $('#catList').innerHTML = [...new Set(state.catalog.map(i => i.category).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
+  $('#catalog').innerHTML = list.length ? list.map(i => `<tr data-id="${esc(i.id)}"><td><div class="row" style="flex-wrap:nowrap"><img src="${esc(i.image || PH)}" alt="" loading="lazy"><div><b>${esc(i.name)}</b><div class="muted">${esc(i.category || '')}</div></div></div></td><td data-label="Price">${fmt(i.price)}</td><td data-label="Stock"><div class="row" style="flex-wrap:nowrap;gap:6px"><input type="number" min="0" step="1" value="${Number(i.stock) || 0}" data-stock="${esc(i.id)}" aria-label="Stock for ${esc(i.name)}">${stockTag(i.stock)}</div></td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-edit="${esc(i.id)}">Edit</button> <button class="btn danger sm" data-del="${esc(i.id)}">Delete</button></td></tr>`).join('') : `<tr><td colspan="4" class="empty">${state.catalog.length ? 'No items match your search.' : 'Your catalogue is empty. Add your first item.'}</td></tr>`;
+}
+$('#cq').addEventListener('input', debounce(e => { state.cq = e.target.value.trim(); renderCatalog(); }, 200));
+$('#catalog').addEventListener('change', async e => {
+  const inp = e.target.closest('[data-stock]'); if (!inp) return; const n = Number(inp.value);
+  if (!Number.isInteger(n) || n < 0 || n > 1000000) { toast('Stock must be a whole number from 0 to 1,000,000.', 'err'); return renderCatalog(); }
+  try { const d = await api('/api/merchant/catalog/bulk-stock', { method: 'POST', body: { merchantId: state.shop.merchantId, updates: [{ itemId: inp.dataset.stock, stock: n }] } }); state.catalog = d.catalog || state.catalog; toast('Stock updated', 'ok', 1800); renderCatalog(); }
+  catch (err) { toast(err.message, 'err'); loadCatalog(); }
+});
+$('#catalog').addEventListener('click', async e => {
+  const ed = e.target.closest('[data-edit]'), del = e.target.closest('[data-del]');
+  if (ed) { const i = state.catalog.find(x => x.id === ed.dataset.edit); if (i) startEdit(i); }
+  if (del) {
+    const i = state.catalog.find(x => x.id === del.dataset.del); if (!i) return;
+    if (!(await ask('Delete item?', `“${i.name}” will be removed from your shop.`, 'Delete'))) return;
+    try { const d = await api('/api/merchant/catalog/delete', { method: 'POST', body: { merchantId: state.shop.merchantId, itemId: i.id } }); state.catalog = d.catalog || []; renderCatalog(); toast('Item deleted', 'ok'); if (state.editing === i.id) resetForm(); loadStats(); }
+    catch (err) { toast(err.message, 'err'); }
+  }
+});
+function startEdit(i) {
+  state.editing = i.id; $('#formTitle').textContent = 'Edit item'; $('#iGo').textContent = 'Save changes'; $('#iCancel').classList.remove('hidden');
+  $('#iName').value = i.name; $('#iCat').value = i.category || ''; $('#iPrice').value = i.price; $('#iStock').value = i.stock ?? 0;
+  const isData = /^data:/.test(i.image || ''); $('#iImg').value = isData ? '' : (i.image || ''); setPhoto('item', isData ? i.image : null);
+  if (!isData && i.image) { const img = $('#pvItem'); img.src = i.image; img.classList.remove('hidden'); } $('#itemForm').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('#iName').focus();
+}
+function resetForm() { state.editing = null; $('#itemForm').reset(); $('#iStock').value = 10; setPhoto('item', null); $('#formTitle').textContent = 'Add item'; $('#iGo').textContent = 'Publish item'; $('#iCancel').classList.add('hidden'); $('#iErr').textContent = ''; }
+$('#iCancel').onclick = resetForm;
+$('#itemForm').addEventListener('submit', async e => {
+  e.preventDefault(); const err = $('#iErr'); err.textContent = '';
+  const name = $('#iName').value.trim(), category = $('#iCat').value.trim(), price = Number($('#iPrice').value), stock = Number($('#iStock').value);
+  if (!name) return void (err.textContent = 'Enter the item name.'); if (!category) return void (err.textContent = 'Enter a category.');
+  if (!Number.isFinite(price) || price < 0 || price > 10000000 || $('#iPrice').value === '') return void (err.textContent = 'Enter a valid price (0 to 10,000,000).');
+  if (!Number.isInteger(stock) || stock < 0 || stock > 1000000) return void (err.textContent = 'Stock must be a whole number from 0 to 1,000,000.');
+  const body = { merchantId: state.shop.merchantId, name, category, price, stock }; if (state.editing) body.itemId = state.editing;
+  const img = state.photos.item || $('#iImg').value.trim(); if (img) body.image = img;
+  const b = $('#iGo'); busy(b, true);
+  try { const d = await api('/api/merchant/catalog/update', { method: 'POST', body }); state.catalog = d.catalog || []; toast(state.editing ? 'Item updated' : 'Item published', 'ok'); resetForm(); renderCatalog(); loadStats(); }
+  catch (er) { err.textContent = er.message; } finally { busy(b, false); }
+});
+
+/* ===================== settings ===================== */
+function fillSettings(p) {
+  if (document.activeElement && $('#setForm').contains(document.activeElement)) return;
+  $('#sId').value = state.shop.merchantId; $('#sPhone').value = p.phone || state.shop.phone || ''; $('#sName').value = p.shopName || ''; $('#sType').value = p.businessType || '';
+  $('#sLat').value = p.gpsLat ?? ''; $('#sLon').value = p.gpsLon ?? '';
+  if (p.banner && !state.photos.banner) { const isData = /^data:/.test(p.banner); $('#sBanner').value = isData ? '' : p.banner; const im = $('#pvBanner'); im.src = p.banner; im.classList.remove('hidden'); $('#pvBannerT').textContent = ''; }
+}
+$('#sGps').onclick = () => gps(p => { $('#sLat').value = p.latitude.toFixed(6); $('#sLon').value = p.longitude.toFixed(6); }, $('#sGps'));
+$('#setForm').addEventListener('submit', async e => {
+  e.preventDefault(); const err = $('#sErr'); err.textContent = '';
+  const body = { merchantId: state.shop.merchantId }; const name = $('#sName').value.trim(); if (!name) return void (err.textContent = 'Shop name cannot be empty.');
+  body.shopName = name; const t = $('#sType').value.trim(); if (t) body.businessType = t;
+  const lat = $('#sLat').value.trim(), lon = $('#sLon').value.trim();
+  if (lat || lon) { if (!(lat !== '' && lon !== '' && Math.abs(Number(lat)) <= 90 && Math.abs(Number(lon)) <= 180)) return void (err.textContent = 'Enter a valid latitude and longitude.'); body.gpsLat = Number(lat); body.gpsLon = Number(lon); }
+  const ban = state.photos.banner || $('#sBanner').value.trim(); if (ban) body.banner = ban;
+  const b = $('#sGo'); busy(b, true);
+  try { const d = await api('/api/merchant/profile/update', { method: 'POST', body }); state.shop = { ...state.shop, ...pickProfile(d.profile) }; LS.set('rds_m_shop', state.shop); paintHeader(); toast('Shop settings saved', 'ok'); }
+  catch (er) { err.textContent = er.message; } finally { busy(b, false); }
+});
+
+/* ===================== shell ===================== */
+function paintHeader() { $('#hShop').textContent = state.shop.shopName || 'Shop'; $('#hMeta').textContent = `${state.shop.businessType || 'General retail'} · ${state.shop.merchantId}`; }
+function tab(id) { $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === id)); ['tOrders', 'tCatalog', 'tSettings'].forEach(s => $('#' + s).classList.toggle('hidden', s !== id)); }
+document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) tab(t.dataset.tab); });
+function enterApp() {
+  show('app'); paintHeader(); paintSound(); setSuspended(false); renderKpis(); $('#orders').innerHTML = '<div class="skel"></div>'.repeat(3);
+  initSocket(); loadOrders(); loadStats(); loadCatalog();
+}
+setInterval(() => { if (state.token && !document.hidden) { loadOrders(); } }, 20000);
+setInterval(() => { if (state.token && !document.hidden) { loadStats(); } }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.token) { loadOrders(); loadStats(); } });
+restore();
+})();
 </script>
 </body>
 </html>
