@@ -76,7 +76,7 @@ body.s58 .lbl{width:54mm}body.s80 .lbl{width:76mm}body.sA6 .lbl{width:100mm}
 
   <!-- main -->
   <div id="vMain" class="hidden">
-    <div class="tabs"><button class="tab on" data-tab="tLabels">Labels</button><button class="tab" data-tab="tHistory">History</button><button class="tab" data-tab="tFacility">Facility</button></div>
+    <div class="tabs"><button class="tab on" data-tab="tLabels">Labels</button><button class="tab" data-tab="tCatalog">Catalog</button><button class="tab" data-tab="tOrders">Orders</button><button class="tab" data-tab="tSuppliers">Suppliers</button><button class="tab" data-tab="tPurchasing">Purchasing</button><button class="tab" data-tab="tHistory">History</button><button class="tab" data-tab="tFacility">Facility</button></div>
 
     <section id="tLabels">
       <div class="card">
@@ -97,8 +97,13 @@ body.s58 .lbl{width:54mm}body.s80 .lbl{width:76mm}body.sA6 .lbl{width:100mm}
     <section id="tHistory" class="hidden"><div class="card"><div class="between"><h2>Recent labels</h2><button id="histReload" class="btn ghost sm">Refresh</button></div><div id="hist" class="muted small">Loading…</div></div></section>
 
     <section id="tFacility" class="hidden"><div id="fac"></div></section>
+    <section id="tCatalog" class="hidden"><div id="cat" class="muted small">Loading…</div></section>
+    <section id="tOrders" class="hidden"><div class="between" style="margin-bottom:8px"><h2 style="margin:0">Incoming orders</h2><button id="ordReload" class="btn ghost sm">Refresh</button></div><div id="ord" class="muted small">Loading…</div></section>
+    <section id="tSuppliers" class="hidden"><div id="sup" class="muted small">Loading…</div></section>
+    <section id="tPurchasing" class="hidden"><div id="po" class="muted small">Loading…</div></section>
   </div>
 
+  <div id="vShop" class="hidden"></div>
   <p class="muted tiny" style="text-align:center;margin-top:18px">DoseColor supports, and does not replace, the pharmacist's check. The colours are RDS's own convention, not a national standard. Approve its use through your pharmacy &amp; therapeutics committee before clinical use.</p>
 </div>
 <div id="printArea"></div>
@@ -118,7 +123,7 @@ async function api(path, opt = {}) {
   if (!r.ok || !d || d.success === false) { const e = new Error((d && d.error) || ('Request failed (' + r.status + ')')); e.status = r.status; e.data = d; throw e; }
   return d;
 }
-const show = (id) => ['#vAuth', '#vReg', '#vMain'].forEach(v => $(v).classList.toggle('hidden', v !== id));
+const show = (id) => ['#vAuth', '#vReg', '#vMain', '#vShop'].forEach(v => $(v).classList.toggle('hidden', v !== id));
 function signOutLocal() { token = null; me = null; fac = null; localStorage.removeItem('dosecolor_token'); $('#who').textContent = ''; $('#facPick').classList.add('hidden'); $('#btnOut').classList.add('hidden'); show('#vAuth'); }
 
 /* ---------------- sign in ---------------- */
@@ -154,7 +159,8 @@ $('#facPick').onchange = (e) => selectFacility(e.target.value);
 async function selectFacility(id) { localStorage.setItem('dosecolor_facility', id); try { fac = (await api('/facilities/' + id)).facility; } catch (e) { toast(e.message); } if (!$('#tFacility').classList.contains('hidden')) renderFacility(); if (!$('#tHistory').classList.contains('hidden')) renderHistory(); }
 
 /* ---------------- tabs ---------------- */
-document.querySelectorAll('.tab').forEach(b => b.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b)); ['tLabels', 'tHistory', 'tFacility'].forEach(s => $('#' + s).classList.toggle('hidden', s !== b.dataset.tab)); if (b.dataset.tab === 'tHistory') renderHistory(); if (b.dataset.tab === 'tFacility') renderFacility(); });
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b)); ['tLabels', 'tCatalog', 'tOrders', 'tSuppliers', 'tPurchasing', 'tHistory', 'tFacility'].forEach(s => $('#' + s).classList.toggle('hidden', s !== b.dataset.tab)); if (b.dataset.tab === 'tHistory') renderHistory(); if (b.dataset.tab === 'tFacility') renderFacility(); if (b.dataset.tab === 'tCatalog') renderCatalog(); if (b.dataset.tab === 'tOrders') renderOrders(); if (b.dataset.tab === 'tSuppliers') renderSuppliers(); if (b.dataset.tab === 'tPurchasing') renderPurchasing(); });
+$('#ordReload') && ($('#ordReload').onclick = renderOrders);
 
 /* ---------------- medicines + live reading ---------------- */
 let medSeq = 0;
@@ -287,7 +293,142 @@ async function renderFacility() {
   };
 }
 
-boot();
+
+/* ===================== PHARMACY: catalog, orders, storefront ===================== */
+let PRODUCTS = [], SHOP = null, SUPPLIERS = [], POLINES = []; const CART = {};
+const typeBadge = (p) => p.controlled ? '<span class="pill" style="background:#7f1d1d">Controlled</span>' : p.rx ? '<span class="pill" style="background:#78350f">Rx</span>' : '<span class="pill" style="background:#065f46">OTC</span>';
+async function renderCatalog() {
+  if (!fac) return; const admin = fac.role === 'ADMIN';
+  try { const d = await api('/facilities/' + fac.id + '/products'); PRODUCTS = d.products;
+    let h = `<div class="card"><div class="between"><h2>Medicines for sale</h2><span class="muted tiny">${fac.verified ? 'Licence verified' : 'Licence not yet verified'}</span></div><p class="muted small">OTC items sell straight away. Prescription-only (Rx) and controlled items are dispatched only after a pharmacist verifies the patient's prescription.</p><div id="alerts"></div>`;
+    if (admin) h += `<div class="row" style="margin-top:8px"><input id="pN2" placeholder="Medicine, e.g. Paracetamol" style="flex:2;min-width:150px"><input id="pStr" placeholder="Strength 500mg" style="flex:1;min-width:95px"><input id="pFrm" placeholder="Form tablet" style="flex:1;min-width:90px"><input id="pPr" placeholder="Price KES" inputmode="decimal" style="flex:1;min-width:85px"><input id="pCost" placeholder="Cost KES" inputmode="decimal" style="flex:1;min-width:85px"><input id="pStk" placeholder="Stock" inputmode="numeric" style="flex:1;min-width:70px"><input id="pRe" placeholder="Reorder at" inputmode="numeric" style="flex:1;min-width:80px"><input id="pSig" placeholder="Default dosing e.g. 1 tab TDS" style="flex:2;min-width:150px"></div><div class="row" style="margin-top:6px;align-items:center"><label class="row" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--txt);margin:0;gap:6px"><input id="pRx" type="checkbox" style="width:16px;height:16px"> Prescription-only (Rx)</label><label class="row" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--txt);margin:0;gap:6px"><input id="pCtrl" type="checkbox" style="width:16px;height:16px"> Controlled drug</label><button id="pAdd" class="btn ok sm">Add medicine</button></div>`;
+    h += `</div><div class="card"><table><thead><tr><th>Medicine</th><th>Type</th><th>Price</th><th>Stock</th>${admin ? '<th>Default dosing</th><th></th>' : ''}</tr></thead><tbody>${PRODUCTS.length ? PRODUCTS.map(p => `<tr><td><b>${esc(p.name)}</b> <span class="muted">${esc(p.strength || '')} ${esc(p.form || '')}</span>${p.coldChain ? ' <span class="pill" style="background:#0e7490">cold chain</span>' : ''}${p.nearestExpiry ? `<div class="muted tiny">exp ${esc(p.nearestExpiry)}</div>` : ''}</td><td>${typeBadge(p)}</td><td>KES ${esc(p.price)}</td><td>${admin ? `<input data-stk="${esc(p.id)}" type="number" value="${esc(p.stock)}" style="width:66px;padding:4px 6px">` : esc(p.stock)}${p.low ? ' <span class="pill" style="background:#78350f">low</span>' : ''}</td>${admin ? `<td><input data-sig="${esc(p.id)}" value="${esc(p.defaultSig || '')}" style="width:150px;padding:4px 6px"></td><td><button class="btn ghost sm" data-ret="${esc(p.id)}">Remove</button></td>` : ''}</tr>`).join('') : `<tr><td class="muted">No medicines yet.${admin ? ' Add one above.' : ''}</td></tr>`}</tbody></table>${fac.code ? `<p class="small" style="margin-top:10px">Patients buy at: <b>${location.origin}/print?shop=${esc(fac.code)}</b></p>` : ''}</div>`;
+    $('#cat').innerHTML = h; renderAlerts();
+    if (admin) {
+      $('#pAdd').onclick = async () => { try { await api('/facilities/' + fac.id + '/products', { method: 'POST', body: { name: $('#pN2').value.trim(), strength: $('#pStr').value.trim(), form: $('#pFrm').value.trim(), price: $('#pPr').value.trim(), cost: $('#pCost').value.trim(), stock: Number($('#pStk').value) || 0, reorderLevel: Number($('#pRe').value) || 0, defaultSig: $('#pSig').value.trim(), rx: $('#pRx').checked, controlled: $('#pCtrl').checked } }); toast('Added'); renderCatalog(); } catch (e) { toast(e.message); } };
+      document.querySelectorAll('[data-ret]').forEach(b => b.onclick = async () => { if (!confirm('Remove this medicine from sale?')) return; try { await api('/facilities/' + fac.id + '/products/' + b.dataset.ret, { method: 'PATCH', body: { retire: true } }); renderCatalog(); } catch (e) { toast(e.message); } });
+      document.querySelectorAll('[data-stk]').forEach(i => i.onchange = async () => { try { await api('/facilities/' + fac.id + '/products/' + i.dataset.stk, { method: 'PATCH', body: { stock: Number(i.value) || 0 } }); toast('Stock saved'); } catch (e) { toast(e.message); } });
+      document.querySelectorAll('[data-sig]').forEach(i => i.onchange = async () => { try { await api('/facilities/' + fac.id + '/products/' + i.dataset.sig, { method: 'PATCH', body: { defaultSig: i.value } }); toast('Dosing saved'); } catch (e) { toast(e.message); } });
+    }
+  } catch (e) { $('#cat').innerHTML = `<div class="card"><span class="err">${esc(e.message)}</span></div>`; }
+}
+async function renderAlerts() {
+  const box = $('#alerts'); if (!box || !fac) return;
+  try { const d = await api('/facilities/' + fac.id + '/stock-alerts'); const parts = [];
+    if (d.expired.length) parts.push(`<span class="pill" style="background:#7f1d1d">${d.expired.length} expired batch(es)</span>`);
+    if (d.expiring.length) parts.push(`<span class="pill" style="background:#78350f">${d.expiring.length} expiring ≤90d</span>`);
+    if (d.low.length) parts.push(`<span class="pill" style="background:#78350f">${d.low.length} low on stock</span>`);
+    const detail = [...d.expired.map(x => `${esc(x.name)} batch ${esc(x.batchNo)} expired ${esc(x.expiry)}`), ...d.expiring.map(x => `${esc(x.name)} batch ${esc(x.batchNo)} exp ${esc(x.expiry)}`), ...d.low.map(x => `${esc(x.name)} stock ${esc(x.stock)} ≤ reorder ${esc(x.reorderLevel)}`)].slice(0, 12);
+    box.innerHTML = parts.length ? `<div class="row" style="margin-top:8px">${parts.join('')}</div>${detail.length ? `<div class="muted tiny" style="margin-top:6px">${detail.join(' · ')}</div>` : ''}` : '';
+  } catch (e) {}
+}
+/* ---------------- suppliers ---------------- */
+async function renderSuppliers() {
+  if (!fac) return; const admin = fac.role === 'ADMIN'; $('#sup').innerHTML = 'Loading…';
+  try { const d = await api('/facilities/' + fac.id + '/suppliers'); SUPPLIERS = d.suppliers;
+    let h = `<div class="card"><h2>Suppliers</h2><p class="muted small">Wholesalers and distributors you order stock from.</p><table><thead><tr><th>Name</th><th>Phone</th><th>Email</th>${admin ? '<th></th>' : ''}</tr></thead><tbody>${SUPPLIERS.length ? SUPPLIERS.map(s => `<tr><td><b>${esc(s.name)}</b>${s.note ? `<div class="muted tiny">${esc(s.note)}</div>` : ''}</td><td>${esc(s.phone || '—')}</td><td>${esc(s.email || '—')}</td>${admin ? `<td><button class="btn ghost sm" data-supret="${esc(s.id)}">Remove</button></td>` : ''}</tr>`).join('') : `<tr><td class="muted">No suppliers yet.${admin ? ' Add one below.' : ''}</td></tr>`}</tbody></table>`;
+    if (admin) h += `<div class="row" style="margin-top:8px"><input id="supN" placeholder="Supplier name" style="flex:2;min-width:150px"><input id="supP" placeholder="Phone" style="flex:1;min-width:120px"><input id="supE" placeholder="Email" style="flex:1;min-width:140px"><input id="supNote" placeholder="Note (optional)" style="flex:2;min-width:140px"><button id="supAdd" class="btn ok sm">Add supplier</button></div>`;
+    h += `</div>`;
+    $('#sup').innerHTML = h;
+    if (admin) { $('#supAdd').onclick = async () => { try { await api('/facilities/' + fac.id + '/suppliers', { method: 'POST', body: { name: $('#supN').value.trim(), phone: $('#supP').value.trim(), email: $('#supE').value.trim(), note: $('#supNote').value.trim() } }); toast('Supplier added'); renderSuppliers(); } catch (e) { toast(e.message); } };
+      document.querySelectorAll('[data-supret]').forEach(b => b.onclick = async () => { if (!confirm('Remove this supplier?')) return; try { await api('/facilities/' + fac.id + '/suppliers/' + b.dataset.supret, { method: 'PATCH', body: { retire: true } }); renderSuppliers(); } catch (e) { toast(e.message); } }); }
+  } catch (e) { $('#sup').innerHTML = `<div class="card"><span class="err">${esc(e.message)}</span></div>`; }
+}
+/* ---------------- purchasing (purchase orders + goods received) ---------------- */
+async function renderPurchasing() {
+  if (!fac) return; const admin = fac.role === 'ADMIN'; $('#po').innerHTML = 'Loading…';
+  try {
+    const [pd, sd, od] = await Promise.all([ api('/facilities/' + fac.id + '/products'), api('/facilities/' + fac.id + '/suppliers'), api('/facilities/' + fac.id + '/purchase-orders') ]);
+    PRODUCTS = pd.products; SUPPLIERS = sd.suppliers; const orders = od.purchaseOrders; let h = '';
+    if (admin) {
+      h += `<div class="card"><h2>New purchase order</h2>${SUPPLIERS.length ? '' : '<p class="muted small">Add a supplier first (Suppliers tab).</p>'}
+        <div class="row"><select id="poSup" style="flex:2;min-width:160px"><option value="">— supplier —</option>${SUPPLIERS.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('')}</select><input id="poNote" placeholder="Note (optional)" style="flex:2;min-width:140px"></div>
+        <div class="row" style="margin-top:8px"><select id="poProd" style="flex:2;min-width:150px"><option value="">— medicine —</option>${PRODUCTS.map(p => `<option value="${esc(p.id)}">${esc(p.name)} ${esc(p.strength || '')}</option>`).join('')}</select><input id="poQty" type="number" min="1" placeholder="Qty" style="flex:1;min-width:70px"><input id="poCost" placeholder="Unit cost KES" inputmode="decimal" style="flex:1;min-width:110px"><button id="poAddLine" class="btn ghost sm">Add line</button></div>
+        <div id="poLines"></div>
+        <div class="between" style="margin-top:8px"><span class="muted small" id="poTot"></span><button id="poCreate" class="btn go sm">Create purchase order</button></div><div id="poErr" class="err"></div></div>`;
+    }
+    h += `<div class="card"><div class="between"><h2 style="margin:0">Purchase orders</h2><button id="poReload" class="btn ghost sm">Refresh</button></div>${orders.length ? orders.map(poCardHtml).join('') : '<p class="muted small" style="margin-top:8px">No purchase orders yet.</p>'}</div>`;
+    $('#po').innerHTML = h;
+    if (admin) wirePOCreate();
+    wirePOCards();
+    $('#poReload') && ($('#poReload').onclick = renderPurchasing);
+  } catch (e) { $('#po').innerHTML = `<div class="card"><span class="err">${esc(e.message)}</span></div>`; }
+}
+function drawPOLines() { const box = $('#poLines'); if (!box) return;
+  box.innerHTML = POLINES.length ? `<table style="margin-top:8px"><tbody>${POLINES.map((l, i) => `<tr><td>${esc(l.name)}</td><td>x${esc(l.qty)}</td><td>KES ${esc(l.unitCost)}</td><td><button class="btn ghost sm" data-polx="${i}">✕</button></td></tr>`).join('')}</tbody></table>` : '<p class="muted tiny" style="margin-top:6px">No lines added yet.</p>';
+  const tot = POLINES.reduce((s, l) => s + l.qty * Number(l.unitCost || 0), 0), t = $('#poTot'); if (t) t.textContent = POLINES.length ? ('Total KES ' + tot.toLocaleString('en-KE')) : '';
+  box.querySelectorAll('[data-polx]').forEach(b => b.onclick = () => { POLINES.splice(Number(b.dataset.polx), 1); drawPOLines(); });
+}
+function wirePOCreate() {
+  POLINES = []; drawPOLines();
+  $('#poAddLine').onclick = () => { const pid = $('#poProd').value, qty = Number($('#poQty').value) || 0, cost = $('#poCost').value.trim(), p = PRODUCTS.find(x => x.id === pid); if (!p || qty < 1 || !cost) return toast('Pick a medicine, quantity and unit cost.'); POLINES.push({ productId: pid, name: p.name, qty, unitCost: cost }); $('#poQty').value = ''; $('#poCost').value = ''; drawPOLines(); };
+  $('#poCreate').onclick = async () => { $('#poErr').textContent = ''; const supplierId = $('#poSup').value; if (!supplierId) return $('#poErr').textContent = 'Choose a supplier.'; if (!POLINES.length) return $('#poErr').textContent = 'Add at least one line.';
+    try { await api('/facilities/' + fac.id + '/purchase-orders', { method: 'POST', body: { supplierId, note: $('#poNote').value.trim(), items: POLINES.map(l => ({ productId: l.productId, qty: l.qty, unitCost: l.unitCost })) } }); toast('Purchase order created'); POLINES = []; renderPurchasing(); } catch (e) { $('#poErr').textContent = e.message; } };
+}
+function poCardHtml(po) {
+  const admin = fac.role === 'ADMIN', canReceive = admin && (po.status === 'SENT' || po.status === 'DRAFT' || po.status === 'PARTIAL');
+  const rows = po.lines.map(l => `<tr><td>${esc(l.name)}</td><td>x${esc(l.qty)}${l.received ? ` <span class="muted">(got ${esc(l.received)})</span>` : ''}</td><td>KES ${esc(l.lineCost)}</td>${canReceive ? `<td><input data-rq="${esc(po.ref)}|${esc(l.productId)}" type="number" min="0" placeholder="recv" style="width:60px;padding:4px 6px"></td><td><input data-rb="${esc(po.ref)}|${esc(l.productId)}" placeholder="batch" style="width:80px;padding:4px 6px"></td><td><input data-re="${esc(po.ref)}|${esc(l.productId)}" type="month" style="padding:4px 6px"></td>` : ((l.batchNo || l.expiry) ? `<td class="muted tiny">${esc(l.batchNo || '')}${l.expiry ? ' · exp ' + esc(l.expiry) : ''}</td>` : '')}</tr>`).join('');
+  return `<div class="card" style="margin-top:8px"><div class="between"><h2 style="margin:0;font-size:16px">${esc(po.ref)} <span class="pill" style="background:#1e293b">${esc(po.status.toLowerCase())}</span></h2><span class="muted small">${esc(po.supplierName)} · ${esc(new Date(po.createdAt).toLocaleDateString('en-KE'))}</span></div>
+    ${po.note ? `<div class="muted small">${esc(po.note)}</div>` : ''}
+    <table style="margin-top:8px"><thead><tr><th>Medicine</th><th>Qty</th><th>Cost</th>${canReceive ? '<th>Received</th><th>Batch</th><th>Expiry</th>' : ''}</tr></thead><tbody>${rows}</tbody></table>
+    <div class="between" style="margin-top:8px"><span class="muted small">Total KES ${esc(po.totalCost)}</span><span class="row">${admin && po.status === 'DRAFT' ? `<button class="btn ghost sm" data-poact="send" data-ref="${esc(po.ref)}">Mark sent</button>` : ''}${canReceive ? `<button class="btn go sm" data-poact="receive" data-ref="${esc(po.ref)}">Receive stock</button>` : ''}${admin && po.status !== 'RECEIVED' && po.status !== 'CANCELLED' ? `<button class="btn ghost sm" data-poact="cancel" data-ref="${esc(po.ref)}">Cancel</button>` : ''}</span></div></div>`;
+}
+function wirePOCards() {
+  document.querySelectorAll('[data-poact]').forEach(b => b.onclick = async () => { const act = b.dataset.poact, ref = b.dataset.ref; let body = { action: act };
+    if (act === 'receive') { const received = {}; document.querySelectorAll('[data-rq]').forEach(inp => { const parts = inp.dataset.rq.split('|'); if (parts[0] !== ref) return; const pid = parts[1], q = Number(inp.value) || 0; if (q > 0) { const bEl = document.querySelector('[data-rb="' + ref + '|' + pid + '"]'), eEl = document.querySelector('[data-re="' + ref + '|' + pid + '"]'); received[pid] = { qty: q, batchNo: bEl ? bEl.value.trim() : '', expiry: eEl ? eEl.value : '' }; } }); if (!Object.keys(received).length) return toast('Enter a received quantity for at least one item.'); body.received = received; }
+    else if (act === 'cancel' && !confirm('Cancel this purchase order?')) return;
+    b.disabled = true;
+    try { await api('/facilities/' + fac.id + '/purchase-orders/' + ref, { method: 'POST', body }); toast(act === 'receive' ? 'Stock received — catalog updated.' : 'Done'); renderPurchasing(); } catch (e) { toast(e.message); b.disabled = false; } });
+}
+async function renderOrders() {
+  if (!fac) return; $('#ord').innerHTML = 'Loading…';
+  try { const d = await api('/facilities/' + fac.id + '/orders'); if (!CATS.length) { try { CATS = (await api('/analyze', { method: 'POST', body: { text: 'od' } })).categories; } catch (e) {} }
+    $('#ord').innerHTML = d.orders.length ? d.orders.map(orderCard).join('') : '<div class="card muted">No orders yet. Share your shop link (Catalog tab) so patients can order.</div>'; wireOrders();
+  } catch (e) { $('#ord').innerHTML = `<div class="card"><span class="err">${esc(e.message)}</span></div>`; }
+}
+function orderCard(o) {
+  const next = o.status === 'PLACED' ? ['confirm', 'Confirm order'] : o.status === 'CONFIRMED' ? ['dispense', 'Dispense & print labels'] : o.status === 'DISPENSED' ? ['ready', 'Call rider (ready)'] : null;
+  const flags = `${o.rx ? `<span class="pill" style="background:#78350f">Rx ${esc((o.rx.status || '').toLowerCase())}</span>` : ''}${o.idRequired ? '<span class="pill" style="background:#7f1d1d">ID on delivery</span>' : ''}`;
+  const rxBox = (o.status === 'PENDING_RX' && o.rx) ? `<div class="card" style="margin:8px 0 0;background:#0b1224"><b class="small">Prescription check</b>${o.rx.prescriber ? `<div class="muted small">Prescriber: ${esc(o.rx.prescriber)}</div>` : ''}${o.rxImage ? `<div style="margin:8px 0"><img src="${esc(o.rxImage)}" alt="prescription" style="max-width:100%;max-height:260px;border-radius:8px;border:1px solid #1e293b"></div>` : '<div class="muted small">No image attached.</div>'}<label>Reason (needed only to reject)</label><input data-rxreason="${esc(o.ref)}" maxlength="200" placeholder="e.g. prescription unclear / expired"><div class="row" style="margin-top:8px"><button class="btn go sm" data-oact="verifyrx-ok" data-ref="${esc(o.ref)}">✓ Verify &amp; accept</button><button class="btn ghost sm" data-oact="verifyrx-no" data-ref="${esc(o.ref)}">✕ Reject</button></div></div>` : '';
+  return `<div class="card"><div class="between"><h2 style="margin:0">${esc(o.ref)} <span class="pill" style="background:#1e293b">${esc(o.status.replace(/_/g, ' '))}</span> ${flags}</h2><span class="muted small">${esc(new Date(o.createdAt).toLocaleString('en-KE', { dateStyle: 'short', timeStyle: 'short' }))}</span></div>
+    <div class="muted small">${esc(o.patientName || 'Patient')} · ${esc(o.phone)} · ${esc(o.address)}</div>
+    <table style="margin-top:8px"><tbody>${o.items.map(it => `<tr><td>${esc(it.name)} ${esc(it.strength || '')}${it.controlled ? ' <span class="pill" style="background:#7f1d1d">controlled</span>' : it.rx ? ' <span class="pill" style="background:#78350f">Rx</span>' : ''}</td><td>x${esc(it.qty)}</td><td>KES ${esc(it.line)}</td><td class="muted">${it.sig ? esc(it.sig) : ''}${it.labelRef ? ` · label ${esc(it.labelRef)}` : ''}</td></tr>`).join('')}</tbody></table>
+    ${rxBox}
+    <div class="between" style="margin-top:8px"><span class="muted small">Items KES ${esc(o.itemsTotal)} + delivery KES ${esc(o.delivery)} = <b>KES ${esc(o.total)}</b></span><span class="row">${next ? `<button class="btn go sm" data-oact="${next[0]}" data-ref="${esc(o.ref)}">${next[1]}</button>` : ''}${['PENDING_RX', 'PLACED', 'CONFIRMED', 'DISPENSED'].includes(o.status) ? `<button class="btn ghost sm" data-oact="cancel" data-ref="${esc(o.ref)}">Cancel</button>` : ''}</span></div></div>`;
+}
+function wireOrders() { document.querySelectorAll('[data-oact]').forEach(b => b.onclick = async () => { const raw = b.dataset.oact, ref = b.dataset.ref; let body = { action: raw };
+  if (raw === 'verifyrx-ok') body = { action: 'verifyrx', approve: true };
+  else if (raw === 'verifyrx-no') { const el = document.querySelector('[data-rxreason="' + ref + '"]'), r = el ? el.value.trim() : ''; if (r.length < 3) return toast('Enter a reason to reject the prescription.'); if (!confirm('Reject this prescription? The order will be cancelled.')) return; body = { action: 'verifyrx', approve: false, reason: r }; }
+  else if (raw === 'cancel' && !confirm('Cancel this order?')) return;
+  b.disabled = true;
+  try { const d = await api('/facilities/' + fac.id + '/orders/' + ref, { method: 'POST', body }); if (raw === 'dispense' && d.labels) printDispensed(d.labels); toast(raw === 'ready' ? 'Rider called — the order is now with the rider network.' : raw === 'verifyrx-ok' ? 'Prescription verified — order moved to the queue.' : raw === 'verifyrx-no' ? 'Prescription rejected — order cancelled.' : 'Done'); renderOrders(); } catch (e) { toast(e.message); b.disabled = false; } }); }
+function printDispensed(labels) { const ok = labels.filter(l => l.ref && l.category); if (!ok.length) { toast('Dosing unclear on these items — print those from the Labels tab after checking.'); return; }
+  $('#printArea').innerHTML = ok.map(l => labelHtml({ category: l.category, slots: l.slots || [], maxPerDay: l.maxPerDay, durationDays: l.durationDays, instruction: l.sig, facility: fac, ref: l.ref, printedBy: me && me.name })).join(''); setTimeout(() => window.print(), 150); }
+async function openShop(code) {
+  show('#vShop'); $('#who').textContent = 'Pharmacy shop'; $('#btnOut').classList.add('hidden'); $('#facPick').classList.add('hidden');
+  try { const d = await api('/shop/' + encodeURIComponent(code), { anon: true }); SHOP = d; renderShop(); } catch (e) { $('#vShop').innerHTML = `<div class="card"><span class="err">${esc(e.message)}</span></div>`; }
+}
+function renderShop() { const p = SHOP, cartN = Object.values(CART).reduce((s, x) => s + x, 0);
+  const rxInCart = Object.keys(CART).some(id => { const x = SHOP.products.find(q => q.id === id); return x && x.rx; });
+  const controlledInCart = Object.keys(CART).some(id => { const x = SHOP.products.find(q => q.id === id); return x && x.controlled; });
+  $('#vShop').innerHTML = `<div class="card between"><div><h2 style="margin:0">${esc(p.pharmacy.name)}</h2><div class="muted small">${esc(p.pharmacy.county || '')} · ${p.pharmacy.verified ? 'PPB licence verified' : 'licence pending'} · medicine, delivered</div></div><div class="pill" style="background:#1e293b">🛒 ${cartN}</div></div>
+    <div class="card"><h2>Medicines</h2>${p.products.length ? p.products.map(x => `<div class="med between"><div><b>${esc(x.name)}</b> <span class="muted">${esc(x.strength || '')} ${esc(x.form || '')}</span>${x.controlled ? ' <span class="pill" style="background:#7f1d1d">controlled</span>' : x.rx ? ' <span class="pill" style="background:#78350f">prescription needed</span>' : ''}<div class="muted small">KES ${esc(x.price)} · ${x.stock} in stock</div></div><div class="row"><button class="btn ghost sm" data-minus="${esc(x.id)}">−</button><span style="min-width:22px;text-align:center">${CART[x.id] || 0}</span><button class="btn ok sm" data-plus="${esc(x.id)}">+</button></div></div>`).join('') : '<p class="muted">No medicines in stock right now.</p>'}</div>
+    ${cartN ? `<div class="card"><h2>Delivery details</h2><label>Your name</label><input id="shName" maxlength="60"><label>Phone (M-Pesa / for the rider)</label><input id="shPhone" type="tel" placeholder="0712 345 678"><label>Delivery address</label><textarea id="shAddr" placeholder="Estate, street, house/apt, landmark"></textarea>${rxInCart ? `<div class="card" style="margin:10px 0 0;background:#0b1224"><b class="small">Prescription required</b><p class="muted small">One or more items need a prescription. Upload a clear photo — a pharmacist verifies it before your order is prepared${controlledInCart ? ', and you must show ID to the rider on delivery' : ''}.</p><label>Prescriber (optional)</label><input id="shRxBy" maxlength="80" placeholder="Dr name / clinic"><input id="shRxFile" type="file" accept="image/*" style="margin-top:8px"><div id="shRxPrev" class="muted tiny" style="margin-top:6px"></div></div>` : ''}<div class="between" style="margin-top:10px"><span class="muted small">Delivery KES 200 added at checkout</span><button id="shGo" class="btn go">Place order</button></div><div id="shErr" class="err"></div></div>` : ''}
+    <div class="card"><h2>Track an order</h2><div class="row"><input id="tRef" placeholder="Order ref" style="flex:2"><input id="tPhone" placeholder="Phone used" style="flex:1"><button id="tGo" class="btn ghost sm">Track</button></div><div id="tOut" class="muted small" style="margin-top:8px"></div></div>`;
+  document.querySelectorAll('[data-plus]').forEach(b => b.onclick = () => { const x = SHOP.products.find(q => q.id === b.dataset.plus); CART[b.dataset.plus] = Math.min((CART[b.dataset.plus] || 0) + 1, x ? x.stock : 99); renderShop(); });
+  document.querySelectorAll('[data-minus]').forEach(b => b.onclick = () => { CART[b.dataset.minus] = Math.max((CART[b.dataset.minus] || 0) - 1, 0); if (!CART[b.dataset.minus]) delete CART[b.dataset.minus]; renderShop(); });
+  let rxDataUrl = null; const rxFile = $('#shRxFile');
+  if (rxFile) rxFile.onchange = () => { const f = rxFile.files && rxFile.files[0]; if (!f) { rxDataUrl = null; $('#shRxPrev').textContent = ''; return; } if (f.size > 4 * 1048576) { $('#shRxPrev').innerHTML = '<span class="err">Image too large (max 4MB).</span>'; rxFile.value = ''; rxDataUrl = null; return; } const fr = new FileReader(); fr.onload = () => { rxDataUrl = fr.result; $('#shRxPrev').textContent = 'Attached: ' + f.name; }; fr.readAsDataURL(f); };
+  const go = $('#shGo'); if (go) go.onclick = async () => { $('#shErr').textContent = ''; const items = Object.entries(CART).map(([productId, qty]) => ({ productId, qty }));
+    if (rxInCart && !rxDataUrl) return $('#shErr').textContent = 'Attach a photo of the prescription for the items that need one.';
+    try { const d = await api('/shop/' + encodeURIComponent(SHOP.pharmacy.code) + '/orders', { method: 'POST', anon: true, body: { patientName: $('#shName').value.trim(), phone: $('#shPhone').value.trim(), address: $('#shAddr').value.trim(), items, rxImage: rxDataUrl || undefined, prescriber: ($('#shRxBy') ? $('#shRxBy').value.trim() : '') } });
+      for (const k in CART) delete CART[k]; $('#vShop').innerHTML = `<div class="card"><h2>✅ Order placed</h2><p>${esc(d.message)}</p><p class="muted small">Keep your reference <b>${esc(d.order.ref)}</b> and this phone number to track delivery.</p><button class="btn go" onclick="location.reload()">Order again</button></div>`;
+    } catch (e) { $('#shErr').textContent = e.message; } };
+  const tg = $('#tGo'); if (tg) tg.onclick = async () => { try { const d = await api('/shop/orders/' + encodeURIComponent($('#tRef').value.trim()) + '?phone=' + encodeURIComponent($('#tPhone').value.trim()), { anon: true }); const o = d.order; $('#tOut').innerHTML = `<b>${esc(o.ref)}</b> — ${esc(o.status.replace(/_/g, ' '))}${o.deliveryPin ? ` · give the rider PIN <b>${esc(o.deliveryPin)}</b>` : ''}<br>Total KES ${esc(o.total)}${o.rider ? ` · rider assigned` : ''}`; } catch (e) { $('#tOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
+}
+
+const _shopCode = new URLSearchParams(location.search).get('shop');
+if (_shopCode) { openShop(_shopCode); } else { boot(); }
 })();
 </script>
 </body>

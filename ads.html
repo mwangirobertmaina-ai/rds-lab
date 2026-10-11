@@ -319,7 +319,7 @@ async function deletePost(id) {
   $('#dYes').onclick = async () => { try { await api(`/posts/${id}`, { method: 'DELETE' }); $$(`[data-pid="${CSS.escape(id)}"]`).forEach(el => el.remove()); posts.delete(id); closeSheet(); toast('Post deleted'); if (pageStack.length) $('#pageBack').click(); } catch (e) { toast(e.message); } };
 }
 const follow = need(async (uid, btn) => {
-  try { const d = await api(`/users/${uid}/follow`, { method: 'POST', body: {} }); toast(d.following ? 'Following' : 'Unfollowed'); posts.forEach(p => { if (p.author && p.author.id === uid) p.followingAuthor = d.following; }); $$(`[data-act="follow"][data-uid="${CSS.escape(uid)}"]`).forEach(b => { if (b.closest('.reel')) b.remove(); else { b.textContent = d.following ? 'Following' : 'Follow'; b.className = b.className.replace(/bg-pink-600|bg-slate-800/g, d.following ? 'bg-slate-800' : 'bg-pink-600'); } }); if (me) me.counts.following += d.following ? 1 : -1; } catch (e) { toast(e.message); }
+  try { const d = await api(`/users/${uid}/follow`, { method: 'POST', body: {} }); const lbl = d.requested ? 'Requested' : d.following ? 'Following' : 'Follow'; toast(d.requested ? 'Request sent' : d.following ? 'Following' : 'Unfollowed'); posts.forEach(p => { if (p.author && p.author.id === uid) p.followingAuthor = d.following; }); $$(`[data-act="follow"][data-uid="${CSS.escape(uid)}"]`).forEach(b => { if (b.closest('.reel') && d.following) b.remove(); else { b.textContent = lbl; b.className = b.className.replace(/bg-pink-600|bg-slate-800/g, (d.following || d.requested) ? 'bg-slate-800' : 'bg-pink-600'); } }); if (me && !d.requested) me.counts.following += d.following ? 1 : -1; } catch (e) { toast(e.message); }
 });
 async function cta(id) { try { const d = await api(`/posts/${id}/cta`, { method: 'POST', body: {} }); const u = safeCta(d.url); if (!u) return; if (u.startsWith('/')) location.href = u; else window.open(u, '_blank', 'noopener'); } catch (e) { toast(e.message); } }
 
@@ -338,11 +338,14 @@ const openCreate = need(() => {
       <label class="py-3 rounded-xl bg-slate-900 border border-slate-800 text-sm font-semibold text-white flex items-center justify-center gap-2 cursor-pointer"><i class="fa-solid fa-images text-pink-400"></i> Gallery<input id="crFile" type="file" accept="image/*,video/*" class="hidden"></label>
       <button id="crCamBtn" type="button" class="py-3 rounded-xl bg-slate-900 border border-slate-800 text-sm font-semibold text-white flex items-center justify-center gap-2"><i class="fa-solid fa-camera text-cyan-400"></i> Camera</button><input id="crCam" type="file" accept="image/*,video/*" capture="environment" class="hidden">
     </div>
+    <button id="crLive" type="button" class="mt-3 w-full py-2.5 rounded-xl bg-rose-600 text-white text-sm font-bold flex items-center justify-center gap-2"><i class="fa-solid fa-tower-broadcast"></i> Go Live</button>
     <div id="crStyles" class="flex gap-2 mt-3">${['night', 'sunset', 'ocean', 'forest', 'candy'].map(s => `<button data-style="${s}" aria-label="Background ${s}" class="w-8 h-8 rounded-full style-${s} border-2 ${s === 'night' ? 'border-white' : 'border-transparent'}"></button>`).join('')}<span class="text-xs text-slate-500 self-center ml-1">for text posts</span></div>
     <textarea id="crCap" rows="3" maxlength="2200" placeholder="Write a caption… #hashtags @mentions" class="mt-3 w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none focus:border-pink-500"></textarea>
+    <select id="crAud" class="mt-2 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-pink-500"><option value="public">🌍 Public — anyone can see</option><option value="followers">👥 Followers only</option><option value="private">🔒 Only me</option></select>
     <div class="flex justify-between text-xs text-slate-500"><span id="crInfo"></span><span id="crCount">0 / 2200</span></div>
     <div id="crBar" class="hidden mt-3 h-2 rounded-full bg-slate-800 overflow-hidden"><div id="crFill" class="h-full w-0 bg-gradient-to-r from-pink-600 to-purple-600"></div></div>
     <button id="crPost" class="mt-3 w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600">Post</button><div id="crErr" class="mt-2 text-sm text-rose-400"></div>`);
+  try { if (me && me.privacy && $('#crAud')) $('#crAud').value = me.privacy.defaultAudience; } catch (e) {}
   const pick = (f) => {
     if (!f) return; const isV = f.type.startsWith('video/'), isI = f.type.startsWith('image/');
     if (!isV && !isI) return $('#crErr').textContent = 'Choose a photo or a video.';
@@ -354,6 +357,7 @@ const openCreate = need(() => {
   };
   $('#crFile').onchange = (e) => pick(e.target.files[0]); $('#crCam').onchange = (e) => pick(e.target.files[0]);
   $('#crCamBtn').onclick = () => { if (callSupported() && secureOk()) liveCamera((f) => pick(f)); else $('#crCam').click(); };
+  { const _lv = $('#crLive'); if (_lv) _lv.onclick = () => { closeSheet(); goLive(); }; }
   $('#crStyles').onclick = (e) => { const b = e.target.closest('[data-style]'); if (!b) return; style = b.dataset.style; $$('#crStyles [data-style]').forEach(x => x.classList.toggle('border-white', x === b)); $$('#crStyles [data-style]').forEach(x => x.classList.toggle('border-transparent', x !== b)); if (!file) $('#crPrev').className = `relative aspect-[9/16] max-h-[44vh] mx-auto rounded-2xl overflow-hidden style-${style} flex items-center justify-center`; };
   $('#crCap').oninput = () => { $('#crCount').textContent = `${$('#crCap').value.length} / 2200`; if (!file) $('#crPrev').innerHTML = `<p class="text-white text-xl font-extrabold text-center px-6 whitespace-pre-wrap break-words">${esc($('#crCap').value) || '<span class="text-white/60 text-sm font-normal">Add a photo or video, or just write something.</span>'}</p>`; };
   $('#crPost').onclick = async () => {
@@ -362,7 +366,7 @@ const openCreate = need(() => {
     try {
       let mediaId = null;
       if (file) { $('#crBar').classList.remove('hidden'); mediaId = await upload(file, (p) => { $('#crFill').style.width = Math.round(p * 100) + '%'; }); }
-      const d = await api('/posts', { method: 'POST', body: { caption, mediaId, style } });
+      const d = await api('/posts', { method: 'POST', body: { caption, mediaId, style, audience: ($('#crAud') && $('#crAud').value) || 'public' } });
       closeSheet(); toast('Posted!'); go('vHome'); if (tab !== 'foryou') setTab('foryou'); posts.set(d.post.id, d.post);
       $('#feed').insertAdjacentHTML('afterbegin', reelHtml(d.post)); $$('#feed .reel:not([data-pid])').forEach(x => x.remove()); $('#feed').scrollTop = 0; observe();
     } catch (e) { $('#crErr').textContent = e.message; } finally { $('#crPost').disabled = false; }
@@ -385,16 +389,16 @@ function gridHtml(list) {
 }
 function profileHeader(u, mine) {
   return `<div class="flex flex-col items-center text-center px-6 pt-6 pb-4">${avatar(u, 'w-24 h-24 text-3xl')}
-    <h1 class="mt-3 text-lg font-bold text-white">${esc(u.name)}${u.verified ? ' <i class="fa-solid fa-circle-check text-cyan-400 text-sm"></i>' : ''}</h1><p class="text-sm text-slate-400">@${esc(u.handle)}</p>
+    <h1 class="mt-3 text-lg font-bold text-white">${esc(u.name)}${u.verified ? ' <i class="fa-solid fa-circle-check text-cyan-400 text-sm"></i>' : ''}</h1><p class="text-sm text-slate-400">@${esc(u.handle)}${u.private ? ' <i class="fa-solid fa-lock text-xs"></i>' : ''}</p>
     <div class="flex gap-8 mt-4 text-center"><div><b class="text-white">${fmtN(u.counts.following)}</b><div class="text-xs text-slate-400">Following</div></div><div><b class="text-white">${fmtN(u.counts.followers)}</b><div class="text-xs text-slate-400">Followers</div></div><div><b class="text-white">${fmtN(u.counts.likes != null ? u.counts.likes : u.counts.posts)}</b><div class="text-xs text-slate-400">${u.counts.likes != null ? 'Likes' : 'Posts'}</div></div></div>
     ${u.bio ? `<p class="mt-3 text-sm text-slate-200 whitespace-pre-wrap break-words">${esc(u.bio)}</p>` : ''}
     <div class="flex gap-2 mt-4 w-full max-w-xs">${mine ? `<button data-act="editprofile" class="flex-1 py-2.5 rounded-lg bg-slate-800 text-white text-sm font-semibold">Edit profile</button><button data-act="settings" aria-label="Settings" class="px-4 py-2.5 rounded-lg bg-slate-800 text-white"><i class="fa-solid fa-gear"></i></button>`
-      : `<button data-act="follow" data-uid="${esc(u.id)}" class="flex-1 py-2.5 rounded-lg ${u.isFollowing ? 'bg-slate-800' : 'bg-pink-600'} text-white text-sm font-semibold">${u.isFollowing ? 'Following' : 'Follow'}</button><button data-act="messageuser" data-uid="${esc(u.id)}" class="flex-1 py-2.5 rounded-lg bg-slate-800 text-white text-sm font-semibold">Message</button><button data-act="usermore" data-uid="${esc(u.id)}" data-blocked="${u.blocked ? 1 : 0}" aria-label="More" class="px-4 py-2.5 rounded-lg bg-slate-800 text-white"><i class="fa-solid fa-ellipsis"></i></button>`}</div></div>`;
+      : `<button data-act="follow" data-uid="${esc(u.id)}" class="flex-1 py-2.5 rounded-lg ${(u.isFollowing || u.requested) ? 'bg-slate-800' : 'bg-pink-600'} text-white text-sm font-semibold">${u.isFollowing ? 'Following' : u.requested ? 'Requested' : 'Follow'}</button><button data-act="messageuser" data-uid="${esc(u.id)}" class="flex-1 py-2.5 rounded-lg bg-slate-800 text-white text-sm font-semibold">Message</button><button data-act="usermore" data-uid="${esc(u.id)}" data-blocked="${u.blocked ? 1 : 0}" aria-label="More" class="px-4 py-2.5 rounded-lg bg-slate-800 text-white"><i class="fa-solid fa-ellipsis"></i></button>`}</div></div>`;
 }
 async function openProfile(handle) {
   try { const d = await api(`/users/${encodeURIComponent(handle)}`);
     if (d.user.isMe) { closeSheet(); while (pageStack.length) pageStack.pop(); showPage(); return go('vMe'); }
-    closeSheet(); openPage('@' + d.user.handle, profileHeader(d.user, false) + gridHtml(d.posts));
+    closeSheet(); openPage('@' + d.user.handle, profileHeader(d.user, false) + (d.user.locked ? lockedHtml() : gridHtml(d.posts)));
   } catch (e) { toast(e.message); }
 }
 async function renderMe() {
@@ -403,24 +407,43 @@ async function renderMe() {
 }
 function editProfile() {
   let avatarId;
-  openSheet('Edit profile', `<div class="flex flex-col items-center"><div id="epAv">${avatar(me, 'w-20 h-20 text-2xl')}</div><label class="mt-2 text-sm text-pink-400 font-semibold cursor-pointer">Change photo<input id="epFile" type="file" accept="image/*" class="hidden"></label></div>
+  openSheet('Edit profile', `<div class="flex flex-col items-center"><div id="epAv">${avatar(me, 'w-20 h-20 text-2xl')}</div><div class="mt-2 flex items-center gap-5"><label class="text-sm text-pink-400 font-semibold cursor-pointer"><i class="fa-solid fa-image"></i> Upload<input id="epFile" type="file" accept="image/*" class="hidden"></label><button id="epCam" type="button" class="text-sm text-cyan-400 font-semibold"><i class="fa-solid fa-camera"></i> Take selfie</button></div></div>
     <label class="block text-xs text-slate-400 mt-4 mb-1" for="epName">Name</label><input id="epName" maxlength="50" value="${esc(me.name)}" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-pink-500">
     <label class="block text-xs text-slate-400 mt-3 mb-1" for="epHandle">Username</label><div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl px-4"><span class="text-slate-500">@</span><input id="epHandle" maxlength="24" value="${esc(me.handle)}" class="flex-1 bg-transparent py-3 text-white outline-none"></div>
     <label class="block text-xs text-slate-400 mt-3 mb-1" for="epBio">Bio</label><textarea id="epBio" rows="3" maxlength="160" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-pink-500">${esc(me.bio || '')}</textarea>
     <button id="epSave" class="mt-4 w-full py-3 rounded-xl font-bold text-white bg-pink-600">Save</button><div id="epErr" class="mt-2 text-sm text-rose-400"></div>`);
-  $('#epFile').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; try { $('#epErr').textContent = 'Uploading…'; avatarId = await upload(f, () => {}); $('#epAv').innerHTML = `<img src="${URL.createObjectURL(f)}" alt="" class="w-20 h-20 rounded-full object-cover">`; $('#epErr').textContent = ''; } catch (x) { $('#epErr').textContent = x.message; } };
+  const setAvatar = async (f) => { if (!f) return; if (!f.type || !f.type.startsWith('image/')) return $('#epErr').textContent = 'Use a photo (not a video) for your profile picture.'; try { $('#epErr').textContent = 'Uploading…'; avatarId = await upload(f, () => {}); $('#epAv').innerHTML = `<img src="${URL.createObjectURL(f)}" alt="" class="w-20 h-20 rounded-full object-cover">`; $('#epErr').textContent = ''; } catch (x) { $('#epErr').textContent = x.message; } };
+  $('#epFile').onchange = (e) => setAvatar(e.target.files[0]);
+  $('#epCam').onclick = () => { if (callSupported() && secureOk()) liveCamera((f) => setAvatar(f)); else { $('#epErr').textContent = 'The camera needs your secure https link.'; $('#epFile').click(); } };
   $('#epSave').onclick = async () => { try { const body = { name: $('#epName').value, handle: $('#epHandle').value, bio: $('#epBio').value }; if (avatarId) body.avatarMediaId = avatarId; const d = await api('/me', { method: 'PATCH', body }); me = d.user; closeSheet(); toast('Profile saved'); renderMe(); } catch (x) { $('#epErr').textContent = x.message; } };
 }
+function lockedHtml() { return '<div class="text-center text-slate-500 text-sm py-12 px-8"><i class="fa-solid fa-lock text-3xl text-white/20 mb-3"></i><p class="text-white font-semibold">This account is private</p><p class="mt-1">Follow this account to see their posts.</p></div>'; }
+async function openFollowReqs() {
+  try { const d = await api('/follow-requests');
+    openSheet('Follow requests', d.requests.length ? d.requests.map(u => `<div data-reqrow class="flex items-center gap-3 py-2"><div class="flex items-center gap-3 flex-1 min-w-0">${avatar(u)}<div class="min-w-0"><div class="font-semibold text-white truncate">${esc(u.name)}</div><div class="text-xs text-slate-400 truncate">@${esc(u.handle)}</div></div></div><button data-act="apreq" data-uid="${esc(u.id)}" data-do="approve" class="px-3 py-1.5 rounded-lg bg-pink-600 text-white text-sm font-semibold">Approve</button><button data-act="apreq" data-uid="${esc(u.id)}" data-do="deny" class="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-sm font-semibold">Delete</button></div>`).join('') : '<p class="text-slate-500 text-sm py-6 text-center">No pending requests.</p>');
+  } catch (x) { toast(x.message); }
+}
 function settings() {
-  openSheet('Settings', `<button data-act="signout" class="w-full text-left py-3.5 border-b border-white/5 text-white"><i class="fa-solid fa-right-from-bracket w-6"></i> Sign out</button>
+  const pv = (me && me.privacy) || { private: false, whoMessage: 'everyone', whoComment: 'everyone', defaultAudience: 'public' };
+  const sel = (id, val, opts) => `<select id="${id}" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white outline-none">${opts.map(([v, l]) => `<option value="${v}" ${v === val ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  openSheet('Settings', `
+    <h3 class="text-sm font-bold text-white mb-1"><i class="fa-solid fa-shield-halved w-5 text-pink-400"></i> Privacy</h3>
+    <label class="flex items-center justify-between py-2"><span class="text-white text-sm">Private account<span class="block text-xs text-slate-500">Only approved followers see your posts</span></span><input id="pvPrivate" type="checkbox" ${pv.private ? 'checked' : ''} class="w-5 h-5 accent-pink-600"></label>
+    <div class="flex items-center justify-between py-2"><span class="text-white text-sm">Who can message you</span>${sel('pvMsg', pv.whoMessage, [['everyone', 'Everyone'], ['followers', 'Followers'], ['nobody', 'No one']])}</div>
+    <div class="flex items-center justify-between py-2"><span class="text-white text-sm">Who can comment</span>${sel('pvCom', pv.whoComment, [['everyone', 'Everyone'], ['followers', 'Followers'], ['off', 'No one']])}</div>
+    <div class="flex items-center justify-between py-2"><span class="text-white text-sm">Default post audience</span>${sel('pvAud', pv.defaultAudience, [['public', 'Public'], ['followers', 'Followers'], ['private', 'Only me']])}</div>
+    <button id="pvSave" class="mt-2 mb-3 w-full py-2.5 rounded-xl font-bold text-white bg-pink-600 text-sm">Save privacy</button><div id="pvErr" class="-mt-2 mb-2 text-xs text-rose-400"></div>
+    <button data-act="followreqs" class="w-full text-left py-3.5 border-t border-white/5 text-white"><i class="fa-solid fa-user-plus w-6"></i> Follow requests</button>
+    <button data-act="signout" class="w-full text-left py-3.5 border-t border-white/5 text-white"><i class="fa-solid fa-right-from-bracket w-6"></i> Sign out</button>
     <button data-act="deleteaccount" class="w-full text-left py-3.5 text-rose-400"><i class="fa-solid fa-user-xmark w-6"></i> Delete my account</button>`);
+  $('#pvSave').onclick = async () => { try { const d = await api('/me/privacy', { method: 'PATCH', body: { private: $('#pvPrivate').checked, whoMessage: $('#pvMsg').value, whoComment: $('#pvCom').value, defaultAudience: $('#pvAud').value } }); if (me) me.privacy = d.privacy; toast('Privacy saved'); } catch (x) { $('#pvErr').textContent = x.message; } };
 }
 
 /* ---------------- discover ---------------- */
 async function renderDiscover() {
   const q = $('#q').value.trim();
   if (!q) {
-    try { const [d, pe] = await Promise.all([api('/trending'), api('/discover/people').catch(() => ({ people: [] }))]); $('#discover').innerHTML = `<h3 class="text-sm font-bold text-white mt-2 mb-2">Trending</h3><div class="flex flex-wrap gap-2">${d.tags.length ? d.tags.map(t => `<button data-act="tag" data-tag="${esc(t.tag)}" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-sm text-white">#${esc(t.tag)} <span class="text-slate-500 text-xs">${t.posts}</span></button>`).join('') : '<p class="text-slate-500 text-sm">Hashtags appear here as people post.</p>'}</div>
+    try { const [d, pe, lv] = await Promise.all([api('/trending'), api('/discover/people').catch(() => ({ people: [] })), api('/live').catch(() => ({ lives: [] }))]); const liveBar = (lv.lives && lv.lives.length) ? `<h3 class="text-sm font-bold text-white mt-2 mb-2"><span class="text-rose-500">●</span> Live now</h3><div class="flex gap-3 overflow-x-auto pb-1 mb-4">${lv.lives.map(l => `<button data-act="watchlive" data-id="${esc(l.id)}" class="shrink-0 flex flex-col items-center gap-1"><span class="relative inline-block p-0.5 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500">${avatar(l.host)}<span class="absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 rounded bg-rose-600 text-white text-[9px] font-bold">LIVE</span></span><span class="text-[11px] text-white truncate max-w-[64px]">${esc(l.host ? l.host.name : '')}</span></button>`).join('')}</div>` : ''; $('#discover').innerHTML = liveBar + `<h3 class="text-sm font-bold text-white mt-2 mb-2">Trending</h3><div class="flex flex-wrap gap-2">${d.tags.length ? d.tags.map(t => `<button data-act="tag" data-tag="${esc(t.tag)}" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-sm text-white">#${esc(t.tag)} <span class="text-slate-500 text-xs">${t.posts}</span></button>`).join('') : '<p class="text-slate-500 text-sm">Hashtags appear here as people post.</p>'}</div>
       <h3 class="text-sm font-bold text-white mt-6 mb-2">People to follow</h3>${peopleHtml((pe.people && pe.people.length) ? pe.people : d.people)}`; } catch (e) { $('#discover').innerHTML = `<p class="text-rose-400 text-sm">${esc(e.message)}</p>`; }
     return;
   }
@@ -453,16 +476,23 @@ async function openChat(cid) {
   try { const d = await api(`/conversations/${cid}/messages`); chatWith = cid; const c = d.conversation;
     openPage(c.type === 'group' ? c.name : c.with.name, `<div id="msgs" class="flex flex-col gap-1.5 p-3 min-h-full justify-end">${d.messages.map(msgHtml).join('')}</div>`, c.type === 'group' ? `<button data-act="groupinfo" data-cid="${esc(cid)}" aria-label="Group info" class="w-9 h-9 rounded-full bg-slate-800 text-white"><i class="fa-solid fa-users"></i></button>` : (c.blocked ? '' : `<button data-act="voicecall" data-cid="${esc(cid)}" aria-label="Voice call" class="w-9 h-9 rounded-full bg-slate-800 text-white mr-1"><i class="fa-solid fa-phone"></i></button><button data-act="videocall" data-cid="${esc(cid)}" aria-label="Video call" class="w-9 h-9 rounded-full bg-slate-800 text-white"><i class="fa-solid fa-video"></i></button>`), () => {
       const body = $('#pageBody'); body.scrollTop = body.scrollHeight;
-      $('#page').insertAdjacentHTML('beforeend', `<div id="composer" class="flex gap-2 p-3 border-t border-white/10 safe-b"><button id="mCam" aria-label="Camera" class="w-11 h-11 shrink-0 rounded-full bg-slate-800 text-white flex items-center justify-center ${c.blocked ? 'hidden' : ''}"><i class="fa-solid fa-camera"></i></button><label aria-label="Send a photo or video" class="w-11 h-11 shrink-0 rounded-full bg-slate-800 text-white flex items-center justify-center cursor-pointer ${c.blocked ? 'hidden' : ''}"><i class="fa-solid fa-image"></i><input id="mPhoto" type="file" accept="image/*,video/*" class="hidden"></label><input id="mText" maxlength="2000" autocomplete="off" placeholder="${c.blocked ? 'You cannot message this account' : 'Message…'}" ${c.blocked ? 'disabled' : ''} class="flex-1 bg-slate-900 border border-slate-800 rounded-full px-4 py-2.5 text-sm text-white outline-none focus:border-pink-500"><button id="mSend" aria-label="Send" class="w-11 h-11 rounded-full bg-pink-600 text-white" ${c.blocked ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i></button></div><div id="typing" class="hidden absolute bottom-20 left-4 text-xs text-slate-400">typing…</div>`);
+      $('#page').insertAdjacentHTML('beforeend', `<div id="composer" class="flex gap-2 p-3 border-t border-white/10 safe-b"><button id="mCam" aria-label="Camera" class="w-11 h-11 shrink-0 rounded-full bg-slate-800 text-white flex items-center justify-center ${c.blocked ? 'hidden' : ''}"><i class="fa-solid fa-camera"></i></button><button id="mVO" type="button" aria-label="View once" title="Send as view-once" class="w-11 h-11 shrink-0 rounded-full bg-slate-800 text-white/50 flex items-center justify-center ${c.blocked ? 'hidden' : ''}"><i class="fa-solid fa-fire"></i></button><label aria-label="Send a photo or video" class="w-11 h-11 shrink-0 rounded-full bg-slate-800 text-white flex items-center justify-center cursor-pointer ${c.blocked ? 'hidden' : ''}"><i class="fa-solid fa-image"></i><input id="mPhoto" type="file" accept="image/*,video/*" class="hidden"></label><input id="mText" maxlength="2000" autocomplete="off" placeholder="${c.blocked ? 'You cannot message this account' : 'Message…'}" ${c.blocked ? 'disabled' : ''} class="flex-1 bg-slate-900 border border-slate-800 rounded-full px-4 py-2.5 text-sm text-white outline-none focus:border-pink-500"><button id="mSend" aria-label="Send" class="w-11 h-11 rounded-full bg-pink-600 text-white" ${c.blocked ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i></button></div><div id="typing" class="hidden absolute bottom-20 left-4 text-xs text-slate-400">typing…</div>`);
       const send = async () => { const t = $('#mText').value.trim(); if (!t) return; $('#mText').value = ''; try { const r = await api(`/conversations/${cid}/messages`, { method: 'POST', body: { text: t } }); $('#msgs').insertAdjacentHTML('beforeend', msgHtml(r.message)); body.scrollTop = body.scrollHeight; } catch (e) { toast(e.message); $('#mText').value = t; } };
-      $('#mSend').onclick = send; $('#mPhoto').onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) sendMedia(cid, f); }; const cam = $('#mCam'); if (cam) cam.onclick = () => openCamera(cid); loadPrivateMedia($('#msgs')); $('#mText').onkeydown = (e) => { if (e.key === 'Enter') send(); else if (socket) socket.emit('social:typing', { conversationId: cid }); };
+      $('#mSend').onclick = send; const vo = $('#mVO'); if (vo) vo.onclick = () => { const on = vo.classList.toggle('text-amber-400'); vo.classList.toggle('text-white/50', !on); toast(on ? 'View-once ON — the next photo or video opens once' : 'View-once off'); }; $('#mPhoto').onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) sendMedia(cid, f, vo && vo.classList.contains('text-amber-400')); }; const cam = $('#mCam'); if (cam) cam.onclick = () => openCamera(cid); loadPrivateMedia($('#msgs')); $('#mText').onkeydown = (e) => { if (e.key === 'Enter') send(); else if (socket) socket.emit('social:typing', { conversationId: cid }); };
     });
     api(`/conversations/${cid}/read`, { method: 'POST', body: {} }).then(() => api('/me').then(m => { me = m.user; paintBadges(); })).catch(() => {});
   } catch (e) { toast(e.message); }
 }
 const msgHtml = (m) => {
   if (m.system) return `<div class="text-center text-[11px] text-slate-400 my-1" data-mid="${esc(m.id)}">${esc(m.text)}</div>`;
-  const img = (m.media && /^\/api\/ads\/conversations\/K_[a-z0-9]+\/media\/M_[a-z0-9]+$/.test(m.media.url)) ? (m.media.kind === 'video' ? `<video data-private="${esc(m.media.url)}" controls playsinline class="block rounded-xl max-w-full max-h-72 mb-1 bg-slate-700 min-h-[80px] min-w-[120px]"></video>` : `<img data-private="${esc(m.media.url)}" alt="Photo" class="block rounded-xl max-w-full max-h-72 mb-1 bg-slate-700 min-h-[80px] min-w-[120px]">`) : '';
+  let img = '';
+  if (m.viewOnce) {
+    if (m.mine) img = `<div class="mb-1 text-xs italic text-white/70"><i class="fa-solid fa-fire"></i> View-once ${m.media && m.media.kind === 'video' ? 'video' : 'photo'} sent</div>`;
+    else if (m.viewOnceConsumed || !m.media) img = `<div class="mb-1 text-xs italic text-slate-400"><i class="fa-regular fa-circle-check"></i> Opened</div>`;
+    else img = `<button data-act="viewonce" data-url="${esc(m.media.url)}" data-kind="${esc(m.media.kind)}" data-mid="${esc(m.id)}" class="mb-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-black/40 border border-amber-500/40 text-amber-300 text-xs font-semibold"><i class="fa-solid fa-fire"></i> View once · tap to open</button>`;
+  } else {
+    img = (m.media && /^\/api\/ads\/conversations\/K_[a-z0-9]+\/media\/M_[a-z0-9]+$/.test(m.media.url)) ? (m.media.kind === 'video' ? `<video data-private="${esc(m.media.url)}" controls playsinline class="block rounded-xl max-w-full max-h-72 mb-1 bg-slate-700 min-h-[80px] min-w-[120px]"></video>` : `<img data-private="${esc(m.media.url)}" alt="Photo" class="block rounded-xl max-w-full max-h-72 mb-1 bg-slate-700 min-h-[80px] min-w-[120px]">`) : '';
+  }
   let shared = '';
   if (m.sharedPost) {
     if (m.sharedPost.unavailable) shared = `<div class="mt-0.5 mb-1 rounded-xl border border-white/20 bg-black/30 p-2 text-xs text-white/60">This post is no longer available.</div>`;
@@ -489,10 +519,15 @@ function connectSocket() {
   socket.on('social:read', (p) => { if (chatWith === p.conversationId) $$('#msgs [data-seen]').forEach(s => { s.textContent = '✓✓ Seen'; }); });
   socket.on('social:typing', (p) => { if (chatWith === p.conversationId && $('#typing')) { $('#typing').classList.remove('hidden'); clearTimeout(connectSocket.t); connectSocket.t = setTimeout(() => { const t = $('#typing'); if (t) t.classList.add('hidden'); }, 2000); } });
   socket.on('social:call', (p) => { try { handleCall(p); } catch (e) {} });
+  socket.on('social:live', (p) => { try { handleLiveSignal(p); } catch (e) {} });
+  socket.on('social:live-chat', (p) => { try { onLiveChat(p); } catch (e) {} });
+  socket.on('social:live-start', (p) => { toast('🔴 ' + (p && p.host ? p.host.name : 'Someone') + ' is live'); });
+  socket.on('social:live-end', (p) => { try { onLiveEnd(p); } catch (e) {} });
 }
 function paintBadges() {
   const n = me ? (me.unread.notifications || 0) + (me.unread.messages || 0) : 0, b = $('#inboxBadge'); b.textContent = n > 99 ? '99+' : String(n); b.classList.toggle('hidden', !n);
   const m = me ? me.unread.messages : 0, mb = $('#msgBadge'); mb.textContent = String(m); mb.classList.toggle('hidden', !m);
+  paintWatermark();
 }
 
 /* ---------------- navigation ---------------- */
@@ -531,14 +566,117 @@ async function loadPrivateMedia(root) {
   }
 }
 const loadPrivateImages = loadPrivateMedia; // back-compat alias
-async function sendMedia(cid, f) {
+async function sendMedia(cid, f, viewOnce) {
+  if (viewOnce === undefined) viewOnce = !!($('#mVO') && $('#mVO').classList.contains('text-amber-400'));
   const isImg = /^image\//.test(f.type), isVid = /^video\//.test(f.type);
   if (!isImg && !isVid) return toast('Choose a photo or video.');
-  try { toast(isVid ? 'Sending video…' : 'Sending photo…'); const mid = await upload(f, () => {}); const r = await api(`/conversations/${cid}/messages`, { method: 'POST', body: { mediaId: mid, text: ($('#mText') && $('#mText').value.trim()) || '' } });
+  try { toast(isVid ? 'Sending video…' : 'Sending photo…'); const mid = await upload(f, () => {}); const r = await api(`/conversations/${cid}/messages`, { method: 'POST', body: { mediaId: mid, viewOnce: !!viewOnce, text: ($('#mText') && $('#mText').value.trim()) || '' } }); const _vo = $('#mVO'); if (_vo) { _vo.classList.remove('text-amber-400'); _vo.classList.add('text-white/50'); }
     if ($('#mText')) $('#mText').value = ''; $('#msgs').insertAdjacentHTML('beforeend', msgHtml(r.message)); loadPrivateMedia($('#msgs')); $('#pageBody').scrollTop = $('#pageBody').scrollHeight; }
   catch (e) { toast(e.message); }
 }
 const sendPhoto = sendMedia; // back-compat alias
+
+/* ================= SCREENSHOT DETERRENTS (watermark + save-blocking) =================
+   Note: screenshots cannot be truly blocked or detected on the web. These make leaks
+   traceable (the viewer's @handle is faint over the whole screen) and block the easy
+   save paths (right-click, drag, the video download button). A determined person can
+   still photograph the screen with another device. */
+function ensureWatermark() { let el = document.getElementById('wm'); if (!el) { el = document.createElement('div'); el.id = 'wm'; el.setAttribute('aria-hidden', 'true'); el.style.cssText = 'position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden;opacity:.05;display:none'; document.body.appendChild(el); } return el; }
+function paintWatermark() { const el = ensureWatermark(); if (!me || !me.handle) { el.style.display = 'none'; el.innerHTML = ''; return; } const tag = esc('@' + me.handle) + '&nbsp;&nbsp;&nbsp;&nbsp;'; el.innerHTML = '<div style="transform:rotate(-28deg) scale(1.4);transform-origin:center center;white-space:normal;word-break:break-all;line-height:2.4;color:#fff;font:600 12px system-ui">' + tag.repeat(1800) + '</div>'; el.style.display = 'block'; }
+(function protectMedia() {
+  try { const s = document.createElement('style'); s.textContent = 'img,video{-webkit-user-drag:none;user-select:none;-webkit-user-select:none}'; document.head.appendChild(s); } catch (e) {}
+  document.addEventListener('contextmenu', (e) => { if (e.target && e.target.closest && e.target.closest('img,video')) e.preventDefault(); });
+  document.addEventListener('dragstart', (e) => { if (e.target && e.target.closest && e.target.closest('img,video')) e.preventDefault(); });
+  const fix = (v) => { try { v.setAttribute('controlsList', 'nodownload noplaybackrate'); v.disablePictureInPicture = true; } catch (e) {} };
+  try { new MutationObserver((muts) => { for (const m of muts) for (const nd of (m.addedNodes || [])) { if (!nd || nd.nodeType !== 1) continue; if (nd.tagName === 'VIDEO') fix(nd); if (nd.querySelectorAll) nd.querySelectorAll('video').forEach(fix); } }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
+})();
+
+/* ================= VIEW-ONCE media open ================= */
+async function openViewOnce(btn) {
+  const url = btn.dataset.url, kind = btn.dataset.kind, mid = btn.dataset.mid;
+  try {
+    const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token } }); if (!r.ok) throw new Error('This has already been opened.');
+    const blob = URL.createObjectURL(await r.blob());
+    const ov = document.createElement('div'); ov.className = 'fixed inset-0 z-[80] bg-black flex items-center justify-center';
+    ov.innerHTML = (kind === 'video' ? `<video src="${blob}" autoplay playsinline controlsList="nodownload" class="max-w-full max-h-full"></video>` : `<img src="${blob}" alt="" class="max-w-full max-h-full object-contain">`) + '<button id="voX" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 text-white"><i class="fa-solid fa-xmark"></i></button><div class="absolute bottom-6 left-0 right-0 text-center text-white/70 text-xs"><i class="fa-solid fa-fire"></i> View once — this will not be available again</div>';
+    const markOpened = () => { try { URL.revokeObjectURL(blob); } catch (e) {} const row = document.querySelector(`[data-mid="${CSS.escape(mid)}"] [data-act="viewonce"]`); if (row) row.outerHTML = '<div class="mb-1 text-xs italic text-slate-400"><i class="fa-regular fa-circle-check"></i> Opened</div>'; };
+    const close = () => { ov.remove(); markOpened(); };
+    ov.querySelector('#voX').onclick = close; ov.onclick = (e) => { if (e.target === ov) close(); };
+    document.body.appendChild(ov);
+  } catch (e) { toast(e.message); btn.outerHTML = '<div class="mb-1 text-xs italic text-slate-400">Expired</div>'; }
+}
+
+/* ================= GO LIVE (small-audience peer-to-peer broadcast) ================= */
+let live = null;   // host: {id,isHost:true,stream,pcs:{}}  viewer: {id,isHost:false,host,pc}
+function liveSend(type, extra) { if (socket && live) socket.emit('social:live', Object.assign({ liveId: live.id, type }, extra || {})); }
+function liveChatSend(text) { if (socket && live) socket.emit('social:live-chat', { liveId: live.id, text }); }
+function updateLiveCount(n) { const el = $('#lvCount'); if (el) el.innerHTML = `<i class="fa-solid fa-eye"></i> ${n}`; }
+function appendLiveChat(m) { const box = $('#lvChat'); if (!box) return; const d = document.createElement('div'); d.innerHTML = `<b class="text-pink-300">${esc(m.fromUser ? m.fromUser.name : '')}</b> <span class="text-white/90 break-words">${esc(m.text)}</span>`; box.appendChild(d); box.scrollTop = box.scrollHeight; }
+function onLiveChat(p) { if (live && p && p.liveId === live.id) appendLiveChat(p); }
+function liveSheet() {
+  openSheet('', `<div class="relative"><video id="lvVideo" autoplay playsinline ${live.isHost ? 'muted' : ''} class="w-full rounded-xl bg-black aspect-[9/16] max-h-[58vh] object-cover"></video>
+    <div class="absolute top-2 left-2 flex items-center gap-2"><span class="px-2 py-0.5 rounded bg-rose-600 text-white text-[11px] font-bold">● LIVE</span><span id="lvCount" class="px-2 py-0.5 rounded bg-black/50 text-white text-[11px]"><i class="fa-solid fa-eye"></i> 0</span></div>
+    <button id="lvEnd" class="absolute top-2 right-2 px-3 py-1 rounded-full bg-black/60 text-white text-xs font-semibold">${live.isHost ? 'End' : 'Leave'}</button></div>
+    <div id="lvChat" class="mt-2 h-28 overflow-y-auto text-sm flex flex-col gap-1 px-1"></div>
+    <div class="flex gap-2 mt-2"><input id="lvMsg" maxlength="200" placeholder="Say something…" class="flex-1 bg-slate-900 border border-slate-800 rounded-full px-4 py-2 text-sm text-white outline-none focus:border-pink-500"><button id="lvSendC" aria-label="Send" class="w-10 h-10 rounded-full bg-pink-600 text-white"><i class="fa-solid fa-paper-plane"></i></button></div>`,
+    () => endLiveLocal());
+  $('#lvEnd').onclick = () => (live && live.isHost ? endLive() : leaveLive());
+  const sc = () => { const t = $('#lvMsg').value.trim(); if (!t) return; $('#lvMsg').value = ''; liveChatSend(t); appendLiveChat({ fromUser: me, text: t }); };
+  $('#lvSendC').onclick = sc; $('#lvMsg').onkeydown = (e) => { if (e.key === 'Enter') sc(); };
+}
+async function goLive() {
+  if (!callSupported()) return toast('This browser cannot go live.');
+  if (!secureOk()) return toast('Going live needs your secure https link.');
+  let stream; try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true }); } catch (e) { return toast('Could not open the camera/mic: ' + (e.message || e.name)); }
+  try { const d = await api('/live', { method: 'POST', body: { title: '' } }); live = { id: d.live.id, isHost: true, stream, pcs: {} }; liveSheet(); const v = $('#lvVideo'); if (v) v.srcObject = stream; updateLiveCount(0); toast('You are live'); }
+  catch (e) { stream.getTracks().forEach(t => t.stop()); toast(e.message); }
+}
+function hostPeer(viewerId) {
+  const pc = new RTCPeerConnection(ICE); live.pcs[viewerId] = pc;
+  live.stream.getTracks().forEach(t => pc.addTrack(t, live.stream));
+  pc.onicecandidate = (e) => { if (e.candidate) liveSend('ice', { to: viewerId, candidate: e.candidate }); };
+  pc.createOffer().then(o => pc.setLocalDescription(o)).then(() => liveSend('offer', { to: viewerId, sdp: pc.localDescription })).catch(() => {});
+  updateLiveCount(Object.keys(live.pcs).length);
+  return pc;
+}
+async function watchLive(liveId) {
+  if (!callSupported()) return toast('This browser cannot watch live.');
+  if (!secureOk()) return toast('Watching live needs your secure https link.');
+  try {
+    const d = await api(`/live/${liveId}/join`, { method: 'POST', body: {} }); live = { id: liveId, isHost: false, host: d.host, pc: null };
+    liveSheet(); updateLiveCount(d.live.viewers);
+    const pc = new RTCPeerConnection(ICE); live.pc = pc;
+    pc.ontrack = (e) => { const v = $('#lvVideo'); if (v && e.streams && e.streams[0]) v.srcObject = e.streams[0]; };
+    pc.onicecandidate = (e) => { if (e.candidate) liveSend('ice', { candidate: e.candidate }); };
+    liveSend('join');
+  } catch (e) { toast(e.message); }
+}
+async function handleLiveSignal(p) {
+  if (!live || !p || p.liveId !== live.id) return;
+  try {
+    if (live.isHost) {
+      if (p.type === 'join') return void hostPeer(p.from);
+      const pc = live.pcs[p.from]; if (!pc) return;
+      if (p.type === 'answer') await pc.setRemoteDescription(p.sdp);
+      else if (p.type === 'ice') { try { await pc.addIceCandidate(p.candidate); } catch (e) {} }
+      else if (p.type === 'leave') { try { pc.close(); } catch (e) {} delete live.pcs[p.from]; updateLiveCount(Object.keys(live.pcs).length); }
+    } else {
+      const pc = live.pc; if (!pc) return;
+      if (p.type === 'offer') { await pc.setRemoteDescription(p.sdp); const a = await pc.createAnswer(); await pc.setLocalDescription(a); liveSend('answer', { sdp: pc.localDescription }); }
+      else if (p.type === 'ice') { try { await pc.addIceCandidate(p.candidate); } catch (e) {} }
+    }
+  } catch (e) {}
+}
+function endLiveLocal() {
+  if (!live) return;
+  try { if (live.stream) live.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+  try { if (live.pc) live.pc.close(); } catch (e) {}
+  try { Object.values(live.pcs || {}).forEach(pc => { try { pc.close(); } catch (e) {} }); } catch (e) {}
+  live = null;
+}
+async function endLive() { const id = live && live.id; endLiveLocal(); closeSheet(); if (id) { try { await api(`/live/${id}/end`, { method: 'POST', body: {} }); } catch (e) {} } toast('Live ended'); }
+async function leaveLive() { const id = live && live.id; liveSend('leave'); endLiveLocal(); closeSheet(); if (id) { try { await api(`/live/${id}/leave`, { method: 'POST', body: {} }); } catch (e) {} } }
+function onLiveEnd(p) { if (live && (!p || p.liveId === live.id)) { endLiveLocal(); closeSheet(); toast('The live has ended'); } }
 
 /* ================= VOICE / VIDEO CALLS (WebRTC, peer-to-peer) + LIVE CAMERA ================= */
 const ICE = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }].concat(window.RDS_TURN ? [].concat(window.RDS_TURN) : []) };
@@ -829,6 +967,8 @@ document.addEventListener('click', async (e) => {
   if (a === 'report') return report('post', id);
   if (a === 'message') { const p = posts.get(id); return startChat(p.author.id); }
   if (a === 'messageuser') return startChat(b.dataset.uid);
+  if (a === 'viewonce') return openViewOnce(b);
+  if (a === 'watchlive') return watchLive(b.dataset.id);
   if (a === 'doreport') { try { const d = await api(b.dataset.kind === 'user' ? `/users/${id}/report` : `/posts/${id}/report`, { method: 'POST', body: { reason: b.dataset.reason } }); closeSheet(); toast(d.message); } catch (x) { toast(x.message); } return; }
   if (a === 'usermore') { const uid = b.dataset.uid, bl = b.dataset.blocked === '1'; return openSheet('', `<button data-act="block" data-uid="${esc(uid)}" data-on="${bl ? 0 : 1}" class="w-full text-left py-3.5 border-b border-white/5 text-white"><i class="fa-solid fa-ban w-6"></i> ${bl ? 'Unblock' : 'Block'}</button><button data-act="report" data-kind="user" data-id="${esc(uid)}" class="w-full text-left py-3.5 text-rose-400"><i class="fa-solid fa-flag w-6"></i> Report account</button>`); }
   if (a === 'block') { try { const d = await api(`/users/${b.dataset.uid}/block`, { method: 'POST', body: { block: b.dataset.on === '1' } }); closeSheet(); toast(d.blocked ? 'Blocked. They can no longer see your posts or message you.' : 'Unblocked'); pageStack.pop(); showPage(); refreshFeed(); } catch (x) { toast(x.message); } return; }
@@ -838,6 +978,8 @@ document.addEventListener('click', async (e) => {
   if (a === 'openchat') return openChat(b.dataset.cid);
   if (a === 'editprofile') return editProfile();
   if (a === 'settings') return settings();
+  if (a === 'followreqs') return openFollowReqs();
+  if (a === 'apreq') { try { await api(`/follow-requests/${b.dataset.uid}`, { method: 'POST', body: { action: b.dataset.do } }); const row = b.closest('[data-reqrow]'); if (row) row.remove(); toast(b.dataset.do === 'approve' ? 'Approved' : 'Removed'); if (me && me.unread) me.unread.requests = Math.max(0, (me.unread.requests || 1) - 1); } catch (x) { toast(x.message); } return; }
   if (a === 'signout') { try { await api('/auth/logout', { method: 'POST', body: {} }); } catch (x) {} signOutLocal(); closeSheet(); toast('Signed out'); go('vHome'); return refreshFeed(); }
   if (a === 'deleteaccount') { openSheet('Delete your account?', `<p class="text-sm text-slate-400">Your profile, posts, likes, comments and messages will be deleted. This cannot be undone. Type <b class="text-white">DELETE</b> to confirm.</p><input id="delTxt" class="mt-3 w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none"><button id="delGo" class="mt-3 w-full py-3 rounded-xl font-bold text-white bg-rose-600">Delete my account</button>`); $('#delGo').onclick = async () => { try { await api('/auth/delete-account', { method: 'POST', body: { confirm: $('#delTxt').value.trim() } }); signOutLocal(); closeSheet(); toast('Your account was deleted.'); go('vHome'); refreshFeed(); } catch (x) { toast(x.message); } }; return; }
 });

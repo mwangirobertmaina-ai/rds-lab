@@ -1157,16 +1157,52 @@ app.get("/admin", (req, res) => { res.sendFile(path.join(__dirname, "admin.html"
 app.get("/ads", (req, res) => { res.sendFile(path.join(__dirname, "ads.html")); });
 app.get("/user", (req, res) => { res.sendFile(path.join(__dirname, "store.html")); });
 
+// ---- PHARMACY (DoseColor) delivery glue: a READY pharmacy order becomes a rider dispatch, like a direct ride ----
+const pharmacyDispatchRefs192 = {};   // rider orderId -> pharmacy order ref (to report delivery back to DoseColor)
+function dispatchPharmacy192(del) {
+    try {
+        const pin = String(crypto.randomInt(1000, 10000));
+        const pinSalt = crypto.randomBytes(8).toString('hex');
+        const pinHash = crypto.createHash('sha256').update(pinSalt + pin).digest('hex');
+        const feeK = (Number(del.deliveryCents) || 20000) / 100;
+        const riderShare = Math.round(feeK * 0.95 * 100) / 100, appCommission = Math.round((feeK - riderShare) * 100) / 100;
+        const pickupLabel = (del.facility && del.facility.name) || 'Pharmacy';
+        const destLabel = (del.patient && del.patient.address) || 'Customer';
+        const orderId = 'PH-' + del.ref;
+        const order = { id: orderId, orderId, userId: null, source: 'PHARMACY', pharmacyRef: del.ref,
+            phone: del.patient && del.patient.phone, customerPhone: del.patient && del.patient.phone,
+            pickup: pickupLabel, destination: destLabel, pickupCoords: (del.facility && del.facility.geo) || null, destinationCoords: (del.patient && del.patient.geo) || null,
+            vehicleType: 'BODA', currency: 'KES', total: feeK, breakdown: { deliveryFee: feeK, riderShare, appCommission },
+            payment: { method: 'ON_DELIVERY', amount: feeK, mode: 'SIMULATED', status: 'PENDING' },
+            items: [{ name: (del.itemsCount || 1) + ' medicine item(s) from ' + pickupLabel + (del.idRequired ? ' [CHECK PATIENT ID]' : '') + (del.coldChain ? ' [COLD CHAIN]' : ''), qty: del.itemsCount || 1 }],
+            deliveryPin: pin, pinSalt, pinHash, distanceKm: 0, etaMin: 30, coldChain: !!del.coldChain, idRequired: !!del.idRequired,
+            status: 'DISPATCHED_STRAIGHT_TO_DRIVER', createdAt: Date.now() };
+        const dispatch = { id: orderId, orderId, isDirectRide: true, source: 'PHARMACY', pharmacyRef: del.ref,
+            pickup: pickupLabel, destination: destLabel, pickupCoords: order.pickupCoords, destinationCoords: order.destinationCoords,
+            vehicleType: 'BODA', currency: 'KES', total: feeK, totalAmount: feeK, deliveryFee: feeK, riderPayout: riderShare,
+            distanceKm: 0, etaMin: 30, customerPhone: order.customerPhone, pinSalt, pinHash, merchantId: null,
+            coldChain: !!del.coldChain, idRequired: !!del.idRequired, status: 'PENDING_DRIVER_ACCEPTANCE', dispatchedAt: Date.now() };
+        if (!global.driverQueue) global.driverQueue = [];
+        global.driverQueue.push(dispatch);
+        if (!activeOrders.DIRECT_RIDES) activeOrders.DIRECT_RIDES = [];
+        activeOrders.DIRECT_RIDES.push(order);
+        pharmacyDispatchRefs192[orderId] = del.ref;
+        try { if (global.io) { global.io.emit('new_driver_dispatch', dispatch); global.io.emit('orderListUpdated', { orderId }); } } catch (e) {}
+        stateDirty191 = true;
+        return { dispatchPin: pin, orderId };
+    } catch (e) { return { error: e.message }; }
+}
 const printRouter = safeRequire191('./routes/print', 'print');
+
 const printOtps192 = {};
 let doseColorReady192 = false;
 if (printRouter && typeof printRouter.init === 'function') {
     // STAGE 192: DoseColor for many hospitals, clinics and pharmacies: staff sign in with the server's OTP system (SMS in production,
     // 1234 in test mode), data in DATA_DIR, owner-only facility verification. Mounted at /api/print.
     try {
-        printRouter.init({ dataDir: process.env.DATA_DIR || path.join(os.homedir(), '.rds-lab'), normalizePhone: normalizeMsisdn191,
+        printRouter.init({ dataDir: process.env.DATA_DIR || path.join(os.homedir(), '.rds-lab'), databaseUrl: process.env.DATABASE_URL || null, normalizePhone: normalizeMsisdn191,
             issueOtp: (phone) => issueOtp(printOtps192, phone, {}), checkOtp: (phone, code) => checkOtp(printOtps192, phone, code),
-            testMode: ALLOW_TEST_CREDENTIALS, appendAudit, adminAuth: [verifySovereignTokenStrict, requireSovereignAdminOnly] });
+            testMode: ALLOW_TEST_CREDENTIALS, appendAudit, adminAuth: [verifySovereignTokenStrict, requireSovereignAdminOnly], dispatchPharmacy: dispatchPharmacy192 });
         app.use('/api/print', printRouter); doseColorReady192 = true;
     } catch (e) {
         console.error('\u274C [STAGE192] DoseColor (routes/print.js) did not start: ' + e.message);
@@ -2529,6 +2565,7 @@ function setDeliveryState191(orderId, patch) {
     refs.merchant.forEach(x => Object.assign(x.order, patch));
     refs.store.forEach(o => Object.assign(o, patch));
     refs.active.forEach(x => Object.assign(x.order, patch));
+    try { const pref = pharmacyDispatchRefs192[orderId]; if (pref && printRouter && printRouter.deliveryUpdate && patch && patch.deliveryStatus) { const map = { DRIVER_ASSIGNED: 'ASSIGNED', ARRIVED_AT_PICKUP: 'ASSIGNED', PICKED_UP: 'PICKED', DELIVERED: 'DELIVERED' }; const st = map[patch.deliveryStatus]; if (st) printRouter.deliveryUpdate(pref, st, { driverId: patch.driverId || null }); if (patch.deliveryStatus === 'DELIVERED') delete pharmacyDispatchRefs192[orderId]; } } catch (e) {}
     return refs;
 }
 function cancelOrderEverywhere191(orderId, status, reason) {

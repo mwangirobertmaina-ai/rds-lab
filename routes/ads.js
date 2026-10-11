@@ -35,7 +35,7 @@ const okId = (v, p) => typeof v === 'string' && new RegExp(`^${p}_[a-z0-9]{8,40}
 // ---------------------------------------------------------------------------
 // state (persisted)
 // ---------------------------------------------------------------------------
-const blank = () => ({ v: 1, users: {}, handles: {}, phones: {}, sessions: {}, posts: {}, order: [], likes: {}, comments: {}, follows: {}, followers: {}, notifs: {}, convs: {}, pairs: {}, msgs: {}, reads: {}, blocks: {}, reports: [], media: {}, views: {}, bans: {}, stories: {}, storyViews: {}, reposts: {}, saves: {}, campaigns: {} });
+const blank = () => ({ v: 1, users: {}, handles: {}, phones: {}, sessions: {}, posts: {}, order: [], likes: {}, comments: {}, follows: {}, followers: {}, notifs: {}, convs: {}, pairs: {}, msgs: {}, reads: {}, blocks: {}, reports: [], media: {}, views: {}, bans: {}, stories: {}, storyViews: {}, reposts: {}, saves: {}, campaigns: {}, followReqs: {}, lives: {} });
 let S = blank();
 function load() {
     try { const raw = JSON.parse(fs.readFileSync(file, 'utf8')); S = Object.assign(blank(), raw); }
@@ -97,9 +97,35 @@ const adminAuth = (req, res, next) => {
 // views of things (the only shapes that ever leave the server)
 // ---------------------------------------------------------------------------
 const mediaUrl = (mid) => (mid ? `/api/ads/media/${mid}` : null);
-function userCard(u) { if (!u) return null; return { id: u.id, name: u.name, handle: u.handle, avatar: mediaUrl(u.avatar), verified: !!u.verified }; }
+function userCard(u) { if (!u) return null; return { id: u.id, name: u.name, handle: u.handle, avatar: mediaUrl(u.avatar), verified: !!u.verified, private: !!u.private }; }
 const blockedBetween = (a, b) => !!(a && b && ((S.blocks[a] && S.blocks[a][b]) || (S.blocks[b] && S.blocks[b][a])));
 const follows = (a, b) => !!(a && S.follows[a] && S.follows[a][b]);
+// ---- audience / "who can see" rules (this is the privacy engine) ----
+const approvedFollower = (viewerId, authorId) => viewerId === authorId || follows(viewerId, authorId);
+function canView(viewerId, p) {
+    const author = S.users[p.uid]; if (!author) return false;
+    const aud = p.audience || 'public';
+    if (aud === 'private') return viewerId === p.uid;                 // "Only me"
+    if (aud === 'followers' || author.private) return approvedFollower(viewerId, p.uid);
+    return true;                                                       // public post on a public account
+}
+function canMessage(me, toId) {
+    const to = S.users[toId]; if (!to || to.deleted) return false;
+    if (blockedBetween(me.id, toId)) return false;
+    if (S.pairs[pairKey(me.id, toId)]) return true;                   // an existing conversation stays open
+    const pref = to.whoMessage || 'everyone';
+    if (pref === 'nobody') return false;
+    if (pref === 'followers') return follows(me.id, toId) || follows(toId, me.id);
+    return true;
+}
+function canCommentOn(viewerId, p) {
+    if (!viewerId) return false;
+    if (viewerId === p.uid) return true;
+    const pref = (S.users[p.uid] || {}).whoComment || 'everyone';
+    if (pref === 'off') return false;
+    if (pref === 'followers') return follows(viewerId, p.uid);
+    return true;
+}
 const countOf = (m) => Object.keys(m || {}).length;
 // reactions (Facebook-style). Stored as S.likes[pid][uid] = { r, at }; older data stored a timestamp, which reads as 'like'.
 const REACTS = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
@@ -114,7 +140,7 @@ function postView(p, viewer) {
         liked: !!(vid && S.likes[p.id] && S.likes[p.id][vid]), myReaction: vid && S.likes[p.id] ? reactType(S.likes[p.id][vid]) : null, reactions: reactBreakdown(S.likes[p.id]), mine: vid === p.uid, followingAuthor: follows(vid, p.uid),
         reposted: !!(vid && S.reposts[p.id] && S.reposts[p.id][vid]), saved: !!(vid && S.saves[vid] && S.saves[vid][p.id]),
         quote: p.quoteOf ? quoteView(p.quoteOf, viewer) : null,
-        sponsored: p.sponsored ? { label: p.sponsored.label, ctaText: p.sponsored.ctaText, ctaUrl: p.sponsored.ctaUrl } : null, status: p.status
+        sponsored: p.sponsored ? { label: p.sponsored.label, ctaText: p.sponsored.ctaText, ctaUrl: p.sponsored.ctaUrl } : null, audience: p.audience || 'public', canComment: canCommentOn(vid, p), status: p.status
     };
 }
 function quoteView(id, viewer) {
@@ -123,7 +149,7 @@ function quoteView(id, viewer) {
     const m = q.mediaId ? S.media[q.mediaId] : null;
     return { id: q.id, author: userCard(S.users[q.uid]), caption: q.caption, createdAt: q.createdAt, style: q.style || null, media: m ? { kind: m.kind, url: mediaUrl(m.id), mime: m.mime } : null };
 }
-const visible = (p, viewer) => p && (p.status === 'LIVE' || (viewer && viewer.id === p.uid && p.status === 'HIDDEN')) && S.users[p.uid] && !S.users[p.uid].deleted && !S.bans[p.uid] && !blockedBetween(viewer && viewer.id, p.uid);
+const visible = (p, viewer) => p && (p.status === 'LIVE' || (viewer && viewer.id === p.uid && p.status === 'HIDDEN')) && S.users[p.uid] && !S.users[p.uid].deleted && !S.bans[p.uid] && !blockedBetween(viewer && viewer.id, p.uid) && canView(viewer && viewer.id, p);
 
 // ---------------------------------------------------------------------------
 // notifications + realtime (only to the person's own room)
@@ -168,7 +194,7 @@ router.init = function init(deps) {
     mediaDir = path.join(dir, 'social-media'); file = path.join(dir, 'social.snapshot');
     fs.mkdirSync(mediaDir, { recursive: true });
     load(); ready = true;
-    const sw = setInterval(() => { try { sweepStories(); Object.values(S.campaigns).forEach(syncCampaign); dirty(); } catch (e) {} }, 10 * 60000); if (sw.unref) sw.unref();
+    const sw = setInterval(() => { try { sweepStories(); for (const [lid, l] of Object.entries(S.lives)) if (l.status === 'ENDED' && now() - (l.endedAt || 0) > 3600000) delete S.lives[lid]; Object.values(S.campaigns).forEach(syncCampaign); dirty(); } catch (e) {} }, 10 * 60000); if (sw.unref) sw.unref();
     process.on('exit', () => { if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; } saveNow(); });
 };
 router.use((req, res, next) => (ready ? next() : fail(res, 503, 'The social feed is starting. Try again in a moment.')));
@@ -203,7 +229,7 @@ router.post('/auth/verify', (req, res) => {
 function meView(u) {
     const notifs = S.notifs[u.id] || [];
     const unreadMsgs = Object.values(S.convs).filter(c => c.members.includes(u.id)).reduce((s, c) => s + (S.msgs[c.id] || []).filter(m => m.from !== u.id && m.at > ((S.reads[c.id] || {})[u.id] || 0)).length, 0);
-    return { ...userCard(u), bio: u.bio, phone: u.phone, counts: { posts: S.order.filter(id => S.posts[id] && S.posts[id].uid === u.id && S.posts[id].status !== 'REMOVED').length, followers: countOf(S.followers[u.id]), following: countOf(S.follows[u.id]) }, unread: { notifications: notifs.filter(n => !n.read).length, messages: unreadMsgs } };
+    return { ...userCard(u), bio: u.bio, phone: u.phone, counts: { posts: S.order.filter(id => S.posts[id] && S.posts[id].uid === u.id && S.posts[id].status !== 'REMOVED').length, followers: countOf(S.followers[u.id]), following: countOf(S.follows[u.id]) }, unread: { notifications: notifs.filter(n => !n.read).length, messages: unreadMsgs, requests: countOf(S.followReqs[u.id] || {}) }, privacy: { private: !!u.private, whoMessage: u.whoMessage || 'everyone', whoComment: u.whoComment || 'everyone', defaultAudience: u.defaultAudience || 'public' } };
 }
 router.get('/me', auth, (req, res) => res.json({ success: true, user: meView(req.su) }));
 router.patch('/me', auth, (req, res) => {
@@ -216,6 +242,14 @@ router.patch('/me', auth, (req, res) => {
         else { const m = S.media[b.avatarMediaId]; if (!m || m.uid !== u.id || m.kind !== 'image') return fail(res, 400, 'Upload a photo first.'); u.avatar = m.id; m.usedAs = 'avatar'; }
     }
     dirty(); res.json({ success: true, user: meView(u) });
+});
+router.patch('/me/privacy', auth, (req, res) => {
+    const u = req.su, b = req.body || {};
+    if (has(b, 'private')) u.private = !!b.private;
+    if (has(b, 'whoMessage')) { if (!['everyone', 'followers', 'nobody'].includes(b.whoMessage)) return fail(res, 400, 'Choose who can message you.'); u.whoMessage = b.whoMessage; }
+    if (has(b, 'whoComment')) { if (!['everyone', 'followers', 'off'].includes(b.whoComment)) return fail(res, 400, 'Choose who can comment.'); u.whoComment = b.whoComment; }
+    if (has(b, 'defaultAudience')) { if (!['public', 'followers', 'private'].includes(b.defaultAudience)) return fail(res, 400, 'Choose a default audience.'); u.defaultAudience = b.defaultAudience; }
+    dirty(); res.json({ success: true, privacy: { private: !!u.private, whoMessage: u.whoMessage || 'everyone', whoComment: u.whoComment || 'everyone', defaultAudience: u.defaultAudience || 'public' } });
 });
 router.post('/auth/logout', (req, res) => { const t = bearer(req); if (t) delete S.sessions[sha(t)]; dirty(); res.json({ success: true }); });
 router.post('/auth/delete-account', auth, (req, res) => {
@@ -316,7 +350,8 @@ router.post('/posts', auth, (req, res) => {
         if (m.usedAs) return fail(res, 409, 'That file is already used.');
     }
     if (!m && caption.length < 1) return fail(res, 400, 'Write something or add a photo or video.');
-    const id = newId('P'), p = { id, uid: u.id, caption, mediaId: m ? m.id : null, style: !m ? (STYLES.includes(b.style) ? b.style : 'night') : null, hashtags: tagsOf(caption), createdAt: now(), shares: 0, views: 0, status: 'LIVE', reports: 0 };
+    const audience = ['public', 'followers', 'private'].includes(b.audience) ? b.audience : (u.defaultAudience || 'public');
+    const id = newId('P'), p = { id, uid: u.id, caption, mediaId: m ? m.id : null, style: !m ? (STYLES.includes(b.style) ? b.style : 'night') : null, audience, hashtags: tagsOf(caption), createdAt: now(), shares: 0, views: 0, status: 'LIVE', reports: 0 };
     if (m) m.usedAs = 'post';
     S.posts[id] = p; S.order.unshift(id);
     for (const h of mentionsOf(caption)) { const to = S.handles[h]; if (to) notify(to, { type: 'mention', from: u.id, postId: id, text: caption.slice(0, 100) }); }
@@ -398,6 +433,7 @@ router.get('/posts/:id/comments', soft, (req, res) => {
 });
 router.post('/posts/:id/comments', auth, (req, res) => {
     const p = livePost(req, res); if (!p) return; if (limited('comment:' + req.su.id, ...LIM.comment)) return slow(res, 'comments');
+    if (!canCommentOn(req.su.id, p)) return fail(res, 403, 'The author has limited who can comment on this post.');
     const text = clean(req.body && req.body.text, 500); if (!text) return fail(res, 400, 'Write a comment first.');
     const list = (S.comments[p.id] || (S.comments[p.id] = []));
     let parentId = null; const pid = req.body && req.body.parentId;
@@ -442,8 +478,14 @@ function userById(req, res) { const u = S.users[req.params.id]; if (!okId(req.pa
 router.get('/users/:handle', soft, (req, res) => {
     const uid = S.handles[normHandle(req.params.handle)], u = uid && S.users[uid], me = req.su;
     if (!u || u.deleted || S.bans[u.id] || blockedBetween(me && me.id, u.id)) return fail(res, 404, 'User not found.');
-    const posts = S.order.map(id => S.posts[id]).filter(p => p && p.uid === u.id && visible(p, me) && p.status === 'LIVE');
-    res.json({ success: true, user: { ...userCard(u), bio: u.bio, joinedAt: u.createdAt, counts: { posts: posts.length, followers: countOf(S.followers[u.id]), following: countOf(S.follows[u.id]), likes: posts.reduce((s, p) => s + countOf(S.likes[p.id]), 0) }, isMe: !!(me && me.id === u.id), isFollowing: follows(me && me.id, u.id), followsYou: follows(u.id, me && me.id), blocked: !!(me && S.blocks[me.id] && S.blocks[me.id][u.id]) }, posts: posts.slice(0, 60).map(p => postView(p, me)) });
+    const canSeePosts = !u.private || !!(me && (me.id === u.id || follows(me.id, u.id)));
+    const allLive = S.order.map(id => S.posts[id]).filter(p => p && p.uid === u.id && p.status === 'LIVE');
+    const shown = canSeePosts ? allLive.filter(p => visible(p, me)) : [];
+    res.json({ success: true, user: { ...userCard(u), bio: u.bio, joinedAt: u.createdAt, private: !!u.private, locked: !canSeePosts,
+        counts: { posts: allLive.length, followers: countOf(S.followers[u.id]), following: countOf(S.follows[u.id]), likes: shown.reduce((s, p) => s + countOf(S.likes[p.id]), 0) },
+        isMe: !!(me && me.id === u.id), isFollowing: follows(me && me.id, u.id), followsYou: follows(u.id, me && me.id),
+        requested: !!(me && S.followReqs[u.id] && S.followReqs[u.id][me.id]), blocked: !!(me && S.blocks[me.id] && S.blocks[me.id][u.id]) },
+        posts: shown.slice(0, 60).map(p => postView(p, me)) });
 });
 router.post('/users/:id/follow', auth, (req, res) => {
     const t = userById(req, res); if (!t) return; const me = req.su;
@@ -452,13 +494,23 @@ router.post('/users/:id/follow', auth, (req, res) => {
     if (limited('follow:' + me.id, ...LIM.follow)) return slow(res, 'follows');
     const F = S.follows[me.id] || (S.follows[me.id] = {}), R = S.followers[t.id] || (S.followers[t.id] = {});
     const want = req.body && typeof req.body.follow === 'boolean' ? req.body.follow : !F[t.id];
-    if (want && !F[t.id]) { F[t.id] = now(); R[me.id] = now(); notify(t.id, { type: 'follow', from: me.id }); } else if (!want) { delete F[t.id]; delete R[me.id]; }
-    dirty(); res.json({ success: true, following: !!F[t.id], followers: countOf(R) });
+    if (want && !F[t.id]) {
+        if (t.private) {                                              // private account: ask first, the owner approves
+            const RQ = S.followReqs[t.id] || (S.followReqs[t.id] = {});
+            if (!RQ[me.id]) { RQ[me.id] = now(); notify(t.id, { type: 'follow_request', from: me.id }); }
+            dirty(); return res.json({ success: true, following: false, requested: true, followers: countOf(R) });
+        }
+        F[t.id] = now(); R[me.id] = now(); notify(t.id, { type: 'follow', from: me.id });
+    } else if (!want) {
+        delete F[t.id]; delete R[me.id];
+        if (S.followReqs[t.id]) delete S.followReqs[t.id][me.id];      // also cancels a pending request
+    }
+    dirty(); res.json({ success: true, following: !!F[t.id], requested: !!(S.followReqs[t.id] && S.followReqs[t.id][me.id]), followers: countOf(R) });
 });
 router.post('/users/:id/block', auth, (req, res) => {
     const t = userById(req, res); if (!t) return; const me = req.su; if (t.id === me.id) return fail(res, 400, 'You cannot block yourself.');
     const B = S.blocks[me.id] || (S.blocks[me.id] = {}), want = req.body && typeof req.body.block === 'boolean' ? req.body.block : !B[t.id];
-    if (want) { B[t.id] = now(); for (const [a, b] of [[me.id, t.id], [t.id, me.id]]) { if (S.follows[a]) delete S.follows[a][b]; if (S.followers[b]) delete S.followers[b][a]; } } else delete B[t.id];
+    if (want) { B[t.id] = now(); for (const [a, b] of [[me.id, t.id], [t.id, me.id]]) { if (S.follows[a]) delete S.follows[a][b]; if (S.followers[b]) delete S.followers[b][a]; } if (S.followReqs[me.id]) delete S.followReqs[me.id][t.id]; if (S.followReqs[t.id]) delete S.followReqs[t.id][me.id]; } else delete B[t.id];
     dirty(); res.json({ success: true, blocked: !!B[t.id] });
 });
 router.post('/users/:id/report', auth, (req, res) => {
@@ -466,6 +518,28 @@ router.post('/users/:id/report', auth, (req, res) => {
     if (limited('report:' + req.su.id, ...LIM.report)) return slow(res, 'reports');
     S.reports.push({ id: newId('R'), type: 'user', targetId: t.id, by: req.su.id, reason: REASONS.includes(req.body && req.body.reason) ? req.body.reason : 'other', note: clean(req.body && req.body.note, 300), at: now(), status: 'OPEN' });
     dirty(); res.json({ success: true, message: 'Thank you. Our team will review this account.' });
+});
+
+// ---------------------------------------------------------------------------
+// FOLLOW REQUESTS (for private accounts)
+// ---------------------------------------------------------------------------
+router.get('/follow-requests', auth, (req, res) => {
+    const me = req.su, RQ = S.followReqs[me.id] || {};
+    const list = Object.entries(RQ).filter(([uid]) => S.users[uid] && !S.users[uid].deleted && !blockedBetween(me.id, uid))
+        .sort((a, b) => b[1] - a[1]).map(([uid, at]) => ({ ...userCard(S.users[uid]), at, followsYou: follows(uid, me.id) }));
+    res.json({ success: true, requests: list });
+});
+router.post('/follow-requests/:uid', auth, (req, res) => {
+    const me = req.su, reqId = req.params.uid, requester = S.users[reqId];
+    if (!okId(reqId, 'U') || !requester || requester.deleted) return fail(res, 404, 'User not found.');
+    const RQ = S.followReqs[me.id] || {}; if (!RQ[reqId]) return fail(res, 404, 'There is no pending request from this person.');
+    const act = String((req.body && req.body.action) || '');
+    if (act === 'approve') {
+        const F = S.follows[reqId] || (S.follows[reqId] = {}), R = S.followers[me.id] || (S.followers[me.id] = {});
+        F[me.id] = now(); R[reqId] = now(); delete RQ[reqId]; notify(reqId, { type: 'follow_accept', from: me.id });
+    } else if (act === 'deny') { delete RQ[reqId]; }
+    else return fail(res, 400, 'action must be approve or deny.');
+    dirty(); res.json({ success: true, followers: countOf(S.followers[me.id] || {}) });
 });
 
 // ---------------------------------------------------------------------------
@@ -523,17 +597,19 @@ router.get('/conversations', auth, (req, res) => {
 router.post('/conversations', auth, (req, res) => {
     const me = req.su, to = S.users[req.body && req.body.userId];
     if (!to || to.deleted || S.bans[to.id] || to.id === me.id) return fail(res, 404, 'User not found.');
-    if (blockedBetween(me.id, to.id)) return fail(res, 403, 'You cannot message this account.');
+    if (!canMessage(me, to.id)) return fail(res, 403, blockedBetween(me.id, to.id) ? 'You cannot message this account.' : 'This account only accepts messages from certain people.');
     const k = pairKey(me.id, to.id); let c = S.pairs[k] && S.convs[S.pairs[k]];
     if (!c) { c = { id: newId('K'), members: [me.id, to.id], createdAt: now(), lastAt: now() }; S.convs[c.id] = c; S.pairs[k] = c.id; dirty(); }
     res.json({ success: true, conversation: convView(c, me) });
 });
 const msgView = (m, me, c) => {
     const others = c.members.filter(x => x !== m.from), R = S.reads[c.id] || {}, seenBy = others.filter(x => (R[x] || 0) >= m.at).length;
-    const md = m.mediaId && S.media[m.mediaId] && !S.media[m.mediaId].deleted ? { kind: S.media[m.mediaId].kind, url: `/api/ads/conversations/${c.id}/media/${m.mediaId}` } : null;
+    const mm = m.mediaId && S.media[m.mediaId] ? S.media[m.mediaId] : null;
+    const consumed = !!(m.viewOnce && mm && (mm.deleted || (mm.viewedAt && me.id !== m.from)));
+    const md = (mm && !mm.deleted && !consumed) ? { kind: mm.kind, url: `/api/ads/conversations/${c.id}/media/${m.mediaId}`, viewOnce: !!m.viewOnce } : null;
     let sharedPost;
     if (m.sharedPostId) { const sp = S.posts[m.sharedPostId]; if (sp && sp.status === 'LIVE') { const spm = sp.mediaId ? S.media[sp.mediaId] : null; sharedPost = { id: sp.id, caption: (sp.caption || '').slice(0, 140), author: userCard(S.users[sp.uid]), thumb: spm && spm.kind === 'image' && !spm.deleted ? mediaUrl(spm.id) : null }; } else sharedPost = { unavailable: true }; }
-    return { id: m.id, text: m.text, at: m.at, mine: m.from === me.id, system: !!m.system, media: md, sharedPost, forwarded: !!m.forwarded, from: c.type === 'group' && !m.system ? userCard(S.users[m.from]) : undefined,
+    return { id: m.id, text: m.text, at: m.at, mine: m.from === me.id, system: !!m.system, media: md, viewOnce: !!m.viewOnce, viewOnceConsumed: consumed, sharedPost, forwarded: !!m.forwarded, from: c.type === 'group' && !m.system ? userCard(S.users[m.from]) : undefined,
         seen: m.from === me.id && others.length > 0 && seenBy === others.length, seenBy: c.type === 'group' && m.from === me.id ? seenBy : undefined };
 };
 router.get('/conversations/:id/messages', auth, (req, res) => {
@@ -543,7 +619,7 @@ router.get('/conversations/:id/messages', auth, (req, res) => {
 });
 router.post('/conversations/:id/messages', auth, (req, res) => {
     const c = convOf(req, res); if (!c) return; const me = req.su, group = c.type === 'group', other = group ? null : c.members.find(m => m !== me.id);
-    if (!group && blockedBetween(me.id, other)) return fail(res, 403, 'You cannot message this account.');
+    if (!group && !canMessage(me, other)) return fail(res, 403, blockedBetween(me.id, other) ? 'You cannot message this account.' : 'This account only accepts messages from certain people.');
     if (limited('msg:' + me.id, ...LIM.msg) || limited('msgday:' + me.id, ...LIM.msgDay)) return slow(res, 'messages');
     const text = clean(req.body && req.body.text, 2000), mid = req.body && req.body.mediaId;
     const sid = req.body && req.body.postId, forwarded = !!(req.body && req.body.forwarded);
@@ -552,7 +628,7 @@ router.post('/conversations/:id/messages', auth, (req, res) => {
     if (sid) { if (!okId(String(sid), 'P') || !(sp = S.posts[sid]) || sp.status !== 'LIVE') return fail(res, 400, 'That post is no longer available to share.'); }
     if (!text && !md && !sp) return fail(res, 400, 'Write a message first.');
     if (md) { md.usedAs = 'message'; md.convId = c.id; }
-    const m = { id: newId('X'), from: me.id, text, at: now(), mediaId: md ? md.id : null, sharedPostId: sp ? sp.id : null, forwarded }, list = S.msgs[c.id] || (S.msgs[c.id] = []);
+    const m = { id: newId('X'), from: me.id, text, at: now(), mediaId: md ? md.id : null, sharedPostId: sp ? sp.id : null, forwarded, viewOnce: !!(md && req.body && req.body.viewOnce) }, list = S.msgs[c.id] || (S.msgs[c.id] = []);
     list.push(m); if (list.length > 5000) list.shift(); c.lastAt = m.at;
     (S.reads[c.id] || (S.reads[c.id] = {}))[me.id] = m.at;
     for (const to of c.members.filter(x => x !== me.id)) emitTo(to, 'social:message', { conversationId: c.id, message: { ...msgView(m, S.users[to] || { id: to }, c), mine: false }, from: userCard(me) });
@@ -577,7 +653,8 @@ router.post('/posts/:id/quote', auth, (req, res) => {
     const q = livePost(req, res); if (!q) return; const u = req.su;
     if (limited('post:' + u.id, ...LIM.post)) return slow(res, 'posts');
     const caption = clean(req.body && req.body.caption, 2200); if (!caption) return fail(res, 400, 'Add your comment to quote this post.');
-    const id = newId('P'), p = { id, uid: u.id, caption, mediaId: null, style: null, quoteOf: q.id, hashtags: tagsOf(caption), createdAt: now(), shares: 0, views: 0, status: 'LIVE', reports: 0 };
+    const audience = ['public', 'followers', 'private'].includes(req.body && req.body.audience) ? req.body.audience : (u.defaultAudience || 'public');
+    const id = newId('P'), p = { id, uid: u.id, caption, mediaId: null, style: null, quoteOf: q.id, audience, hashtags: tagsOf(caption), createdAt: now(), shares: 0, views: 0, status: 'LIVE', reports: 0 };
     S.posts[id] = p; S.order.unshift(id);
     notify(q.uid, { type: 'quote', from: u.id, postId: id, text: caption.slice(0, 100) });
     for (const h of mentionsOf(caption)) { const to = S.handles[h]; if (to && to !== q.uid) notify(to, { type: 'mention', from: u.id, postId: id, text: caption.slice(0, 100) }); }
@@ -623,6 +700,7 @@ router.get('/stories', soft, (req, res) => {
     for (const s of Object.values(S.stories)) {
         if (s.deleted || s.expiresAt <= t) continue; const u = S.users[s.uid];
         if (!u || u.deleted || S.bans[u.id] || blockedBetween(me && me.id, u.id)) continue;
+        if (u.private && !(me && (me.id === u.id || follows(me.id, u.id)))) continue;  // a private account's stories are for approved followers only
         if (me && !(u.id === me.id || follows(me.id, u.id))) continue;               // signed in: you and the people you follow
         if (!byUser.has(u.id)) byUser.set(u.id, []); byUser.get(u.id).push(s);
     }
@@ -643,6 +721,58 @@ router.get('/stories/:id/viewers', auth, (req, res) => {
 router.delete('/stories/:id', auth, (req, res) => {
     const s = storyOf(req, res); if (!s) return; if (s.uid !== req.su.id) return fail(res, 403, 'You can only delete your own story.');
     s.deleted = true; s.expiresAt = now(); if (s.mediaId && S.media[s.mediaId]) deleteMediaFile(S.media[s.mediaId]); delete S.storyViews[s.id]; dirty(); res.json({ success: true });
+});
+
+// ---------------------------------------------------------------------------
+// LIVE (Go Live): small-audience peer-to-peer broadcast. The server tracks the
+// session, who is watching and relays the WebRTC handshake + live chat; the
+// video itself is peer-to-peer (broadcaster -> each viewer), so it suits small
+// audiences. Audience-gated like stories: only people you follow see your live.
+// ---------------------------------------------------------------------------
+function liveView(l, me) {
+    return { id: l.id, host: userCard(S.users[l.uid]), title: l.title || '', startedAt: l.startedAt, viewers: countOf(l.viewers), isHost: !!(me && me.id === l.uid), status: l.status };
+}
+function liveOf(req, res) {
+    const l = S.lives[req.params.id], me = req.su;
+    if (!okId(req.params.id, 'LV') || !l || l.status !== 'LIVE' || !S.users[l.uid] || S.bans[l.uid] || blockedBetween(me && me.id, l.uid)) { fail(res, 404, 'This live has ended.'); return null; }
+    if (l.uid !== (me && me.id) && S.users[l.uid].private && !(me && follows(me.id, l.uid))) { fail(res, 404, 'This live has ended.'); return null; }   // private account: approved followers only
+    return l;
+}
+router.post('/live', auth, (req, res) => {
+    const me = req.su; if (limited('post:' + me.id, ...LIM.post)) return slow(res, 'actions');
+    for (const l of Object.values(S.lives)) if (l.uid === me.id && l.status === 'LIVE') { l.status = 'ENDED'; l.endedAt = now(); }   // one live at a time
+    const id = newId('LV'), l = { id, uid: me.id, title: clean(req.body && req.body.title, 80), startedAt: now(), viewers: {}, status: 'LIVE' };
+    S.lives[id] = l;
+    for (const fid of Object.keys(S.followers[me.id] || {})) { notify(fid, { type: 'live', from: me.id }); emitTo(fid, 'social:live-start', { live: liveView(l, null), host: userCard(me) }); }
+    if (D.appendAudit) D.appendAudit('SOCIAL_LIVE_STARTED', { liveId: id, uid: me.id });
+    dirty(); res.json({ success: true, live: liveView(l, me) });
+});
+router.get('/live', soft, (req, res) => {
+    const me = req.su, out = [];
+    for (const l of Object.values(S.lives)) {
+        if (l.status !== 'LIVE') continue; const u = S.users[l.uid];
+        if (!u || u.deleted || S.bans[l.uid] || blockedBetween(me && me.id, l.uid)) continue;
+        if (u.private && !(me && (me.id === u.id || follows(me.id, u.id)))) continue;
+        if (me && !(u.id === me.id || follows(me.id, u.id))) continue;              // like stories: you and people you follow
+        out.push(liveView(l, me));
+    }
+    out.sort((a, b) => b.startedAt - a.startedAt);
+    res.json({ success: true, lives: out.slice(0, 50) });
+});
+router.get('/live/:id', soft, (req, res) => { const l = S.lives[req.params.id]; if (!okId(req.params.id, 'LV') || !l) return fail(res, 404, 'Live not found.'); res.json({ success: true, live: liveView(l, req.su) }); });
+router.post('/live/:id/join', auth, (req, res) => {
+    const l = liveOf(req, res); if (!l) return; const me = req.su;
+    if (l.uid !== me.id) l.viewers[me.id] = now();
+    dirty(); res.json({ success: true, live: liveView(l, me), host: userCard(S.users[l.uid]) });
+});
+router.post('/live/:id/leave', auth, (req, res) => { const l = S.lives[req.params.id]; if (l) { delete l.viewers[req.su.id]; dirty(); } res.json({ success: true }); });
+router.post('/live/:id/end', auth, (req, res) => {
+    const l = S.lives[req.params.id]; if (!okId(req.params.id, 'LV') || !l) return fail(res, 404, 'Live not found.');
+    if (l.uid !== req.su.id) return fail(res, 403, 'Only the host can end this live.');
+    l.status = 'ENDED'; l.endedAt = now();
+    for (const v of Object.keys(l.viewers)) emitTo(v, 'social:live-end', { liveId: l.id });
+    if (D.appendAudit) D.appendAudit('SOCIAL_LIVE_ENDED', { liveId: l.id, uid: l.uid, viewers: countOf(l.viewers) });
+    dirty(); res.json({ success: true });
 });
 
 // ---------------------------------------------------------------------------
@@ -681,6 +811,8 @@ router.post('/groups/:id/leave', auth, (req, res) => {
 router.get('/conversations/:id/media/:mid', auth, (req, res) => {
     const c = convOf(req, res); if (!c) return; const m = S.media[req.params.mid];
     if (!okId(req.params.mid, 'M') || !m || m.deleted || m.usedAs !== 'message' || m.convId !== c.id) return res.status(404).end();
+    const vomsg = m.viewOnce ? (S.msgs[c.id] || []).find(x => x.mediaId === m.id && x.viewOnce) : null;
+    if (vomsg && req.su.id !== m.uid) { if (m.viewedAt) return res.status(404).end(); m.viewedAt = now(); dirty(); res.on('finish', () => { try { deleteMediaFile(m); dirty(); } catch (e) {} }); }
     const fp = path.join(mediaDir, `${m.id}.${m.ext}`); let st; try { st = fs.statSync(fp); } catch (e) { return res.status(404).end(); }
     res.setHeader('Content-Type', m.mime); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
     res.setHeader('Cache-Control', 'private, max-age=3600'); res.setHeader('Content-Length', st.size); fs.createReadStream(fp).pipe(res);
@@ -830,6 +962,30 @@ router.setSocketIo = (server) => {
                 if (p.callId && (typeof p.callId !== 'string' || p.callId.length > 64)) return;
                 // relay exactly what is needed to the callee's own room; never broadcast
                 emitTo(to, 'social:call', { type: p.type, conversationId: c.id, callId: p.callId || null, video: !!p.video, sdp: p.sdp, candidate: p.candidate, from: uid, fromUser: userCard(S.users[uid]) });
+            } catch (e) {}
+        });
+        // ---- LIVE signalling: broadcaster <-> viewer WebRTC handshake (peer-to-peer video) ----
+        const LIVE_SIG = new Set(['join', 'offer', 'answer', 'ice', 'leave']);
+        socket.on('social:live', (p) => {
+            try {
+                const uid = socket.data && socket.data.socialUid; if (!uid) return;
+                if (!p || typeof p !== 'object' || !LIVE_SIG.has(p.type)) return;
+                const l = S.lives[p.liveId]; if (!l || l.status !== 'LIVE') return;
+                const isHost = l.uid === uid, isViewer = !!l.viewers[uid];
+                if ((!isHost && !isViewer) || blockedBetween(uid, l.uid)) return;
+                if (isHost) { const to = p.to; if (to && l.viewers[to]) emitTo(to, 'social:live', { liveId: l.id, type: p.type, from: uid, sdp: p.sdp, candidate: p.candidate }); }
+                else emitTo(l.uid, 'social:live', { liveId: l.id, type: p.type, from: uid, sdp: p.sdp, candidate: p.candidate });
+            } catch (e) {}
+        });
+        socket.on('social:live-chat', (p) => {
+            try {
+                const uid = socket.data && socket.data.socialUid; if (!uid) return;
+                const l = p && S.lives[p.liveId]; if (!l || l.status !== 'LIVE') return;
+                if ((l.uid !== uid && !l.viewers[uid]) || blockedBetween(uid, l.uid)) return;
+                const text = clean(p.text, 200); if (!text) return;
+                const out = { liveId: l.id, text, from: uid, fromUser: userCard(S.users[uid]), at: now() };
+                emitTo(l.uid, 'social:live-chat', out);
+                for (const v of Object.keys(l.viewers)) emitTo(v, 'social:live-chat', out);
             } catch (e) {}
         });
     });

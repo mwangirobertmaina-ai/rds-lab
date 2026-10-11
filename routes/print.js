@@ -227,8 +227,9 @@ if (require.main === module) { agentMain(); return; }       // agent mode ends h
 const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
+const { createStore } = require('./dosecolor-store');
 
-let D = {}, ready = false, file = null, saveTimer = null;
+let D = {}, ready = false, file = null, saveTimer = null, store = null, flushing = false, flushAgain = false, readyPromise = Promise.resolve();
 const now = () => Date.now();
 const sha = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
 const newId = (p) => `${p}_${now().toString(36)}${crypto.randomBytes(5).toString('hex')}`;
@@ -324,21 +325,43 @@ const catView = (k) => ({ key: k, ...CATEGORIES[k] });
 // ============================================================================
 // 2. STATE (persisted to DATA_DIR/dosecolor.snapshot)
 // ============================================================================
-const blank = () => ({ v: 1, facilities: {}, staff: {}, sessions: {}, agents: {}, labels: [], seq: {} });
+const blank = () => ({ v: 1, facilities: {}, staff: {}, sessions: {}, agents: {}, labels: [], seq: {}, products: {}, orders: [], oseq: {}, suppliers: {}, purchaseOrders: [], pseq: {} });
 let S = blank();
-function load() { try { S = Object.assign(blank(), JSON.parse(fs.readFileSync(file, 'utf8'))); } catch (e) { if (e.code !== 'ENOENT') console.error('[DOSECOLOR] could not read dosecolor.snapshot:', e.message); } }
-function saveNow() { if (!file) return; try { const tmp = file + '.tmp'; fs.writeFileSync(tmp, JSON.stringify(S)); fs.renameSync(tmp, file); } catch (e) { console.error('[DOSECOLOR] save failed:', e.message); } }
-const dirty = () => { if (saveTimer) return; saveTimer = setTimeout(() => { saveTimer = null; saveNow(); }, 800); if (saveTimer.unref) saveTimer.unref(); };
+const SORT_AT = (a, b) => ((a.createdAt || a.at || 0) - (b.createdAt || b.at || 0));
+async function initStore() {
+    store = createStore({ databaseUrl: D.databaseUrl || process.env.DATABASE_URL || null, file, injectPool: D.pgPool, pgSsl: D.pgSsl, pgMax: D.pgMax });
+    if (store.init) await store.init();
+    const loaded = await store.loadAll();
+    if (loaded) { S = Object.assign(blank(), loaded); for (const k of ['orders', 'labels', 'purchaseOrders']) if (Array.isArray(S[k])) S[k].sort(SORT_AT); }
+}
+async function flushNow() {
+    if (!store) return;
+    if (flushing) { flushAgain = true; return; }
+    flushing = true;
+    try { await store.flush(S); } catch (e) { console.error('[DOSECOLOR] save failed:', e.message); }
+    finally { flushing = false; if (flushAgain) { flushAgain = false; return flushNow(); } }
+}
+function saveNow() { return flushNow(); }
+const dirty = () => { if (saveTimer) return; saveTimer = setTimeout(() => { saveTimer = null; flushNow(); }, 800); if (saveTimer.unref) saveTimer.unref(); };
 const hits = new Map();
 function limited(key, max, ms) { const t = now(), a = (hits.get(key) || []).filter(x => t - x < ms); if (a.length >= max) { hits.set(key, a); return true; } a.push(t); hits.set(key, a); return false; }
 const ipOf = (req) => String(req.ip || (req.socket && req.socket.remoteAddress) || 'x');
 const slow = (res) => fail(res, 429, 'Too many requests. Please wait a moment.');
 
 router.init = function init(deps) {
-    D = deps || {}; if (!D.dataDir) throw new Error('print module needs dataDir');
-    fs.mkdirSync(D.dataDir, { recursive: true }); file = path.join(D.dataDir, 'dosecolor.snapshot'); load(); ready = true;
-    process.on('exit', () => { if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; } saveNow(); });
+    D = deps || {};
+    const hasDb = !!(D.databaseUrl || process.env.DATABASE_URL || D.pgPool);
+    if (!D.dataDir && !hasDb) throw new Error('print module needs dataDir or databaseUrl');
+    if (D.dataDir) { fs.mkdirSync(D.dataDir, { recursive: true }); file = path.join(D.dataDir, 'dosecolor.snapshot'); }
+    ready = false;
+    readyPromise = initStore()
+        .then(() => { ready = true; console.log('[DOSECOLOR] storage ready (' + (store ? store.kind : '?') + ')'); if (typeof D.onReady === 'function') D.onReady(); })
+        .catch((e) => { console.error('[DOSECOLOR] store init failed:', e && e.message); throw e; });
+    readyPromise.catch(() => {});
+    process.on('exit', () => { if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; } if (store && store.kind === 'file') { try { store.flush(S); } catch (e) {} } });
+    return readyPromise;
 };
+router.whenReady = () => readyPromise;
 router.use((req, res, next) => (ready ? next() : fail(res, 503, 'DoseColor is starting. Try again in a moment.')));
 
 // ============================================================================
@@ -514,9 +537,239 @@ function stats() {
         labels24h: L.length, overrides24h: L.filter(l => l.overridden).length, unclear24h: L.filter(l => l.confidence !== 'HIGH').length, agents: Object.values(S.agents).filter(a => !a.revoked).length,
         agentsSeen1h: Object.values(S.agents).filter(a => !a.revoked && a.lastSeen && now() - a.lastSeen < 3600000).length, viaAgent24h: L.filter(l => l.viaAgent).length };
 }
+// ============================================================================
+// 8. PHARMACY SALES + DELIVERY  (Phase 1: OTC only)
+//    Reuses the DoseColor label pipeline on dispense, and hands READY orders to the RDS rider network.
+//    Prescription-only / controlled medicines are blocked here until the Phase 2 prescription workflow is enabled.
+// ============================================================================
+const kes = (c) => Math.round(c) / 100;
+const parsePrice = (v) => { const n = Number(String(v == null ? '' : v).replace(/,/g, '')); return Number.isFinite(n) && n >= 0 && n <= 1000000 ? Math.round(n * 100) : null; };
+const anInt = (v, min, max, dflt) => { const n = Number(v); return Number.isInteger(n) && n >= min && n <= max ? n : dflt; };
+const products = (fid) => Object.values(S.products).filter(p => p.facilityId === fid && !p.retired);
+const nearestExpiry = (p) => { const bs = (p.batches || []).filter(x => x.qty > 0 && x.expiry).map(x => x.expiry).sort(); return bs.length ? bs[0] : null; };
+const productView = (p) => ({ id: p.id, name: p.name, form: p.form, strength: p.strength, price: kes(p.priceCents), priceCents: p.priceCents, cost: p.costCents == null ? null : kes(p.costCents), stock: p.stock, reorderLevel: p.reorderLevel || 0, low: (p.reorderLevel || 0) > 0 && (p.stock || 0) <= (p.reorderLevel || 0), otc: !!p.otc, rx: !!p.rx, controlled: !!p.controlled, coldChain: !!p.coldChain, defaultSig: p.defaultSig || '', image: p.image || null, nearestExpiry: nearestExpiry(p), batches: (p.batches || []).filter(x => x.qty > 0).map(x => ({ batchNo: x.batchNo, expiry: x.expiry, qty: x.qty })) });
+const facilityByCode = (code) => Object.values(S.facilities).find(f => f.code === String(code || '').toUpperCase() && f.status === 'ACTIVE');
+const DELIVERY_FEE_CENTS = () => Number(process.env.PHARMACY_DELIVERY_FEE) > 0 ? Math.round(Number(process.env.PHARMACY_DELIVERY_FEE) * 100) : 20000;   // KES 200 default
+const maskPhone = (p) => { p = String(p || ''); return p.length <= 4 ? '***' : p.slice(0, 5) + '***' + p.slice(-2); };
+const rxImage = (v) => { if (typeof v !== 'string') return null; if (/^https:\/\/[^\s]{1,2000}$/.test(v)) return v.slice(0, 2000); const m = /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]{10,}$/.exec(v); return (m && v.length <= 4 * 1048576) ? v : null; };
+function oref(f) { S.oseq[f.id] = (S.oseq[f.id] || 0) + 1; return `${f.code}-D${String(S.oseq[f.id]).padStart(5, '0')}`; }
+const orderView = (o, who) => ({ ref: o.ref, status: o.status, createdAt: o.createdAt, patientName: o.patientName, phone: who === 'patient' ? o.phone : maskPhone(o.phone), address: o.address,
+    items: o.lines.map(l => ({ name: l.name, strength: l.strength, form: l.form, qty: l.qty, price: kes(l.priceCents), line: kes(l.lineCents), sig: l.sig, labelRef: l.labelRef, rx: !!l.rx, controlled: !!l.controlled })),
+    itemsTotal: kes(o.itemsCents), delivery: kes(o.deliveryCents), total: kes(o.totalCents), paid: !!o.paid, rider: o.rider || null, deliveryPin: who === 'patient' ? (o.deliveryPin || null) : undefined,
+    rx: o.rx ? { status: o.rx.status, hasImage: !!o.rx.image, reason: o.rx.reason || null, prescriber: o.rx.prescriber || null } : null, rxImage: who === 'staff' && o.rx ? (o.rx.image || null) : undefined, idRequired: !!o.idRequired, events: o.events });
+
+// ---- catalog (facility staff manage; admin can add/retire) ----
+router.post('/facilities/:fid/products', auth, (req, res) => {
+    const m = inFacility(req, res, true); if (!m) return; const b = req.body || {};
+    const name = clean(b.name, 80); if (name.length < 2) return fail(res, 400, 'Enter the medicine name.');
+    const price = parsePrice(b.price); if (price === null) return fail(res, 400, 'Enter a valid price in KES.');
+    const controlled = b.controlled === true, rx = controlled || b.rx === true || b.pom === true;   // Phase 2: Rx / POM / controlled allowed, but a pharmacist must verify the prescription before dispatch
+    if (Object.values(S.products).filter(p => p.facilityId === m.f.id && !p.retired).length >= 5000) return fail(res, 400, 'Catalog is full.');
+    const cost = (b.cost === undefined || b.cost === null || b.cost === '') ? null : parsePrice(b.cost), id = newId('P');
+    S.products[id] = { id, facilityId: m.f.id, name, form: clean(b.form, 30), strength: clean(b.strength, 30), priceCents: price, costCents: cost === null ? null : cost, stock: anInt(b.stock, 0, 1000000, 0), reorderLevel: anInt(b.reorderLevel, 0, 1000000, 0), otc: !rx, rx, controlled, coldChain: !!b.coldChain, defaultSig: clean(b.defaultSig, 200), image: (typeof b.image === 'string' && /^https?:\/\/[^\s]{1,500}$/.test(b.image)) ? b.image : null, batches: [], createdAt: now(), retired: false };
+    if (D.appendAudit) D.appendAudit('PHARMACY_PRODUCT_ADDED', { facilityId: m.f.id, productId: id, rx, controlled, by: req.st.id });
+    dirty(); res.json({ success: true, product: productView(S.products[id]) });
+});
+router.get('/facilities/:fid/products', auth, (req, res) => { const m = inFacility(req, res); if (!m) return; res.json({ success: true, products: products(m.f.id).map(productView) }); });
+router.patch('/facilities/:fid/products/:pid', auth, (req, res) => {
+    const m = inFacility(req, res, true); if (!m) return; const p = S.products[req.params.pid]; if (!p || p.facilityId !== m.f.id) return fail(res, 404, 'Product not found.'); const b = req.body || {};
+    if (b.retire === true) { p.retired = true; dirty(); return res.json({ success: true }); }
+    if (b.name !== undefined) { const n = clean(b.name, 80); if (n.length < 2) return fail(res, 400, 'Enter the medicine name.'); p.name = n; }
+    if (b.price !== undefined) { const pr = parsePrice(b.price); if (pr === null) return fail(res, 400, 'Enter a valid price.'); p.priceCents = pr; }
+    if (b.stock !== undefined) { const s = anInt(b.stock, 0, 1000000, null); if (s === null) return fail(res, 400, 'Enter a valid stock count.'); p.stock = s; }
+    if (b.form !== undefined) p.form = clean(b.form, 30); if (b.strength !== undefined) p.strength = clean(b.strength, 30);
+    if (b.defaultSig !== undefined) p.defaultSig = clean(b.defaultSig, 200); if (typeof b.coldChain === 'boolean') p.coldChain = b.coldChain;
+    if (b.reorderLevel !== undefined) { const r = anInt(b.reorderLevel, 0, 1000000, null); if (r === null) return fail(res, 400, 'Enter a valid reorder level.'); p.reorderLevel = r; }
+    if (b.cost !== undefined) { const cc = parsePrice(b.cost); if (cc === null) return fail(res, 400, 'Enter a valid cost.'); p.costCents = cc; }
+    if (typeof b.controlled === 'boolean') { p.controlled = b.controlled; if (b.controlled) { p.rx = true; p.otc = false; } }
+    if (typeof b.rx === 'boolean') { p.rx = b.rx || p.controlled; p.otc = !p.rx; }
+    dirty(); res.json({ success: true, product: productView(p) });
+});
+
+// ---- public storefront (patients browse OTC by the pharmacy's short code) ----
+router.get('/shop/:code', (req, res) => { const f = facilityByCode(req.params.code); if (!f) return fail(res, 404, 'Pharmacy not found.'); res.json({ success: true, pharmacy: { code: f.code, name: f.name, type: f.type, county: f.county, verified: !!f.verified }, products: products(f.id).filter(p => p.stock > 0).map(productView) }); });
+router.post('/shop/:code/orders', (req, res) => {
+    const f = facilityByCode(req.params.code); if (!f) return fail(res, 404, 'Pharmacy not found.');
+    if (limited('order:' + ipOf(req), 20, 3600000)) return slow(res);
+    const b = req.body || {}, phone = D.normalizePhone ? D.normalizePhone(String(b.phone || '')) : String(b.phone || '');
+    if (!/^\+\d{9,15}$/.test(phone)) return fail(res, 400, 'Enter a valid phone number.');
+    const patientName = clean(b.patientName, 60), address = clean(b.address, 200); if (address.length < 5) return fail(res, 400, 'Enter the delivery address.');
+    const items = Array.isArray(b.items) ? b.items : []; if (!items.length) return fail(res, 400, 'Add at least one item.');
+    const lines = []; let itemsC = 0, anyRx = false, anyControlled = false;
+    for (const it of items) {
+        const p = S.products[it && it.productId], qty = anInt(it && it.qty, 1, 99, 0);
+        if (!p || p.facilityId !== f.id || p.retired || !qty) return fail(res, 400, 'One of the items is not available.');
+        if (p.stock < qty) return fail(res, 409, `${p.name}: only ${p.stock} in stock.`);
+        if (p.rx) anyRx = true; if (p.controlled) anyControlled = true;
+        const lc = p.priceCents * qty; itemsC += lc; lines.push({ productId: p.id, name: p.name, strength: p.strength, form: p.form, qty, priceCents: p.priceCents, lineCents: lc, sig: p.defaultSig || '', labelRef: null, rx: !!p.rx, controlled: !!p.controlled });
+    }
+    let rxRec = null;
+    if (anyRx) { const img = rxImage(b.rxImage); if (!img) return fail(res, 400, 'One or more items need a prescription. Attach a clear photo of the prescription (JPG or PNG).'); rxRec = { status: 'PENDING', image: img, uploadedAt: now(), prescriber: clean(b.prescriber, 80) || null }; }
+    const feeC = DELIVERY_FEE_CENTS(), totalC = itemsC + feeC, id = newId('O'), ref = oref(f), t = now(), startStatus = anyRx ? 'PENDING_RX' : 'PLACED';
+    const o = { id, ref, facilityId: f.id, phone, patientName, address, geo: (b.lat && b.lng) ? { lat: Number(b.lat), lng: Number(b.lng) } : null, lines, itemsCents: itemsC, deliveryCents: feeC, totalCents: totalC, status: startStatus, createdAt: t, events: [{ at: t, status: startStatus }], paid: false, rider: null, rx: rxRec, idRequired: anyControlled };
+    S.orders.push(o); if (S.orders.length > 200000) S.orders.splice(0, S.orders.length - 200000);
+    if (D.appendAudit) D.appendAudit('PHARMACY_ORDER_PLACED', { ref, facilityId: f.id, total: kes(totalC) });
+    dirty(); res.json({ success: true, order: orderView(o, 'patient'), message: anyRx ? `Order ${ref} received. A pharmacist must verify your prescription before it is prepared. Track it with your phone number.` : `Order ${ref} placed. Pay KES ${kes(totalC)} on delivery or via M-Pesa. Track it with your phone number.` });
+});
+router.get('/shop/orders/:ref', (req, res) => { const o = S.orders.find(x => x.ref === req.params.ref), phone = D.normalizePhone ? D.normalizePhone(String(req.query.phone || '')) : String(req.query.phone || ''); if (!o || o.phone !== phone) return fail(res, 404, 'Order not found. Check the reference and the phone number used to order.'); res.json({ success: true, order: orderView(o, 'patient') }); });
+
+// ---- pharmacy order queue: confirm -> dispense (auto-label) -> ready -> (rider) ----
+router.get('/facilities/:fid/orders', auth, (req, res) => { const m = inFacility(req, res); if (!m) return; res.json({ success: true, orders: S.orders.filter(o => o.facilityId === m.f.id).slice(-200).reverse().map(o => orderView(o, 'staff')) }); });
+router.post('/facilities/:fid/orders/:ref', auth, (req, res) => {
+    const m = inFacility(req, res); if (!m) return; const o = S.orders.find(x => x.ref === req.params.ref && x.facilityId === m.f.id); if (!o) return fail(res, 404, 'Order not found.');
+    const b = req.body || {}, act = String(b.action || ''), advance = (st) => { o.status = st; o.events.push({ at: now(), status: st, by: req.st.id }); };
+    if (act === 'verifyrx') {
+        if (o.status !== 'PENDING_RX' || !o.rx) return fail(res, 409, 'This order has no prescription waiting for verification.');
+        if (b.approve === true) { o.rx.status = 'VERIFIED'; o.rx.verifiedBy = req.st.id; o.rx.verifiedAt = now(); advance('PLACED'); if (D.appendAudit) D.appendAudit('PHARMACY_RX_VERIFIED', { ref: o.ref, facilityId: m.f.id, by: req.st.id }); dirty(); return res.json({ success: true, order: orderView(o, 'staff') }); }
+        const reason = clean(b.reason, 200); if (reason.length < 3) return fail(res, 400, 'Give a reason for rejecting the prescription.');
+        o.rx.status = 'REJECTED'; o.rx.reason = reason; o.rx.verifiedBy = req.st.id; o.rx.verifiedAt = now(); advance('CANCELLED');
+        if (D.appendAudit) D.appendAudit('PHARMACY_RX_REJECTED', { ref: o.ref, facilityId: m.f.id, by: req.st.id }); dirty(); return res.json({ success: true, order: orderView(o, 'staff') });
+    }
+    if (act === 'confirm') {
+        if (o.status !== 'PLACED') return fail(res, 409, `This order is ${o.status.toLowerCase().replace(/_/g, ' ')}.`);
+        if (o.rx && o.rx.status !== 'VERIFIED') return fail(res, 409, 'The prescription must be verified before this order can be prepared.');
+        for (const l of o.lines) { const p = S.products[l.productId]; if (!p || p.retired) return fail(res, 409, `${l.name} is no longer stocked.`); if (p.stock < l.qty) return fail(res, 409, `${l.name}: only ${p.stock} left.`); }
+        for (const l of o.lines) { const p = S.products[l.productId]; if (p) p.stock -= l.qty; }
+        advance('CONFIRMED');
+    } else if (act === 'dispense') {
+        if (o.status !== 'CONFIRMED') return fail(res, 409, 'Confirm the order first.');
+        const labels = [];
+        for (const l of o.lines) {
+            const sig = clean((b.sigs && b.sigs[l.productId]) || l.sig, 200); l.sig = sig; if (!sig) { labels.push({ line: l.name, noSig: true }); continue; }
+            const a = analyze(sig);
+            if (a.confidence === 'HIGH' && !a.warnings.length) {
+                const ref = nextRef(m.f); l.labelRef = ref;
+                S.labels.push({ id: newId('L'), ref, facilityId: m.f.id, by: req.st.id, at: now(), category: a.category, detected: a.category, confidence: 'HIGH', overridden: false, textHash: sha(m.f.id + '|' + sig), textLength: sig.length, warnings: [], viaPharmacy: o.ref });
+                if (D.appendAudit) D.appendAudit('DOSECOLOR_LABEL', { ref, facilityId: m.f.id, category: a.category, viaPharmacy: o.ref });
+                labels.push({ ref, line: l.name, category: catView(a.category), slots: a.slots, durationDays: a.durationDays, maxPerDay: a.maxPerDay, sig });
+            } else labels.push({ line: l.name, needsCheck: true, sig, confidence: a.confidence, warnings: a.warnings });
+        }
+        advance('DISPENSED'); dirty(); return res.json({ success: true, order: orderView(o, 'staff'), labels });
+    } else if (act === 'ready') {
+        if (o.status !== 'DISPENSED') return fail(res, 409, 'Dispense the order first.');
+        advance('READY_FOR_DELIVERY');
+        try {
+            if (D.dispatchPharmacy) {
+                const f = S.facilities[o.facilityId] || {};
+                const r = D.dispatchPharmacy({ ref: o.ref, facility: { name: f.name, code: f.code, county: f.county, geo: f.geo || null },
+                    patient: { name: o.patientName, phone: o.phone, address: o.address, geo: o.geo },
+                    deliveryCents: o.deliveryCents, itemsCount: o.lines.reduce((s, l) => s + l.qty, 0), idRequired: !!o.idRequired,
+                    coldChain: o.lines.some(l => { const p = S.products[l.productId]; return p && p.coldChain; }) });
+                if (r && r.dispatchPin) { o.deliveryPin = r.dispatchPin; o.events.push({ at: now(), status: 'RIDER_CALLED' }); }
+            }
+        } catch (e) { /* if dispatch fails the order stays READY; the pharmacy can retry or self-deliver */ }
+    }
+    else if (act === 'markpaid') { o.paid = true; o.events.push({ at: now(), status: 'PAID', by: req.st.id }); }
+    else if (act === 'cancel') { if (o.status === 'DELIVERED') return fail(res, 409, 'This order was already delivered.'); if (['CONFIRMED', 'DISPENSED', 'READY_FOR_DELIVERY'].includes(o.status)) for (const l of o.lines) { const p = S.products[l.productId]; if (p) p.stock += l.qty; } advance('CANCELLED'); }
+    else return fail(res, 400, 'action must be verifyrx, confirm, dispense, ready, markpaid or cancel.');
+    if (D.appendAudit) D.appendAudit('PHARMACY_ORDER_' + act.toUpperCase(), { ref: o.ref, facilityId: m.f.id, by: req.st.id });
+    dirty(); res.json({ success: true, order: orderView(o, 'staff') });
+});
+
+// ============================================================================
+// 9. PROCUREMENT  (suppliers + purchase orders + goods received with batch / expiry)
+//    Lets a pharmacy ORDER stock from suppliers and track what was received, with batch numbers and expiry dates.
+// ============================================================================
+const supplierView = (s) => ({ id: s.id, name: s.name, phone: s.phone || '', email: s.email || '', note: s.note || '', createdAt: s.createdAt });
+const expiryNorm = (v) => { const s = String(v || '').trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; if (/^\d{4}-\d{2}$/.test(s)) return s + '-01'; return null; };
+const suppliers = (fid) => Object.values(S.suppliers).filter(s => s.facilityId === fid && !s.retired);
+router.post('/facilities/:fid/suppliers', auth, (req, res) => {
+    const m = inFacility(req, res, true); if (!m) return; const b = req.body || {};
+    const name = clean(b.name, 80); if (name.length < 2) return fail(res, 400, 'Enter the supplier name.');
+    if (suppliers(m.f.id).length >= 2000) return fail(res, 400, 'Supplier list is full.');
+    const phone = b.phone ? (D.normalizePhone ? D.normalizePhone(String(b.phone)) : String(b.phone)) : '';
+    const id = newId('S');
+    S.suppliers[id] = { id, facilityId: m.f.id, name, phone: /^\+\d{9,15}$/.test(phone) ? phone : clean(b.phone, 20), email: clean(b.email, 80), note: clean(b.note, 200), createdAt: now(), retired: false };
+    if (D.appendAudit) D.appendAudit('PHARMACY_SUPPLIER_ADDED', { facilityId: m.f.id, supplierId: id, by: req.st.id });
+    dirty(); res.json({ success: true, supplier: supplierView(S.suppliers[id]) });
+});
+router.get('/facilities/:fid/suppliers', auth, (req, res) => { const m = inFacility(req, res); if (!m) return; res.json({ success: true, suppliers: suppliers(m.f.id).map(supplierView) }); });
+router.patch('/facilities/:fid/suppliers/:sid', auth, (req, res) => {
+    const m = inFacility(req, res, true); if (!m) return; const s = S.suppliers[req.params.sid]; if (!s || s.facilityId !== m.f.id) return fail(res, 404, 'Supplier not found.'); const b = req.body || {};
+    if (b.retire === true) { s.retired = true; dirty(); return res.json({ success: true }); }
+    if (b.name !== undefined) { const n = clean(b.name, 80); if (n.length < 2) return fail(res, 400, 'Enter the supplier name.'); s.name = n; }
+    if (b.phone !== undefined) s.phone = clean(b.phone, 20); if (b.email !== undefined) s.email = clean(b.email, 80); if (b.note !== undefined) s.note = clean(b.note, 200);
+    dirty(); res.json({ success: true, supplier: supplierView(s) });
+});
+function poref(f) { S.pseq[f.id] = (S.pseq[f.id] || 0) + 1; return `${f.code}-P${String(S.pseq[f.id]).padStart(5, '0')}`; }
+const poView = (po) => ({ ref: po.ref, status: po.status, supplierId: po.supplierId, supplierName: (S.suppliers[po.supplierId] || {}).name || po.supplierName || '', createdAt: po.createdAt, sentAt: po.sentAt || null, receivedAt: po.receivedAt || null,
+    lines: po.lines.map(l => ({ productId: l.productId, name: l.name, qty: l.qty, received: l.received || 0, unitCost: kes(l.unitCostCents), lineCost: kes(l.unitCostCents * l.qty), batchNo: l.batchNo || '', expiry: l.expiry || '' })),
+    totalCost: kes(po.lines.reduce((s, l) => s + l.unitCostCents * l.qty, 0)), note: po.note || '', events: po.events || [] });
+router.post('/facilities/:fid/purchase-orders', auth, (req, res) => {
+    const m = inFacility(req, res, true); if (!m) return; const b = req.body || {};
+    const sup = S.suppliers[b.supplierId]; if (!sup || sup.facilityId !== m.f.id || sup.retired) return fail(res, 400, 'Choose a supplier.');
+    const items = Array.isArray(b.items) ? b.items : []; if (!items.length) return fail(res, 400, 'Add at least one item.');
+    const lines = [];
+    for (const it of items) {
+        const p = S.products[it && it.productId], qty = anInt(it && it.qty, 1, 1000000, 0); if (!p || p.facilityId !== m.f.id || p.retired || !qty) return fail(res, 400, 'One of the items is not in your catalog.');
+        const cost = parsePrice(it.unitCost); if (cost === null) return fail(res, 400, `Enter a unit cost for ${p.name}.`);
+        lines.push({ productId: p.id, name: p.name, qty, unitCostCents: cost, received: 0, batchNo: '', expiry: '' });
+    }
+    if ((S.purchaseOrders || []).length >= 200000) return fail(res, 400, 'Too many purchase orders.');
+    const id = newId('PO'), ref = poref(m.f), t = now();
+    const po = { id, ref, facilityId: m.f.id, supplierId: sup.id, supplierName: sup.name, lines, status: 'DRAFT', note: clean(b.note, 200), createdAt: t, events: [{ at: t, status: 'DRAFT', by: req.st.id }] };
+    S.purchaseOrders.push(po);
+    if (D.appendAudit) D.appendAudit('PHARMACY_PO_CREATED', { ref, facilityId: m.f.id, by: req.st.id });
+    dirty(); res.json({ success: true, purchaseOrder: poView(po) });
+});
+router.get('/facilities/:fid/purchase-orders', auth, (req, res) => { const m = inFacility(req, res); if (!m) return; res.json({ success: true, purchaseOrders: (S.purchaseOrders || []).filter(po => po.facilityId === m.f.id).slice(-200).reverse().map(poView) }); });
+router.post('/facilities/:fid/purchase-orders/:pref', auth, (req, res) => {
+    const m = inFacility(req, res, true); if (!m) return; const po = (S.purchaseOrders || []).find(x => x.ref === req.params.pref && x.facilityId === m.f.id); if (!po) return fail(res, 404, 'Purchase order not found.');
+    const b = req.body || {}, act = String(b.action || '');
+    if (act === 'send') { if (po.status !== 'DRAFT') return fail(res, 409, 'Only a draft can be sent.'); po.status = 'SENT'; po.sentAt = now(); po.events.push({ at: now(), status: 'SENT', by: req.st.id }); }
+    else if (act === 'receive') {
+        if (po.status === 'RECEIVED' || po.status === 'CANCELLED') return fail(res, 409, `This purchase order is ${po.status.toLowerCase()}.`);
+        const rec = (b.received && typeof b.received === 'object') ? b.received : {}; let any = false;
+        for (const l of po.lines) {
+            const r = rec[l.productId] || {}, rq = anInt(r.qty, 0, 1000000, l.qty - (l.received || 0));
+            if (rq <= 0) continue; const p = S.products[l.productId]; if (!p || p.retired) continue;
+            const expiry = expiryNorm(r.expiry), batchNo = clean(r.batchNo, 40);
+            if (!p.batches) p.batches = [];
+            p.batches.push({ batchNo: batchNo || '-', expiry: expiry || null, qty: rq, at: now(), poRef: po.ref });
+            p.stock = (p.stock || 0) + rq; if (p.costCents == null) p.costCents = l.unitCostCents;
+            l.received = (l.received || 0) + rq; if (batchNo) l.batchNo = batchNo; if (expiry) l.expiry = expiry; any = true;
+        }
+        if (!any) return fail(res, 400, 'Enter the quantity received for at least one item.');
+        const complete = po.lines.every(l => (l.received || 0) >= l.qty);
+        po.status = complete ? 'RECEIVED' : 'PARTIAL'; if (complete) po.receivedAt = now();
+        po.events.push({ at: now(), status: po.status, by: req.st.id });
+        if (D.appendAudit) D.appendAudit('PHARMACY_PO_RECEIVED', { ref: po.ref, facilityId: m.f.id, by: req.st.id });
+        dirty(); return res.json({ success: true, purchaseOrder: poView(po) });
+    }
+    else if (act === 'cancel') { if (po.status === 'RECEIVED') return fail(res, 409, 'This purchase order was already received.'); po.status = 'CANCELLED'; po.events.push({ at: now(), status: 'CANCELLED', by: req.st.id }); }
+    else return fail(res, 400, 'action must be send, receive or cancel.');
+    if (D.appendAudit) D.appendAudit('PHARMACY_PO_' + act.toUpperCase(), { ref: po.ref, facilityId: m.f.id, by: req.st.id });
+    dirty(); res.json({ success: true, purchaseOrder: poView(po) });
+});
+router.get('/facilities/:fid/stock-alerts', auth, (req, res) => {
+    const m = inFacility(req, res); if (!m) return;
+    const today = new Date().toISOString().slice(0, 10), soon = new Date(now() + 90 * 86400000).toISOString().slice(0, 10);
+    const low = [], expiring = [], expired = [];
+    for (const p of products(m.f.id)) {
+        if ((p.reorderLevel || 0) > 0 && (p.stock || 0) <= p.reorderLevel) low.push({ id: p.id, name: p.name, stock: p.stock, reorderLevel: p.reorderLevel });
+        for (const bch of (p.batches || [])) { if (!bch.qty || !bch.expiry) continue; if (bch.expiry < today) expired.push({ id: p.id, name: p.name, batchNo: bch.batchNo, expiry: bch.expiry, qty: bch.qty }); else if (bch.expiry <= soon) expiring.push({ id: p.id, name: p.name, batchNo: bch.batchNo, expiry: bch.expiry, qty: bch.qty }); }
+    }
+    res.json({ success: true, low, expiring, expired });
+});
+
+// ---- DELIVERY HANDOFF: the RDS rider network reads READY orders and posts status back ----
+// server.js wires these into the same rider dispatch used by food/shop orders (see PHARMACY glue in server).
+router.readyDeliveries = () => S.orders.filter(o => o.status === 'READY_FOR_DELIVERY').map(o => { const f = S.facilities[o.facilityId] || {}; return { ref: o.ref, pickup: { name: f.name, code: f.code, county: f.county }, dropoff: { name: o.patientName, phone: o.phone, address: o.address, geo: o.geo }, itemsCount: o.lines.reduce((s, l) => s + l.qty, 0), coldChain: o.lines.some(l => { const p = S.products[l.productId]; return p && p.coldChain; }), idRequired: !!o.idRequired, totalCents: o.totalCents, total: kes(o.totalCents), paid: !!o.paid }; });
+router.deliveryUpdate = (ref, status, rider) => { const o = S.orders.find(x => x.ref === ref); if (!o) return { ok: false, error: 'Order not found.' }; const map = { ASSIGNED: 'OUT_FOR_DELIVERY', PICKED: 'OUT_FOR_DELIVERY', OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY', DELIVERED: 'DELIVERED' }, st = map[String(status || '').toUpperCase()]; if (!st) return { ok: false, error: 'Unknown status.' }; if (rider) o.rider = rider; o.status = st; o.events.push({ at: now(), status: String(status).toUpperCase(), rider: rider || null }); if (st === 'DELIVERED') o.paid = true; if (D.appendAudit) D.appendAudit('PHARMACY_DELIVERY_' + st, { ref: o.ref, rider: rider || null }); dirty(); return { ok: true, status: o.status }; };
+function pharmacyStats() {
+    const t0 = now() - 86400000, O = S.orders.filter(o => o.createdAt >= t0);
+    const prods = Object.values(S.products).filter(p => !p.retired);
+    const today = new Date().toISOString().slice(0, 10), soon = new Date(now() + 90 * 86400000).toISOString().slice(0, 10);
+    const expCount = (test) => prods.reduce((n, p) => n + ((p.batches || []).some(x => x.qty > 0 && x.expiry && test(x.expiry)) ? 1 : 0), 0);
+    return { products: prods.length, orders24h: O.length, salesKes24h: kes(O.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + o.totalCents, 0)), readyForDelivery: S.orders.filter(o => o.status === 'READY_FOR_DELIVERY').length, outForDelivery: S.orders.filter(o => o.status === 'OUT_FOR_DELIVERY').length, deliveredToday: O.filter(o => o.status === 'DELIVERED').length,
+        pendingRx: S.orders.filter(o => o.status === 'PENDING_RX').length, lowStock: prods.filter(p => (p.reorderLevel || 0) > 0 && (p.stock || 0) <= p.reorderLevel).length, expiringSoon: expCount(e => e >= today && e <= soon), expired: expCount(e => e < today),
+        suppliers: Object.values(S.suppliers || {}).filter(s => !s.retired).length, openPurchaseOrders: (S.purchaseOrders || []).filter(po => po.status === 'DRAFT' || po.status === 'SENT' || po.status === 'PARTIAL').length };
+}
+
 router.stats = stats;
+router.pharmacyStats = pharmacyStats;
 router.analyze = analyze;
 router.CATEGORIES = CATEGORIES;
-router._test = { state: () => S, reset: () => { S = blank(); hits.clear(); } };
+router._test = { state: () => S, reset: () => { S = blank(); hits.clear(); }, flush: () => flushNow(), whenReady: () => readyPromise };
 module.exports = router;
 module.exports.agent = { loadConfig, extractText, jobKind, bannerBytes, handleJob, start };
