@@ -209,7 +209,15 @@ img,video,canvas,svg{max-width:100%}
 <section id="auth" class="auth">
   <div class="logo">🛵</div><h1>RDS</h1><p class="lead">Shop from nearby stores. Ride anywhere.</p>
   <div class="box card">
-    <div id="stPhone"><label for="ph">Mobile number</label><div class="phone"><span>🇰🇪 +254</span><input id="ph" type="tel" inputmode="tel" placeholder="7XX XXX XXX" autocomplete="tel-national"></div><button class="btn pu" id="btnSend">Continue</button></div>
+    <div id="stPhone"><label for="ph">Mobile number</label><div class="phone"><span>🇰🇪 +254</span><input id="ph" type="tel" inputmode="tel" placeholder="7XX XXX XXX" autocomplete="tel-national"></div>
+      <label for="uEmail" style="margin-top:10px">Email <span class="muted">(optional — for email codes)</span></label><input id="uEmail" type="email" placeholder="you@example.com" autocomplete="email">
+      <label style="margin-top:10px">Send my code by</label>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin:4px 0 2px">
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="uch" value="sms" checked> SMS</label>
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="uch" value="whatsapp" checked> WhatsApp</label>
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="uch" value="email"> Email</label>
+      </div>
+      <button class="btn pu" id="btnSend">Continue</button></div>
     <div id="stOtp" class="hidden"><p class="muted" id="otpMsg" style="margin-bottom:10px"></p><label for="otp">Verification code</label><input id="otp" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="Enter code" style="text-align:center;letter-spacing:5px;font-size:1.15rem">
       <button class="btn go" id="btnVerify">Verify &amp; continue</button><div class="between" style="margin-top:12px"><button class="btn ghost sm" id="btnBack">Change number</button><button class="btn ghost sm" id="btnResend">Resend code</button></div></div>
     <div class="err" id="authErr"></div>
@@ -352,8 +360,12 @@ function startResend() { const b = $('#btnResend'); let n = 30; b.disabled = tru
 async function sendOtp(btn) {
   const phone = normPhone($('#ph').value); $('#authErr').textContent = '';
   if (!phone) return void ($('#authErr').textContent = 'Enter a valid Kenyan mobile number.');
+  const channels = [...document.querySelectorAll('.uch:checked')].map(x => x.value);
+  if (!channels.length) return void ($('#authErr').textContent = 'Choose at least one way to receive your code.');
+  const email = $('#uEmail') ? $('#uEmail').value.trim() : '';
+  if (channels.includes('email') && !/.+@.+\..+/.test(email)) return void ($('#authErr').textContent = 'Enter your email to receive the code by email.');
   busy(btn, true);
-  try { const d = await api('/api/user/send-otp', { method: 'POST', body: { phone }, token: null }); state.pendingPhone = phone; const local = /^(localhost|127\.|192\.168\.)/.test(location.hostname); $('#otpMsg').textContent = local ? d.message : `We sent a code to ${phone}.`; $('#stPhone').classList.add('hidden'); $('#stOtp').classList.remove('hidden'); $('#otp').focus(); startResend(); }
+  try { const d = await api('/api/user/send-otp', { method: 'POST', body: { phone, email: email || undefined, channels }, token: null }); state.pendingPhone = phone; const local = /^(localhost|127\.|192\.168\.)/.test(location.hostname); $('#otpMsg').textContent = local ? d.message : `We sent a code to ${phone}.`; $('#stPhone').classList.add('hidden'); $('#stOtp').classList.remove('hidden'); $('#otp').focus(); startResend(); }
   catch (e) { $('#authErr').textContent = e.message; } finally { busy(btn, false); }
 }
 $('#btnSend').onclick = () => sendOtp($('#btnSend')); $('#btnResend').onclick = () => sendOtp(null);

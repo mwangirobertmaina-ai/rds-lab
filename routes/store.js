@@ -221,7 +221,8 @@ const PANEL_DEFS = [
     { key: 'driver', title: 'Rider app', pages: ['/driver'], files: ['/driver.html'], api: [/^\/api\/driver(\/|$)/] },
     { key: 'ads', title: 'Ads', pages: ['/ads', '/'], files: ['/ads.html'], api: [/^\/api\/ads(\/|$)/] },
     { key: 'printer', title: 'Printer', pages: ['/print'], files: ['/print.html', '/public/print.html'], api: [/^\/api\/print(\/|$)/, /^\/api\/middleware\/intercept-print/] },
-    { key: 'admin', title: 'Admin', pages: ['/admin'], files: ['/admin.html'], api: [/^\/api\/admin(\/|$)/, /^\/api\/(audit|compliance|kyc|cashier|hardware|ai)(\/|$)/] }
+    { key: 'admin', title: 'Admin', pages: ['/admin'], files: ['/admin.html'], api: [/^\/api\/admin(\/|$)/, /^\/api\/(audit|compliance|kyc|cashier|hardware|ai)(\/|$)/] },
+    { key: 'wallet', title: 'Wallet', pages: ['/wallet'], files: ['/wallet.html'], api: [/^\/api\/wallet(\/|$)/] }
 ];
 const PAGE_INDEX = new Map();
 PANEL_DEFS.forEach(p => { p.pages.forEach(x => PAGE_INDEX.set(x, p.key)); p.files.forEach(x => PAGE_INDEX.set(x, p.key)); });
@@ -431,6 +432,16 @@ function reconcile() {
     const done = all.filter(o => o.state === 'DONE' && o.source === 'APP' && !o.legacy);
     const eq = { orders: done.length, customerPaid: fromC(sumC(done, o => o.totalC)), shop: fromC(sumC(done, o => o.itemsC)), rider: fromC(sumC(done, o => o.riderC)), platform: fromC(sumC(done, o => o.platformC)) };
     eq.balanced = Math.abs(cents(eq.customerPaid) - cents(eq.shop) - cents(eq.rider) - cents(eq.platform)) <= T * Math.max(1, done.length);
+    // ---- customer wallet (routes/wallet.js): its double-entry invariant must balance to the cent ----
+    try {
+        const wr = D.getWalletReconcile ? D.getWalletReconcile() : null;
+        if (wr) {
+            const c13 = mk('WALLET_CUSTOMER', 'The customer wallet balances to the cent', 'designated held = wallets owed + revenue', true);
+            c13.checked = 1;
+            if (!wr.balanced) { const b = wr.checks || {}; c13.ok = false; c13.failures.push({ ref: 'wallet', detail: !b.equationHolds ? `designated ${wr.designated} != owed ${wr.walletsTotal} + revenue ${wr.revenue}` : !b.cacheMatchesLedger ? 'a cached balance does not match the ledger' : !b.noNegativeWallets ? 'a wallet is negative' : !b.ledgerSumsToZero ? 'the ledger does not sum to zero' : 'a transaction is unbalanced' }); }
+            checks.push(c13);
+        }
+    } catch (e) {}
     const hardOk = checks.filter(c => c.hard).every(c => c.ok);
     return { ok: hardOk, generatedAt: Date.now(), checks, identity: eq, legacy: { orders: legacyCount, uncollectedServiceFees: fromC(legacyShortfallC), note: 'Orders placed before the 2% fix never collected the 2% service fee.' }, taxFormulaDifferences: { orders: taxCount, storedMinusCorrect: fromC(taxDiff) } };
 }
@@ -489,7 +500,7 @@ function finance() {
 // ---------------------------------------------------------------------------
 // overview + graph
 // ---------------------------------------------------------------------------
-const GROUPS = [['user', /^\/api\/user/], ['store', /^\/api\/store/], ['merchant', /^\/api\/merchant/], ['driver', /^\/api\/driver/], ['ads', /^\/api\/ads/], ['printer', /^\/api\/(print|middleware)/], ['admin', /^\/api\/(admin|audit|compliance|kyc|cashier|hardware|ai)/], ['auth', /^\/api\/auth/], ['media', /^\/api\/media/]];
+const GROUPS = [['user', /^\/api\/user/], ['store', /^\/api\/store/], ['merchant', /^\/api\/merchant/], ['driver', /^\/api\/driver/], ['ads', /^\/api\/ads/], ['wallet', /^\/api\/wallet/], ['printer', /^\/api\/(print|middleware)/], ['admin', /^\/api\/(admin|audit|compliance|kyc|cashier|hardware|ai)/], ['auth', /^\/api\/auth/], ['media', /^\/api\/media/]];
 function traffic() {
     const m = D.getMetrics(), g = {};
     for (const [k] of GROUPS) g[k] = { requests: 0, errors: 0, ms: 0 };
@@ -540,10 +551,11 @@ function overview() {
         printer: { title: 'Printer', panels: ['/print'], deployed: panelOf('/print').deployed, module: mods.print ? mods.print.loaded : null, extra: mods.printInterceptor ? mods.printInterceptor.loaded : null, pageViews: ph('/print').n, lastSeen: ph('/print').last, traffic: tr.printer, stats: { note: 'routes/print.js exposes no business numbers, so only traffic is shown.' }, sockets: null },
         admin: { title: 'Admin', panels: ['/admin', '/store'], deployed: panelOf('/admin').deployed, module: mods.admin ? mods.admin.loaded : null, pageViews: ph('/admin').n + ph('/store').n + ph('/owner').n, lastSeen: Math.max(ph('/admin').last || 0, ph('/store').last || 0, ph('/owner').last || 0) || null, traffic: tr.admin,
             stats: { auditBlocks: audit.length, auditChainValid: audit.valid, adminsOnline: Math.max(socks.admins, 1) }, sockets: Math.max(socks.admins, 1) },
+        wallet: { title: 'Wallet', panels: ['/wallet'], deployed: panelOf('/wallet').deployed, module: mods.wallet ? mods.wallet.loaded : null, pageViews: ph('/wallet').n, lastSeen: ph('/wallet').last, traffic: tr.wallet || {}, stats: {}, sockets: null },
         core: { title: 'Server core', uptimeSeconds: Math.floor(process.uptime()), stage: D.stage, version: D.version, requestsTotal: m.total, requestsPerMin: last.req, errors5xx: m.byClass['5xx'] || 0, errorRate: Number((errRate * 100).toFixed(2)), avgMs: m.total ? Number((m.latencyMsSum / m.total).toFixed(1)) : 0, inflight: m.inflight, eventLoopLagMs: Number((D.getLag() || 0).toFixed(1)), memoryMB: Math.round(process.memoryUsage().rss / 1048576), sockets: socks.total,
             snapshot: snap, paymentsMode: D.paymentsMode, driverApprovalRequired: D.approvalRequired, testCredentials: D.testCreds }
     };
-    for (const k of ['customer', 'merchant', 'driver', 'ads', 'printer', 'admin']) { const a = apps[k]; a.health = healthOf(true, a.module, a.deployed, rr(k === 'customer' ? 'user' : k)); }
+    for (const k of ['customer', 'merchant', 'driver', 'ads', 'printer', 'admin', 'wallet']) { const a = apps[k]; a.health = healthOf(true, a.module, a.deployed, rr(k === 'customer' ? 'user' : k)); }
     apps.core.health = (audit.valid && snap.ok !== false && errRate < 0.05) ? 'ok' : 'warn';
     for (const def of PANEL_DEFS) { const a = apps[def.key]; if (!a) continue; const st = panelState(def.key); a.switch = st; if (!st.on) a.health = 'off'; }
     // ---- the social feed reports its own numbers ----
@@ -551,6 +563,8 @@ function overview() {
     if (dose) { Object.assign(apps.printer.stats || (apps.printer.stats = {}), dose); if (apps.printer.health !== 'off' && dose.facilities > 0) apps.printer.health = dose.unverified > 0 ? 'warn' : 'ok'; }
     let social = null; try { social = D.getAdsStats ? D.getAdsStats() : null; } catch (e) { social = null; }
     if (social) { Object.assign(apps.ads.stats || (apps.ads.stats = {}), social); if (apps.ads.health === 'ok' && (social.reportsOpen > 0 || social.hidden > 0)) apps.ads.health = 'warn'; }
+    let wal = null; try { wal = D.getWalletStats ? D.getWalletStats() : null; } catch (e) { wal = null; }
+    if (wal && apps.wallet) { Object.assign(apps.wallet.stats || (apps.wallet.stats = {}), wal); if (apps.wallet.health !== 'off') apps.wallet.health = wal.balanced ? apps.wallet.health : 'down'; }
     // ---- the admin side (ledger, compliance engine, client registry) reports into this one control room ----
     let comp = null; try { comp = D.getComplianceView ? D.getComplianceView() : null; } catch (e) { comp = null; }
     if (comp) {

@@ -102,8 +102,10 @@ router.post('/login-otp', (req, res) => {
     const waitMs = 30000 - (now - (otpCooldown.get(id) || 0));
     if (!free && waitMs > 0) return bad(res, `Please wait ${Math.ceil(waitMs / 1000)} seconds before asking for another code. The code already sent still works for 5 minutes.`, 429, { codeSent: true, retryAfterSeconds: Math.ceil(waitMs / 1000) });
     otpCooldown.set(id, now);
-    D.sendOtp(phone);
-    res.json({ success: true, message: `We sent a code to ${phone}.` });
+    const email = (typeof req.body.email === 'string' && /.+@.+\..+/.test(req.body.email.trim())) ? req.body.email.trim().slice(0, 120) : null;
+    const channels = Array.isArray(req.body.channels) ? req.body.channels.map(x => String(x).toLowerCase()).filter(x => ['sms', 'whatsapp', 'email'].includes(x)) : null;
+    D.sendOtp(phone, { email, channels: channels && channels.length ? channels : null });
+    res.json({ success: true, message: `We sent your code to the channel(s) you chose.` });
 });
 
 // ---------------------------------------------------------------------------

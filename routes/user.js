@@ -260,7 +260,13 @@ router.post('/checkout', auth, (req, res) => {
         commodityCost: pr.itemsTotal, shopOwnerPayout: pr.itemsTotal, deliveryFee: pr.deliveryFee, riderShare: pr.riderShare,
         systemFee: pr.systemIncome, tax: pr.kraTax, serviceFee: pr.serviceFee, appCommission: pr.appCommission, netRevenue: pr.netRevenue
     };
-    const payment = { method: 'MPESA', phone, amount: pr.total, mode: 'SIMULATED', status: 'SIMULATED_PAID', at: now };
+    const _wph = (profileUser && profileUser.phone) || phone;
+    let payment;
+    if ((b.payFrom === 'wallet' || b.payFrom === 'WALLET') && D.walletCharge) {
+        const ch = D.walletCharge(_wph, Math.round(pr.total * 100), { account: 'HOLD', kind: 'ORDER', ref: 'ORDER', memo: 'Order payment' });
+        if (!ch.ok) return bad(res, ch.error === 'INSUFFICIENT' ? `Your wallet balance is KES ${Number(ch.balance || 0).toLocaleString('en-US')}. Top up at /wallet or choose another payment.` : 'Open /wallet and top up to pay from your balance.', 402);
+        payment = { method: 'WALLET', phone, amount: pr.total, mode: 'WALLET', status: 'WALLET_PAID', ref: ch.tx, at: now };
+    } else payment = { method: 'MPESA', phone, amount: pr.total, mode: 'SIMULATED', status: 'SIMULATED_PAID', at: now };
     // Delivery PIN: the customer reads it to the rider at hand-over. The rider cannot be paid without it.
     const deliveryPin = String(crypto.randomInt(1000, 10000));
     const pinSalt = crypto.randomBytes(8).toString('hex');

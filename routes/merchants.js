@@ -161,22 +161,34 @@ router.post('/orders/complete-handover', auth, (req, res) => {
 
     // ---- one synchronous block: the shop cannot be paid twice ----
     const now = Date.now();
+    const src = customerOrder(order.orderId);
+    const fromWallet = !!(src && src.payment && src.payment.mode === 'WALLET');   // did the customer pay from the RDS wallet?
     order.shopPaid192 = true; order.status = 'HANDED_TO_RIDER'; order.handoverAt = now; order.paidToShop = amount;
     stamp(order.orderId, { handoverAt: now, paidToShop: amount });
-    const W = wallets(); W[id] = money2((W[id] || 0) + amount);
-    const earn = { earningId: `SHOP_${now}_${crypto.randomInt(1000, 10000)}`, merchantId: id, orderId: order.orderId, amount, at: now };
-    earnings().push(earn); if (earnings().length > 50000) earnings().shift();
-    if (D.appendAudit) D.appendAudit('SHOP_PAID', { orderId: order.orderId, merchantId: id, amount, riderId: job.driverId || null });
-    const src = customerOrder(order.orderId);
-    try { const EV = events(); if (EV && EV.afterHandover && src) EV.afterHandover(src); } catch (e) { /* listeners record their own failures; the shop is paid regardless */ }
 
-    let sent = null;
-    if (D.autoPayout && D.autoPayout() && (!D.paymentsMode || D.paymentsMode() === 'simulated')) { try { sent = sendPayout(id, amount, true); } catch (e) { sent = null; } }
+    const W = wallets(); let sent = null, viaWallet = false, shownBalance = null;
+    if (fromWallet && D.walletSettleShop) {
+        // the money is already held in the customer's RDS wallet: release the shop's 100% straight into the shop's accountable wallet.
+        const r = D.walletSettleShop(id, Math.round(amount * 100), order.orderId);
+        if (r && r.ok) { viaWallet = true; order.shopSettledToWallet192 = true; shownBalance = Number(r.balance); }
+    }
+    if (!viaWallet) {
+        // simulated / M-Pesa order: legacy shop wallet, optionally auto-sent to the shop's M-Pesa in test mode.
+        W[id] = money2((W[id] || 0) + amount);
+        const earn = { earningId: `SHOP_${now}_${crypto.randomInt(1000, 10000)}`, merchantId: id, orderId: order.orderId, amount, at: now };
+        earnings().push(earn); if (earnings().length > 50000) earnings().shift();
+        if (D.autoPayout && D.autoPayout() && (!D.paymentsMode || D.paymentsMode() === 'simulated')) { try { sent = sendPayout(id, amount, true); } catch (e) { sent = null; } }
+        shownBalance = money2(W[id] || 0);
+    }
+    if (D.appendAudit) D.appendAudit('SHOP_PAID', { orderId: order.orderId, merchantId: id, amount, riderId: job.driverId || null, via: viaWallet ? 'WALLET' : 'LEGACY' });
+    try { const EV = events(); if (EV && EV.afterHandover && src) EV.afterHandover(src); } catch (e) { /* listeners record their own failures; the shop is paid regardless */ }
     if (D.markDirty) D.markDirty();
     emit(id, 'merchant_order_update', order); emit('order:' + order.orderId, 'order_status_update', { orderId: order.orderId, status: order.status }); emit(null, 'orderListUpdated', { orderId: order.orderId });
     res.json({
-        success: true, order, paid: amount, balance: money2(W[id] || 0), sentToMpesa: !!sent, payoutId: sent ? sent.payoutId : null,
-        message: sent ? `Handed over. KES ${amount.toFixed(2)} paid in full and sent to your M-Pesa (test mode: no real money moved).` : `Handed over. KES ${amount.toFixed(2)} paid in full to your shop wallet.`
+        success: true, order, paid: amount, balance: shownBalance, viaWallet, sentToMpesa: !!sent, payoutId: sent ? sent.payoutId : null,
+        message: viaWallet ? `Handed over. KES ${amount.toFixed(2)} paid in full to your RDS wallet — withdraw anytime.`
+            : sent ? `Handed over. KES ${amount.toFixed(2)} paid in full and sent to your M-Pesa (test mode: no real money moved).`
+            : `Handed over. KES ${amount.toFixed(2)} paid in full to your shop wallet.`
     });
 });
 

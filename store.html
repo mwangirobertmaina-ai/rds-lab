@@ -109,6 +109,15 @@ table{width:100%;border-collapse:collapse;font-size:.82rem}th{font-size:.68rem;c
     </section>
 
     <section id="tMoney" class="hidden">
+      <div class="card" id="mpesaCard"><div class="between"><h3 style="margin:0">M-Pesa connection</h3><button class="btn ghost sm" id="mpChk">Check connection</button></div>
+        <div id="mpStatus" class="muted" style="margin-top:8px">Click "Check connection" to confirm the server can reach Safaricom.</div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="mpPhone" placeholder="2547XXXXXXXX" value="254708374149" style="max-width:180px">
+          <input id="mpAmt" placeholder="Amount" value="1" style="max-width:100px">
+          <button class="btn ghost sm" id="mpStk">Send test STK push</button>
+        </div>
+        <div id="mpStkOut" class="muted" style="margin-top:8px"></div>
+      </div>
       <div class="between" style="margin-bottom:12px"><div class="seg" id="win"><button data-w="today" class="on">Today</button><button data-w="last7">7 days</button><button data-w="last30">30 days</button><button data-w="allTime">All time</button></div><button class="btn ghost sm" id="chk">Re-check the books</button></div>
       <div class="kpis" id="mk"></div>
       <div class="card"><h3>Where every shilling goes</h3><div class="bar" id="split"></div><div class="legend" id="splitL"></div>
@@ -210,7 +219,7 @@ function appRows(k, a) {
   const t = a.traffic || {}, r = [['Page', (a.panels || []).map(p => `<a href="${esc(p)}" target="_blank" rel="noopener" style="color:var(--cy)">${esc(p)}</a>`).join(' · ') + (a.deployed === false ? ' <span class="bad">(not deployed)</span>' : '')], ['Server module', a.module === null || a.module === undefined ? '–' : a.module ? '<span class="ok">✓ loaded</span>' : '<span class="bad">✗ not loaded</span>'], ['Page views', num(a.pageViews)], ['Last page view', ago(a.lastSeen)], ['API requests', num(t.requests)], ['API errors', t.errors ? `<span class="bad">${num(t.errors)}</span>` : '0'], ['Avg response', (t.avgMs || 0) + ' ms']];
   if (a.switch) r.unshift(['Switch', a.switch.on ? '<span class="ok">ON</span>' : `<span class="bad">OFF</span>${a.switch.message ? ' · ' + esc(a.switch.message) : ''}`]);
   if (a.sockets !== null && a.sockets !== undefined) r.push(['Connected now', num(a.sockets)]);
-  const st = a.stats || {}; Object.entries(st).forEach(([key, v]) => { if (key === 'note') return; const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()); r.push([label, typeof v === 'boolean' ? (v ? '<span class="ok">✓ yes</span>' : '<span class="bad">✗ no</span>') : typeof v === 'number' && /walletsOwed/.test(key) ? money(v) : v === null ? '–' : esc(v)]); });
+  const st = a.stats || {}; Object.entries(st).forEach(([key, v]) => { if (key === 'note') return; const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()); r.push([label, typeof v === 'boolean' ? (v ? '<span class="ok">✓ yes</span>' : '<span class="bad">✗ no</span>') : typeof v === 'number' && (/walletsOwed/.test(key) || (k === 'wallet' && /^(designated|walletsTotal|revenue|held|vat|reserved|platformHeld)$/.test(key))) ? money(v) : v === null ? '–' : esc(v)]); });
   if (st.note) r.push(['Note', `<span class="muted" style="font-weight:400">${esc(st.note)}</span>`]);
   return r;
 }
@@ -259,7 +268,7 @@ function drawChecks() {
 }
 
 /* ---------- apps & alerts ---------- */
-function drawApps() { const o = S.ov; $('#apps').innerHTML = ['customer', 'merchant', 'driver', 'ads', 'printer', 'admin', 'core'].map(k => { const a = o.apps[k]; return `<div class="card"><h2><span class="dot ${a.health}"></span>${esc(a.title)}</h2>${kv(appRows(k, a))}</div>`; }).join(''); }
+function drawApps() { const o = S.ov; $('#apps').innerHTML = ['customer', 'merchant', 'driver', 'ads', 'printer', 'admin', 'wallet', 'core'].map(k => { const a = o.apps[k]; return `<div class="card"><h2><span class="dot ${a.health}"></span>${esc(a.title)}</h2>${kv(appRows(k, a))}</div>`; }).join(''); }
 function drawAlerts() { const a = S.al.alerts; const n = a.filter(x => ['CRITICAL', 'HIGH'].includes(x.severity)).length; $('#alN').textContent = n; $('#alN').classList.toggle('hidden', !n); $('#alerts').innerHTML = a.length ? a.map(x => `<div class="al ${x.severity}"><b class="${x.severity === 'CRITICAL' ? 'bad' : x.severity === 'HIGH' ? 'warn' : 'muted'}">${x.severity}</b>${esc(x.message)}</div>`).join('') : '<div class="card muted" style="text-align:center">✓ Nothing needs attention.</div>'; }
 
 /* ---------- loading ---------- */
@@ -385,6 +394,34 @@ function start() {
   loadOv(); loadRec(); loadAl(); loadFin();
   S.timers = [setInterval(() => { if (!document.hidden) loadOv(); }, 5000), setInterval(() => { if (!document.hidden) { loadRec(); loadAl(); if (S.tab === 'tMoney') loadFin(); if (S.tab === 'tInst') loadInstitutions(); } }, 30000)];
 }
+// ---- M-Pesa connection check (owner only; calls the wallet admin routes) ----
+async function mpesaCheck() {
+  const el = $('#mpStatus'); el.innerHTML = '<span class="spin"></span> checking…';
+  try {
+    const d = await api('/api/wallet/admin/mpesa/status');
+    const m = d.mpesa, yes = v => v ? '<span class="ok">\u2713 yes</span>' : '<span class="bad">\u2717 no</span>';
+    const tok = m.token && m.token.ok ? '<span class="ok">\u2713 token OK</span>' : '<span class="bad">\u2717 ' + ((m.token && (m.token.error || m.token.reason)) || 'no token') + '</span>';
+    el.innerHTML = kv([
+      ['Environment', esc(m.environment)], ['Transaction type', esc(m.txType)],
+      ['Shortcode', esc(m.shortcode || '–') + (m.till ? ' · till ' + esc(m.till) : '')],
+      ['Consumer key', esc(m.consumerKey || '–')], ['Passkey', esc(m.passkey || '–')],
+      ['Callback is public https', yes(m.callbackLooksPublic)],
+      ['Top-ups configured (STK)', yes(m.topUpConfigured)], ['Payouts configured (B2C)', yes(m.payoutConfigured)],
+      ['Safaricom token', tok]
+    ]);
+  } catch (e) { el.innerHTML = '<span class="bad">Check failed: ' + esc(e.message) + '</span>'; }
+}
+async function mpesaTestStk() {
+  const out = $('#mpStkOut'); out.innerHTML = '<span class="spin"></span> sending…';
+  const phone = $('#mpPhone').value.trim(), amount = Number($('#mpAmt').value.trim()) || 1;
+  try {
+    const d = await api('/api/wallet/admin/mpesa/test-stk', { method: 'POST', body: { phone, amount } });
+    const r = d.result || {};
+    out.innerHTML = r.ok ? '<span class="ok">\u2713 STK push accepted</span> \u2014 a prompt should reach ' + esc(phone) + '. CheckoutID: ' + esc(r.checkoutId || '') + '. Watch the server log for the callback.'
+                         : '<span class="bad">\u2717 ' + esc(r.error || 'not accepted') + '</span>';
+  } catch (e) { const r = e.data && e.data.result; out.innerHTML = '<span class="bad">\u2717 ' + esc((r && r.error) || e.message) + '</span>'; }
+}
+document.addEventListener('click', e => { if (e.target.id === 'mpChk') mpesaCheck(); if (e.target.id === 'mpStk') mpesaTestStk(); });
 if (S.token) start();
 })();
 </script>

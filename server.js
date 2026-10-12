@@ -421,7 +421,9 @@ if (userExt191) {
             findOrderRefs191, orderView191, normalizedOrders191,
             getActiveOrders: () => activeOrders, getDrivers: () => drivers, getUsers: () => users, getRatings: () => orderRatings191,
             getPresence: () => driverPresence191, getLocations: () => driverLocations191, requireApproval: () => DRIVER_APPROVAL_REQUIRED_192,
-            orderEvents: () => orderEvents192()
+            orderEvents: () => orderEvents192(),
+            walletCharge: (phone, cents, opts) => { try { return walletRouter && walletRouter.chargeByPhone ? walletRouter.chargeByPhone(normalizeMsisdn191(phone), cents, opts) : { ok: false, error: 'NO_WALLET' }; } catch (e) { return { ok: false, error: e.message }; } },
+            walletRefund: (phone, cents, opts) => { try { return walletRouter && walletRouter.refundByPhone ? walletRouter.refundByPhone(normalizeMsisdn191(phone), cents, opts) : { ok: false }; } catch (e) { return { ok: false }; } }
         });
     }
     if (typeof userExt191.cancelGuard === 'function') app.post('/api/user/orders/cancel', userExt191.cancelGuard);
@@ -485,7 +487,7 @@ const orderEvents192 = () => {
     const H = ledgerHooks192(); if (!H) return null;
     return { beforeOrder: (x) => H.checkOrder(x), afterOrder: (o) => H.onPayment(o), afterHandover: (o) => H.onHandover(o), afterMerchantPayout: (r) => H.onMerchantPayout(r), afterDelivery: (o) => H.onSettlement(o), afterPayout: (r) => H.onPayout(r) };
 };
-const switches192 = { panels: {}, users: {}, compliance: {} };
+const switches192 = { panels: {}, users: {}, compliance: {}, notify: {} };
 // SHOP MONEY: a shop is paid in full the moment it hands the order to the rider (routes/merchants.js)
 const merchantWallets192 = {};          // merchantId -> KES the platform owes the shop right now
 const merchantEarnings192 = [];         // one record per order handed over: { earningId, merchantId, orderId, amount, at }
@@ -564,6 +566,7 @@ restoreSnapshot191 = function () {
             switches192.compliance = (sw.compliance && typeof sw.compliance.enforceLimits === 'boolean') ? { enforceLimits: sw.compliance.enforceLimits } : {};
             for (const k of Object.keys(sw.panels || {})) if (isSafeKey(k) && sw.panels[k] && typeof sw.panels[k] === 'object') switches192.panels[k] = sw.panels[k];
             for (const k of Object.keys(sw.users || {})) if (isSafeKey(k) && sw.users[k] && typeof sw.users[k] === 'object') switches192.users[k] = sw.users[k];
+            switches192.notify = {}; if (sw.notify && typeof sw.notify === 'object') for (const k of ['sms', 'whatsapp', 'email']) if (typeof sw.notify[k] === 'boolean') switches192.notify[k] = sw.notify[k];
         }
     } catch (e) {}
 };
@@ -669,6 +672,8 @@ if (storeExt191 && typeof storeExt191.init === 'function') {
         getLedgerView: () => (ledger192 ? { engine: ledger192, tenant: MARKETPLACE_TENANT_192 } : null),
         getPrintStats: () => { try { return printRouter && typeof printRouter.stats === 'function' && doseColorReady192 ? printRouter.stats() : null; } catch (e) { return null; } },
         getAdsStats: () => { try { return adsRouter && typeof adsRouter.stats === 'function' ? adsRouter.stats() : null; } catch (e) { return null; } },
+        getWalletStats: () => { try { return walletRouter && typeof walletRouter.walletStats === 'function' ? walletRouter.walletStats() : null; } catch (e) { return null; } },
+        getWalletReconcile: () => { try { return walletRouter && typeof walletRouter.reconcile === 'function' ? walletRouter.reconcile() : null; } catch (e) { return null; } },
         getMerchantWallets: () => merchantWallets192, getMerchantEarnings: () => merchantEarnings192, getMerchantPayouts: () => merchantPayouts192,
         // the admin side (ledger, compliance, client registry) reports into this one master control
         getComplianceView: () => { const H = ledgerHooks192(); return H && H.monitor ? H.monitor() : null; },
@@ -696,6 +701,13 @@ const _cancelOrderEverywhere191 = cancelOrderEverywhere191;
 cancelOrderEverywhere191 = function (orderId, status, reason) {
     const refs = _cancelOrderEverywhere191(orderId, status, reason);
     try { const LH = ledgerHooks192(); if (LH && refs && refs.active && refs.active[0]) LH.onRefund(refs.active[0].order); } catch (e) {}
+    try {   // if the order was paid from the RDS wallet, return the money to the wallet (once)
+        const ord = (refs && refs.active && refs.active[0] && refs.active[0].order) || (refs && refs.store && refs.store[0]) || null;
+        if (ord && ord.payment && ord.payment.mode === 'WALLET' && !ord.payment.refunded && walletRouter && walletRouter.refundByPhone) {
+            const ph = ord.customerPhone || ord.phone, amt = Math.round((Number(ord.total) || 0) * 100);
+            if (ph && amt > 0) { const r = walletRouter.refundByPhone(normalizeMsisdn191(ph), amt, { account: 'HOLD', kind: 'ORDER_REFUND', ref: orderId }); if (r && r.ok) ord.payment.refunded = true; }
+        }
+    } catch (e) {}
     return refs;
 };
 
@@ -728,7 +740,7 @@ if (driverExt192) {
             softAuth, ROLES, ACTOR_ROLES, findOrderRefs191, setDeliveryState191, findDispatchesById191, emitSafe191, appendAudit, eatDayStart191,
             getDrivers: () => drivers, getWallets: () => driverWallets, getLedger: () => driverLedger191, getPresence: () => driverPresence191,
             getLocations: () => driverLocations191, getPayouts: () => driverPayouts192,
-            isPhone, sendOtp: (phone) => issueOtp(otps, phone, {}), ensureTestRider: ensureTestRider192,
+            isPhone, sendOtp: (phone, extra) => issueOtp(otps, phone, extra || {}), ensureTestRider: ensureTestRider192,
             otpCooldownFree: (phone) => ALLOW_TEST_CREDENTIALS || isTestPhone191(phone) || isTestCab192(phone),   // test numbers never wait for a new code
             orderEvents: () => orderEvents192(),
             requireApproval: () => DRIVER_APPROVAL_REQUIRED_192, paymentsMode: () => PAYMENTS_MODE_192, markDirty: () => { stateDirty191 = true; }
@@ -779,7 +791,9 @@ const merchantExt191 = safeRequire191('./routes/merchants', 'merchants');
 if (merchantExt191 && typeof merchantExt191.init === 'function') merchantExt191.init({
     findOrderRefs191, findDispatchesById191, setDeliveryState191, softAuth, ACTOR_ROLES, ownsMerchant, isTenantActive, pickKey, appendAudit, emitSafe191, eatDayStart191,
     getWallets: () => merchantWallets192, getEarnings: () => merchantEarnings192, getPayouts: () => merchantPayouts192,
-    autoPayout: () => MERCHANT_AUTO_PAYOUT_192, paymentsMode: () => PAYMENTS_MODE_192, markDirty: () => { stateDirty191 = true; }, orderEvents: () => orderEvents192()
+    autoPayout: () => MERCHANT_AUTO_PAYOUT_192, paymentsMode: () => PAYMENTS_MODE_192, markDirty: () => { stateDirty191 = true; }, orderEvents: () => orderEvents192(),
+    // pay the shop its 100% into the accountable RDS wallet when the customer paid from that wallet (resolved at request time)
+    walletSettleShop: (merchantId, cents, ref) => { try { const prof = merchantProfiles[merchantId]; const ph = prof && prof.phone; if (!ph || !walletRouter || !walletRouter.settleToWalletByPhone) return { ok: false, error: 'NO_WALLET' }; return walletRouter.settleToWalletByPhone(normalizeMsisdn191(ph), cents, { role: 'SHOP', kind: 'SETTLE_SHOP', ref, name: prof.shopName }); } catch (e) { return { ok: false, error: e.message }; } }
 });
 
 let stateDirty191 = false;
@@ -875,8 +889,26 @@ function afterComplete191(req, res, next) {
             findDispatchesById191(id).forEach(d => { d.status = 'COMPLETED'; d.completedAt = Date.now(); d.ledgerRecorded191 = true; });
             const driverId = (req.user && req.user.driverId) || src.driverId || pickKey(req.body.driverId, 'DRV_001');
             const gross = Number(src.total || src.totalAmount || 500);
-            driverLedger191.push({ entryId: `LED_${Date.now()}_${crypto.randomInt(0, 1000)}`, driverId, dispatchId: id, gross, credited: money2(gross * 0.85), at: Date.now() });
-            if (driverLedger191.length > 20000) driverLedger191.shift();
+            // did the customer pay from the accountable RDS wallet? if so, the rider, platform and KRA VAT are settled from the held money below.
+            let settledFromWallet192 = false;
+            try {
+                const refs = findOrderRefs191(id);
+                const ord = (refs.active[0] && refs.active[0].order) || refs.store[0] || null;
+                if (ord && ord.payment && ord.payment.mode === 'WALLET' && !ord.payment.finalSettled192 && walletRouter && walletRouter.settleToWalletByPhone) {
+                    const b = ord.breakdown || {};
+                    const riderCents = Math.round((Number(b.riderShare) || 0) * 100);
+                    const systemIncome = Number(b.systemFee != null ? b.systemFee : ((Number(b.serviceFee) || 0) + (Number(b.appCommission) || 0)));
+                    const vatCents = Math.round((Number(b.tax) || 0) * 100);
+                    const revCents = Math.round(systemIncome * 100) - vatCents;
+                    const riderPhone = (drivers[driverId] && drivers[driverId].phone) || null;
+                    if (riderCents > 0 && riderPhone) walletRouter.settleToWalletByPhone(normalizeMsisdn191(riderPhone), riderCents, { role: 'RIDER', kind: 'SETTLE_RIDER', ref: id });
+                    if (revCents > 0) walletRouter.settleToAccountFromHold(revCents, 'REVENUE', { kind: 'SETTLE_REVENUE', ref: id });
+                    if (vatCents > 0) walletRouter.settleToAccountFromHold(vatCents, 'VAT', { kind: 'SETTLE_VAT', ref: id });
+                    ord.payment.finalSettled192 = true; settledFromWallet192 = true;
+                }
+            } catch (e) {}
+            // legacy driver ledger: only for orders NOT settled through the accountable wallet (otherwise the rider would be counted twice)
+            if (!settledFromWallet192) { driverLedger191.push({ entryId: `LED_${Date.now()}_${crypto.randomInt(0, 1000)}`, driverId, dispatchId: id, gross, credited: money2(gross * 0.85), at: Date.now() }); if (driverLedger191.length > 20000) driverLedger191.shift(); }
             const q = global.driverQueue;
             for (let i = q.length - 1; i >= 0; i--) if (q[i].id === id) q.splice(i, 1);
             setDeliveryState191(id, { deliveryStatus: 'DELIVERED', deliveredAt: Date.now(), driverId });
@@ -1036,6 +1068,7 @@ function normalizeMsisdn191(p) {
     if (/^[17]\d{8}$/.test(s)) return '+254' + s;
     return '+' + s;
 }
+const notifyRouter = safeRequire191('./routes/notify', 'notify');   // multi-channel OTP: SMS / WhatsApp / Email
 async function sendSms191(phone, text) {
     if (!SMS_CONFIGURED_191 || typeof fetch !== 'function') return false;
     const to = normalizeMsisdn191(phone);
@@ -1065,11 +1098,36 @@ async function sendSms191(phone, text) {
 }
 
 // --- BULLETPROOF UNIFIED OTP MANAGEMENT ---
-function deliverOtp(phone, otp) {
+function deliverOtp(phone, otp, email, channels) {
     if (ALLOW_TEST_CREDENTIALS) return;
-    if (SMS_CONFIGURED_191) { sendSms191(phone, `Your RDS verification code is ${otp}. It expires in 5 minutes.`); return; }
+    try {
+        if (notifyRouter && typeof notifyRouter.sendOtp === 'function') {
+            const st = notifyRouter.status();
+            if (st && (st.sms.active || st.whatsapp.active || st.email.active)) { notifyRouter.sendOtp({ phone, email: email || null, code: otp, prefer: channels || null }); return; }
+        }
+    } catch (e) { /* fall back to SMS below */ }
+    if (SMS_CONFIGURED_191) { sendSms191(phone, `Your RDS verification code is ${otp}. It expires in 5 minutes.`); }
 }
+if (notifyRouter && typeof notifyRouter.init === 'function') {
+    try {
+        notifyRouter.init({ normalizePhone: normalizeMsisdn191, getSwitches: () => switches192.notify || {}, smsConfigured: () => SMS_CONFIGURED_191, smsSend: async (to, text) => ({ ok: await sendSms191(to, text) }) });
+        console.log('\u2713 Notifications ready (SMS / WhatsApp / Email) — channels switchable in Master Control.');
+    } catch (e) { console.error('[NOTIFY] init failed:', e.message); }
+}
+// OWNER: see and switch notification channels on/off (the SMS switch lets you drop the costly channel and keep WhatsApp + Email)
+app.get('/api/admin/notify/status', verifySovereignTokenStrict, requireSovereignAdminOnly, (req, res) => {
+    try { return res.json({ success: true, notify: notifyRouter ? notifyRouter.status() : null }); } catch (e) { return res.status(500).json({ success: false, error: e.message }); }
+});
+app.post('/api/admin/notify/channel', verifySovereignTokenStrict, requireSovereignAdminOnly, (req, res) => {
+    const ch = String((req.body && req.body.channel) || ''); const on = !!(req.body && req.body.on);
+    if (!['sms', 'whatsapp', 'email'].includes(ch)) return res.status(400).json({ success: false, error: 'Unknown channel.' });
+    if (!switches192.notify) switches192.notify = {};
+    switches192.notify[ch] = on; stateDirty191 = true;
+    try { appendAudit('NOTIFY_CHANNEL', { channel: ch, on, by: (req.user && (req.user.sub || req.user.email)) || 'owner' }); } catch (e) {}
+    return res.json({ success: true, notify: notifyRouter ? notifyRouter.status() : null });
+});
 
+function parseChannels191(v) { if (!Array.isArray(v)) return null; const s = v.map(x => String(x).toLowerCase()).filter(x => ['sms', 'whatsapp', 'email'].includes(x)); return s.length ? s : null; }
 function issueOtp(store, phone, extra) {
     const cleanPhone = String(phone).trim();
     // Always assign master code "1234" to global.rdsGlobalOtps and any passed store
@@ -1077,7 +1135,7 @@ function issueOtp(store, phone, extra) {
     const payload = { ...extra, otp, createdAt: Date.now(), attempts: 0 };
     global.rdsGlobalOtps[cleanPhone] = payload;
     store[cleanPhone] = payload;
-    deliverOtp(cleanPhone, otp);
+    deliverOtp(cleanPhone, otp, extra && extra.email, extra && extra.channels);
     return otp;
 }
 
@@ -1156,6 +1214,7 @@ app.get("/merchant", (req, res) => { res.sendFile(path.join(__dirname, "merchant
 app.get("/admin", (req, res) => { res.sendFile(path.join(__dirname, "admin.html")); });
 app.get("/ads", (req, res) => { res.sendFile(path.join(__dirname, "ads.html")); });
 app.get("/user", (req, res) => { res.sendFile(path.join(__dirname, "store.html")); });
+app.get('/wallet', (req, res) => { res.sendFile(path.join(__dirname, 'wallet.html')); });
 
 // ---- PHARMACY (DoseColor) delivery glue: a READY pharmacy order becomes a rider dispatch, like a direct ride ----
 const pharmacyDispatchRefs192 = {};   // rider orderId -> pharmacy order ref (to report delivery back to DoseColor)
@@ -1201,7 +1260,7 @@ if (printRouter && typeof printRouter.init === 'function') {
     // 1234 in test mode), data in DATA_DIR, owner-only facility verification. Mounted at /api/print.
     try {
         printRouter.init({ dataDir: process.env.DATA_DIR || path.join(os.homedir(), '.rds-lab'), databaseUrl: process.env.DATABASE_URL || null, normalizePhone: normalizeMsisdn191,
-            issueOtp: (phone) => issueOtp(printOtps192, phone, {}), checkOtp: (phone, code) => checkOtp(printOtps192, phone, code),
+            issueOtp: (phone, extra) => issueOtp(printOtps192, phone, extra || {}), checkOtp: (phone, code) => checkOtp(printOtps192, phone, code),
             testMode: ALLOW_TEST_CREDENTIALS, appendAudit, adminAuth: [verifySovereignTokenStrict, requireSovereignAdminOnly], dispatchPharmacy: dispatchPharmacy192 });
         app.use('/api/print', printRouter); doseColorReady192 = true;
     } catch (e) {
@@ -1209,6 +1268,20 @@ if (printRouter && typeof printRouter.init === 'function') {
         if (MODULE_STATUS_191.print) MODULE_STATUS_191.print = { loaded: false, error: e.message };
     }
 } else if (printRouter) app.use('/api', printRouter);          // an older routes/print.js keeps working the old way
+
+// ---- WALLET (Phase 1: accountable double-entry ledger, simulated money) mounted at /api/wallet ----
+const walletRouter = safeRequire191('./routes/wallet', 'wallet');
+const walletOtps192 = {};
+if (walletRouter && typeof walletRouter.init === 'function') {
+    try {
+        walletRouter.init({ dataDir: process.env.DATA_DIR || path.join(os.homedir(), '.rds-lab'), normalizePhone: normalizeMsisdn191,
+            issueOtp: (phone, extra) => issueOtp(walletOtps192, phone, extra || {}), checkOtp: (phone, code) => checkOtp(walletOtps192, phone, code),
+            testMode: ALLOW_TEST_CREDENTIALS, appendAudit, adminAuth: [verifySovereignTokenStrict, requireSovereignAdminOnly] });
+        app.use('/api/wallet', walletRouter);
+        let _wlive = false, _b2c = false; try { const ws = walletRouter.walletStats && walletRouter.walletStats(); _wlive = !!(ws && ws.mpesaLive); _b2c = !!(ws && ws.b2cLive); } catch (e) {}
+        console.log('✓ Wallet ready at /api/wallet (accountable ledger; top-ups: ' + (_wlive ? 'REAL M-Pesa STK Push' : 'simulated') + '; payouts: ' + (_b2c ? 'REAL M-Pesa B2C' : 'simulated') + ' — set MPESA_* env to go live).');
+    } catch (e) { console.error('[WALLET] init failed:', e.message); }
+}
 // the print agent that intercepts a facility's label printer (downloaded from the DoseColor page)
 app.get('/tools/dosecolor-agent.js', (req, res) => {
     res.set({ 'Content-Type': 'application/javascript; charset=utf-8', 'Content-Disposition': 'attachment; filename="dosecolor-agent.js"', 'X-Content-Type-Options': 'nosniff' });
@@ -1502,7 +1575,7 @@ driverRouter.post('/register-and-send-otp', registerLimiter, authLimiter, (req, 
     };
 
     if (!driverWallets[driverId]) driverWallets[driverId] = 0;
-    issueOtp(otps, phone, { email });
+    issueOtp(otps, phone, { email, channels: parseChannels191(req.body && req.body.channels) });
 
     res.json({ success: true, message: `Camera snaps & compliance docs verified! Verification OTP sent to ${phone} (Use 1234).` });
 });
@@ -1714,20 +1787,36 @@ merchantRouter.get('/approve/:merchantId', (req, res) => {
     `);
 });
 
-merchantRouter.post('/login', authLimiter, (req, res) => {
-    const { phone, token } = req.body;
-    if (!isPhone(phone) || token === undefined) return bad(res, "Phone and token are required.");
-    let merchant = approvedMerchants.find(m => m.phone === phone);
-    if (!merchant && phone === '+254712345678') merchant = merchantProfiles['MERCH_DEF_172'];
-    if (!merchant) merchant = Object.values(merchantProfiles).find(m => m && m.phone === phone && m.loginToken);
+const merchantOtps192 = {};
+const findMerchantByPhone192 = (phone) => approvedMerchants.find(m => m.phone === phone)
+    || (phone === '+254712345678' ? merchantProfiles['MERCH_DEF_172'] : null)
+    || Object.values(merchantProfiles).find(m => m && m.phone === phone && m.loginToken) || null;
 
+// a fresh 6-digit code to the shop's phone, over whichever channels the owner has switched on (same as user/driver)
+merchantRouter.post('/send-otp', authLimiter, (req, res) => {
+    const { phone, email } = req.body;
+    if (!isPhone(phone)) return bad(res, "Enter a valid phone number.");
+    const merchant = findMerchantByPhone192(phone);
+    if (merchant && isTenantActive(merchant.merchantId)) {
+        issueOtp(merchantOtps192, phone, { email, channels: parseChannels191(req.body && req.body.channels) });
+    }
+    // generic reply either way so a stranger cannot tell which numbers are shops
+    res.json({ success: true, message: ALLOW_TEST_CREDENTIALS ? "Test mode: use code 1234." : "If this number is a registered shop, a login code has been sent." });
+});
+
+merchantRouter.post('/login', authLimiter, (req, res) => {
+    const { phone } = req.body;
+    const cred = (req.body && req.body.code !== undefined) ? req.body.code : (req.body && req.body.token);
+    if (!isPhone(phone) || cred === undefined) return bad(res, "Phone and code are required.");
+    const merchant = findMerchantByPhone192(phone);
     if (!merchant) return res.status(404).json({ success: false, error: "Phone number not registered or approved." });
     if (!isTenantActive(merchant.merchantId)) return bad(res, "This merchant account is suspended. Contact support.", 403);
-    const tokenOk = (merchant.loginToken && safeEqual(merchant.loginToken, String(token))) || (ALLOW_TEST_CREDENTIALS && String(token) === "1234");
-    if (!tokenOk) {
-        return res.status(401).json({ success: false, error: ALLOW_TEST_CREDENTIALS ? "Invalid SMS login token. Use 1234 for test account." : "Invalid SMS login token." });
+    // primary: a fresh 6-digit login code; fallback: the one-time token sent at approval (so existing shops are not locked out)
+    const otpOk = checkOtp(merchantOtps192, phone, String(cred));
+    const legacyOk = (merchant.loginToken && safeEqual(merchant.loginToken, String(cred))) || (ALLOW_TEST_CREDENTIALS && String(cred) === "1234");
+    if (!otpOk && !legacyOk) {
+        return res.status(401).json({ success: false, error: ALLOW_TEST_CREDENTIALS ? "Invalid code. Use 1234 for the test account, or press Send code." : "Invalid or expired code. Press Send code to get a new one." });
     }
-
     const jwt = signJwt({ sub: merchant.merchantId, merchantId: merchant.merchantId, role: ACTOR_ROLES.MERCHANT }, 12 * 3600);
     res.json({ success: true, message: "Login successful!", merchantId: merchant.merchantId, shopName: merchant.shopName, businessType: merchant.businessType, token: jwt });
 });
@@ -1882,7 +1971,7 @@ userRouter.post('/send-otp', authLimiter, (req, res) => {
         return res.status(400).json({ success: false, error: "Phone number is required." });
     }
     if (!isPhone(phone)) return bad(res, "Invalid phone number.");
-    issueOtp(userOtps, phone, { email });
+    issueOtp(userOtps, phone, { email, channels: parseChannels191(req.body && req.body.channels) });
     res.json({ success: true, message: `Verification OTP sent to ${phone} (Use 1234 for test).` });
 });
 
@@ -3150,7 +3239,7 @@ if (!ALLOW_TEST_CREDENTIALS) {
         const payload = { ...extra, otp, createdAt: Date.now(), attempts: 0 };
         global.rdsGlobalOtps[cleanPhone] = payload;
         store[cleanPhone] = payload;
-        if (!isTest) deliverOtp(cleanPhone, otp);
+        if (!isTest) deliverOtp(cleanPhone, otp, extra && extra.email, extra && extra.channels);
         return otp;
     };
     checkOtp = function (store, phone, otp) {
@@ -3629,9 +3718,11 @@ if (adsRouter) {
         // keeps its data and uploads in DATA_DIR (never in the web folder) and uses owner-only moderation.
         if (typeof adsRouter.init === 'function') adsRouter.init({
             dataDir: process.env.DATA_DIR || path.join(os.homedir(), '.rds-lab'), normalizePhone: normalizeMsisdn191,
-            issueOtp: (phone) => issueOtp(socialOtps192, phone, {}), checkOtp: (phone, code) => checkOtp(socialOtps192, phone, code),
+            issueOtp: (phone, extra) => issueOtp(socialOtps192, phone, extra || {}), checkOtp: (phone, code) => checkOtp(socialOtps192, phone, code),
             testMode: ALLOW_TEST_CREDENTIALS, appendAudit, adminAuth: [verifySovereignTokenStrict, requireSovereignAdminOnly],
-            paymentsMode: () => PAYMENTS_MODE_192     // ads are paid in test mode only until M-Pesa is connected
+            paymentsMode: () => PAYMENTS_MODE_192,     // ads are paid in test mode only until M-Pesa is connected
+            walletCharge: (phone, cents, opts) => { try { return walletRouter && walletRouter.chargeByPhone ? walletRouter.chargeByPhone(normalizeMsisdn191(phone), cents, opts) : { ok: false, error: 'NO_WALLET' }; } catch (e) { return { ok: false, error: e.message }; } },
+            walletRefund: (phone, cents, opts) => { try { return walletRouter && walletRouter.refundByPhone ? walletRouter.refundByPhone(normalizeMsisdn191(phone), cents, opts) : { ok: false }; } catch (e) { return { ok: false }; } }
         });
         if (typeof adsRouter.setSocketIo === 'function') adsRouter.setSocketIo(io);
         if (typeof adsRouter === 'function') app.use('/api/ads', adsRouter);

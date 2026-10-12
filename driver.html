@@ -126,7 +126,15 @@ img,video,canvas,svg{max-width:100%}
   <div class="seg"><button id="tabLogin" class="on">Sign in</button><button id="tabReg">Register</button></div>
 
   <div id="loginBox" class="card">
-    <div id="lPhoneStep"><label for="lPhone">Mobile number</label><div class="phone"><span>🇰🇪 +254</span><input id="lPhone" type="tel" inputmode="tel" placeholder="7XX XXX XXX" autocomplete="tel-national"></div><button class="btn go" id="lSend">Send code</button></div>
+    <div id="lPhoneStep"><label for="lPhone">Mobile number</label><div class="phone"><span>🇰🇪 +254</span><input id="lPhone" type="tel" inputmode="tel" placeholder="7XX XXX XXX" autocomplete="tel-national"></div>
+      <label for="lEmail" style="margin-top:10px">Email <span class="muted">(optional — for email codes)</span></label><input id="lEmail" type="email" placeholder="you@example.com" autocomplete="email">
+      <label style="margin-top:10px">Send my code by</label>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin:4px 0 2px">
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="dch" value="sms" checked> SMS</label>
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="dch" value="whatsapp" checked> WhatsApp</label>
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="dch" value="email"> Email</label>
+      </div>
+      <button class="btn go" id="lSend">Send code</button></div>
     <div id="otpStep" class="hidden"><p class="muted" id="otpMsg" style="margin-bottom:10px"></p><label for="otp">Verification code</label><input id="otp" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="Enter code" style="text-align:center;letter-spacing:5px;font-size:1.15rem"><button class="btn go" id="otpGo">Verify &amp; continue</button><button class="btn ghost" id="otpBack" style="margin-top:10px">Change number</button></div>
     <div class="err" id="authErr"></div>
   </div>
@@ -226,7 +234,12 @@ $('#camX').onclick = closeCam; $('#camSnap').onclick = () => { const v = $('#cam
 function authTab(reg) { $('#tabLogin').classList.toggle('on', !reg); $('#tabReg').classList.toggle('on', reg); $('#loginBox').classList.toggle('hidden', reg); $('#regBox').classList.toggle('hidden', !reg); $('#authErr').textContent = ''; $('#regErr').textContent = ''; if (reg) renderDocs(); }
 $('#tabLogin').onclick = () => authTab(false); $('#tabReg').onclick = () => authTab(true);
 function showOtp(phone, msg) { state.pendingPhone = phone; const local = /^(localhost|127\.|192\.168\.)/.test(location.hostname); $('#otpMsg').textContent = local && msg ? msg : `We sent a code to ${phone}.`; $('#loginBox').classList.remove('hidden'); $('#regBox').classList.add('hidden'); $('#tabLogin').classList.add('on'); $('#tabReg').classList.remove('on'); $('#lPhoneStep').classList.add('hidden'); $('#otpStep').classList.remove('hidden'); $('#otp').focus(); }
-$('#lSend').onclick = async () => { const phone = normPhone($('#lPhone').value); $('#authErr').textContent = ''; if (!phone) return void ($('#authErr').textContent = 'Enter a valid Kenyan mobile number.'); const b = $('#lSend'); busy(b, true); try { const d = await api('/api/driver/login-otp', { method: 'POST', body: { phone }, token: null }); showOtp(phone, d.message); }
+$('#lSend').onclick = async () => { const phone = normPhone($('#lPhone').value); $('#authErr').textContent = ''; if (!phone) return void ($('#authErr').textContent = 'Enter a valid Kenyan mobile number.');
+  const channels = [...document.querySelectorAll('.dch:checked')].map(x => x.value);
+  if (!channels.length) return void ($('#authErr').textContent = 'Choose at least one way to receive your code.');
+  const email = $('#lEmail') ? $('#lEmail').value.trim() : '';
+  if (channels.includes('email') && !/.+@.+\..+/.test(email)) return void ($('#authErr').textContent = 'Enter your email to receive the code by email.');
+  const b = $('#lSend'); busy(b, true); try { const d = await api('/api/driver/login-otp', { method: 'POST', body: { phone, email: email || undefined, channels }, token: null }); showOtp(phone, d.message); }
   catch (e) {
     // a code was sent less than 30 seconds ago and is still valid: go to the code box instead of blocking the rider
     if (e.status === 429 && /seconds before asking for another code/.test(e.message)) { showOtp(phone, null); $('#otpMsg').textContent = `A code was already sent to ${phone} a moment ago. Enter it below (it stays valid for 5 minutes).`; }

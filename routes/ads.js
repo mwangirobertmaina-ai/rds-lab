@@ -830,7 +830,13 @@ function setSponsor(c, on) {
     if (on) p.sponsored = { label: 'Sponsored', ctaText: c.ctaText, ctaUrl: c.ctaUrl, impressions: (p.sponsored && p.sponsored.impressions) || 0, clicks: (p.sponsored && p.sponsored.clicks) || 0, campaignId: c.id, since: now() };
     else if (p.sponsored && p.sponsored.campaignId === c.id) p.sponsored = null;
 }
-function finish(c, status) { c.status = status; c.endedAt = now(); c.spentC = spentOf(c); c.refundC = c.budgetC - c.spentC; setSponsor(c, false); if (D.appendAudit) D.appendAudit('SOCIAL_CAMPAIGN_ENDED', { campaignId: c.id, status, spent: kes(c.spentC), refund: kes(c.refundC) }); }
+function finish(c, status) {
+    c.status = status; c.endedAt = now(); c.spentC = spentOf(c); c.refundC = c.budgetC - c.spentC; setSponsor(c, false);
+    if (c.refundC > 0 && !c.refunded && c.payment && c.payment.mode === 'WALLET' && D.walletRefund) {
+        try { const u = S.users[c.uid]; if (u && u.phone) { const r = D.walletRefund(u.phone, c.refundC, { account: 'REVENUE', kind: 'AD_REFUND', ref: c.id, memo: 'Unspent ad budget' }); if (r && r.ok) c.refunded = true; } } catch (e) {}
+    }
+    if (D.appendAudit) D.appendAudit('SOCIAL_CAMPAIGN_ENDED', { campaignId: c.id, status, spent: kes(c.spentC), refund: kes(c.refundC) });
+}
 function syncCampaign(c) {
     if (!['ACTIVE', 'PAUSED', 'PENDING_REVIEW'].includes(c.status)) return c;
     c.spentC = spentOf(c);
@@ -846,18 +852,24 @@ const campView = (c) => { syncCampaign(c); const p = S.posts[c.postId], m = p &&
         payment: c.payment, post: p ? { id: p.id, caption: p.caption, thumb: m && m.kind === 'image' && p.status === 'LIVE' ? mediaUrl(m.id) : null, status: p.status } : null }; };
 router.post('/campaigns', auth, (req, res) => {
     const me = req.su, b = req.body || {}; if (limited('campaign:' + me.id, ...LIM.campaign)) return slow(res, 'new campaigns');
-    if (D.paymentsMode && D.paymentsMode() !== 'simulated') return fail(res, 501, 'Paying for ads with M-Pesa is not connected yet on this server.');
+    if (!D.walletCharge && D.paymentsMode && D.paymentsMode() !== 'simulated') return fail(res, 501, 'Paying for ads with M-Pesa is not connected yet on this server.');
     const p = S.posts[b.postId]; if (!okId(String(b.postId || ''), 'P') || !p || p.status !== 'LIVE' || p.uid !== me.id) return fail(res, 404, 'Choose one of your own live posts to promote.');
     if (Object.values(S.campaigns).some(c => c.postId === p.id && ['ACTIVE', 'PAUSED', 'PENDING_REVIEW'].includes(syncCampaign(c).status))) return fail(res, 409, 'This post is already being promoted.');
     const budget = Number(b.budget), days = Number(b.days || 7);
     if (!Number.isInteger(budget) || budget < 100 || budget > 500000) return fail(res, 400, 'The budget must be a whole number of shillings between KES 100 and KES 500,000.');
     if (!Number.isInteger(days) || days < 1 || days > 30) return fail(res, 400, 'Run the ad for 1 to 30 days.');
     const url = safeCtaUrl(b.ctaUrl); if (!url) return fail(res, 400, 'The link must be an https address, or a page inside RDS such as /user?shop=M1.');
+    let payment;
+    if (D.walletCharge) {
+        const ch = D.walletCharge(me.phone, budget * 100, { account: 'REVENUE', kind: 'AD_SPEND', ref: 'AD:' + p.id, memo: 'Ad campaign' });
+        if (!ch.ok) return fail(res, 402, ch.error === 'INSUFFICIENT' ? `Your wallet balance is KES ${Number(ch.balance || 0).toLocaleString('en-US')}. Top up at /wallet to fund this KES ${budget.toLocaleString('en-US')} ad.` : 'Open your wallet at /wallet and top up before you promote a post.');
+        payment = { mode: 'WALLET', amount: budget, ref: ch.tx, note: 'Paid from your RDS wallet.' };
+    } else payment = { mode: 'SIMULATED', amount: budget, ref: 'SIM-' + crypto.randomBytes(4).toString('hex').toUpperCase(), note: 'Test mode: no real money moved.' };
     const t = now(), c = { id: newId('A'), uid: me.id, postId: p.id, budgetC: budget * 100, cpmC: Math.round(CPM_KES * 100), spentC: 0, impressions: 0, clicks: 0, ctaText: clean(b.ctaText, 30) || 'Learn more', ctaUrl: url,
-        status: REVIEW ? 'PENDING_REVIEW' : 'ACTIVE', createdAt: t, endsAt: t + days * 86400000, payment: { mode: 'SIMULATED', amount: budget, ref: 'SIM-' + crypto.randomBytes(4).toString('hex').toUpperCase(), note: 'Test mode: no real money moved.' } };
+        status: REVIEW ? 'PENDING_REVIEW' : 'ACTIVE', createdAt: t, endsAt: t + days * 86400000, payment };
     S.campaigns[c.id] = c; if (c.status === 'ACTIVE') setSponsor(c, true);
     if (D.appendAudit) D.appendAudit('SOCIAL_CAMPAIGN_CREATED', { campaignId: c.id, uid: me.id, postId: p.id, budget, days, status: c.status });
-    dirty(); res.json({ success: true, campaign: campView(c), message: c.status === 'ACTIVE' ? `Your ad is live. About ${Math.floor(budget / CPM_KES * 1000).toLocaleString('en-US')} views for KES ${budget.toLocaleString('en-US')} (test mode: no real money moved).` : 'Your ad was sent for review. It starts as soon as it is approved.' });
+    dirty(); res.json({ success: true, campaign: campView(c), message: c.status === 'ACTIVE' ? `Your ad is live. About ${Math.floor(budget / CPM_KES * 1000).toLocaleString('en-US')} views for KES ${budget.toLocaleString('en-US')}${payment.mode === 'WALLET' ? ', paid from your wallet' : ' (test mode: no real money moved)'}.` : `Your ad was sent for review${payment.mode === 'WALLET' ? ' and KES ' + budget.toLocaleString('en-US') + ' is held from your wallet; it is refunded if the ad is rejected' : ''}. It starts as soon as it is approved.` });
 });
 router.get('/campaigns', auth, (req, res) => {
     const list = Object.values(S.campaigns).filter(c => c.uid === req.su.id).sort((a, b) => b.createdAt - a.createdAt).map(campView);

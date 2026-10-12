@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f19">
+<title>RDS Wallet</title>
+<style>
+  :root { --bg:#0b0f19; --card:#111827; --line:#1f2937; --txt:#e5e7eb; --mut:#9ca3af; --go:#10b981; --go2:#059669; --acc:#6366f1; --warn:#f59e0b; --err:#f87171; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:460px; margin:0 auto; padding:18px 16px 60px; }
+  h1 { font-size:20px; margin:4px 0 2px; } h2 { font-size:15px; margin:0 0 10px; }
+  .muted { color:var(--mut); } .small { font-size:13px; } .tiny { font-size:11px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; }
+  label { display:block; font-size:12px; color:var(--mut); margin:8px 0 4px; }
+  input { width:100%; background:#0b1222; border:1px solid var(--line); border-radius:10px; padding:11px 12px; color:var(--txt); font-size:15px; outline:none; }
+  input:focus { border-color:var(--acc); }
+  .btn { border:none; border-radius:10px; padding:11px 14px; font-weight:700; font-size:14px; color:#fff; cursor:pointer; }
+  .go { background:linear-gradient(135deg,var(--go),var(--go2)); } .acc { background:var(--acc); } .ghost { background:#0b1222; border:1px solid var(--line); color:var(--txt); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; } .between { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .err { color:var(--err); font-size:13px; margin-top:8px; } .ok { color:var(--go); }
+  .hidden { display:none; }
+  .bal { font-size:40px; font-weight:800; letter-spacing:-1px; } .bal .cur { font-size:18px; color:var(--mut); font-weight:600; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; }
+  table { width:100%; border-collapse:collapse; } td { padding:8px 0; border-top:1px solid var(--line); font-size:13px; vertical-align:top; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .tile { background:#0b1222; border:1px solid var(--line); border-radius:12px; padding:10px; text-align:center; }
+  .tile b { display:block; font-size:16px; } .tile span { font-size:10px; color:var(--mut); }
+  .seg { display:flex; gap:6px; margin-bottom:12px; } .seg button { flex:1; }
+  #toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:#111827; border:1px solid var(--line); padding:10px 16px; border-radius:10px; font-size:13px; max-width:92%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="between" style="margin-bottom:14px">
+    <h1>💳 RDS Wallet</h1>
+    <button id="btnOut" class="btn ghost small hidden" onclick="signOut()">Sign out</button>
+  </div>
+
+  <!-- AUTH -->
+  <div id="vAuth" class="card">
+    <h2>Sign in</h2>
+    <div id="a1">
+      <label for="aPhone">Phone number</label>
+      <input id="aPhone" type="tel" placeholder="0712 345 678" autocomplete="tel">
+      <label for="aEmail" style="margin-top:10px">Email <span class="muted">(optional — needed for email codes)</span></label>
+      <input id="aEmail" type="email" placeholder="you@example.com" autocomplete="email">
+      <label style="margin-top:10px">Send my code by</label>
+      <div class="row" style="gap:14px;flex-wrap:wrap;margin-top:4px">
+        <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="chch" value="sms" checked> SMS</label>
+        <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="chch" value="whatsapp" checked> WhatsApp</label>
+        <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="chch" value="email"> Email</label>
+      </div>
+      <p class="tiny muted" style="margin-top:4px">Pick one or more. We only use the channels the operator has switched on.</p>
+      <div class="row" style="margin-top:12px"><button class="btn go" onclick="sendCode()">Send code</button></div>
+    </div>
+    <div id="a2" class="hidden">
+      <p class="small muted" id="aMsg"></p>
+      <label for="aName">Your name (first time only)</label><input id="aName" maxlength="60" placeholder="Optional">
+      <label for="aCode">Code</label><input id="aCode" inputmode="numeric" placeholder="1234">
+      <div class="row" style="margin-top:12px"><button class="btn go" onclick="verify()">Sign in</button><button class="btn ghost" onclick="document.getElementById('a2').classList.add('hidden');document.getElementById('a1').classList.remove('hidden')">Back</button></div>
+    </div>
+    <div id="aErr" class="err"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="vMain" class="hidden">
+    <div class="card">
+      <div class="muted small">Available balance</div>
+      <div class="bal"><span class="cur">KES </span><span id="bal">0.00</span></div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn go" style="flex:1" onclick="show('topup')">Top up</button>
+        <button class="btn acc" style="flex:1" onclick="show('withdraw')">Withdraw</button>
+        <button class="btn ghost" style="flex:1" onclick="show('send')">Send</button>
+      </div>
+    </div>
+
+    <div id="action" class="card hidden">
+      <div class="seg">
+        <button class="btn ghost" data-seg="topup" onclick="show('topup')">Top up</button>
+        <button class="btn ghost" data-seg="withdraw" onclick="show('withdraw')">Withdraw</button>
+        <button class="btn ghost" data-seg="send" onclick="show('send')">Send</button>
+      </div>
+      <div id="sendWrap" class="hidden"><label for="toPhone">Send to (phone)</label><input id="toPhone" type="tel" placeholder="0712 345 678"></div>
+      <label for="amt" id="amtLabel">Amount (KES)</label>
+      <input id="amt" inputmode="decimal" placeholder="e.g. 500">
+      <div class="row" style="margin-top:12px"><button id="goBtn" class="btn go" onclick="submitAction()">Confirm</button></div>
+      <p class="tiny muted" id="actNote" style="margin-top:8px"></p>
+      <div id="actErr" class="err"></div>
+    </div>
+
+    <div class="card">
+      <div class="between"><h2 style="margin:0">Transactions</h2><button class="btn ghost tiny" onclick="loadTx()">Refresh</button></div>
+      <div id="tx" class="muted small" style="margin-top:8px">Loading…</div>
+    </div>
+
+    <p class="tiny muted" style="text-align:center">Every shilling is held in a double-entry ledger: your balance is money owed to you in a designated account, provable to the cent. Top-ups connect to M-Pesa (STK Push) when the server is configured; otherwise they settle instantly in test mode. Withdrawals (M-Pesa B2C) connect next.</p>
+  </div>
+</div>
+<div id="toast" class="hidden"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let token = localStorage.getItem('rds_wallet_token') || null, me = null, phone = null, mode = 'topup';
+const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 3500); };
+async function api(path, opt = {}) {
+  const h = { 'Content-Type':'application/json' }; if (token) h.Authorization = 'Bearer ' + token;
+  const r = await fetch('/api/wallet' + path, { method: opt.method || 'GET', headers: h, body: opt.body ? JSON.stringify(opt.body) : undefined });
+  let d = null; try { d = await r.json(); } catch(e) {}
+  if (r.status === 401 && token && !opt.anon) { signOutLocal(); }
+  if (!r.ok || !d || d.success === false) { throw new Error((d && d.error) || ('Request failed (' + r.status + ')')); }
+  return d;
+}
+window.signOut = async () => { try { await api('/auth/logout', { method:'POST', body:{} }); } catch(e){} signOutLocal(); };
+function signOutLocal() { token = null; me = null; localStorage.removeItem('rds_wallet_token'); $('#btnOut').classList.add('hidden'); $('#vMain').classList.add('hidden'); $('#vAuth').classList.remove('hidden'); }
+
+window.sendCode = async () => { $('#aErr').textContent = '';
+  const channels = [...document.querySelectorAll('.chch:checked')].map(x => x.value);
+  if (!channels.length) { $('#aErr').textContent = 'Choose at least one way to receive your code.'; return; }
+  const email = $('#aEmail').value.trim();
+  if (channels.includes('email') && !/.+@.+\..+/.test(email)) { $('#aErr').textContent = 'Enter your email to receive the code by email.'; return; }
+  try { const d = await api('/auth/request-code', { method:'POST', anon:true, body:{ phone: $('#aPhone').value.trim(), email: email || undefined, channels } }); phone = d.phone; $('#aMsg').textContent = d.message; $('#a1').classList.add('hidden'); $('#a2').classList.remove('hidden'); $('#aCode').focus(); } catch(e) { $('#aErr').textContent = e.message; } };
+window.verify = async () => { $('#aErr').textContent = ''; try { const d = await api('/auth/verify', { method:'POST', anon:true, body:{ phone, code: $('#aCode').value.trim(), name: $('#aName').value.trim() } }); token = d.token; localStorage.setItem('rds_wallet_token', token); me = d.me; boot(); } catch(e) { $('#aErr').textContent = e.message; } };
+
+async function boot() {
+  if (!token) { $('#vAuth').classList.remove('hidden'); $('#vMain').classList.add('hidden'); $('#btnOut').classList.add('hidden'); return; }
+  try { me = (await api('/me')).me; } catch(e) { return; }
+  $('#vAuth').classList.add('hidden'); $('#vMain').classList.remove('hidden'); $('#btnOut').classList.remove('hidden');
+  $('#bal').textContent = Number(me.balance).toLocaleString('en-KE', { minimumFractionDigits: 2 });
+  loadTx();
+}
+window.show = (m) => {
+  mode = m; const box = $('#action'); box.classList.remove('hidden');
+  document.querySelectorAll('[data-seg]').forEach(b => b.className = 'btn ' + (b.dataset.seg === m ? 'go' : 'ghost'));
+  $('#sendWrap').classList.toggle('hidden', m !== 'send');
+  $('#amtLabel').textContent = m === 'send' ? 'Amount to send (KES)' : 'Amount (KES)';
+  $('#goBtn').textContent = m === 'topup' ? 'Top up' : m === 'withdraw' ? 'Withdraw' : 'Send';
+  $('#actNote').textContent = m === 'topup' ? 'Top up by M-Pesa (STK Push) when connected, or instantly in test mode.' : m === 'withdraw' ? 'Withdraw to M-Pesa (B2C) when connected, or instantly in test mode.' : 'Sends from your balance to another wallet instantly.';
+  $('#actErr').textContent = ''; $('#amt').value = ''; $('#amt').focus();
+};
+window.submitAction = async () => {
+  $('#actErr').textContent = ''; const amount = $('#amt').value.trim(); const btn = $('#goBtn'); btn.disabled = true;
+  try {
+    let d;
+    if (mode === 'topup') d = await api('/topup', { method:'POST', body:{ amount } });
+    else if (mode === 'withdraw') d = await api('/withdraw', { method:'POST', body:{ amount } });
+    else d = await api('/transfer', { method:'POST', body:{ toPhone: $('#toPhone').value.trim(), amount } });
+    if (d.pending) {                                           // real M-Pesa: top-up prompt sent, or payout being sent; wait for the callback
+      $('#action').classList.add('hidden');
+      if (mode === 'withdraw') { try { const m = await api('/me'); me.balance = m.balance; $('#bal').textContent = Number(m.balance).toLocaleString('en-KE', { minimumFractionDigits: 2 }); } catch (e) {} }   // balance is already reserved
+      loadTx(); toast(d.message || (mode === 'topup' ? 'Check your phone to approve the M-Pesa payment.' : 'Sending to your M-Pesa…'));
+      const done = await pollPending(d.tx.id);
+      const st = done && (done.tx.meta && done.tx.meta.state || done.tx.status);
+      try { const m = await api('/me'); me.balance = m.balance; $('#bal').textContent = Number(m.balance).toLocaleString('en-KE', { minimumFractionDigits: 2 }); } catch (e) {}
+      if (mode === 'topup') toast(st === 'SETTLED' ? ('Topped up ✓ KES ' + amount + ' received') : st === 'FAILED' ? 'Top-up not completed — nothing was charged.' : 'Still waiting for M-Pesa. Your balance updates when it confirms.');
+      else toast(st === 'PAID' ? ('Sent ✓ KES ' + (d.received != null ? d.received : amount) + ' is on its way to your M-Pesa') : (st === 'FAILED' || st === 'REVERSED') ? 'Payout did not go through — your money was returned to your wallet.' : 'Still processing at M-Pesa. Your wallet updates when it confirms.');
+      loadTx(); return;
+    }
+    me.balance = d.balance; $('#bal').textContent = Number(d.balance).toLocaleString('en-KE', { minimumFractionDigits: 2 });
+    toast(mode === 'topup' ? 'Topped up ✓' : mode === 'withdraw' ? ('Withdrawn ✓ you receive KES ' + (d.received != null ? d.received : amount)) : 'Sent ✓');
+    $('#action').classList.add('hidden'); loadTx();
+  } catch(e) { $('#actErr').textContent = e.message; } finally { btn.disabled = false; }
+};
+async function pollPending(txId) {   // poll until the M-Pesa callback completes the top-up or payout (up to ~90s)
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 3000));
+    try { const d = await api('/topup/' + txId); const s = d.tx && (d.tx.status === 'SETTLED' || d.tx.status === 'FAILED'); const ms = d.tx && d.tx.meta && ['PAID', 'FAILED', 'REVERSED'].includes(d.tx.meta.state); if (d.tx && (ms || (d.tx.kind === 'TOPUP' && s))) return d; } catch (e) {}
+  }
+  return null;
+}
+const KIND = { TOPUP:['Top-up','#065f46'], WITHDRAW:['Withdrawal','#4338ca'], TRANSFER:['Sent','#1e293b'] };
+async function loadTx() {
+  try { const d = await api('/transactions'); me && ($('#bal').textContent = Number(d.balance).toLocaleString('en-KE', { minimumFractionDigits: 2 }));
+    $('#tx').innerHTML = d.transactions.length ? `<table><tbody>${d.transactions.map(t => {
+      const k = KIND[t.kind] || [t.kind,'#1e293b']; const sign = t.kind === 'TOPUP' ? '+' : '−';
+      return `<tr><td><span class="pill" style="background:${k[1]}">${k[0]}</span> <span class="muted tiny">${esc(new Date(t.at).toLocaleString('en-KE',{dateStyle:'short',timeStyle:'short'}))}</span>${t.status!=='SETTLED'?` · <span class="tiny" style="color:var(--warn)">${esc(t.status.toLowerCase())}</span>`:''}${t.fee?`<div class="tiny muted">fee KES ${esc(t.fee)}</div>`:''}</td><td style="text-align:right;font-weight:700">${sign} KES ${esc(t.amount)}</td></tr>`;
+    }).join('')}</tbody></table>` : '<p class="muted">No transactions yet. Top up to get started.</p>';
+  } catch(e) { $('#tx').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+}
+window.loadTx = loadTx;
+boot();
+})();
+</script>
+</body>
+</html>

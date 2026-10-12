@@ -139,9 +139,17 @@ img,video,canvas,svg{max-width:100%}
 <!-- ============ AUTH ============ -->
 <section id="viewAuth" class="narrow">
   <div id="loginBox" class="panel">
-    <div style="text-align:center;margin-bottom:14px"><div class="brandbox">🏪</div><h1 style="color:var(--g)">Vendor sign in</h1><p class="muted" style="margin-top:4px">Use your registered phone and the login token sent to you by SMS.</p></div>
+    <div style="text-align:center;margin-bottom:14px"><div class="brandbox">🏪</div><h1 style="color:var(--g)">Vendor sign in</h1><p class="muted" style="margin-top:4px">Enter your registered phone and we\'ll send a fresh 6-digit code to the channel(s) you choose.</p></div>
     <label for="lPhone">Phone number</label><input id="lPhone" type="tel" inputmode="tel" placeholder="07XX XXX XXX or +2547…" autocomplete="tel">
-    <label for="lToken">Login token</label><input id="lToken" inputmode="numeric" maxlength="8" placeholder="Token from SMS" autocomplete="one-time-code" style="text-align:center;letter-spacing:4px;font-size:1.1rem">
+    <label for="lEmail" style="margin-top:10px">Email <span class="muted">(optional — needed for email codes)</span></label><input id="lEmail" type="email" placeholder="you@example.com" autocomplete="email">
+    <label style="margin-top:10px">Send my code by</label>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin:4px 0 2px">
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="mch" value="sms" checked> SMS</label>
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="mch" value="whatsapp" checked> WhatsApp</label>
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="mch" value="email"> Email</label>
+    </div>
+    <button class="btn ghost block" id="lSend" style="margin-top:6px">Send code</button>
+    <label for="lToken" style="margin-top:10px">6-digit code</label><input id="lToken" inputmode="numeric" maxlength="8" placeholder="Code from SMS / WhatsApp / Email" autocomplete="one-time-code" style="text-align:center;letter-spacing:4px;font-size:1.1rem">
     <div class="err" id="lErr"></div>
     <button class="btn go block" id="lGo">Sign in</button>
     <div style="text-align:center;border-top:1px solid var(--line);margin-top:16px;padding-top:14px"><p class="muted">New shop owner?</p><button class="btn ghost block" id="toReg" style="margin-top:8px">Register a new shop</button></div>
@@ -332,13 +340,24 @@ function show(view) { $('#viewAuth').classList.toggle('hidden', view !== 'auth')
 function authPane(p) { $('#loginBox').classList.toggle('hidden', p !== 'login'); $('#regBox').classList.toggle('hidden', p !== 'reg'); $('#regDone').classList.toggle('hidden', p !== 'done'); }
 $('#toReg').onclick = () => authPane('reg'); $('#toLogin').onclick = () => authPane('login'); $('#doneBack').onclick = () => authPane('login');
 $('#lToken').addEventListener('keydown', e => { if (e.key === 'Enter') $('#lGo').click(); });
+$('#lSend').onclick = async () => {
+  $('#lErr').textContent = ''; const phone = normPhone($('#lPhone').value);
+  if (!phone) return void ($('#lErr').textContent = 'Enter a valid Kenyan mobile number.');
+  const channels = [...document.querySelectorAll('.mch:checked')].map(x => x.value);
+  if (!channels.length) return void ($('#lErr').textContent = 'Choose at least one way to receive your code.');
+  const email = $('#lEmail').value.trim();
+  if (channels.includes('email') && !/.+@.+\..+/.test(email)) return void ($('#lErr').textContent = 'Enter your email to receive the code by email.');
+  const b = $('#lSend'); busy(b, true);
+  try { const d = await api('/api/merchant/send-otp', { method: 'POST', body: { phone, email: email || undefined, channels }, token: null }); toast(d.message || 'Code sent.'); $('#lToken').focus(); }
+  catch (e) { $('#lErr').textContent = e.message; } finally { busy(b, false); }
+};
 $('#lGo').onclick = async () => {
   $('#lErr').textContent = ''; const phone = normPhone($('#lPhone').value), token = $('#lToken').value.trim();
   if (!phone) return void ($('#lErr').textContent = 'Enter a valid Kenyan mobile number.');
-  if (!token) return void ($('#lErr').textContent = 'Enter your login token.');
+  if (!token) return void ($('#lErr').textContent = 'Enter the 6-digit code (press Send code first).');
   const b = $('#lGo'); busy(b, true);
   try {
-    const d = await api('/api/merchant/login', { method: 'POST', body: { phone, token }, token: null });
+    const d = await api('/api/merchant/login', { method: 'POST', body: { phone, code: token }, token: null });
     state.token = d.token; state.shop = { merchantId: d.merchantId, shopName: d.shopName, businessType: d.businessType, phone };
     LS.set('rds_m_token', state.token); LS.set('rds_m_shop', state.shop); $('#lToken').value = '';
     enterApp();
