@@ -9,12 +9,12 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBiMGYxOSIvPjxyZWN0IHg9IjU4IiB5PSI1OCIgd2lkdGg9IjM5NiIgaGVpZ2h0PSIzOTYiIHJ4PSI4OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBmZjg4IiBzdHJva2Utd2lkdGg9IjIyIi8+PHRleHQgeD0iMjU2IiB5PSIyOTgiIGZvbnQtZmFtaWx5PSJBcmlhbCxIZWx2ZXRpY2Esc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjgwMCIgZm9udC1zaXplPSIxNDgiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlJEUzwvdGV4dD48Y2lyY2xlIGN4PSIyNTYiIGN5PSIzODgiIHI9IjI4IiBmaWxsPSIjMDBmZjg4Ii8+PC9zdmc+">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="RDS Sovereign Enterprise — delivery, rides, social & ads, shops, wallet and compliance in one installable app.">
+<meta name="description" content="RDS Sovereign Enterprise — delivery, rides, social & ads, shops, pharmacy, wallet, institutions and compliance in one installable app.">
 <style>
 :root{--g:#00ff88;--bg:#0b0f19;--panel:#111827;--dim:#9ca3af;--cy:#38bdf8;--pu:#a855f7;--gold:#ffc244;--red:#ff4d6d;--line:#222c3d;--r:16px}
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif}
 body{background:var(--bg);color:#fff;min-height:100dvh;-webkit-font-smoothing:antialiased}
-.wrap{max-width:900px;margin:0 auto;padding:28px 16px 48px}
+.wrap{max-width:960px;margin:0 auto;padding:28px 16px 48px}
 header{text-align:center;margin-bottom:22px}
 .logo{width:72px;height:72px;border-radius:20px;background:#0b0f19;border:3px solid var(--g);display:grid;place-items:center;margin:0 auto 12px;font-weight:900;font-size:1.5rem;letter-spacing:1px;box-shadow:0 10px 30px rgba(0,255,136,.12)}
 h1{font-size:1.5rem;font-weight:900}
@@ -22,7 +22,8 @@ h1{font-size:1.5rem;font-weight:900}
 #install{display:none;margin:16px auto 0;background:var(--g);color:#000;border:0;border-radius:12px;padding:12px 22px;font-weight:800;font-size:.9rem;cursor:pointer}
 #install.show{display:inline-flex;align-items:center;gap:8px}
 .hint{color:var(--dim);font-size:.78rem;margin-top:10px;line-height:1.5}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:22px}
+.sec{font-size:.72rem;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin:26px 2px 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
 a.tile{display:block;text-decoration:none;color:#fff;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;transition:transform .12s,border-color .12s,box-shadow .12s}
 a.tile:hover{transform:translateY(-3px);border-color:var(--c);box-shadow:0 12px 28px rgba(0,0,0,.35)}
 a.tile:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
@@ -43,7 +44,14 @@ footer{text-align:center;color:var(--dim);font-size:.74rem;margin-top:30px;line-
     <div class="hint" id="installHint"></div>
   </header>
 
-  <div class="grid" id="tiles"></div>
+  <div class="sec">Everyday apps</div>
+  <div class="grid" id="tilesMain"></div>
+
+  <div class="sec">Partners &amp; staff</div>
+  <div class="grid" id="tilesPartner"></div>
+
+  <div class="sec">Owner &amp; back office</div>
+  <div class="grid" id="tilesOwner"></div>
 
   <footer>
     Installs like a normal app and opens straight to this screen.<br>
@@ -53,25 +61,31 @@ footer{text-align:center;color:var(--dim);font-size:.74rem;margin-top:30px;line-
 
 <script>
 'use strict';
-// Each role tile. color is the accent; href is the page the server already serves.
-const APPS = [
-  { href:'/user',     icon:'🛍️', c:'#38bdf8', title:'Shop & Rides',      desc:'Order from shops or request a boda/cab. Pay, track, rate.', tag:'Customer' },
-  { href:'/',         icon:'📣', c:'#a855f7', title:'Social & Ads',       desc:'Posts, go live, follow, and run ad campaigns.',            tag:'Public' },
-  { href:'/wallet',   icon:'👛', c:'#00ff88', title:'Wallet',            desc:'Top up, send, withdraw — your money, to the cent.',        tag:'Money' },
-  { href:'/merchant', icon:'🏪', c:'#ffc244', title:'Merchant',          desc:'Your shop: orders, catalog, hand-over & payouts.',         tag:'Shop owner' },
-  { href:'/driver',   icon:'🏍️', c:'#f97316', title:'Driver',            desc:'Go online, accept jobs, deliver, get paid.',               tag:'Rider' },
-  { href:'/platform', icon:'🏦', c:'#22d3ee', title:'Institutions',      desc:'Forex, SACCO, microfinance & bank staff counter.',         tag:'Partner' },
-  { href:'/admin',    icon:'🛡️', c:'#f43f5e', title:'Compliance & Ledger', desc:'KYC, journals, reports, audit — the back office.',       tag:'Admin' },
-  { href:'/store',    icon:'🛰️', c:'#e5e7eb', title:'Master Control',    desc:'Owner console: switch anything on/off, see the books.',    tag:'Owner' }
+// Every door the server serves, grouped. color is the accent; href is the live page.
+const MAIN = [
+  { href:'/user',     icon:'🛍️', c:'#38bdf8', title:'Shop & Rides',        desc:'Order from shops or request a boda/cab. Pay, track, rate.', tag:'Customer' },
+  { href:'/',         icon:'📣', c:'#a855f7', title:'Social & Ads',         desc:'Posts, go live, follow, and run ad campaigns.',            tag:'Public' },
+  { href:'/wallet',   icon:'👛', c:'#00ff88', title:'Wallet',              desc:'Top up, send, withdraw — your money, to the cent.',        tag:'Money' },
+  { href:'/print',    icon:'💊', c:'#2dd4bf', title:'Pharmacy · DoseColor', desc:'Chemist orders, prescriptions, controlled meds & label printing.', tag:'Pharmacy' }
 ];
-const tiles = document.getElementById('tiles');
-tiles.innerHTML = APPS.map(a => `
+const PARTNER = [
+  { href:'/merchant', icon:'🏪', c:'#ffc244', title:'Merchant',            desc:'Your shop: orders, catalog, hand-over & payouts.',         tag:'Shop owner' },
+  { href:'/driver',   icon:'🏍️', c:'#f97316', title:'Driver',              desc:'Go online, accept jobs, deliver, get paid.',               tag:'Rider' },
+  { href:'/platform', icon:'🏦', c:'#22d3ee', title:'Institutions',        desc:'Forex, SACCO, microfinance & bank staff counter.',         tag:'Partner' }
+];
+const OWNER = [
+  { href:'/store',          icon:'🛰️', c:'#e5e7eb', title:'Master Control',      desc:'Owner console: switch anything on/off, see the books.',  tag:'Owner' },
+  { href:'/admin',          icon:'🛡️', c:'#f43f5e', title:'Compliance & Ledger', desc:'KYC, journals, reports, sanctions, audit — back office.', tag:'Admin' },
+  { href:'/platform-admin', icon:'🏛️', c:'#818cf8', title:'Institution Console', desc:'Approve, monitor & switch the institutions on your platform.', tag:'Owner' }
+];
+const render = (id, list) => { document.getElementById(id).innerHTML = list.map(a => `
   <a class="tile" href="${a.href}" style="--c:${a.c}">
     <div class="ic" style="color:${a.c}">${a.icon}</div>
     <h2>${a.title}</h2>
     <p>${a.desc}</p>
     <span class="tag">${a.tag}</span>
-  </a>`).join('');
+  </a>`).join(''); };
+render('tilesMain', MAIN); render('tilesPartner', PARTNER); render('tilesOwner', OWNER);
 
 // ---- PWA install ----
 let deferred = null;
@@ -85,11 +99,10 @@ btn.addEventListener('click', async () => {
   if (outcome === 'accepted') hint.textContent = 'Installing… look for the RDS icon on your home screen.';
 });
 window.addEventListener('appinstalled', () => { btn.classList.remove('show'); hint.textContent = 'Installed ✓ You can open RDS from your home screen.'; });
-// iOS has no install button — tell the user how
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent), standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 if (isIOS && !standalone) hint.textContent = 'To install on iPhone/iPad: tap Share, then “Add to Home Screen”.';
 
-// ---- register the service worker (makes it installable + works offline) ----
+// ---- register the service worker (installable + works offline) ----
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
 }
