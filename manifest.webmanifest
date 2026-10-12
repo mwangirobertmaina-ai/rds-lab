@@ -1,7 +1,7 @@
 {
   "name": "RDS Sovereign Enterprise",
   "short_name": "RDS",
-  "description": "Delivery, rides, social & ads, shops, wallet and compliance — one installable app.",
+  "description": "Delivery, rides, social & ads, shops, wallet and compliance - one installable app.",
   "id": "/app",
   "start_url": "/app",
   "scope": "/",
@@ -10,12 +10,11 @@
   "background_color": "#0b0f19",
   "theme_color": "#0b0f19",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBiMGYxOSIvPjxyZWN0IHg9IjU4IiB5PSI1OCIgd2lkdGg9IjM5NiIgaGVpZ2h0PSIzOTYiIHJ4PSI4OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBmZjg4IiBzdHJva2Utd2lkdGg9IjIyIi8+PHRleHQgeD0iMjU2IiB5PSIyOTgiIGZvbnQtZmFtaWx5PSJBcmlhbCxIZWx2ZXRpY2Esc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjgwMCIgZm9udC1zaXplPSIxNDgiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlJEUzwvdGV4dD48Y2lyY2xlIGN4PSIyNTYiIGN5PSIzODgiIHI9IjI4IiBmaWxsPSIjMDBmZjg4Ii8+PC9zdmc+", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzBiMGYxOSIvPjxyZWN0IHg9IjU4IiB5PSI1OCIgd2lkdGg9IjM5NiIgaGVpZ2h0PSIzOTYiIHJ4PSI4OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBmZjg4IiBzdHJva2Utd2lkdGg9IjIyIi8+PHRleHQgeD0iMjU2IiB5PSIyOTgiIGZvbnQtZmFtaWx5PSJBcmlhbCxIZWx2ZXRpY2Esc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjgwMCIgZm9udC1zaXplPSIxNDgiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlJEUzwvdGV4dD48Y2lyY2xlIGN4PSIyNTYiIGN5PSIzODgiIHI9IjI4IiBmaWxsPSIjMDBmZjg4Ii8+PC9zdmc+", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Shop & Rides", "url": "/user", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Shop & Rides", "url": "/user" },
     { "name": "Wallet", "url": "/wallet" },
     { "name": "Social & Ads", "url": "/" },
     { "name": "Merchant", "url": "/merchant" },

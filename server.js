@@ -230,7 +230,11 @@ app.use((req, res, next) => {
         "Referrer-Policy": "strict-origin-when-cross-origin",
         "Permissions-Policy": "geolocation=(self), camera=(self), microphone=(self)",
         "X-Permitted-Cross-Domain-Policies": "none",
-        "X-DNS-Prefetch-Control": "off"
+        "X-DNS-Prefetch-Control": "off",
+        // STAGE 194 (additive): Content-Security-Policy. Keeps the apps' inline scripts/styles and map/CDN assets working,
+        // while blocking plugins (object-src none), click-jacking (frame-ancestors) and base/form hijacking. Tighten the
+        // 'unsafe-inline' / https: allowances later by moving inline code into files and naming exact CDN hosts.
+        "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https: wss: ws:; worker-src 'self' blob:; manifest-src 'self'"
     });
     if (IS_PROD) res.set("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
     next();
@@ -480,6 +484,8 @@ const compliance192 = adminModule && typeof adminModule.createCompliance === 'fu
     fxPerUsd: { KES: Number(process.env.FX_KES_PER_USD) || 129 }, ctrOverrides: Number(process.env.CTR_KES_THRESHOLD) > 0 ? { KES: Number(process.env.CTR_KES_THRESHOLD) } : {}
 }) : null;
 let adminReady192 = false;
+// STAGE 194 (additive): make sanctions screening ACTIVE with a starter list (replace with the official UN/OFAC/Kenya lists).
+try { if (compliance192) { const r = require('./routes/sanctions-seed')(compliance192); if (r && r.loaded) console.log('\u2713 Stage 194: sanctions screening active (' + r.loaded + ' starter entries \u2014 replace with official lists before go-live).'); } } catch (e) { console.error('[STAGE194] sanctions seed:', e.message); }
 const ledgerHooks192 = () => { try { return (adminReady192 && adminModule && adminModule.hooks) || null; } catch (e) { return null; } };
 // THE GLUE: the customer and rider modules only announce neutral order events. This is the one place that connects them to the
 // admin side (ledger, client registry). Remove this and both modules still work exactly as before.
