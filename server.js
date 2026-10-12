@@ -484,8 +484,6 @@ const compliance192 = adminModule && typeof adminModule.createCompliance === 'fu
     fxPerUsd: { KES: Number(process.env.FX_KES_PER_USD) || 129 }, ctrOverrides: Number(process.env.CTR_KES_THRESHOLD) > 0 ? { KES: Number(process.env.CTR_KES_THRESHOLD) } : {}
 }) : null;
 let adminReady192 = false;
-// STAGE 194 (additive): make sanctions screening ACTIVE with a starter list (replace with the official UN/OFAC/Kenya lists).
-try { if (compliance192) { const r = require('./routes/sanctions-seed')(compliance192); if (r && r.loaded) console.log('\u2713 Stage 194: sanctions screening active (' + r.loaded + ' starter entries \u2014 replace with official lists before go-live).'); } } catch (e) { console.error('[STAGE194] sanctions seed:', e.message); }
 const ledgerHooks192 = () => { try { return (adminReady192 && adminModule && adminModule.hooks) || null; } catch (e) { return null; } };
 // THE GLUE: the customer and rider modules only announce neutral order events. This is the one place that connects them to the
 // admin side (ledger, client registry). Remove this and both modules still work exactly as before.
@@ -575,6 +573,8 @@ restoreSnapshot191 = function () {
             switches192.notify = {}; if (sw.notify && typeof sw.notify === 'object') for (const k of ['sms', 'whatsapp', 'email']) if (typeof sw.notify[k] === 'boolean') switches192.notify[k] = sw.notify[k];
         }
     } catch (e) {}
+    // STAGE 194 (additive): AFTER restore, make sanctions screening ACTIVE if the restored state has no list yet.
+    try { if (compliance192 && compliance192.state) { const r = require('./routes/sanctions-seed')(compliance192); if (r && r.loaded) console.log('\u2713 Stage 194: sanctions screening active (' + r.loaded + ' starter entries \u2014 replace with official lists before go-live).'); } } catch (e) { console.error('[STAGE194] sanctions seed:', e.message); }
 };
 
 // rider registration: real documents are required and kept for admin review (the inline route only stored yes/no flags)
