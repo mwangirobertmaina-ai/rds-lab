@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f19">
+<title>RDS · Choose your app</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="RDS Sovereign Enterprise — delivery, rides, social & ads, shops, wallet and compliance in one installable app.">
+<style>
+:root{--g:#00ff88;--bg:#0b0f19;--panel:#111827;--dim:#9ca3af;--cy:#38bdf8;--pu:#a855f7;--gold:#ffc244;--red:#ff4d6d;--line:#222c3d;--r:16px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif}
+body{background:var(--bg);color:#fff;min-height:100dvh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:28px 16px 48px}
+header{text-align:center;margin-bottom:22px}
+.logo{width:72px;height:72px;border-radius:20px;background:#0b0f19;border:3px solid var(--g);display:grid;place-items:center;margin:0 auto 12px;font-weight:900;font-size:1.5rem;letter-spacing:1px;box-shadow:0 10px 30px rgba(0,255,136,.12)}
+h1{font-size:1.5rem;font-weight:900}
+.sub{color:var(--dim);font-size:.9rem;margin-top:6px}
+#install{display:none;margin:16px auto 0;background:var(--g);color:#000;border:0;border-radius:12px;padding:12px 22px;font-weight:800;font-size:.9rem;cursor:pointer}
+#install.show{display:inline-flex;align-items:center;gap:8px}
+.hint{color:var(--dim);font-size:.78rem;margin-top:10px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:22px}
+a.tile{display:block;text-decoration:none;color:#fff;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;transition:transform .12s,border-color .12s,box-shadow .12s}
+a.tile:hover{transform:translateY(-3px);border-color:var(--c);box-shadow:0 12px 28px rgba(0,0,0,.35)}
+a.tile:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;font-size:1.5rem;margin-bottom:12px;background:rgba(255,255,255,.04)}
+.tile h2{font-size:1.02rem;font-weight:800}
+.tile p{color:var(--dim);font-size:.8rem;margin-top:5px;line-height:1.45}
+.tag{display:inline-block;margin-top:10px;font-size:.66rem;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:3px 9px;border-radius:10px;background:rgba(255,255,255,.05);color:var(--dim)}
+footer{text-align:center;color:var(--dim);font-size:.74rem;margin-top:30px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" style="color:var(--g)">RDS</div>
+    <h1>RDS Sovereign Enterprise</h1>
+    <div class="sub">One app. Choose how you want to come in.</div>
+    <button id="install">⬇ Install app</button>
+    <div class="hint" id="installHint"></div>
+  </header>
+
+  <div class="grid" id="tiles"></div>
+
+  <footer>
+    Installs like a normal app and opens straight to this screen.<br>
+    You can switch roles anytime by coming back here.
+  </footer>
+</div>
+
+<script>
+'use strict';
+// Each role tile. color is the accent; href is the page the server already serves.
+const APPS = [
+  { href:'/user',     icon:'🛍️', c:'#38bdf8', title:'Shop & Rides',      desc:'Order from shops or request a boda/cab. Pay, track, rate.', tag:'Customer' },
+  { href:'/',         icon:'📣', c:'#a855f7', title:'Social & Ads',       desc:'Posts, go live, follow, and run ad campaigns.',            tag:'Public' },
+  { href:'/wallet',   icon:'👛', c:'#00ff88', title:'Wallet',            desc:'Top up, send, withdraw — your money, to the cent.',        tag:'Money' },
+  { href:'/merchant', icon:'🏪', c:'#ffc244', title:'Merchant',          desc:'Your shop: orders, catalog, hand-over & payouts.',         tag:'Shop owner' },
+  { href:'/driver',   icon:'🏍️', c:'#f97316', title:'Driver',            desc:'Go online, accept jobs, deliver, get paid.',               tag:'Rider' },
+  { href:'/platform', icon:'🏦', c:'#22d3ee', title:'Institutions',      desc:'Forex, SACCO, microfinance & bank staff counter.',         tag:'Partner' },
+  { href:'/admin',    icon:'🛡️', c:'#f43f5e', title:'Compliance & Ledger', desc:'KYC, journals, reports, audit — the back office.',       tag:'Admin' },
+  { href:'/store',    icon:'🛰️', c:'#e5e7eb', title:'Master Control',    desc:'Owner console: switch anything on/off, see the books.',    tag:'Owner' }
+];
+const tiles = document.getElementById('tiles');
+tiles.innerHTML = APPS.map(a => `
+  <a class="tile" href="${a.href}" style="--c:${a.c}">
+    <div class="ic" style="color:${a.c}">${a.icon}</div>
+    <h2>${a.title}</h2>
+    <p>${a.desc}</p>
+    <span class="tag">${a.tag}</span>
+  </a>`).join('');
+
+// ---- PWA install ----
+let deferred = null;
+const btn = document.getElementById('install'), hint = document.getElementById('installHint');
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; btn.classList.add('show'); });
+btn.addEventListener('click', async () => {
+  if (!deferred) return;
+  deferred.prompt();
+  const { outcome } = await deferred.userChoice;
+  deferred = null; btn.classList.remove('show');
+  if (outcome === 'accepted') hint.textContent = 'Installing… look for the RDS icon on your home screen.';
+});
+window.addEventListener('appinstalled', () => { btn.classList.remove('show'); hint.textContent = 'Installed ✓ You can open RDS from your home screen.'; });
+// iOS has no install button — tell the user how
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent), standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+if (isIOS && !standalone) hint.textContent = 'To install on iPhone/iPad: tap Share, then “Add to Home Screen”.';
+
+// ---- register the service worker (makes it installable + works offline) ----
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
+}
+</script>
+</body>
+</html>

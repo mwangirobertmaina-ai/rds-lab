@@ -432,7 +432,7 @@ if (userExt191) {
 }
 
 // STAGE 192 — count page views of every panel (feeds the owner control room); must run before the page routes
-const PANEL_PATHS_192 = new Set(['/', '/ads', '/store', '/user', '/driver', '/merchant', '/admin', '/print', '/owner']);
+const PANEL_PATHS_192 = new Set(['/', '/app', '/ads', '/store', '/user', '/driver', '/merchant', '/admin', '/print', '/owner']);
 const panelHits192 = {};
 app.use((req, res, next) => {
     if (req.method === 'GET') {
@@ -1207,6 +1207,10 @@ app.get(Object.keys(PANEL_MAP_191), (req, res, next) => {
     if (file && fs.existsSync(path.join(__dirname, file))) return next();
     res.status(404).type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel unavailable</title><body style="font-family:system-ui;background:#0b0f19;color:#e2e8f0;display:grid;place-items:center;min-height:100vh;margin:0"><div style="text-align:center;padding:24px"><h1>Panel temporarily unavailable</h1><p>The page file <code>${escapeHtml(file || key)}</code> is not deployed on this server.</p><p><a style="color:#38bdf8" href="/health">Server status</a></p></div></body>`);
 });
+// ---- PWA: launcher ("/app"), service worker and manifest (served with correct headers) ----
+app.get(['/app', '/launcher'], (req, res) => { res.sendFile(path.join(__dirname, 'launcher.html')); });
+app.get('/sw.js', (req, res) => { res.set({ 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' }); res.sendFile(path.join(__dirname, 'sw.js')); });
+app.get(['/manifest.webmanifest', '/manifest.json'], (req, res) => { res.set({ 'Content-Type': 'application/manifest+json; charset=utf-8', 'Cache-Control': 'no-cache' }); res.sendFile(path.join(__dirname, 'manifest.webmanifest')); });
 app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "ads.html")); });
 app.get("/store", (req, res) => { res.sendFile(path.join(__dirname, "store.html")); });
 app.get("/driver", (req, res) => { res.sendFile(path.join(__dirname, "driver.html")); });
