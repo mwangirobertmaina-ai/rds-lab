@@ -234,7 +234,7 @@ app.use((req, res, next) => {
         // STAGE 194 (additive): Content-Security-Policy. Keeps the apps' inline scripts/styles and map/CDN assets working,
         // while blocking plugins (object-src none), click-jacking (frame-ancestors) and base/form hijacking. Tighten the
         // 'unsafe-inline' / https: allowances later by moving inline code into files and naming exact CDN hosts.
-        "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https: wss: ws:; worker-src 'self' blob:; manifest-src 'self'"
+        "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; media-src 'self' blob: data: https:; connect-src 'self' https: wss: ws:; worker-src 'self' blob:; manifest-src 'self'"
     });
     if (IS_PROD) res.set("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
     next();
@@ -973,7 +973,20 @@ app.use((req, res, next) => {
 
 app.use('/uploads', express.static(uploadDir, { dotfiles: "deny", setHeaders: (r) => r.set("Content-Disposition", "inline") }));
 app.use('/public', express.static(path.join(__dirname, "public"), { dotfiles: "deny" }));
-app.use(express.static(__dirname, { dotfiles: "deny" }));
+// STATIC FILES, LOCKED DOWN. The project folder holds source code, config templates, archives and scripts that must NEVER be downloadable
+// (server.js, routes/*.js, *.env, *.zip, *.bat ...). Only page/asset files are served; everything else falls through to the app's own routes.
+// index:false = a stray index.html can no longer answer "/" (the "/" address belongs to the RDS Social route below).
+const STATIC_BLOCK_EXT_192 = /\.(js|cjs|mjs|ts|map|env|json|bat|cmd|sh|ps1|zip|gz|tar|xlsx|xls|docx|doc|pdf|md|txt|log|bak|old|sql|db|sqlite|pem|key|crt|yml|yaml)$/i;
+const STATIC_BLOCK_DIR_192 = /^\/(routes|tests|tools|deploy|evidence|docs|middleware|node_modules|data|backup|backups)(\/|$)/i;
+const staticRoot192 = express.static(__dirname, { dotfiles: "deny", index: false });
+app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    let p; try { p = decodeURIComponent(req.path); } catch (e) { return res.status(400).end(); }
+    if (p.includes(':') || p.includes('\0') || p.includes('\\')) return res.status(404).end();            // Windows alternate-stream / backslash tricks
+    const bare = p.replace(/[. ]+$/, '');                                                                  // Windows ignores trailing dots/spaces ("server.js.")
+    if (STATIC_BLOCK_EXT_192.test(bare) || STATIC_BLOCK_DIR_192.test(bare)) return next();                 // not a public file: fall through (own route, or 404)
+    return staticRoot192(req, res, next);
+});
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => { cb(null, uploadDir); },
@@ -1214,15 +1227,37 @@ function panelFile192(file) {
     const alts = PANEL_ALT_192[file] || [file];
     return alts.find(f => fs.existsSync(path.join(__dirname, f))) || null;
 }
+// WRONG-CONTENT GUARD: a page file that actually holds a DIFFERENT panel (e.g. ads.html that is really store.html, saved
+// under the wrong name) is refused with a clear message instead of silently showing the wrong app (Master Control).
+const PANEL_SIG_192 = { 'ads.html': { has: 'RDS Social', not: 'Master Control' }, 'store.html': { has: 'Master Control' }, 'user.html': { not: 'Master Control' }, 'driver.html': { not: 'Master Control' }, 'merchant.html': { not: 'Master Control' }, 'admin.html': { not: 'Master Control' } };
+const panelSigCache192 = {};
+function panelWrong192(file) {
+    const rel = panelFile192(file), sig = PANEL_SIG_192[file];
+    if (!rel || !sig) return null;
+    try {
+        const full = path.join(__dirname, rel), mt = fs.statSync(full).mtimeMs, c = panelSigCache192[file];
+        if (c && c.m === mt) return c.r;
+        const head = fs.readFileSync(full, 'utf8').slice(0, 4000);   // the <title> is at the very top of every page
+        let r = null;
+        if (sig.has && !head.includes(sig.has)) r = 'does not contain the expected "' + sig.has + '" page';
+        else if (sig.not && head.includes(sig.not)) r = 'contains the "' + sig.not + '" page (Master Control) — the wrong file was saved under this name';
+        panelSigCache192[file] = { m: mt, r };
+        return r;
+    } catch (e) { return null; }
+}
+try { for (const f of new Set(Object.values(PANEL_MAP_191))) { const w = panelWrong192(f); if (w) console.error('❌ [PANELS] ' + f + ' ' + w + '. Replace it with the correct file.'); } } catch (e) {}
 app.get(Object.keys(PANEL_MAP_191), (req, res, next) => {
     const key = req.path.length > 1 ? req.path.replace(/\/+$/, '') : req.path;
     const file = PANEL_MAP_191[key];
-    if (file && panelFile192(file)) return next();
+    const bad = file && panelFile192(file) ? panelWrong192(file) : null;
+    if (file && panelFile192(file) && !bad) return next();
     const where = file ? (PANEL_ALT_192[file] || [file]).join(' or ') : key;
-    res.status(404).type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel unavailable</title><body style="font-family:system-ui;background:#0b0f19;color:#e2e8f0;display:grid;place-items:center;min-height:100vh;margin:0"><div style="text-align:center;padding:24px;max-width:520px"><h1>Panel temporarily unavailable</h1><p>The page file <code>${escapeHtml(where)}</code> is not on this server yet. Place it next to <code>server.js</code> and restart, or retry.</p><p><button id="retry" style="background:#00ff88;color:#000;border:0;border-radius:10px;padding:10px 18px;font-weight:700;cursor:pointer">Retry</button> &nbsp; <a style="color:#38bdf8" href="/app">Launcher</a> &nbsp; <a style="color:#38bdf8" href="/health">Server status</a></p></div><script>document.getElementById('retry').addEventListener('click',function(){location.reload();});</script></body>`);
+    const why = bad ? `is on this server but ${escapeHtml(bad)}. Replace it with the correct file, restart, then retry.` : 'is not on this server yet. Place it next to <code>server.js</code> and restart, or retry.';
+    res.status(404).type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel unavailable</title><body style="font-family:system-ui;background:#0b0f19;color:#e2e8f0;display:grid;place-items:center;min-height:100vh;margin:0"><div style="text-align:center;padding:24px;max-width:520px"><h1>Panel temporarily unavailable</h1><p>The page file <code>${escapeHtml(where)}</code> ${why}</p><p><button id="retry" style="background:#00ff88;color:#000;border:0;border-radius:10px;padding:10px 18px;font-weight:700;cursor:pointer">Retry</button> &nbsp; <a style="color:#38bdf8" href="/app">Launcher</a> &nbsp; <a style="color:#38bdf8" href="/health">Server status</a></p></div><script>document.getElementById('retry').addEventListener('click',function(){location.reload();});</script></body>`);
 });
 // ---- PWA: launcher ("/app"), service worker and manifest (served with correct headers) ----
-app.get(['/app', '/launcher'], (req, res) => { res.sendFile(path.join(__dirname, 'launcher.html')); });
+app.get(['/app', '/launcher'], (req, res) => { res.sendFile(path.join(__dirname, 'launcher.html'), (err) => { if (err && !res.headersSent) res.status(404).type('text/plain').send('launcher.html is not on this server yet. Place it next to server.js and restart.'); }); });
+app.get(['/laucher', '/laucher.html', '/lancher', '/lancher.html', '/home'], (req, res) => res.redirect(302, '/app'));   // common mistypes of the launcher address
 app.get('/sw.js', (req, res) => { res.set({ 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' }); res.sendFile(path.join(__dirname, 'sw.js')); });
 app.get(['/manifest.webmanifest', '/manifest.json'], (req, res) => { res.set({ 'Content-Type': 'application/manifest+json; charset=utf-8', 'Cache-Control': 'no-cache' }); res.sendFile(path.join(__dirname, 'manifest.webmanifest')); });
 app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "ads.html")); });

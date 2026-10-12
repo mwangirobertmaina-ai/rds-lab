@@ -7,3 +7,5 @@ state-191.snapshot*
 audit-chain.jsonl
 db.json
 public/uploads/
+mpesa-config.env
+notify-config.env

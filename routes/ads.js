@@ -280,7 +280,7 @@ function sniff(b) {
     if (b.length >= 12 && b.slice(0, 4).toString('latin1') === 'RIFF' && b.slice(8, 12).toString('latin1') === 'WEBP') return { kind: 'image', mime: 'image/webp', ext: 'webp' };
     if (b.length >= 6 && /^GIF8[79]a$/.test(b.slice(0, 6).toString('latin1'))) return { kind: 'image', mime: 'image/gif', ext: 'gif' };
     if (b.length >= 4 && b[0] === 0x1A && b[1] === 0x45 && b[2] === 0xDF && b[3] === 0xA3) return { kind: 'video', mime: 'video/webm', ext: 'webm' };
-    if (b.length >= 12 && b.slice(4, 8).toString('latin1') === 'ftyp') { const brand = b.slice(8, 12).toString('latin1'); return brand === 'qt  ' ? { kind: 'video', mime: 'video/quicktime', ext: 'mov' } : { kind: 'video', mime: 'video/mp4', ext: 'mp4' }; }
+    if (b.length >= 12 && b.slice(4, 8).toString('latin1') === 'ftyp') { const brand = b.slice(8, 12).toString('latin1'); if (['heic', 'heix', 'heim', 'heis', 'mif1', 'msf1', 'avif', 'avis'].includes(brand)) return null;   /* HEIC/AVIF photos share the MP4 container: never store them as video; the upload is refused with a "use JPG/PNG" message */ return brand === 'qt  ' ? { kind: 'video', mime: 'video/quicktime', ext: 'mov' } : { kind: 'video', mime: 'video/mp4', ext: 'mp4' }; }
     return null;
 }
 function deleteMediaFile(m) { try { fs.unlinkSync(path.join(mediaDir, `${m.id}.${m.ext}`)); } catch (e) {} m.deleted = true; }

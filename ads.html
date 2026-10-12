@@ -812,7 +812,7 @@ function storyShow() {
   let v = $('#storyView'); if (!v) { document.body.insertAdjacentHTML('beforeend', '<div id="storyView" class="fixed inset-0 z-[60] bg-black flex flex-col"></div>'); v = $('#storyView'); }
   const bars = g.items.map((x, i) => `<span class="flex-1 h-0.5 rounded bg-white/30 overflow-hidden"><span class="block h-full bg-white ${i < story.ii ? 'w-full' : 'w-0'}" ${i === story.ii ? 'data-bar' : ''}></span></span>`).join('');
   const u = it.media && safeMedia(it.media.url);
-  const body = it.media && it.media.kind === 'video' && u ? `<video src="${u}" autoplay playsinline class="w-full h-full object-contain" data-sv></video>`
+  const body = it.media && it.media.kind === 'video' && u ? `<video src="${u}" autoplay playsinline ${sound ? '' : 'muted'} class="w-full h-full object-contain" data-sv></video>`
     : it.media && u ? `<img src="${u}" alt="" class="w-full h-full object-contain">`
     : `<div class="w-full h-full flex items-center justify-center p-8 style-${['sunset', 'ocean', 'forest', 'night', 'candy'].includes(it.style) ? it.style : 'sunset'}"><p class="text-2xl font-bold text-white text-center whitespace-pre-wrap break-words">${esc(it.text)}</p></div>`;
   v.innerHTML = `<div class="absolute top-0 inset-x-0 z-10 p-3 safe-t"><div class="flex gap-1">${bars}</div><div class="flex items-center gap-2 mt-3">${avatar(g.user, 'w-9 h-9 text-sm')}<b class="text-white text-sm">${g.isMe ? 'My story' : esc(g.user.name)}</b><span class="text-white/60 text-xs">${ago(it.createdAt)}</span><button data-act="storyclose" aria-label="Close" class="ml-auto w-9 h-9 text-white text-xl"><i class="fa-solid fa-xmark"></i></button></div></div>
@@ -821,7 +821,13 @@ function storyShow() {
     ${g.isMe ? `<div class="absolute bottom-0 inset-x-0 p-4 safe-b flex justify-between"><button data-act="storyviewers" data-id="${esc(it.id)}" class="px-4 py-2 rounded-full bg-white/15 text-white text-sm"><i class="fa-solid fa-eye mr-1"></i>${it.viewers || 0} viewer${it.viewers === 1 ? '' : 's'}</button><button data-act="storydelete" data-id="${esc(it.id)}" class="px-4 py-2 rounded-full bg-white/15 text-rose-300 text-sm"><i class="fa-solid fa-trash mr-1"></i>Delete</button></div>` : ''}`;
   const bar = v.querySelector('[data-bar]'), vid = v.querySelector('[data-sv]'), ms = 5000;
   if (token && !g.isMe && !it.seen) { it.seen = true; api(`/stories/${it.id}/view`, { method: 'POST', body: {} }).catch(() => {}); }
-  if (vid) { vid.muted = !sound; vid.onended = storyNext; vid.ontimeupdate = () => { if (vid.duration && bar) bar.style.width = (vid.currentTime / vid.duration * 100) + '%'; }; }
+  if (vid) {
+    vid.muted = !sound; vid.onended = storyNext; vid.ontimeupdate = () => { if (vid.duration && bar) bar.style.width = (vid.currentTime / vid.duration * 100) + '%'; };
+    // never leave the viewer frozen: a video that cannot load or play skips to the next update
+    vid.onerror = () => { toast('This video could not be played.'); clearTimeout(storyTimer); storyTimer = setTimeout(storyNext, 1200); };
+    const pp = vid.play(); if (pp && pp.catch) pp.catch(() => { vid.muted = true; vid.play().catch(() => { clearTimeout(storyTimer); storyTimer = setTimeout(storyNext, 1500); }); });
+    storyTimer = setTimeout(() => { if (vid.readyState < 2) storyNext(); }, 8000);   // still nothing after 8 s: move on
+  }
   else if (bar) { bar.style.transition = `width ${ms}ms linear`; requestAnimationFrame(() => { bar.style.width = '100%'; }); storyTimer = setTimeout(storyNext, ms); }
 }
 function storyNext() { const g = story.groups[story.gi]; if (story.ii + 1 < g.items.length) story.ii++; else if (story.gi + 1 < story.groups.length) { story.gi++; story.ii = 0; } else return storyClose(); storyShow(); }
