@@ -1203,15 +1203,23 @@ app.get('/metrics', (req, res) => {
     res.type('text/plain; version=0.0.4').send(lines.join('\n') + '\n');
 });
 
+// Each address serves ITS OWN page only. /user is the customer app (user.html) — it must never fall back to Master Control.
+// /print (DoseColor) may sit in public/ or in the project root: whichever file exists is used.
 const PANEL_MAP_191 = {
-    '/': 'ads.html', '/ads': 'ads.html', '/store': 'store.html', '/user': 'store.html',
+    '/': 'ads.html', '/ads': 'ads.html', '/store': 'store.html', '/user': 'user.html',
     '/driver': 'driver.html', '/merchant': 'merchant.html', '/admin': 'admin.html', '/print': 'public/print.html'
 };
+const PANEL_ALT_192 = { 'public/print.html': ['public/print.html', 'print.html'] };
+function panelFile192(file) {
+    const alts = PANEL_ALT_192[file] || [file];
+    return alts.find(f => fs.existsSync(path.join(__dirname, f))) || null;
+}
 app.get(Object.keys(PANEL_MAP_191), (req, res, next) => {
     const key = req.path.length > 1 ? req.path.replace(/\/+$/, '') : req.path;
     const file = PANEL_MAP_191[key];
-    if (file && fs.existsSync(path.join(__dirname, file))) return next();
-    res.status(404).type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel unavailable</title><body style="font-family:system-ui;background:#0b0f19;color:#e2e8f0;display:grid;place-items:center;min-height:100vh;margin:0"><div style="text-align:center;padding:24px"><h1>Panel temporarily unavailable</h1><p>The page file <code>${escapeHtml(file || key)}</code> is not deployed on this server.</p><p><a style="color:#38bdf8" href="/health">Server status</a></p></div></body>`);
+    if (file && panelFile192(file)) return next();
+    const where = file ? (PANEL_ALT_192[file] || [file]).join(' or ') : key;
+    res.status(404).type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel unavailable</title><body style="font-family:system-ui;background:#0b0f19;color:#e2e8f0;display:grid;place-items:center;min-height:100vh;margin:0"><div style="text-align:center;padding:24px;max-width:520px"><h1>Panel temporarily unavailable</h1><p>The page file <code>${escapeHtml(where)}</code> is not on this server yet. Place it next to <code>server.js</code> and restart, or retry.</p><p><button id="retry" style="background:#00ff88;color:#000;border:0;border-radius:10px;padding:10px 18px;font-weight:700;cursor:pointer">Retry</button> &nbsp; <a style="color:#38bdf8" href="/app">Launcher</a> &nbsp; <a style="color:#38bdf8" href="/health">Server status</a></p></div><script>document.getElementById('retry').addEventListener('click',function(){location.reload();});</script></body>`);
 });
 // ---- PWA: launcher ("/app"), service worker and manifest (served with correct headers) ----
 app.get(['/app', '/launcher'], (req, res) => { res.sendFile(path.join(__dirname, 'launcher.html')); });
@@ -1223,7 +1231,6 @@ app.get("/driver", (req, res) => { res.sendFile(path.join(__dirname, "driver.htm
 app.get("/merchant", (req, res) => { res.sendFile(path.join(__dirname, "merchant.html")); });
 app.get("/admin", (req, res) => { res.sendFile(path.join(__dirname, "admin.html")); });
 app.get("/ads", (req, res) => { res.sendFile(path.join(__dirname, "ads.html")); });
-app.get("/user", (req, res) => { res.sendFile(path.join(__dirname, "store.html")); });
 app.get('/wallet', (req, res) => { res.sendFile(path.join(__dirname, 'wallet.html')); });
 
 // ---- PHARMACY (DoseColor) delivery glue: a READY pharmacy order becomes a rider dispatch, like a direct ride ----
@@ -1298,8 +1305,10 @@ app.get('/tools/dosecolor-agent.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'tools', 'dosecolor-agent.js'), (err) => { if (err && !res.headersSent) res.status(404).end(); });
 });
 
-app.get('/print', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/print.html'));
+app.get('/print', (req, res, next) => {
+    const f = panelFile192('public/print.html');
+    if (!f) return next();   // the panel guard above already answers with the "not on this server yet" page
+    res.sendFile(path.join(__dirname, f));
 });
 
 const printInterceptorModule = safeRequire191('./middleware/printInterceptor', 'printInterceptor');
